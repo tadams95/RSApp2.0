@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "930832370585",
+    "firebase_url": "https://ragestate-app-default-rtdb.firebaseio.com",
+    "project_id": "ragestate-app",
+    "storage_bucket": "ragestate-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:930832370585:android:d3ad4cfa153f5b381fa108",
+        "android_client_info": {
+          "package_name": "com.tyrelle.ragestate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "930832370585-6j2jpma2khl692j5331llh1tai9dmell.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOhKwDFNMxKOtio2UTxy27jBe-yfpd7jg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "930832370585-6j2jpma2khl692j5331llh1tai9dmell.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:930832370585:android:68c940c9f3a198371fa108",
+        "android_client_info": {
+          "package_name": "com.tyrelle.ragestateapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "930832370585-6j2jpma2khl692j5331llh1tai9dmell.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOhKwDFNMxKOtio2UTxy27jBe-yfpd7jg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "930832370585-6j2jpma2khl692j5331llh1tai9dmell.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
