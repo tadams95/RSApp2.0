@@ -1,4 +1,11 @@
-import { Image, StyleSheet, Text, View, Pressable } from "react-native";
+import {
+  Image,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+  Platform,
+} from "react-native";
 
 import { useNavigation } from "@react-navigation/native";
 
@@ -42,11 +49,16 @@ export default function WelcomeScreen() {
   );
 }
 
+const fontFamily = Platform.select({
+  ios: "Helvetica Neue",
+  android: "Roboto",
+  default: "system",
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "black",
-    
   },
   section: {
     flex: 1,
@@ -59,11 +71,14 @@ const styles = StyleSheet.create({
     fontSize: 25,
     marginTop: 50,
     color: "#FFF",
+    fontFamily,
+    fontWeight: "700"
   },
   buttonText: {
     textAlign: "center",
-    fontWeight: "bold",
+    fontWeight: "500",
     color: "#FFF",
+    fontFamily
   },
   imageContainer: {
     flex: 1,

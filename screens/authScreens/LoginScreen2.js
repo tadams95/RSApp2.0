@@ -10,6 +10,7 @@ import {
   Pressable,
   Image,
   Alert,
+  Platform,
 } from "react-native";
 
 import { getDatabase, ref as databaseRef, get } from "firebase/database";
@@ -94,6 +95,12 @@ export default function LoginScreen2({ setAuthenticated }) {
   );
 }
 
+const fontFamily = Platform.select({
+  ios: "Helvetica Neue",
+  android: "Roboto",
+  default: "system",
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -102,18 +109,21 @@ const styles = StyleSheet.create({
     marginTop: Dimensions.get("window").height * 0.07,
   },
   headline: {
-    fontWeight: "bold",
+    fontWeight: "700",
     textAlign: "center",
     textTransform: "uppercase",
     marginTop: Dimensions.get("window").height * 0.03,
     fontSize: 20,
     marginBottom: 20,
     color: "white",
+    fontFamily
   },
   subtitle: {
     paddingBottom: 5,
     fontSize: 18,
     color: "white",
+    fontFamily,
+    fontWeight: "500"
   },
   input: {
     backgroundColor: "#F6F6F6",
@@ -122,6 +132,8 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     width: Dimensions.get("window").width * 0.9,
     fontSize: 18,
+    fontFamily,
+    fontWeight: "500"
   },
   loginContainer: {
     paddingTop: 10,
@@ -163,6 +175,8 @@ const styles = StyleSheet.create({
   buttonText: {
     textAlign: "center",
     color: "white",
+    fontFamily,
+    fontWeight: "500"
   },
   image: {
     height: 100,

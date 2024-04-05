@@ -10,6 +10,7 @@ import {
   Pressable,
   ScrollView,
   Alert,
+  Image
 } from "react-native";
 
 import { createUser, loginUser } from "../../util/auth";
@@ -152,6 +153,10 @@ export default function CreateAccountScreen({ navigation, setAuthenticated }) {
       style={styles.container}
     >
       <View style={styles.container}>
+        <Image
+          style={styles.image}
+          source={require("../../assets/RSLogoRounded.png")}
+        />
         <ScrollView style={{ flex: 1 }}>
           <Text style={styles.headline}>Create your account below</Text>
 
@@ -226,6 +231,12 @@ export default function CreateAccountScreen({ navigation, setAuthenticated }) {
   );
 }
 
+const fontFamily = Platform.select({
+  ios: "Helvetica Neue",
+  android: "Roboto",
+  default: "system",
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -234,14 +245,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headline: {
-    // fontFamily: "ProximaNovaBlack",
+    fontFamily,
+    fontWeight: "700",
     paddingTop: 10,
     textAlign: "center",
     textTransform: "uppercase",
     color: "white",
   },
   subtitle: {
-    // fontFamily: "ProximaNovaBlack",
+    fontFamily,
+    fontWeight: "500",
     paddingBottom: 5,
     fontSize: 18,
     color: "white",
@@ -251,7 +264,8 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     borderRadius: 5,
-    // fontFamily: "ProximaNovaBold",
+    fontFamily,
+    fontWeight: "500",
     width: Dimensions.get("window").width * 0.9,
     fontSize: 18,
   },
@@ -263,7 +277,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-evenly",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 20,
   },
   tabButton: {
     backgroundColor: "black",
@@ -275,8 +289,15 @@ const styles = StyleSheet.create({
     width: "30%",
   },
   secondaryText: {
-    // fontFamily: "ProximaNovaBlack",
+    fontFamily,
+    fontWeight: "500",
     textAlign: "center",
     color: "white",
+  },
+  image: {
+    height: 100,
+    width: 100,
+    alignSelf: "center",
+    marginVertical: Dimensions.get("window").height * 0.01,
   },
 });

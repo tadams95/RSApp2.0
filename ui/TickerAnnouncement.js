@@ -6,8 +6,10 @@ import {
   StyleSheet,
   useWindowDimensions,
   Easing,
+  Platform,
 } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+
+import { GlobalStyles } from "../constants/styles";
 
 const TickerAnnouncement = ({ announcements }) => {
   const { width: screenWidth } = useWindowDimensions(); // Get the width of the screen
@@ -62,6 +64,12 @@ const TickerAnnouncement = ({ announcements }) => {
   );
 };
 
+const fontFamily = Platform.select({
+  ios: "Helvetica Neue",
+  android: "Roboto",
+  default: "system",
+});
+
 const styles = StyleSheet.create({
   container: {
     overflow: "hidden",
@@ -72,7 +80,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginRight: 20,
     color: GlobalStyles.colors.grey0,
-    fontFamily: "ProximaNovaBold",
+    fontFamily,
+    fontWeight: "500"
   },
 });
 
