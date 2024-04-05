@@ -54,7 +54,6 @@ const styles = StyleSheet.create({
   },
   headline: {
     textAlign: "center",
-    fontFamily: "ProximaNovaBold",
     textTransform: "uppercase",
     fontSize: 25,
     marginTop: 50,
@@ -62,7 +61,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     textAlign: "center",
-    fontFamily: "ProximaNovaBold",
     fontWeight: "bold",
     color: "#FFF",
   },
