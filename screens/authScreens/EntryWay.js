@@ -4,12 +4,12 @@ import { StatusBar } from "expo-status-bar";
 import { createStackNavigator } from "@react-navigation/stack";
 
 import WelcomeScreen from "./WelcomeScreen";
-import LoginScreen from "./LoginScreen";
+import LoginScreen2 from "./LoginScreen2";
 import CreateAccountScreen from "./CreateAccountScreen";
 
 const AuthStack = createStackNavigator();
 
-const AuthFlow = ({ setAuthenticated }) => {
+const EntryWay = ({ setAuthenticated }) => {
   return (
     <>
       <StatusBar style="light" />
@@ -27,7 +27,7 @@ const AuthFlow = ({ setAuthenticated }) => {
           }}
         >
           {(props) => (
-            <LoginScreen {...props} setAuthenticated={setAuthenticated} />
+            <LoginScreen2 {...props} setAuthenticated={setAuthenticated} />
           )}
         </AuthStack.Screen>
 
@@ -50,5 +50,4 @@ const AuthFlow = ({ setAuthenticated }) => {
     </>
   );
 };
-
-export default AuthFlow;
+export default EntryWay;
