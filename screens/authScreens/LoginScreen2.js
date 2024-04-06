@@ -13,19 +13,57 @@ import {
   Platform,
 } from "react-native";
 
+import { useDispatch, useSelector } from "react-redux";
+
+import {
+  setLocalId,
+  setUserEmail,
+  setUserName,
+  selectUserName,
+  setExpoPushToken,
+  setStripeCustomerId,
+} from "../../store/redux/userSlice";
+
 import { getDatabase, ref as databaseRef, get } from "firebase/database";
+
+import { usePushNotifications } from "../../notifications/PushNotifications";
 
 import { loginUser } from "../../util/auth";
 
-export default function LoginScreen2({ setAuthenticated }) {
+import LoadingOverlay from "../../ui/LoadingOverlay";
+import ForgotPasswordModal from "./ForgotPasswordModal";
+
+const API_URL =
+  "https://us-central1-ragestate-app.cloudfunctions.net/stripePayment";
+
+export default function LoginScreen2({ navigation, setAuthenticated }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const userName = useSelector(selectUserName);
+
+  const dispatch = useDispatch();
+
+  const { registerForPushNotifications } = usePushNotifications();
 
   const forgotHandler = () => {
     setShowForgotPasswordModal(true);
   };
+
+  if (showForgotPasswordModal) {
+    return (
+      <ForgotPasswordModal
+        visible={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+      />
+    );
+  }
+
+  if (isAuthenticating) {
+    return <LoadingOverlay message="Logging you in..." />;
+  }
+
   const cancelHandler = () => {
     navigation.goBack();
   };
@@ -34,13 +72,87 @@ export default function LoginScreen2({ setAuthenticated }) {
     // Get a reference to the database
     const db = getDatabase();
 
-    setIsAuthenticating(true);
+    try {
+      setIsAuthenticating(true);
 
-    // Call loginUser function
-    const userData = await loginUser(email, password);
+      // Call loginUser function
+      const userData = await loginUser(email, password);
+      const localId = userData.uid;
+      const userEmail = userData.email;
+      dispatch(setLocalId(localId));
+      dispatch(setUserEmail(userEmail));
 
-    // console.log(userData);
-    setAuthenticated(true);
+      // Register for push notifications after successful login
+      const token = await registerForPushNotifications();
+
+      const userRef = databaseRef(db, `users/${localId}`);
+
+      get(userRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            // Extract the user's name and profile picture URL from the snapshot data
+            const userData = snapshot.val();
+            const name = userData.firstName + " " + userData.lastName;
+
+            // Dispatch the setUserName action with the fetched user name
+            dispatch(setUserName(name));
+          } else {
+            // console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching user data:", error);
+        });
+
+      const stripeCustomerResponse = await fetch(`${API_URL}/create-customer`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email,
+          name: userName,
+          firebaseId: localId,
+        }),
+      });
+
+      if (!stripeCustomerResponse.ok) {
+        // Log response status and error message if available
+        console.error(
+          "Failed to create Stripe customer. Status:",
+          stripeCustomerResponse.status
+        );
+        const errorMessage = await stripeCustomerResponse.text();
+        console.error("Error Message:", errorMessage);
+        throw new Error("Failed to create Stripe customer");
+      }
+
+      const stripeCustomerData = await stripeCustomerResponse.json();
+
+      dispatch(setStripeCustomerId(stripeCustomerData));
+
+      dispatch(setExpoPushToken(token));
+
+      // Reset form fields and loading state
+      setEmail("");
+      setPassword("");
+      setAuthenticated(true);
+      setIsAuthenticating(false);
+    } catch {
+      console.error("Error during login:", error); // Log the error for debugging purposes
+
+      let errorMessage = "An error occurred while logging in.";
+      if (error.code === "auth/invalid-credential") {
+        errorMessage =
+          "Invalid email or password. Please check your credentials and try again.";
+      }
+
+      // Alert the user with the appropriate error message
+      Alert.alert("Error", errorMessage);
+
+      // Reset loading state
+      setIsAuthenticating(false);
+    }
   };
 
   return (
@@ -116,14 +228,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginBottom: 20,
     color: "white",
-    fontFamily
+    fontFamily,
   },
   subtitle: {
     paddingBottom: 5,
     fontSize: 18,
     color: "white",
     fontFamily,
-    fontWeight: "500"
+    fontWeight: "500",
   },
   input: {
     backgroundColor: "#F6F6F6",
@@ -133,7 +245,7 @@ const styles = StyleSheet.create({
     width: Dimensions.get("window").width * 0.9,
     fontSize: 18,
     fontFamily,
-    fontWeight: "500"
+    fontWeight: "500",
   },
   loginContainer: {
     paddingTop: 10,
@@ -176,7 +288,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "white",
     fontFamily,
-    fontWeight: "500"
+    fontWeight: "500",
   },
   image: {
     height: 100,

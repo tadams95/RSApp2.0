@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, Platform } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
@@ -34,6 +34,12 @@ export default function App() {
     return () => clearTimeout(timer); // Cleanup the timer on component unmount
   }, []); // Run only once on component mount
 
+  const fontFamily = Platform.select({
+    ios: "Helvetica Neue",
+    android: "Roboto",
+    default: "system",
+  });
+
   return (
     <NavigationContainer>
       <View style={{ flex: 1 }}>
@@ -48,7 +54,7 @@ export default function App() {
                 tabBarInactiveBackgroundColor: "black",
                 headerTitleAlign: "center",
                 headerTitleStyle: {
-                  // fontFamily: "ProximaNovaBlack",
+                  fontFamily,
                 },
                 tabBarStyle: {
                   backgroundColor: "black",

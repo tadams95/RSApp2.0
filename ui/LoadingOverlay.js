@@ -1,4 +1,10 @@
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View,
+  Platform,
+} from "react-native";
 
 function LoadingOverlay({ message }) {
   return (
@@ -8,6 +14,12 @@ function LoadingOverlay({ message }) {
     </View>
   );
 }
+
+const fontFamily = Platform.select({
+  ios: "Helvetica Neue",
+  android: "Roboto",
+  default: "system",
+});
 
 export default LoadingOverlay;
 
@@ -22,7 +34,7 @@ const styles = StyleSheet.create({
   message: {
     fontSize: 16,
     marginBottom: 12,
-    fontFamily: "ProximaNovaBlack",
+    fontFamily,
     color: "white",
   },
 });

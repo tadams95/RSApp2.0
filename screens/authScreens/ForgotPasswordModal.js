@@ -6,6 +6,7 @@ import {
   Pressable,
   TextInput,
   Dimensions,
+  Platform,
 } from "react-native";
 
 import { GlobalStyles } from "../../constants/styles";
@@ -15,6 +16,7 @@ import { forgotPassword } from "../../util/auth";
 
 function ForgotPasswordModal({ visible, onClose }) {
   const [email, setEmail] = useState("");
+  
 
   function cancelReset() {
     setEmail("");
@@ -67,6 +69,12 @@ function ForgotPasswordModal({ visible, onClose }) {
 
 export default ForgotPasswordModal;
 
+const fontFamily = Platform.select({
+  ios: "Helvetica Neue",
+  android: "Roboto",
+  default: "system",
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -88,7 +96,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    fontFamily: "ProximaNovaBlack",
+    fontFamily,
     fontSize: 12,
   },
 
@@ -112,7 +120,7 @@ const styles = StyleSheet.create({
   },
 
   modalText: {
-    fontFamily: "ProximaNovaBlack",
+    fontFamily,
     fontSize: 18,
     marginBottom: 15,
     textAlign: "center",
@@ -142,11 +150,11 @@ const styles = StyleSheet.create({
   },
 
   modalButtonText: {
-    fontFamily: "ProximaNovaBlack",
+    fontFamily,
     color: "white",
   },
   modalButtonText2: {
-    fontFamily: "ProximaNovaBlack",
+    fontFamily,
     color: "black",
   },
   input: {
@@ -154,7 +162,7 @@ const styles = StyleSheet.create({
     padding: 5,
     marginBottom: 10,
     borderRadius: 5,
-    fontFamily: "ProximaNovaBold",
+    fontFamily,
     width: Dimensions.get("window").width * 0.85,
     fontSize: 18,
   },
