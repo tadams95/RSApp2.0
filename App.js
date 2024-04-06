@@ -17,8 +17,47 @@ import LoginScreen2 from "./screens/authScreens/LoginScreen2";
 import WelcomeScreen from "./screens/authScreens/WelcomeScreen";
 import CreateAccountScreen from "./screens/authScreens/CreateAccountScreen";
 import HomeScreen from "./screens/HomeScreen";
+import ShopScreen from "./screens/ShopScreen";
+import ProductDetailScreen from "./screens/product/ProductDetailScreen";
 
 const BottomTab = createBottomTabNavigator();
+const ShopStack = createStackNavigator();
+
+const ShopStackScreen = () => {
+  return (
+    <ShopStack.Navigator>
+      <ShopStack.Screen
+        name="ProductListScreen"
+        component={ShopScreen}
+        options={({ navigation, route }) => ({
+          headerLeft: () => backButton(navigation, false),
+          headerShown: false,
+        })}
+      />
+      <ShopStack.Screen
+        name="ProductDetailScreen"
+        component={ProductDetailScreen}
+        options={({ navigation, route }) => ({
+          headerLeft: () =>
+            backButton(navigation, route.name === "ProductDetailScreen"),
+          headerShown: false,
+          headerTitle: "",
+        })}
+      />
+    </ShopStack.Navigator>
+  );
+};
+
+const backButton = (navigation, showBackButton) => {
+  return showBackButton ? (
+    <MaterialCommunityIcons
+      name="arrow-left"
+      size={24}
+      color="black"
+      onPress={() => navigation.goBack()}
+    />
+  ) : null;
+};
 
 SplashScreen.preventAutoHideAsync();
 
@@ -68,6 +107,25 @@ export default function App() {
                   tabBarIcon: ({ focused }) => (
                     <MaterialCommunityIcons
                       name="home"
+                      color={focused ? "black" : "white"} // Set color based on tab focus
+                      size={20}
+                    />
+                  ),
+                  tabBarLabel: () => null,
+                  headerStyle: {
+                    backgroundColor: "black", // Set background color of the header
+                  },
+                  headerTintColor: "white",
+                }}
+              />
+              <BottomTab.Screen
+                name="Shop"
+                component={ShopStackScreen}
+                options={{
+                  headerLeft: ({ navigation }) => backButton(navigation),
+                  tabBarIcon: ({ focused }) => (
+                    <MaterialCommunityIcons
+                      name="shopping"
                       color={focused ? "black" : "white"} // Set color based on tab focus
                       size={20}
                     />
