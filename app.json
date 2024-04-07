@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
-      "buildNumber": "29"
+      "buildNumber": "33"
     },
     "android": {
       "adaptiveIcon": {
@@ -61,6 +61,12 @@
           "cameraPermission": "Allow RAGESTATE to access your camera",
           "microphonePermission": "Allow RAGESTATE to access your microphone",
           "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-barcode-scanner",
+        {
+          "cameraPermission": "Allow RAGESTATE to access camera."
         }
       ]
     ],

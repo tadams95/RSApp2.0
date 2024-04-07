@@ -27,6 +27,7 @@ import { getDatabase, ref, get } from "firebase/database";
 import { getAuth } from "firebase/auth";
 
 import { BarCodeScanner } from "expo-barcode-scanner";
+import { CameraView, Camera } from "expo-camera/next";
 import * as Notifications from "expo-notifications";
 
 import { GlobalStyles } from "../../constants/styles";
@@ -109,20 +110,20 @@ const MyEvents = () => {
     fetchEventsData();
   }, [currentUser]);
 
-  // Function to request permissions
-  const requestPermissions = async (permissionType, setPermission) => {
+  // Function to request camera permissions
+  const requestPermissions = async () => {
     try {
-      const { status } = await permissionType.requestPermissionsAsync();
-      setPermission(status === "granted");
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === "granted");
     } catch (error) {
-      console.error("Error requesting permissions:", error);
-      // Handle errors (e.g., show an error message to the user)
+      console.error("Error requesting camera permissions:", error);
+      // Handle errors
     }
   };
 
-  // Request barcode scanner permission
+  // Request camera permission on component mount
   useEffect(() => {
-    requestPermissions(BarCodeScanner, setHasPermission);
+    requestPermissions();
   }, []);
 
   const handleBarCodeScanned = async ({ type, data }) => {
@@ -320,12 +321,15 @@ const MyEvents = () => {
               <Text style={styles.ticketQuantity}>Quantity: 1</Text>
             </View>
             <View style={styles.cameraContainer}>
-              <BarCodeScanner
-                onBarCodeScanned={
-                  scanningAllowed ? handleBarCodeScanned : undefined
-                }
-                style={{ width: 200, height: 200 }}
-              />
+              {scanningAllowed && (
+                <CameraView
+                  onBarcodeScanned={handleBarCodeScanned}
+                  barcodeScannerSettings={{
+                    barcodeTypes: ["qr", "pdf417"],
+                  }}
+                  style={{ width: 200, height: 200 }}
+                />
+              )}
             </View>
             <View style={styles.modalButtonsContainer}>
               <Pressable
@@ -386,11 +390,13 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginTop: 10,
     color: "white",
+    fontWeight: "500",
   },
   text: {
     color: "white",
     paddingLeft: 10,
     fontFamily,
+    fontWeight: "500",
   },
   text2: {
     color: "white",
@@ -402,10 +408,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
   },
   modalContent: {
-    backgroundColor: "white",
+    backgroundColor: GlobalStyles.colors.grey0,
+    backgroundColor: `rgba(200, 200, 200, 0.95)`,
     borderRadius: 8,
     width: "80%", // Adjust the width to make it more centered
     padding: 20,
@@ -419,6 +426,7 @@ const styles = StyleSheet.create({
   },
   ticketName: {
     fontFamily,
+    fontWeight: "700",
     fontSize: 18,
     marginBottom: 10,
     textAlign: "center",
@@ -433,6 +441,7 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 16,
     textAlign: "center",
+    fontWeight: "500",
   },
   cameraContainer: {
     flex: 1,
@@ -461,7 +470,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   cancelButton: {
-    backgroundColor: "#ccc",
+    backgroundColor: "#000",
   },
   confirmButton: {
     backgroundColor: GlobalStyles.colors.grey9,

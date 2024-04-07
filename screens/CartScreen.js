@@ -549,6 +549,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 15,
     textAlign: "center",
+    fontWeight: "500",
   },
 
   modalButtonsContainer: {
@@ -574,6 +575,7 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontFamily,
     color: "white",
+    fontWeight: "500",
   },
   bottomButtonContainer: {
     position: "absolute",

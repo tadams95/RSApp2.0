@@ -19,6 +19,7 @@ import EventsScreen from "./screens/events/EventsScreen";
 import EventView from "./screens/events/EventView";
 import ProductDetailScreen from "./screens/product/ProductDetailScreen";
 import CartScreen from "./screens/CartScreen";
+import AccountScreen from "./screens/AccountScreen";
 
 const BottomTab = createBottomTabNavigator();
 const ShopStack = createStackNavigator();
@@ -198,6 +199,31 @@ export default function App() {
                   headerTintColor: "white",
                 }}
               />
+              <BottomTab.Screen
+                name="Account"
+                options={{
+                  tabBarIcon: ({ focused }) => (
+                    <MaterialCommunityIcons
+                      name="account"
+                      size={20}
+                      color={focused ? "black" : "white"}
+                    />
+                  ),
+                  tabBarLabel: () => null,
+                  headerStyle: {
+                    backgroundColor: "black", // Set background color of the header
+                  },
+                  headerTintColor: "white",
+                }}
+              >
+                {/* Pass the setAuthenticated function to AccountScreen */}
+                {(props) => (
+                  <AccountScreen
+                    {...props}
+                    setAuthenticated={setAuthenticated}
+                  />
+                )}
+              </BottomTab.Screen>
             </BottomTab.Navigator>
           )}
         </Provider>

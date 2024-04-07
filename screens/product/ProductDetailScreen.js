@@ -161,9 +161,10 @@ export default function ProductDetailScreen({ route }) {
             >
               <Text
                 style={{
-                  // fontFamily: "ProximaNovaBlack",
+                  fontFamily,
                   textAlign: "center",
                   color: "white",
+                  fontWeight: "500",
                 }}
               >
                 {selectedSize || "Size"}
@@ -208,9 +209,10 @@ export default function ProductDetailScreen({ route }) {
             >
               <Text
                 style={{
-                  // fontFamily: "ProximaNovaBlack",
+                  fontFamily,
                   textAlign: "center",
                   color: "white",
+                  fontWeight: "500",
                 }}
               >
                 {selectedColor || "Color"}
@@ -257,9 +259,10 @@ export default function ProductDetailScreen({ route }) {
             >
               <Text
                 style={{
-                  // fontFamily: "ProximaNovaBlack",
+                  fontFamily,
                   textAlign: "center",
                   color: "white",
+                  fontWeight: "500",
                 }}
               >
                 {selectedQuantity || "0"}
@@ -300,9 +303,10 @@ export default function ProductDetailScreen({ route }) {
           >
             <Text
               style={{
-                // fontFamily: "ProximaNovaBlack",
+                fontFamily,
                 textAlign: "center",
                 color: "white",
+                fontWeight: "500",
               }}
             >
               Add to Cart
