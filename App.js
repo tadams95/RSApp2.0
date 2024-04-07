@@ -18,6 +18,7 @@ import ShopScreen from "./screens/ShopScreen";
 import EventsScreen from "./screens/events/EventsScreen";
 import EventView from "./screens/events/EventView";
 import ProductDetailScreen from "./screens/product/ProductDetailScreen";
+import CartScreen from "./screens/CartScreen";
 
 const BottomTab = createBottomTabNavigator();
 const ShopStack = createStackNavigator();
@@ -168,6 +169,24 @@ export default function App() {
                   tabBarIcon: ({ focused }) => (
                     <MaterialCommunityIcons
                       name="ticket-percent"
+                      size={20}
+                      color={focused ? "black" : "white"}
+                    />
+                  ),
+                  tabBarLabel: () => null,
+                  headerStyle: {
+                    backgroundColor: "black", // Set background color of the header
+                  },
+                  headerTintColor: "white",
+                }}
+              />
+              <BottomTab.Screen
+                name="Cart"
+                component={CartScreen}
+                options={{
+                  tabBarIcon: ({ focused }) => (
+                    <MaterialCommunityIcons
+                      name="cart"
                       size={20}
                       color={focused ? "black" : "white"}
                     />
