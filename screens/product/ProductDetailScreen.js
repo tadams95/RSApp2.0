@@ -170,7 +170,7 @@ export default function ProductDetailScreen({ route }) {
               </Text>
             </Pressable>
             <Modal
-              animationType="fade"
+              animationType="none"
               transparent={true}
               visible={sizeModalVisible}
             >
@@ -217,7 +217,7 @@ export default function ProductDetailScreen({ route }) {
               </Text>
             </Pressable>
             <Modal
-              animationType="fade"
+              animationType="none"
               transparent={true}
               visible={colorModalVisible}
             >
@@ -266,7 +266,7 @@ export default function ProductDetailScreen({ route }) {
               </Text>
             </Pressable>
             <Modal
-              animationType="fade"
+              animationType="none"
               transparent={true}
               visible={quantityModalVisible}
             >
@@ -312,7 +312,7 @@ export default function ProductDetailScreen({ route }) {
 
         {/* Add to Cart Confirmation Modal */}
         <Modal
-          animationType="fade"
+          animationType="none"
           transparent={true}
           visible={addToCartConfirmationVisible}
         >

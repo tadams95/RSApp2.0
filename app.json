@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
-      "buildNumber": "26"
+      "buildNumber": "28"
     },
     "android": {
       "adaptiveIcon": {

@@ -13,15 +13,15 @@ import { Provider } from "react-redux";
 import { store } from "./store/redux/store";
 
 import EntryWay from "./screens/authScreens/EntryWay";
-import LoginScreen2 from "./screens/authScreens/LoginScreen2";
-import WelcomeScreen from "./screens/authScreens/WelcomeScreen";
-import CreateAccountScreen from "./screens/authScreens/CreateAccountScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ShopScreen from "./screens/ShopScreen";
+import EventsScreen from "./screens/events/EventsScreen";
+import EventView from "./screens/events/EventView";
 import ProductDetailScreen from "./screens/product/ProductDetailScreen";
 
 const BottomTab = createBottomTabNavigator();
 const ShopStack = createStackNavigator();
+const EventStack = createStackNavigator();
 
 const ShopStackScreen = () => {
   return (
@@ -45,6 +45,29 @@ const ShopStackScreen = () => {
         })}
       />
     </ShopStack.Navigator>
+  );
+};
+const EventStackScreen = () => {
+  return (
+    <EventStack.Navigator>
+      <EventStack.Screen
+        name="EventListScreen"
+        component={EventsScreen}
+        options={({ navigation, route }) => ({
+          headerLeft: () => backButton(navigation, false),
+          headerShown: false,
+        })}
+      />
+      <EventStack.Screen
+        name="EventView"
+        component={EventView}
+        options={({ navigation, route }) => ({
+          headerLeft: () => backButton(navigation),
+          headerShown: false,
+          headerTitle: "",
+        })}
+      />
+    </EventStack.Navigator>
   );
 };
 
@@ -128,6 +151,25 @@ export default function App() {
                       name="shopping"
                       color={focused ? "black" : "white"} // Set color based on tab focus
                       size={20}
+                    />
+                  ),
+                  tabBarLabel: () => null,
+                  headerStyle: {
+                    backgroundColor: "black", // Set background color of the header
+                  },
+                  headerTintColor: "white",
+                }}
+              />
+
+              <BottomTab.Screen
+                name="Events"
+                component={EventStackScreen}
+                options={{
+                  tabBarIcon: ({ focused }) => (
+                    <MaterialCommunityIcons
+                      name="ticket-percent"
+                      size={20}
+                      color={focused ? "black" : "white"}
                     />
                   ),
                   tabBarLabel: () => null,
