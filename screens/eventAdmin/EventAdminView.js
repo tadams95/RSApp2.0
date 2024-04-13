@@ -26,7 +26,7 @@ import { BarCodeScanner } from "expo-barcode-scanner";
 import { CameraView, Camera } from "expo-camera/next";
 
 export default function EventAdminView({ visible, event, toggleModal }) {
-  const [scanningAllowed, setScanningAllowed] = useState(false);
+  const [scanningAllowed, setScanningAllowed] = useState(true);
   const [showScanner, setShowScanner] = useState(false);
   const [hasPermission, setHasPermission] = useState(null);
 
@@ -81,7 +81,7 @@ export default function EventAdminView({ visible, event, toggleModal }) {
         let hasActiveTickets = false;
 
         // Iterate through all documents that match the query
-        querySnapshot.forEach(async (docSnapshot) => {
+        for (const docSnapshot of querySnapshot.docs) {
           const ragerDoc = docSnapshot.data();
 
           // Check if the ticket is active
@@ -89,8 +89,9 @@ export default function EventAdminView({ visible, event, toggleModal }) {
             hasActiveTickets = true;
             // Update the active field of the document to false
             await updateDoc(doc(ragersRef, docSnapshot.id), { active: false });
+            break; // Break out of the loop after deactivating the first active ticket
           }
-        });
+        }
 
         // Provide feedback to the admin user
         if (hasActiveTickets) {
@@ -196,13 +197,13 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontFamily,
     color: "white",
-    fontWeight: "500"
+    fontWeight: "500",
   },
   label: {
     fontFamily,
     color: "white",
     marginVertical: 5,
-    fontWeight: "500"
+    fontWeight: "500",
   },
   eventImage: {
     height: 200,
@@ -213,7 +214,7 @@ const styles = StyleSheet.create({
   scanner: {
     height: 200,
     width: 200,
-    marginVertical: 10
+    marginVertical: 10,
   },
   button: {
     backgroundColor: "#000",
@@ -229,6 +230,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontFamily,
     color: "white",
-    fontWeight: "500"
+    fontWeight: "500",
   },
 });

@@ -243,6 +243,7 @@ const styles = StyleSheet.create({
     marginTop: Dimensions.get("window").height * 0.07,
     backgroundColor: "#000",
     alignItems: "center",
+    marginVertical: 20
   },
   headline: {
     fontFamily,

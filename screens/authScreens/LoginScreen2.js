@@ -138,7 +138,7 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
       setPassword("");
       setAuthenticated(true);
       setIsAuthenticating(false);
-    } catch {
+    } catch (error) {
       console.error("Error during login:", error); // Log the error for debugging purposes
 
       let errorMessage = "An error occurred while logging in.";

@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     fontFamily,
     textAlign: "center",
     color: "white",
-    fontWeight: "500"
+    fontWeight: "500",
   },
   profilePicture: {
     width: 190,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 10,
     color: "white",
-    fontWeight: "500"
+    fontWeight: "500",
   },
   editProfileButton: {
     margin: 10,
