@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Text,
   View,
@@ -12,6 +12,8 @@ import {
   Alert,
   Platform,
 } from "react-native";
+
+import { CheckBox } from "@rneui/themed";
 
 import { useDispatch, useSelector } from "react-redux";
 
@@ -33,6 +35,8 @@ import { loginUser } from "../../util/auth";
 import LoadingOverlay from "../../ui/LoadingOverlay";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 const API_URL =
   "https://us-central1-ragestate-app.cloudfunctions.net/stripePayment";
 
@@ -42,6 +46,7 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const userName = useSelector(selectUserName);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const dispatch = useDispatch();
 
@@ -51,26 +56,49 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
     setShowForgotPasswordModal(true);
   };
 
-  if (showForgotPasswordModal) {
-    return (
-      <ForgotPasswordModal
-        visible={showForgotPasswordModal}
-        onClose={() => setShowForgotPasswordModal(false)}
-      />
-    );
-  }
-
-  if (isAuthenticating) {
-    return <LoadingOverlay message="Logging you in..." />;
-  }
-
   const cancelHandler = () => {
     navigation.goBack();
   };
+  useEffect(() => {
+    const loadSavedCredentials = async () => {
+      try {
+        const savedEmail = await AsyncStorage.getItem("email");
+        const savedPassword = await AsyncStorage.getItem("password");
+
+        if (savedEmail && savedPassword) {
+          setEmail(savedEmail);
+          setPassword(savedPassword);
+          setRememberMe(true);
+        }
+      } catch (error) {
+        console.error("Error loading saved login credentials:", error);
+      }
+    };
+
+    loadSavedCredentials();
+  }, []);
 
   const loginHandler = async () => {
     // Get a reference to the database
     const db = getDatabase();
+
+    if (rememberMe) {
+      // Save the login credentials (email and password) securely
+      try {
+        await AsyncStorage.setItem("email", email);
+        await AsyncStorage.setItem("password", password);
+      } catch (error) {
+        console.error("Error saving login credentials:", error);
+      }
+    } else {
+      // Clear the saved login credentials if "Remember Me" is not selected
+      try {
+        await AsyncStorage.removeItem("email");
+        await AsyncStorage.removeItem("password");
+      } catch (error) {
+        console.error("Error removing saved login credentials:", error);
+      }
+    }
 
     try {
       setIsAuthenticating(true);
@@ -154,6 +182,18 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
       setIsAuthenticating(false);
     }
   };
+  if (showForgotPasswordModal) {
+    return (
+      <ForgotPasswordModal
+        visible={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+      />
+    );
+  }
+
+  if (isAuthenticating) {
+    return <LoadingOverlay message="Logging you in..." />;
+  }
 
   return (
     <KeyboardAvoidingView style={styles.container}>
@@ -185,6 +225,20 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
               value={password}
             />
           </View>
+
+          <CheckBox
+            title="Remember Me"
+            fontFamily={fontFamily}
+            checked={rememberMe}
+            center
+            iconType="material-community"
+            checkedIcon="checkbox-marked"
+            uncheckedIcon="checkbox-blank-outline"
+            checkedColor="white" // Adjusted color to match the theme
+            containerStyle={styles.checkBoxContainer} // Added containerStyle prop
+            textStyle={styles.checkBoxText} // Added textStyle prop
+            onPress={() => setRememberMe(!rememberMe)}
+          />
 
           {/* Tab Container */}
           <View style={styles.tabContainer}>
@@ -255,7 +309,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-evenly",
     alignItems: "center",
-    marginTop: 25,
+    marginTop: 15,
     marginBottom: 15,
   },
   tabButton: {
@@ -295,5 +349,15 @@ const styles = StyleSheet.create({
     width: 100,
     alignSelf: "center",
     marginVertical: Dimensions.get("window").height * 0.05,
+  },
+  checkBoxContainer: {
+    backgroundColor: "transparent", // Set background to transparent
+    borderWidth: 0, // Remove border
+    paddingHorizontal: 0, // Adjust horizontal padding
+    marginVertical: 10, // Adjust vertical margin
+  },
+  checkBoxText: {
+    color: "white", // Adjust text color to match the theme
+    marginLeft: 10, // Adjust left margin to add space between the checkbox and text
   },
 });
