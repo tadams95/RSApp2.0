@@ -46,7 +46,15 @@ export async function createUser(
 
     return response.data; // You might want to return the response data for further processing
   } catch (error) {
-    console.error("Error creating user:", error.response.data);
+    // console.error("Error creating user:", error.response.data);
+
+    if (error.response && error.response.data && error.response.data.error) {
+      const errorCode = error.response.data.error.message;
+      if (errorCode === "EMAIL_EXISTS") {
+        throw new Error("Email exists, please try logging in or forgot password.");
+      }
+    }
+
     throw new Error("Error creating user"); // You might want to throw an error for the calling code to handle
   }
 }

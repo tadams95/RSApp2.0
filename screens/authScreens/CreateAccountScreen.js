@@ -10,7 +10,7 @@ import {
   Pressable,
   ScrollView,
   Alert,
-  Image
+  Image,
 } from "react-native";
 
 import { createUser, loginUser } from "../../util/auth";
@@ -126,8 +126,9 @@ export default function CreateAccountScreen({ navigation, setAuthenticated }) {
     } catch (error) {
       // Handle errors
       if (error.response && error.response.data && error.response.data.error) {
-        const errorCode = error.response.data.error.code;
-        if (errorCode === "EMAIL_EXISTS") {
+        const errorMessage = error.response.data.error.message;
+
+        if (errorMessage === "EMAIL_EXISTS") {
           Alert.alert(
             "Email already exists",
             "Please log in or use a different email."
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
     marginTop: Dimensions.get("window").height * 0.07,
     backgroundColor: "#000",
     alignItems: "center",
-    marginVertical: 20
+    marginVertical: 20,
   },
   headline: {
     fontFamily,
