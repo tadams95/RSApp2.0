@@ -39,7 +39,11 @@ import {
 } from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
 
-import { StripeProvider, useStripe } from "@stripe/stripe-react-native";
+import {
+  StripeProvider,
+  useStripe,
+  AddressSheet,
+} from "@stripe/stripe-react-native";
 
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
@@ -63,6 +67,8 @@ export default function CartScreen() {
   const [loading, setLoading] = useState(false);
   const [paymentSheetInitialized, setPaymentSheetInitialized] = useState(false);
   const [stripePaymentIntent, setStripePaymentIntent] = useState("");
+  const [showAddressSheet, setShowAddressSheet] = useState(false);
+  const [addressDetails, setAddressDetails] = useState(null);
 
   const API_URL =
     "https://us-central1-ragestate-app.cloudfunctions.net/stripePayment";
@@ -95,9 +101,36 @@ export default function CartScreen() {
   const cancelClearCart = () => {
     setClearConfirmationModalVisible(false);
   };
-
-  const fetchPaymentSheetParams = async () => {
+  const sendPurchaseNotification = async () => {
     try {
+      // Schedule a notification to be sent to the user
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Thanks for your purchase!",
+          body: "Your purchase details can be found in your Account History.",
+        },
+        trigger: null, // Set to null to trigger immediately, otherwise set a future trigger
+      });
+    } catch (error) {
+      console.error("Error sending push notification:", error);
+      throw new Error("Failed to send push notification");
+    }
+  };
+
+  const fetchPaymentSheetParams = async (addressDetails) => {
+    try {
+      const { address } = addressDetails; // Extract the address object from addressDetails
+      const shipping = {
+        address: {
+          city: address.city,
+          country: address.country,
+          line1: address.line1,
+          line2: address.line2,
+          postal_code: address.postalCode,
+          state: address.state,
+        },
+      };
+
       const response = await fetch(`${API_URL}/payment-sheet`, {
         method: "POST",
         headers: {
@@ -107,8 +140,8 @@ export default function CartScreen() {
           amount: amount,
           name: userName,
           customerEmail: userEmail,
-          description: firebaseId,
           firebaseId,
+          shipping: shipping, // Pass the shipping object to Stripe
         }),
       });
 
@@ -139,10 +172,25 @@ export default function CartScreen() {
     }
   };
 
-  const initializePaymentSheet = async () => {
+  const initializePaymentSheet = async (addressDetails) => {
     try {
+      if (!addressDetails) {
+        addressDetails = {
+          address: {
+            city: "null",
+            country: "null",
+            line1: "null",
+            line2: "null",
+            postalCode: "null",
+            state: "null",
+          },
+          name: userName,
+          phone: "null",
+        };
+      }
+
       const { paymentIntent, ephemeralKey, customer, paymentIntentPrefix } =
-        await fetchPaymentSheetParams();
+        await fetchPaymentSheetParams(addressDetails);
 
       const { error } = await initPaymentSheet({
         merchantDisplayName: "RAGESTATE",
@@ -154,6 +202,18 @@ export default function CartScreen() {
         applePay: {
           merchantCountryCode: "US",
         },
+        defaultShippingDetails: {
+          address: {
+            city: addressDetails.address.city,
+            country: addressDetails.address.country,
+            line1: addressDetails.address.line1,
+            line2: addressDetails.address.line2,
+            postal_code: addressDetails.address.postalCode,
+            state: addressDetails.address.state,
+          },
+          name: addressDetails.name,
+          phone: addressDetails.phone,
+        }, // Pass the shipping object to Stripe
         appearance: {
           colors: {
             primary: "#000000",
@@ -184,7 +244,7 @@ export default function CartScreen() {
     }
   };
 
-  const openPaymentSheet = async (paymentIntentPrefix) => {
+  const openPaymentSheet = async (paymentIntentPrefix, addressDetails) => {
     try {
       const { error } = await presentPaymentSheet();
 
@@ -207,6 +267,7 @@ export default function CartScreen() {
           email: userEmail,
           name: userName,
           stripeId: stripeCustomerId.customerId,
+          addressDetails: addressDetails,
           cartItems: cartItems.map((item) => {
             const {
               title,
@@ -279,47 +340,74 @@ export default function CartScreen() {
     }
   };
 
-  const sendPurchaseNotification = async () => {
-    try {
-      // Schedule a notification to be sent to the user
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Thanks for your purchase!",
-          body: "Your purchase details can be found in your Account History.",
-        },
-        trigger: null, // Set to null to trigger immediately, otherwise set a future trigger
-      });
-    } catch (error) {
-      console.error("Error sending push notification:", error);
-      throw new Error("Failed to send push notification");
-    }
-  };
-
   const handleCheckout = async () => {
     const totalPriceInCents = Math.round(totalPrice * 100); // Convert dollars to cents
     dispatch(setCheckoutPrice(totalPriceInCents));
 
     try {
-      // Initialize payment sheet and fetch payment intent prefix
-      const { paymentIntentPrefix } = await initializePaymentSheet();
+      if (hasClothingItems) {
+        // If there are clothing items, first present the address sheet
+        setShowAddressSheet(true);
 
-      // Open payment sheet with the retrieved payment intent prefix
-      await openPaymentSheet(paymentIntentPrefix);
+        // Wait for the address sheet submission
+        const addressDetails = await new Promise((resolve) => {
+          // Add a callback function to execute when the address sheet is submitted
+          onSubmitAddressSheet = resolve;
+        });
+
+        // Initialize payment sheet and fetch payment intent prefix
+        const { paymentIntentPrefix } = await initializePaymentSheet(
+          addressDetails
+        );
+
+        // Open payment sheet with the retrieved payment intent prefix and addressDetails
+        await openPaymentSheet(paymentIntentPrefix, addressDetails);
+      } else {
+        // Initialize payment sheet and fetch payment intent prefix
+        const { paymentIntentPrefix } = await initializePaymentSheet(
+          addressDetails
+        );
+
+        // Open payment sheet with the retrieved payment intent prefix
+        await openPaymentSheet(paymentIntentPrefix, addressDetails);
+      }
     } catch (error) {
       console.error("Error handling checkout:", error);
       // Display error message to the user or retry checkout
     }
   };
 
+  // Function to check if there are clothing items in the cart
+  const hasClothingItems = cartItems.some((item) => !item.eventDetails);
+
+  const primaryAddyStyle = Platform.select({
+    ios: "#222222",
+    android: "#2e2e2e",
+    default: "system",
+  });
+
+  const backgroundAddyStyle = Platform.select({
+    ios: "#000000",
+    android: "#F7F7F7",
+    default: "system",
+  });
+
+  const primaryText = Platform.select({
+    ios: "#FFFFFF",
+    android: "#222222",
+    default: "system",
+  });
+
   return (
     <StripeProvider
       publishableKey=""
-      merchantIdentifier="merchant.com.tyrelle.ragestate-beta"
+      merchantIdentifier=""
     >
       <View style={styles.container}>
         {cartItems.length === 0 ? (
           <View style={styles.emptyCartContainer}>
             <Text style={styles.subtitle2}>Your Cart is currently empty</Text>
+
             <MaterialCommunityIcons
               name="cart-arrow-down"
               color={"white"}
@@ -382,6 +470,53 @@ export default function CartScreen() {
                 })}
               </ScrollView>
             )}
+
+            {checkoutInProgress &&
+              hasClothingItems && ( // Show AddressSheet only if there are clothing items
+                <AddressSheet
+                  visible={showAddressSheet}
+                  onSubmit={async (addressDetails) => {
+                    // Make sure to set `visible` back to false to dismiss the address element.
+                    setShowAddressSheet(false);
+                    // console.log(addressDetails);
+
+                    // Handle result and update your UI
+                    onSubmitAddressSheet(addressDetails); // Resolve the promise to continue with checkout
+                  }}
+                  onError={
+                    (error) => {
+                      // Alert.alert(
+                      //   "There was an error.",
+                      //   "Check the logs for details."
+                      // );
+                      console.log(error);
+                    }
+                    // Make sure to set `visible` back to false to dismiss the address element.
+                  }
+                  appearance={{
+                    colors: {
+                      primary: { primaryAddyStyle },
+                      background: { backgroundAddyStyle },
+                      secondaryText: "#000000",
+                      primaryText: { primaryText },
+                    },
+                  }}
+                  defaultValues={{
+                    phone: "111-222-3333",
+                    address: {
+                      country: "United States",
+                      city: "San Diego",
+                      state: "California",
+                    },
+                  }}
+                  additionalFields={{
+                    phoneNumber: "required",
+                  }}
+                  allowedCountries={["US"]}
+                  primaryButtonTitle={"Use this address"}
+                  sheetTitle={"Shipping Address"}
+                />
+              )}
 
             {checkoutInProgress && (
               <View style={styles.bottomButtonContainer}>
@@ -549,7 +684,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 15,
     textAlign: "center",
-    fontWeight: "500"
+    fontWeight: "500",
   },
 
   modalButtonsContainer: {
@@ -575,7 +710,7 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontFamily,
     color: "white",
-    fontWeight: "500"
+    fontWeight: "500",
   },
   bottomButtonContainer: {
     position: "absolute",

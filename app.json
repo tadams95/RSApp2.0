@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
-      "buildNumber": "36"
+      "buildNumber": "37"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,7 +29,7 @@
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.tyrelle.ragestate",
-      "versionCode": 4
+      "versionCode": 5
     },
     "web": {
       "favicon": "./assets/RSLogoNew.png"

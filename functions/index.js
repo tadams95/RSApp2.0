@@ -43,7 +43,8 @@ app.post("/create-customer", async (req, res) => {
 
 app.post("/payment-sheet", async (req, res) => {
   try {
-    const { amount, customerEmail, name, firebaseId } = req.body;
+    const { amount, customerEmail, name, firebaseId, addressDetails } =
+      req.body;
 
     let customer;
 
@@ -80,6 +81,7 @@ app.post("/payment-sheet", async (req, res) => {
       customer: customer.id,
       description: "Thanks for RAGING with us.",
       receipt_email: customerEmail,
+      shipping: addressDetails,
       automatic_payment_methods: {
         enabled: true,
       },
