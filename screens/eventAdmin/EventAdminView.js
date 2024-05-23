@@ -22,8 +22,7 @@ import {
   doc,
 } from "firebase/firestore";
 
-import { BarCodeScanner } from "expo-barcode-scanner";
-import { CameraView, Camera } from "expo-camera/next";
+import { CameraView, Camera } from "expo-camera";
 
 export default function EventAdminView({ visible, event, toggleModal }) {
   const [scanningAllowed, setScanningAllowed] = useState(true);

@@ -26,8 +26,8 @@ import { getDatabase, ref, get } from "firebase/database";
 
 import { getAuth } from "firebase/auth";
 
-import { BarCodeScanner } from "expo-barcode-scanner";
-import { CameraView, Camera } from "expo-camera/next";
+
+import { CameraView, Camera } from "expo-camera";
 import * as Notifications from "expo-notifications";
 
 import { GlobalStyles } from "../../constants/styles";
