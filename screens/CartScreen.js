@@ -400,7 +400,12 @@ export default function CartScreen() {
   });
 
   return (
-    <StripeProvider publishableKey="" merchantIdentifier="">
+    <StripeProvider
+      publishableKey={
+        "pk_live_51NFhuOHnXmOBmfaDu16tJEuppfYKPUivMapB9XLXaBpiOLqiPRz2uoPAiifxqiLT49dyPCHOSKs74wjBspzJ8zo600yGYluqUe"
+      }
+      merchantIdentifier="merchant.com.tyrelle.ragestate-beta"
+    >
       <View style={styles.container}>
         {cartItems.length === 0 ? (
           <View style={styles.emptyCartContainer}>
@@ -596,7 +601,7 @@ const styles = StyleSheet.create({
   emptyCartContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop:  Dimensions.get("window").height * 0.35,
+    marginTop: Dimensions.get("window").height * 0.35,
   },
   productContainer: {
     flexDirection: "row",

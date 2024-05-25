@@ -95,7 +95,7 @@ app.post("/payment-sheet", async (req, res) => {
       ephemeralKey: ephemeralKey.secret,
       customer: customer.id,
       publishableKey:
-        "pk_test_51NFhuOHnXmOBmfaDAdOEefavmmfZzMX4F0uOpbvrK1P49isqVY6uBUDeXnCqNjiu6g89dh9CMZj7wDOAFLX5z93t007GOWlK8e",
+        "pk_live_51NFhuOHnXmOBmfaDu16tJEuppfYKPUivMapB9XLXaBpiOLqiPRz2uoPAiifxqiLT49dyPCHOSKs74wjBspzJ8zo600yGYluqUe",
     });
   } catch (error) {
     console.error("Error creating payment sheet:", error);

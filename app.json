@@ -2,7 +2,7 @@
   "expo": {
     "name": "RAGESTATE",
     "slug": "ragestate-app",
-    "version": "2.0.0",
+    "version": "2.39.0",
     "orientation": "portrait",
     "icon": "./assets/RSLogo.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
-      "buildNumber": "37"
+      "buildNumber": "38"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,7 +29,7 @@
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.tyrelle.ragestate",
-      "versionCode": 5
+      "versionCode": 7
     },
     "web": {
       "favicon": "./assets/RSLogoNew.png"
