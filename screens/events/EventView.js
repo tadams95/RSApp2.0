@@ -8,7 +8,8 @@ import {
   Pressable,
   Linking,
   Platform,
-  Modal
+  Modal,
+  Dimensions,
 } from "react-native";
 
 import { addToCart } from "../../store/redux/cartSlice";
@@ -16,7 +17,6 @@ import { useDispatch } from "react-redux";
 
 import { collection, getDocs } from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
-
 
 import { GlobalStyles } from "../../constants/styles";
 
@@ -153,6 +153,8 @@ export default function EventView({ route }) {
     </View>
   );
 }
+const windowHeight = Dimensions.get("window").height;
+const windowWidth = Dimensions.get("window").width;
 
 const fontFamily = Platform.select({
   ios: "Helvetica Neue",
@@ -174,7 +176,7 @@ const styles = StyleSheet.create({
     borderColor: "white",
   },
   eventImage: {
-    height: 400,
+    height: windowWidth > 600 ? windowHeight * 0.7 : windowHeight * 0.4,
     width: "auto",
     borderRadius: 8,
     marginBottom: 5,

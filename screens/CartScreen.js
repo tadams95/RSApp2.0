@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
   emptyCartContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: "77%",
+    marginTop:  Dimensions.get("window").height * 0.35,
   },
   productContainer: {
     flexDirection: "row",
