@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Dimensions,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 
@@ -399,10 +400,7 @@ export default function CartScreen() {
   });
 
   return (
-    <StripeProvider
-      publishableKey=""
-      merchantIdentifier=""
-    >
+    <StripeProvider publishableKey="" merchantIdentifier="">
       <View style={styles.container}>
         {cartItems.length === 0 ? (
           <View style={styles.emptyCartContainer}>
@@ -607,15 +605,18 @@ const styles = StyleSheet.create({
   },
   image: {
     height: 145,
-    width: 145,
+    width: Dimensions.get("window").width * 0.4, // Adjust as needed based on your layout
+    aspectRatio: 1, // Maintain aspect ratio
+
     borderRadius: 8,
 
     marginRight: 16,
     padding: 10,
   },
   detailsContainer: {
-    flex: 1,
-    marginLeft: 10,
+    flex: 1, // Occupy remaining space
+    marginLeft: Dimensions.get("window").width * 0.15, // Add some left margin for spacing
+    justifyContent: "flex-start", // Align contents to the start (top) of the container
   },
   title: {
     fontFamily,

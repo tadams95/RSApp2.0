@@ -165,6 +165,7 @@ export default function HomeScreen() {
 }
 
 const windowHeight = Dimensions.get("window").height;
+const windowWidth = Dimensions.get("window").width;
 
 const fontFamily = Platform.select({
   ios: "Helvetica Neue",
@@ -219,11 +220,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   heroImage: {
-    height: windowHeight * 0.39, // Adjust height dynamically
+    height: windowWidth > 600 ? windowHeight * 0.6 : windowHeight * 0.39, // Adjust height dynamically based on screen size
     width: "100%",
     resizeMode: "cover",
   },
   pressed: {
     opacity: 0.5,
+  },
+  pressable: {
+    width: "90%", // Adjust width to be responsive
+    marginVertical: 10, // Add some margin for spacing
   },
 });

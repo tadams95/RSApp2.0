@@ -8,6 +8,7 @@ import {
   Pressable,
   Image,
   Platform,
+  Dimensions,
 } from "react-native";
 
 import { db } from "../../firebase/firebase";
@@ -128,7 +129,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     alignItems: "center",
     color: "white",
-    fontWeight: "500"
+    fontWeight: "500",
   },
   subtitle: {
     fontFamily,
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
     color: "white",
   },
   eventImage: {
-    height: 400,
+    height: Dimensions.get("window").height * 0.45,
     width: "100%",
     alignSelf: "center",
     borderRadius: 8,
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: "center",
     color: "white",
-    fontWeight: "500"
+    fontWeight: "500",
   },
   headline: {
     fontFamily,

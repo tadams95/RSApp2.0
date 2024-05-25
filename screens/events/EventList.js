@@ -8,6 +8,7 @@ import {
   View,
   Pressable,
   Platform,
+  Dimensions
 } from "react-native";
 import { GlobalStyles } from "../../constants/styles";
 import { useNavigation } from "@react-navigation/native";
@@ -126,7 +127,7 @@ const styles = StyleSheet.create({
     color: "white",
   },
   eventImage: {
-    height: 400,
+    height: Dimensions.get("window").width * 1,
     width: "100%",
     alignSelf: "center",
     borderRadius: 8,

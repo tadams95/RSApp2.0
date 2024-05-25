@@ -7,6 +7,7 @@ import {
   Pressable,
   Alert,
   Platform,
+  Dimensions
 } from "react-native";
 
 import React, { useState, useEffect } from "react";
@@ -205,14 +206,14 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   eventImage: {
-    height: 200,
-    width: "50%",
+    height:  Dimensions.get("window").width * 0.45,
+    width:  Dimensions.get("window").width * 0.45,
     alignSelf: "center",
     borderRadius: 8,
   },
   scanner: {
-    height: 200,
-    width: 200,
+    height:  Dimensions.get("window").width * 0.45,
+    width:  Dimensions.get("window").width * 0.45,
     marginVertical: 10,
   },
   button: {

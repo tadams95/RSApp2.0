@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Platform } from "react-native";
+import { StyleSheet, Text, View, Platform, Dimensions } from "react-native";
 import { useSelector } from "react-redux";
 
 import QRCode from "react-native-qrcode-svg";
@@ -9,11 +9,13 @@ export default function QRCodeModal() {
   // Access the localId from the Redux store
   const localId = useSelector((state) => state.user.localId);
 
+  const size = Dimensions.get("window").width * 0.45;
+
   return (
     <View style={styles.QRCodeContainer}>
       <Text style={styles.headline}>Show code to enter RAGESTATE events</Text>
       <View style={styles.QRBackground}>
-        <QRCode value={localId} size={175} logo={logo} logoSize={50} />
+        <QRCode value={localId} size={size} logo={logo} logoSize={50} />
       </View>
       <MyEvents />
     </View>
@@ -33,7 +35,7 @@ const styles = StyleSheet.create({
   },
   QRBackground: {
     backgroundColor: "white",
-    padding: 10,
+    padding: 5,
     borderWidth: 1,
     borderRadius: 8,
   },
@@ -43,6 +45,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginBottom: 15,
     color: "white",
-    fontWeight: "500"
+    fontWeight: "500",
   },
 });

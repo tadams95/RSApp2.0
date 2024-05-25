@@ -9,6 +9,7 @@ import {
   Alert,
   Modal,
   Platform,
+  Dimensions,
 } from "react-native";
 import { GlobalStyles } from "../../constants/styles";
 import { useDispatch } from "react-redux";
@@ -114,6 +115,7 @@ export default function ProductDetailScreen({ route }) {
               height: 12,
               borderRadius: 6,
             }}
+            style={{ height: Dimensions.get("window").width * 0.6 }} // Adjust height dynamically
           >
             {images &&
               images.map((image, index) => (
@@ -339,6 +341,9 @@ export default function ProductDetailScreen({ route }) {
   );
 }
 
+const windowHeight = Dimensions.get("window").height;
+const windowWidth = Dimensions.get("window").width;
+
 const fontFamily = Platform.select({
   ios: "Helvetica Neue",
   android: "Roboto",
@@ -356,8 +361,8 @@ const styles = StyleSheet.create({
   },
   images: {
     width: "100%",
-    height: "100%",
-    overflow: "hidden",
+    height: "90%",
+    resizeMode: "cover", // Maintain aspect ratio and cover the entire container
     borderRadius: 10,
   },
   imageContainer: {
@@ -392,7 +397,7 @@ const styles = StyleSheet.create({
   },
   swiperContainer: {
     width: "100%",
-    height: 400,
+    height: Dimensions.get("window").width * .87,
   },
   variantsContainer: {
     marginVertical: 20,

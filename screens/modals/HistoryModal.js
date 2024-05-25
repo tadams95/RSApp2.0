@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Image, StyleSheet, Platform } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  Platform,
+  Dimensions,
+} from "react-native";
 import { useSelector } from "react-redux";
 import { selectLocalId } from "../../store/redux/userSlice";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
@@ -145,7 +152,7 @@ const styles = StyleSheet.create({
   },
   productImage: {
     width: "100%",
-    height: 200,
+    height: Dimensions.get("window").width * 0.42,
     borderRadius: 8,
   },
 });

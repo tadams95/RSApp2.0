@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   Platform,
+  Dimensions,
 } from "react-native";
 import React, { useLayoutEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -114,6 +115,9 @@ export default function ShopScreen() {
   );
 }
 
+const windowHeight = Dimensions.get("window").height;
+const windowWidth = Dimensions.get("window").width;
+
 const fontFamily = Platform.select({
   ios: "Helvetica Neue",
   android: "Roboto",
@@ -134,7 +138,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingTop: 8,
     color: "white",
-    fontWeight: "500"
+    fontWeight: "500",
   },
   price: {
     fontFamily,
@@ -143,7 +147,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   image: {
-    height: 200,
+    height: windowWidth > 600 ? 375 : 200, // Adjust height dynamically based on screen size
     width: "100%",
     alignSelf: "center",
     borderRadius: 8,

@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   Platform,
+  Dimensions,
 } from "react-native";
 
 import React, { useState, useEffect } from "react";
@@ -249,8 +250,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   profilePicture: {
-    width: 190,
-    height: 190,
+    width: Dimensions.get("window").width * 0.45,
+    height: Dimensions.get("window").width * 0.45,
     borderRadius: 10,
     marginTop: 10,
   },

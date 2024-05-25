@@ -1,10 +1,8 @@
-const functions = require("firebase-functions");
+const functions = require("firebase-functions/v1");
 const express = require("express");
 const app = express();
 
 const stripe = require("stripe")();
-// This example sets up an endpoint using the Express framework.
-// Watch this video to get started: https://youtu.be/rPR2aJ6XnAc.
 
 app.post("/create-customer", async (req, res) => {
   try {
