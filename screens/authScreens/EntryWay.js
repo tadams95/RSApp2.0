@@ -6,6 +6,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import WelcomeScreen from "./WelcomeScreen";
 import LoginScreen2 from "./LoginScreen2";
 import CreateAccountScreen from "./CreateAccountScreen";
+import GuestView from "../guest/GuestView";
 
 const AuthStack = createStackNavigator();
 
@@ -44,6 +45,18 @@ const EntryWay = ({ setAuthenticated }) => {
               {...props}
               setAuthenticated={setAuthenticated}
             />
+          )}
+        </AuthStack.Screen>
+        <AuthStack.Screen
+          name="GuestView"
+          options={({ route }) => ({
+            headerShown: false,
+            cardStyle: { backgroundColor: "#000" },
+            setAuthenticated: route.params?.setAuthenticated,
+          })}
+        >
+          {(props) => (
+            <GuestView {...props} setAuthenticated={setAuthenticated} />
           )}
         </AuthStack.Screen>
       </AuthStack.Navigator>
