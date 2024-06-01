@@ -1,22 +1,21 @@
+import React, { useState, useLayoutEffect } from "react";
+
 import {
-  StyleSheet,
-  Text,
   View,
-  Image,
-  Pressable,
-  ScrollView,
-  Platform,
+  Text,
+  StyleSheet,
   Dimensions,
+  Platform,
+  ScrollView,
+  Pressable,
+  Image,
 } from "react-native";
-import React, { useLayoutEffect, useState } from "react";
-import { useNavigation } from "@react-navigation/native";
-import { GlobalStyles } from "../constants/styles";
+import { GlobalStyles } from "../../constants/styles";
 
-import fetchShopifyProducts from "../shopify/shopifyService";
+import fetchShopifyProducts from "../../shopify/shopifyService";
 
-export default function ShopScreen() {
+export default function GuestShop({ navigation, setAuthenticated }) {
   const [products, setProducts] = useState([]);
-  const navigation = useNavigation();
 
   function handleProductPress(product) {
     const serializeObject = (obj) => {

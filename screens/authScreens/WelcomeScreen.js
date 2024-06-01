@@ -24,8 +24,8 @@ export default function WelcomeScreen() {
   };
 
   const handleGuest = () => {
-    console.log("Improve GuestView");
-     navigation.navigate("GuestView")
+   // Navigate to Guest Stack
+     navigation.navigate("GuestTabsScreen")
   };
 
   return (

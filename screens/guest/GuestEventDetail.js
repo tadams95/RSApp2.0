@@ -1,10 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
 
-export default function GuestView({ navigation, setAuthenticated }) {
+export default function GuestEventDetail({ navigation, setAuthenticated }) {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>This is the GuestView</Text>
+      <Text style={styles.text}>This is the TestGuestShop</Text>
     </View>
   );
 }
