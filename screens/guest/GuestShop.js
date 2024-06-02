@@ -71,7 +71,7 @@ export default function GuestShop({ navigation, setAuthenticated }) {
       // Add other necessary data here
     };
 
-    navigation.navigate("ProductDetailScreen", { data: serializedProduct });
+    navigation.navigate("GuestProductDetail", { data: serializedProduct });
   }
 
   useLayoutEffect(() => {

@@ -12,7 +12,7 @@ import CreateAccountScreen from "./CreateAccountScreen";
 import GuestShop from "../guest/GuestShop";
 import GuestProductDetail from "../guest/GuestProductDetail";
 import GuestEvent from "../guest/GuestEvent";
-import GuestEventDetail from "../guest/GuestEventDetail";
+import GuestEventView from "../guest/GuestEventView";
 
 const AuthStack = createStackNavigator();
 const GuestTabs = createBottomTabNavigator();
@@ -75,11 +75,11 @@ const GuestEventStackScreen = () => {
       />
 
       <GuestEventStack.Screen
-        name="GuestProductDetail"
-        component={GuestEventDetail}
+        name="GuestEventView"
+        component={GuestEventView}
         options={({ navigation, route }) => ({
           headerLeft: () =>
-            backButton(navigation, route.name === "GuestEventDetail"),
+            backButton(navigation, route.name === "GuestEventView"),
           headerShown: false,
           headerTitle: "",
         })}

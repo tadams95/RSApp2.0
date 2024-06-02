@@ -15,7 +15,6 @@ import { GlobalStyles } from "../../constants/styles";
 import { useDispatch } from "react-redux";
 import { addToCart } from "../../store/redux/cartSlice";
 
-// import Modal from "react-native-modal";
 import Swiper from "react-native-swiper";
 
 export default function ProductDetailScreen({ route }) {
@@ -118,7 +117,7 @@ export default function ProductDetailScreen({ route }) {
               height: 12,
               borderRadius: 6,
             }}
-            style={{ height: Dimensions.get("window").width * 0.6 }} // Adjust height dynamically
+            style={{ height: Dimensions.get("window").width * 0.9 }} // Adjust height dynamically
           >
             {images &&
               images.map((image, index) => (

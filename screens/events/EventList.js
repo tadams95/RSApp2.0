@@ -9,6 +9,7 @@ import {
   Pressable,
   Platform,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { GlobalStyles } from "../../constants/styles";
 import { useNavigation } from "@react-navigation/native";
@@ -22,6 +23,7 @@ import { format } from "date-fns";
 export default function EventList() {
   const navigation = useNavigation();
   const [events, setEvents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -42,6 +44,9 @@ export default function EventList() {
         setEvents(eventData);
       } catch (error) {
         console.error("Error fetching event data:", error);
+      } finally {
+        // Once data fetching is complete, set isLoading to false
+        setIsLoading(false);
       }
     };
 
@@ -60,9 +65,14 @@ export default function EventList() {
   };
 
   return (
-    <ScrollView style={{ backgroundColor: "black", flex: 1 }}>
+    <ScrollView style={{ backgroundColor: "black" }}>
       <View style={styles.container}>
-        {events.length === 0 ? (
+        {/* Conditional rendering based on isLoading state */}
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFF" />
+          </View>
+        ) : events.length === 0 ? (
           <View style={styles.noEventsContainer}>
             <Text style={styles.noEventsText}>No Events At This Time</Text>
           </View>
@@ -157,5 +167,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: Dimensions.get("window").height * 0.33,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: Dimensions.get("window").height * 0.34,
   },
 });

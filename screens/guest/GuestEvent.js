@@ -9,6 +9,7 @@ import {
   Pressable,
   Platform,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 
 import { GlobalStyles } from "../../constants/styles";
@@ -20,6 +21,7 @@ import { format } from "date-fns";
 
 export default function GuestEvent({ navigation, setAuthenticated }) {
   const [events, setEvents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -40,6 +42,9 @@ export default function GuestEvent({ navigation, setAuthenticated }) {
         setEvents(eventData);
       } catch (error) {
         console.error("Error fetching event data:", error);
+      } finally {
+        // Once data fetching is complete, set isLoading to false
+        setIsLoading(false);
       }
     };
 
@@ -52,7 +57,7 @@ export default function GuestEvent({ navigation, setAuthenticated }) {
       event.dateTime.toDate(),
       "MMM dd, yyyy hh:mm a"
     );
-    navigation.navigate("EventView", {
+    navigation.navigate("GuestEventView", {
       eventData: { ...event, dateTime: formattedDateTime },
     });
   };
@@ -60,7 +65,12 @@ export default function GuestEvent({ navigation, setAuthenticated }) {
   return (
     <ScrollView style={{ backgroundColor: "black" }}>
       <View style={styles.container}>
-        {events.length === 0 ? (
+        {/* Conditional rendering based on isLoading state */}
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFF" />
+          </View>
+        ) : events.length === 0 ? (
           <View style={styles.noEventsContainer}>
             <Text style={styles.noEventsText}>No Events At This Time</Text>
           </View>
@@ -155,5 +165,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: Dimensions.get("window").height * 0.65,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: Dimensions.get("window").height * 0.675,
   },
 });
