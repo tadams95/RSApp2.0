@@ -8,7 +8,7 @@ import {
   View,
   Pressable,
   Platform,
-  Dimensions
+  Dimensions,
 } from "react-native";
 import { GlobalStyles } from "../../constants/styles";
 import { useNavigation } from "@react-navigation/native";
@@ -60,23 +60,32 @@ export default function EventList() {
   };
 
   return (
-    <ScrollView>
+    <ScrollView style={{ backgroundColor: "black", flex: 1 }}>
       <View style={styles.container}>
-        {events.reverse().map((event, index) => (
-          <View key={index} style={styles.eventContainer}>
-            <Pressable
-              onPress={() => handleEventPress(event)}
-              style={({ pressed }) => pressed && styles.pressed}
-            >
-              <Image source={{ uri: event.imgURL }} style={styles.eventImage} />
-              <Text style={styles.title}>{event.name}</Text>
-              <Text style={styles.subtitle}>
-                {event.dateTime.toDate().toDateString()}
-              </Text>
-              {/* Add other event details as needed */}
-            </Pressable>
+        {events.length === 0 ? (
+          <View style={styles.noEventsContainer}>
+            <Text style={styles.noEventsText}>No Events At This Time</Text>
           </View>
-        ))}
+        ) : (
+          events.reverse().map((event, index) => (
+            <View key={index} style={styles.eventContainer}>
+              <Pressable
+                onPress={() => handleEventPress(event)}
+                style={({ pressed }) => pressed && styles.pressed}
+              >
+                <Image
+                  source={{ uri: event.imgURL }}
+                  style={styles.eventImage}
+                />
+                <Text style={styles.title}>{event.name}</Text>
+                <Text style={styles.subtitle}>
+                  {event.dateTime.toDate().toDateString()}
+                </Text>
+                {/* Add other event details as needed */}
+              </Pressable>
+            </View>
+          ))
+        )}
       </View>
     </ScrollView>
   );
@@ -90,6 +99,7 @@ const fontFamily = Platform.select({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
@@ -131,5 +141,21 @@ const styles = StyleSheet.create({
     width: "100%",
     alignSelf: "center",
     borderRadius: 8,
+  },
+  noEventsText: {
+    fontFamily,
+    fontWeight: "700",
+    textAlign: "center",
+    paddingTop: 8,
+    alignItems: "center",
+    color: "white",
+    textTransform: "uppercase",
+    fontSize: 16,
+  },
+  noEventsContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: Dimensions.get("window").height * 0.33,
   },
 });

@@ -60,21 +60,30 @@ export default function GuestEvent({ navigation, setAuthenticated }) {
   return (
     <ScrollView style={{ backgroundColor: "black" }}>
       <View style={styles.container}>
-        {events.reverse().map((event, index) => (
-          <View key={index} style={styles.eventContainer}>
-            <Pressable
-              onPress={() => handleEventPress(event)}
-              style={({ pressed }) => pressed && styles.pressed}
-            >
-              <Image source={{ uri: event.imgURL }} style={styles.eventImage} />
-              <Text style={styles.title}>{event.name}</Text>
-              <Text style={styles.subtitle}>
-                {event.dateTime.toDate().toDateString()}
-              </Text>
-              {/* Add other event details as needed */}
-            </Pressable>
+        {events.length === 0 ? (
+          <View style={styles.noEventsContainer}>
+            <Text style={styles.noEventsText}>No Events At This Time</Text>
           </View>
-        ))}
+        ) : (
+          events.reverse().map((event, index) => (
+            <View key={index} style={styles.eventContainer}>
+              <Pressable
+                onPress={() => handleEventPress(event)}
+                style={({ pressed }) => pressed && styles.pressed}
+              >
+                <Image
+                  source={{ uri: event.imgURL }}
+                  style={styles.eventImage}
+                />
+                <Text style={styles.title}>{event.name}</Text>
+                <Text style={styles.subtitle}>
+                  {event.dateTime.toDate().toDateString()}
+                </Text>
+                {/* Add other event details as needed */}
+              </Pressable>
+            </View>
+          ))
+        )}
       </View>
     </ScrollView>
   );
@@ -93,6 +102,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 20,
     backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
   },
   eventContainer: {
     width: "100%",
@@ -129,5 +140,20 @@ const styles = StyleSheet.create({
     width: "100%",
     alignSelf: "center",
     borderRadius: 8,
+  },
+  noEventsText: {
+    fontFamily,
+    fontWeight: "700",
+    textAlign: "center",
+    paddingTop: 8,
+    alignItems: "center",
+    color: "white",
+    textTransform: "uppercase",
+    fontSize: 16,
+  },
+  noEventsContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: Dimensions.get("window").height * 0.65,
   },
 });

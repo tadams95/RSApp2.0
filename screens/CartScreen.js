@@ -645,8 +645,9 @@ const styles = StyleSheet.create({
     fontFamily,
     fontWeight: "500",
     marginBottom: 10,
-    fontSize: 18,
+    fontSize: 16,
     color: "white",
+    textTransform: "uppercase",
   },
   buttonsContainer: {
     flexDirection: "row",

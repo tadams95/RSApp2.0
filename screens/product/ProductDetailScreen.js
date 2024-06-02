@@ -93,6 +93,9 @@ export default function ProductDetailScreen({ route }) {
     setAddToCartConfirmationVisible(false);
   };
 
+  const formattedAmount = parseFloat(price.amount).toFixed(2);
+  const displayPrice = `${formattedAmount}`;
+
   return (
     <ScrollView style={{ backgroundColor: "black" }}>
       <View style={styles.container}>
@@ -148,7 +151,7 @@ export default function ProductDetailScreen({ route }) {
         {price && (
           <View>
             <Text style={styles.price}>
-              ${price.amount} {price.currencyCode}
+              ${displayPrice} {price.currencyCode}
             </Text>
           </View>
         )}
@@ -397,7 +400,7 @@ const styles = StyleSheet.create({
   },
   swiperContainer: {
     width: "100%",
-    height: Dimensions.get("window").width * .87,
+    height: Dimensions.get("window").width * 0.87,
   },
   variantsContainer: {
     marginVertical: 20,
