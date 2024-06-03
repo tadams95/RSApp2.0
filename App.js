@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StyleSheet, Text, View, Platform } from "react-native";
+import { Pressable, View, Platform } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
@@ -34,6 +34,8 @@ const ShopStackScreen = () => {
         options={({ navigation, route }) => ({
           headerLeft: () => backButton(navigation, false),
           headerShown: false,
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
         })}
       />
       <ShopStack.Screen
@@ -44,6 +46,8 @@ const ShopStackScreen = () => {
             backButton(navigation, route.name === "ProductDetailScreen"),
           headerShown: false,
           headerTitle: "",
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
         })}
       />
     </ShopStack.Navigator>
@@ -58,6 +62,8 @@ const EventStackScreen = () => {
         options={({ navigation, route }) => ({
           headerLeft: () => backButton(navigation, false),
           headerShown: false,
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
         })}
       />
       <EventStack.Screen
@@ -67,6 +73,8 @@ const EventStackScreen = () => {
           headerLeft: () => backButton(navigation),
           headerShown: false,
           headerTitle: "",
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
         })}
       />
     </EventStack.Navigator>
@@ -77,7 +85,7 @@ const backButton = (navigation, showBackButton) => {
   return showBackButton ? (
     <MaterialCommunityIcons
       name="arrow-left"
-      size={24}
+      size={20}
       color="black"
       onPress={() => navigation.goBack()}
     />
@@ -129,6 +137,7 @@ export default function App() {
                 name="Home"
                 component={HomeScreen}
                 options={{
+                  
                   tabBarIcon: ({ focused }) => (
                     <MaterialCommunityIcons
                       name="home"
@@ -146,8 +155,19 @@ export default function App() {
               <BottomTab.Screen
                 name="Shop"
                 component={ShopStackScreen}
-                options={{
-                  headerLeft: ({ navigation }) => backButton(navigation),
+                options={({ navigation }) => ({
+                  headerLeft: () => (
+                    <Pressable
+                      onPress={() => navigation.navigate("Home")}
+                      style={{ paddingLeft: 20 }}
+                    >
+                      <MaterialCommunityIcons
+                        name="home"
+                        size={20}
+                        color="white"
+                      />
+                    </Pressable>
+                  ),
                   tabBarIcon: ({ focused }) => (
                     <MaterialCommunityIcons
                       name="shopping"
@@ -160,18 +180,30 @@ export default function App() {
                     backgroundColor: "black", // Set background color of the header
                   },
                   headerTintColor: "white",
-                }}
+                })}
               />
 
               <BottomTab.Screen
                 name="Events"
                 component={EventStackScreen}
-                options={{
+                options={({ navigation }) => ({
+                  headerLeft: () => (
+                    <Pressable
+                      onPress={() => navigation.navigate("Home")}
+                      style={{ paddingLeft: 20 }}
+                    >
+                      <MaterialCommunityIcons
+                        name="home"
+                        size={20}
+                        color="white"
+                      />
+                    </Pressable>
+                  ),
                   tabBarIcon: ({ focused }) => (
                     <MaterialCommunityIcons
                       name="ticket-percent"
+                      color={focused ? "black" : "white"} // Set color based on tab focus
                       size={20}
-                      color={focused ? "black" : "white"}
                     />
                   ),
                   tabBarLabel: () => null,
@@ -179,17 +211,29 @@ export default function App() {
                     backgroundColor: "black", // Set background color of the header
                   },
                   headerTintColor: "white",
-                }}
+                })}
               />
               <BottomTab.Screen
                 name="Cart"
                 component={CartScreen}
-                options={{
+                options={({ navigation }) => ({
+                  headerLeft: () => (
+                    <Pressable
+                      onPress={() => navigation.navigate("Home")}
+                      style={{ paddingLeft: 20 }}
+                    >
+                      <MaterialCommunityIcons
+                        name="home"
+                        size={20}
+                        color="white"
+                      />
+                    </Pressable>
+                  ),
                   tabBarIcon: ({ focused }) => (
                     <MaterialCommunityIcons
                       name="cart"
+                      color={focused ? "black" : "white"} // Set color based on tab focus
                       size={20}
-                      color={focused ? "black" : "white"}
                     />
                   ),
                   tabBarLabel: () => null,
@@ -197,16 +241,28 @@ export default function App() {
                     backgroundColor: "black", // Set background color of the header
                   },
                   headerTintColor: "white",
-                }}
+                })}
               />
               <BottomTab.Screen
                 name="Account"
-                options={{
+                options={({ navigation }) => ({
+                  headerLeft: () => (
+                    <Pressable
+                      onPress={() => navigation.navigate("Home")}
+                      style={{ paddingLeft: 20 }}
+                    >
+                      <MaterialCommunityIcons
+                        name="home"
+                        size={20}
+                        color="white"
+                      />
+                    </Pressable>
+                  ),
                   tabBarIcon: ({ focused }) => (
                     <MaterialCommunityIcons
                       name="account"
+                      color={focused ? "black" : "white"} // Set color based on tab focus
                       size={20}
-                      color={focused ? "black" : "white"}
                     />
                   ),
                   tabBarLabel: () => null,
@@ -214,7 +270,7 @@ export default function App() {
                     backgroundColor: "black", // Set background color of the header
                   },
                   headerTintColor: "white",
-                }}
+                })}
               >
                 {/* Pass the setAuthenticated function to AccountScreen */}
                 {(props) => (

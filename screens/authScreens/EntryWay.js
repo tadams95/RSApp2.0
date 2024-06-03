@@ -3,7 +3,7 @@ import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { StyleSheet, Text, View, Platform } from "react-native";
+import { Pressable, Platform } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import WelcomeScreen from "./WelcomeScreen";
@@ -29,7 +29,7 @@ const backButton = (navigation, showBackButton) => {
   return showBackButton ? (
     <MaterialCommunityIcons
       name="arrow-left"
-      size={24}
+      size={20}
       color="black"
       onPress={() => navigation.goBack()}
     />
@@ -45,7 +45,10 @@ const GuestShopStackScreen = () => {
         options={({ navigation }) => ({
           headerLeft: () => backButton(navigation, false),
           headerShown: false,
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
         })}
+        initialParams={{ screenName: "GuestShop" }}
       />
 
       <GuestShopStack.Screen
@@ -56,7 +59,10 @@ const GuestShopStackScreen = () => {
             backButton(navigation, route.name === "GuestProductDetail"),
           headerShown: false,
           headerTitle: "",
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
         })}
+        initialParams={{ screenName: "GuestProductDetail" }} // Pass initialParams
       />
     </GuestShopStack.Navigator>
   );
@@ -71,6 +77,8 @@ const GuestEventStackScreen = () => {
         options={({ navigation }) => ({
           headerLeft: () => backButton(navigation, false),
           headerShown: false,
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
         })}
       />
 
@@ -82,6 +90,8 @@ const GuestEventStackScreen = () => {
             backButton(navigation, route.name === "GuestEventView"),
           headerShown: false,
           headerTitle: "",
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
         })}
       />
     </GuestEventStack.Navigator>
@@ -98,6 +108,7 @@ const EntryWay = ({ setAuthenticated }) => {
             <WelcomeScreen {...props} setAuthenticated={setAuthenticated} />
           )}
         </AuthStack.Screen>
+
         <AuthStack.Screen
           name="LoginScreen"
           options={{
@@ -151,8 +162,19 @@ const EntryWay = ({ setAuthenticated }) => {
               <GuestTabs.Screen
                 name="Shop"
                 component={GuestShopStackScreen}
-                options={{
-                  headerLeft: ({ navigation }) => backButton(navigation),
+                options={({ navigation }) => ({
+                  headerLeft: () => (
+                    <Pressable
+                      onPress={() => navigation.navigate("WelcomeScreen")}
+                      style={{ paddingLeft: 20 }}
+                    >
+                      <MaterialCommunityIcons
+                        name="account-arrow-left"
+                        size={20}
+                        color="white"
+                      />
+                    </Pressable>
+                  ),
                   tabBarIcon: ({ focused }) => (
                     <MaterialCommunityIcons
                       name="shopping"
@@ -165,16 +187,28 @@ const EntryWay = ({ setAuthenticated }) => {
                     backgroundColor: "black", // Set background color of the header
                   },
                   headerTintColor: "white",
-                }}
+                })}
               />
+
               <GuestTabs.Screen
                 name="Events"
                 component={GuestEventStackScreen}
-                options={{
-                  headerLeft: ({ navigation }) => backButton(navigation),
+                options={({ navigation }) => ({
+                  headerLeft: () => (
+                    <Pressable
+                      onPress={() => navigation.navigate("WelcomeScreen")}
+                      style={{ paddingLeft: 20 }}
+                    >
+                      <MaterialCommunityIcons
+                        name="account-arrow-left"
+                        size={20}
+                        color="white"
+                      />
+                    </Pressable>
+                  ),
                   tabBarIcon: ({ focused }) => (
                     <MaterialCommunityIcons
-                      name="ticket-percent"
+                      name="shopping"
                       color={focused ? "black" : "white"} // Set color based on tab focus
                       size={20}
                     />
@@ -184,7 +218,7 @@ const EntryWay = ({ setAuthenticated }) => {
                     backgroundColor: "black", // Set background color of the header
                   },
                   headerTintColor: "white",
-                }}
+                })}
               />
             </GuestTabs.Navigator>
           )}
