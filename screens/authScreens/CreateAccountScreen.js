@@ -241,7 +241,7 @@ const fontFamily = Platform.select({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: Dimensions.get("window").height * 0.07,
+    marginTop: Dimensions.get("window").height * 0.05,
     backgroundColor: "#000",
     alignItems: "center",
     marginVertical: 20,
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     color: "white",
   },
   input: {
-    backgroundColor: "#F6F6F6",
+    backgroundColor: "#FFF",
     padding: 10,
     marginBottom: 10,
     borderRadius: 5,
@@ -300,6 +300,6 @@ const styles = StyleSheet.create({
     height: 100,
     width: 100,
     alignSelf: "center",
-    marginVertical: Dimensions.get("window").height * 0.01,
+    marginBottom: Dimensions.get("window").height * 0.01,
   },
 });
