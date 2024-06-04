@@ -411,11 +411,11 @@ export default function CartScreen() {
           <View style={styles.emptyCartContainer}>
             <Text style={styles.subtitle2}>Your Cart is currently empty</Text>
 
-            <MaterialCommunityIcons
+            {/* <MaterialCommunityIcons
               name="cart-arrow-down"
               color={"white"}
               size={40}
-            />
+            /> */}
           </View>
         ) : (
           <>

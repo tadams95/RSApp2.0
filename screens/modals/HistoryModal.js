@@ -44,35 +44,44 @@ const HistoryModal = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headline}>Your Purchase History</Text>
-      {userPurchases.map((purchase, index) => (
-        <View key={index} style={styles.purchaseContainer}>
-          <View style={styles.dateContainer}>
-            <Text style={styles.purchaseDate}>
-              Purchase Date: {purchase.dateTime.toDate().toLocaleDateString()}
-            </Text>
-          </View>
+      <View>
+        {userPurchases.length === 0 ? (
+          <Text style={styles.headline}>No Purchase History</Text>
+        ) : (
+          <>
+            <Text style={styles.headline}>Your Purchase History</Text>
+            {userPurchases.map((purchase, index) => (
+              <View key={index} style={styles.purchaseContainer}>
+                <View style={styles.dateContainer}>
+                  <Text style={styles.purchaseDate}>
+                    Purchase Date:{" "}
+                    {purchase.dateTime.toDate().toLocaleDateString()}
+                  </Text>
+                </View>
 
-          {purchase.cartItems.map((item, itemIndex) => (
-            <View key={itemIndex} style={styles.cartItem}>
-              <Image
-                source={{ uri: item.productImageSrc }}
-                style={styles.productImage}
-              />
-              <Text style={styles.itemTitle}> {item.title}</Text>
-              <Text style={styles.itemText}>QTY: {item.quantity}</Text>
-              <Text style={styles.itemText}>Price: ${item.price}</Text>
-              {item.color && (
-                <Text style={styles.itemText}>Color: {item.color}</Text>
-              )}
-              {item.size && (
-                <Text style={styles.itemText}>Size: {item.size}</Text>
-              )}
-              {/* Add more details as needed */}
-            </View>
-          ))}
-        </View>
-      ))}
+                {purchase.cartItems.map((item, itemIndex) => (
+                  <View key={itemIndex} style={styles.cartItem}>
+                    <Image
+                      source={{ uri: item.productImageSrc }}
+                      style={styles.productImage}
+                    />
+                    <Text style={styles.itemTitle}> {item.title}</Text>
+                    <Text style={styles.itemText}>QTY: {item.quantity}</Text>
+                    <Text style={styles.itemText}>Price: ${item.price}</Text>
+                    {item.color && (
+                      <Text style={styles.itemText}>Color: {item.color}</Text>
+                    )}
+                    {item.size && (
+                      <Text style={styles.itemText}>Size: {item.size}</Text>
+                    )}
+                    {/* Add more details as needed */}
+                  </View>
+                ))}
+              </View>
+            ))}
+          </>
+        )}
+      </View>
     </View>
   );
 };
@@ -86,15 +95,18 @@ const fontFamily = Platform.select({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
+    padding: 20,
     backgroundColor: "#000",
   },
   headline: {
-    fontFamily,
+    backgroundColor: "#000",
     textAlign: "center",
-    textTransform: "uppercase",
-    marginBottom: 20,
+    fontFamily,
+    fontSize: 14,
+    marginBottom: 10,
     color: "white",
+    fontWeight: "500",
+    textTransform: "uppercase"
   },
   purchaseContainer: {
     marginBottom: 20,

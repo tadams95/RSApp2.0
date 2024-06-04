@@ -65,24 +65,31 @@ const AdminModal = ({ visible, toggleModal }) => {
         <View style={styles.container}>
           <Text style={styles.headline}>RAGESTATE ADMIN EVENT MANAGEMENT</Text>
 
-          {events.reverse().map((event, index) => (
-            <View key={index} style={styles.eventContainer}>
-              <Pressable
-                onPress={() => handleEventPress(event)}
-                style={({ pressed }) => pressed && styles.pressed}
-              >
-                <Image
-                  source={{ uri: event.imgURL }}
-                  style={styles.eventImage}
-                />
-                <Text style={styles.title}>{event.name}</Text>
-                <Text style={styles.subtitle}>
-                  {event.dateTime.toDate().toDateString()}
-                </Text>
-                {/* Add other event details as needed */}
-              </Pressable>
+          {events.length === 0 ? ( // Check if events array is empty
+            <View style={styles.noEventsContainer}>
+              <Text style={styles.noEventsText}>No events available</Text>
             </View>
-          ))}
+          ) : (
+            // Render events if there are any
+            events.reverse().map((event, index) => (
+              <View key={index} style={styles.eventContainer}>
+                <Pressable
+                  onPress={() => handleEventPress(event)}
+                  style={({ pressed }) => pressed && styles.pressed}
+                >
+                  <Image
+                    source={{ uri: event.imgURL }}
+                    style={styles.eventImage}
+                  />
+                  <Text style={styles.title}>{event.name}</Text>
+                  <Text style={styles.subtitle}>
+                    {event.dateTime.toDate().toDateString()}
+                  </Text>
+                  {/* Add other event details as needed */}
+                </Pressable>
+              </View>
+            ))
+          )}
           <EventAdminView
             visible={eventAdminViewVisible}
             event={selectedEvent} // Pass the selected event to EventAdminView
@@ -90,7 +97,7 @@ const AdminModal = ({ visible, toggleModal }) => {
           />
         </View>
         <Pressable style={styles.modalButton} onPress={toggleModal}>
-          <Text style={styles.buttonText}>CLOSE ADMIN</Text>
+          <Text style={styles.buttonText}>CLOSE</Text>
         </Pressable>
       </ScrollView>
     </Modal>
@@ -112,6 +119,17 @@ const styles = StyleSheet.create({
   eventContainer: {
     width: "100%",
     marginVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#000",
+    elevation: 3,
+    shadowColor: GlobalStyles.colors.neutral6,
+    shadowRadius: 3,
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.25,
+  },
+  noEventsContainer: {
+    width: "100%",
+    marginTop: Dimensions.get("window").height * 0.25,
     borderRadius: 8,
     backgroundColor: "#000",
     elevation: 3,
@@ -150,17 +168,28 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 50,
     borderRadius: 10,
-    width: "45%",
+    width: "33%",
     alignSelf: "center",
   },
   buttonText: {
     fontFamily,
-    fontSize: 18,
+    fontSize: 16,
     textAlign: "center",
     color: "white",
     fontWeight: "500",
   },
   headline: {
+    fontFamily,
+    paddingTop: 50,
+    paddingBottom: 10,
+    textAlign: "center",
+    textTransform: "uppercase",
+    alignSelf: "center",
+    fontSize: 25,
+    color: "white",
+    fontWeight: "700",
+  },
+  noEventsText: {
     fontFamily,
     paddingTop: 50,
     paddingBottom: 10,

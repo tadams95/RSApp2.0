@@ -40,11 +40,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   headline: {
-    fontFamily,
+    backgroundColor: "#000",
     textAlign: "center",
-    textTransform: "uppercase",
-    marginBottom: 15,
+    fontFamily,
+    fontSize: 14,
+    marginBottom: 10,
     color: "white",
     fontWeight: "500",
+    textTransform: "uppercase",
   },
 });

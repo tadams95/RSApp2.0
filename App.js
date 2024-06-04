@@ -127,8 +127,6 @@ export default function App() {
             AsyncStorage.getItem("password"),
           ]);
 
-          console.log(stayLoggedInValue)
-
         if (stayLoggedInValue) {
           setStayLoggedIn(JSON.parse(stayLoggedInValue));
 
@@ -150,7 +148,7 @@ export default function App() {
       <View style={{ flex: 1 }}>
         <StatusBar style="auto" />
         <Provider store={store}>
-          {!authenticated || !stayLoggedIn ? (
+        {!authenticated || stayLoggedIn === null ? (
             <EntryWay setAuthenticated={setAuthenticated} />
           ) : (
             <BottomTab.Navigator
