@@ -127,9 +127,11 @@ export default function App() {
             AsyncStorage.getItem("password"),
           ]);
 
+          console.log(stayLoggedInValue)
+
         if (stayLoggedInValue) {
           setStayLoggedIn(JSON.parse(stayLoggedInValue));
-          console.log(stayLoggedIn);
+
           if (savedEmail && savedPassword) {
             await loginUser(savedEmail, savedPassword);
             setAuthenticated(true); // Automatically authenticate if stayLoggedIn is true

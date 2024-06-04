@@ -87,7 +87,7 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
       try {
         await AsyncStorage.setItem("email", email);
         await AsyncStorage.setItem("password", password);
-        await AsyncStorage.setItem("stayLoggedIn", "true");
+        await AsyncStorage.setItem("stayLoggedIn", JSON.stringify(true));
       } catch (error) {
         console.error("Error saving login credentials:", error);
       }
@@ -96,7 +96,6 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
       try {
         await AsyncStorage.removeItem("email");
         await AsyncStorage.removeItem("password");
-        await AsyncStorage.removeItem("stayLoggedIn");
       } catch (error) {
         console.error("Error removing saved login credentials:", error);
       }
