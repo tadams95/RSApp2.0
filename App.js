@@ -99,8 +99,6 @@ SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [stayLoggedIn, setStayLoggedIn] = useState(null);
 
   const fontFamily = Platform.select({
@@ -131,6 +129,7 @@ export default function App() {
 
         if (stayLoggedInValue) {
           setStayLoggedIn(JSON.parse(stayLoggedInValue));
+          console.log(stayLoggedIn);
           if (savedEmail && savedPassword) {
             await loginUser(savedEmail, savedPassword);
             setAuthenticated(true); // Automatically authenticate if stayLoggedIn is true
@@ -143,8 +142,6 @@ export default function App() {
 
     checkStayLoggedIn();
   }, []);
-
-  console.log(stayLoggedIn)
 
   return (
     <NavigationContainer>
