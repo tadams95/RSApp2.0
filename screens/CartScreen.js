@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
   emptyCartContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: Dimensions.get("window").height * 0.35,
+    marginTop: Dimensions.get("window").height * 0.333,
   },
   productContainer: {
     flexDirection: "row",
@@ -643,11 +643,13 @@ const styles = StyleSheet.create({
   },
   subtitle2: {
     fontFamily,
-    fontWeight: "500",
-    marginBottom: 10,
-    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+    paddingTop: 8,
+    alignItems: "center",
     color: "white",
     textTransform: "uppercase",
+    fontSize: 16,
   },
   buttonsContainer: {
     flexDirection: "row",

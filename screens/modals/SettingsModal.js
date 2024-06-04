@@ -15,6 +15,7 @@ import { getDatabase, ref as databaseRef, get } from "firebase/database";
 
 import axios from "axios";
 import AdminModal from "../eventAdmin/AdminModal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SettingsModal = ({ visible, setAuthenticated, handleClose }) => {
   const [adminModalVisible, setAdminModalVisible] = useState(false);
@@ -61,12 +62,13 @@ const SettingsModal = ({ visible, setAuthenticated, handleClose }) => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert("Are you sure you want to log out?", "", [
       {
         text: "Yes",
-        onPress: () => {
+        onPress: async () => {
           setAuthenticated(false); // Change the authenticated state
+          await AsyncStorage.removeItem("stayLoggedIn");
           if (typeof handleClose === "function") {
             handleClose();
           }

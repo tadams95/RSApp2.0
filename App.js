@@ -11,6 +11,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { Provider } from "react-redux";
 import { store } from "./store/redux/store";
+import { loginUser } from "./util/auth";
 
 import EntryWay from "./screens/authScreens/EntryWay";
 import HomeScreen from "./screens/HomeScreen";
@@ -20,6 +21,8 @@ import EventView from "./screens/events/EventView";
 import ProductDetailScreen from "./screens/product/ProductDetailScreen";
 import CartScreen from "./screens/CartScreen";
 import AccountScreen from "./screens/AccountScreen";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const BottomTab = createBottomTabNavigator();
 const ShopStack = createStackNavigator();
@@ -96,6 +99,15 @@ SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [stayLoggedIn, setStayLoggedIn] = useState(null);
+
+  const fontFamily = Platform.select({
+    ios: "Helvetica Neue",
+    android: "Roboto",
+    default: "system",
+  });
 
   // Function to hide SplashScreen after 3 seconds
   useEffect(() => {
@@ -106,18 +118,40 @@ export default function App() {
     return () => clearTimeout(timer); // Cleanup the timer on component unmount
   }, []); // Run only once on component mount
 
-  const fontFamily = Platform.select({
-    ios: "Helvetica Neue",
-    android: "Roboto",
-    default: "system",
-  });
+  // Function to check stayLoggedIn state
+  useEffect(() => {
+    const checkStayLoggedIn = async () => {
+      try {
+        const [stayLoggedInValue, savedEmail, savedPassword] =
+          await Promise.all([
+            AsyncStorage.getItem("stayLoggedIn"),
+            AsyncStorage.getItem("email"),
+            AsyncStorage.getItem("password"),
+          ]);
+
+        if (stayLoggedInValue) {
+          setStayLoggedIn(JSON.parse(stayLoggedInValue));
+          if (savedEmail && savedPassword) {
+            await loginUser(savedEmail, savedPassword);
+            setAuthenticated(true); // Automatically authenticate if stayLoggedIn is true
+          }
+        }
+      } catch (error) {
+        console.error("Error retrieving stayLoggedIn state:", error);
+      }
+    };
+
+    checkStayLoggedIn();
+  }, []);
+
+  console.log(stayLoggedIn)
 
   return (
     <NavigationContainer>
       <View style={{ flex: 1 }}>
         <StatusBar style="auto" />
         <Provider store={store}>
-          {!authenticated ? (
+          {!authenticated || !stayLoggedIn ? (
             <EntryWay setAuthenticated={setAuthenticated} />
           ) : (
             <BottomTab.Navigator
@@ -137,7 +171,6 @@ export default function App() {
                 name="Home"
                 component={HomeScreen}
                 options={{
-                  
                   tabBarIcon: ({ focused }) => (
                     <MaterialCommunityIcons
                       name="home"
