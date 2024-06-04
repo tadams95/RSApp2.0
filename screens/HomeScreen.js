@@ -10,6 +10,7 @@ import {
   Image,
   ScrollView,
   Platform,
+  Alert,
 } from "react-native";
 
 import {
@@ -18,24 +19,35 @@ import {
   selectExpoPushToken,
   selectStripeCustomerId,
   selectUserName,
+  setLocalId,
+  setUserEmail,
+  setStripeCustomerId,
+  setExpoPushToken,
 } from "../store/redux/userSlice";
 
 import { useNavigation } from "@react-navigation/native";
-
 import { useDispatch, useSelector } from "react-redux";
-
 import { getDatabase, ref as databaseRef, get, set } from "firebase/database";
-
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import TickerAnnouncement from "../ui/TickerAnnouncement";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { loginUser } from "../util/auth";
+import { registerForPushNotificationsAsync } from "../notifications/PushNotifications";
+
+const API_URL =
+  "https://us-central1-ragestate-app.cloudfunctions.net/stripePayment";
 
 export default function HomeScreen() {
   const [announcements, setAnnouncements] = useState([]);
-
-  const dispatch = useDispatch();
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const userName = useSelector(selectUserName);
 
   const navigation = useNavigation();
+
+  const dispatch = useDispatch();
 
   const navigateToEventsScreen = () => {
     navigation.navigate("Events"); // Navigate to the 'Events' screen
@@ -46,22 +58,103 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    const db = getDatabase();
-    const announcementsRef = databaseRef(db, "announcements");
+    const loadData = async () => {
+      try {
+        const [stayLoggedInValue, savedEmail, savedPassword] =
+          await Promise.all([
+            AsyncStorage.getItem("stayLoggedIn"),
+            AsyncStorage.getItem("email"),
+            AsyncStorage.getItem("password"),
+          ]);
 
-    get(announcementsRef)
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          // Extract announcements from snapshot data and set state
-          setAnnouncements(Object.values(data));
-        } else {
-          // console.log("No announcements available");
+        if (stayLoggedInValue) {
+          setIsAuthenticating(true);
+
+          // Call loginUser function
+          const userData = await loginUser(savedEmail, savedPassword);
+          const localId = userData.uid;
+          const userEmail = userData.email;
+          dispatch(setLocalId(localId));
+          dispatch(setUserEmail(userEmail));
+
+          // Register for push notifications after successful login
+          const token = await registerForPushNotificationsAsync();
+
+          const userRef = databaseRef(db, `users/${localId}`);
+
+          get(userRef)
+            .then((snapshot) => {
+              if (snapshot.exists()) {
+                // Extract the user's name and profile picture URL from the snapshot data
+                const userData = snapshot.val();
+                const name = userData.firstName + " " + userData.lastName;
+
+                // Dispatch the setUserName action with the fetched user name
+                dispatch(setUserName(name));
+              } else {
+                // console.log("No data available");
+              }
+            })
+            .catch((error) => {
+              console.error("Error fetching user data:", error);
+            });
+
+          const stripeCustomerResponse = await fetch(
+            `${API_URL}/create-customer`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                email: savedEmail,
+                name: userName,
+                firebaseId: localId,
+              }),
+            }
+          );
+
+          if (!stripeCustomerResponse.ok) {
+            // Log response status and error message if available
+            console.error(
+              "Failed to create Stripe customer. Status:",
+              stripeCustomerResponse.status
+            );
+            const errorMessage = await stripeCustomerResponse.text();
+            console.error("Error Message:", errorMessage);
+            throw new Error("Failed to create Stripe customer");
+          }
+
+          const stripeCustomerData = await stripeCustomerResponse.json();
+
+          dispatch(setStripeCustomerId(stripeCustomerData));
+
+          dispatch(setExpoPushToken(token));
+
+          // Reset form fields and loading state
+          setEmail("");
+          setPassword("");
+          // setAuthenticated(true);
+          setIsAuthenticating(false);
         }
-      })
-      .catch((error) => {
-        console.error("Error fetching announcements:", error);
-      });
+      } catch (error) {
+        console.error("Error during login:", error); // Log the error for debugging purposes
+
+        let errorMessage = "An error occurred while logging in.";
+        if (error.code === "auth/invalid-credential") {
+          errorMessage =
+            "Invalid email or password. Please check your credentials and try again.";
+        }
+
+        // Alert the user with the appropriate error message
+        Alert.alert("Error", errorMessage);
+
+        // Reset loading state
+        setIsAuthenticating(false);
+      }
+    };
+
+    loadData();
   }, []);
 
   const db = getDatabase();
