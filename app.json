@@ -2,7 +2,7 @@
   "expo": {
     "name": "RAGESTATE",
     "slug": "ragestate-app",
-    "version": "2.41.0",
+    "version": "2.42.0",
     "orientation": "portrait",
     "icon": "./assets/RSLogo.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
-      "buildNumber": "40"
+      "buildNumber": "42"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,7 +29,7 @@
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.tyrelle.ragestate",
-      "versionCode": 9
+      "versionCode": 11
     },
     "web": {
       "favicon": "./assets/RSLogoNew.png"
@@ -58,15 +58,9 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow RAGESTATE to access your camera",
-          "microphonePermission": "Allow RAGESTATE to access your microphone",
+          "cameraPermission": "Allow RAGESTATE to access your camera for QR scanning.",
+          "microphonePermission": "Allow RAGESTATE mic access for Admin Functions",
           "recordAudioAndroid": true
-        }
-      ],
-      [
-        "expo-barcode-scanner",
-        {
-          "cameraPermission": "Allow RAGESTATE to access camera."
         }
       ]
     ],

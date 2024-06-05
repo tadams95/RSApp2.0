@@ -486,16 +486,18 @@ export default function CartScreen() {
                     // Handle result and update your UI
                     onSubmitAddressSheet(addressDetails); // Resolve the promise to continue with checkout
                   }}
-                  onError={
-                    (error) => {
-                      // Alert.alert(
-                      //   "There was an error.",
-                      //   "Check the logs for details."
-                      // );
+                  onError={(error) => {
+                    // Check if the error is due to cancellation
+                    if (error.code === "Canceled") {
+                      // Hide the address sheet if the user cancels
+                      setShowAddressSheet(false);
+                    } else {
+                      // Handle other errors
                       console.log(error);
+                      // You can optionally show an alert or handle the error in another way
+                      // Alert.alert("Error", "There was an error. Check the logs for details.");
                     }
-                    // Make sure to set `visible` back to false to dismiss the address element.
-                  }
+                  }}
                   appearance={{
                     colors: {
                       primary: { primaryAddyStyle },
@@ -518,6 +520,7 @@ export default function CartScreen() {
                   allowedCountries={["US"]}
                   primaryButtonTitle={"Use this address"}
                   sheetTitle={"Shipping Address"}
+                  presentationStyle="fullscreen"
                 />
               )}
 
