@@ -99,7 +99,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(false);
-  const [stayLoggedIn, setStayLoggedIn] = useState(null);
+  const [stayLoggedIn, setStayLoggedIn] = useState(false);
 
   const fontFamily = Platform.select({
     ios: "Helvetica Neue",
@@ -140,6 +140,8 @@ export default function App() {
       }
     };
 
+
+
     checkStayLoggedIn();
   }, []);
 
@@ -148,7 +150,7 @@ export default function App() {
       <View style={{ flex: 1 }}>
         <StatusBar style="auto" />
         <Provider store={store}>
-        {!authenticated || stayLoggedIn === null ? (
+          {!authenticated ? (
             <EntryWay setAuthenticated={setAuthenticated} />
           ) : (
             <BottomTab.Navigator
