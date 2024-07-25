@@ -208,7 +208,7 @@ export default function HomeScreen() {
     try {
       const result = await Share.share({
         message: "You should be raging with us.",
-        url: "https://www.ragestate.com",
+        url: "https://ragestate.com/products",
         title: "RAGESTATE App",
       });
       if (result.action === Share.sharedAction) {

@@ -68,7 +68,7 @@ export default function ShopScreen() {
         amount: product.variants[0].price.amount,
         currencyCode: product.variants[0].price.currencyCode,
       },
-      description: product.description,
+      description: product.descriptionHtml,
       // Add other necessary data here
     };
 
