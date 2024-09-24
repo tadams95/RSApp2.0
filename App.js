@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Pressable, View, Platform } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import "react-native-gesture-handler";
@@ -28,14 +28,18 @@ const BottomTab = createBottomTabNavigator();
 const ShopStack = createStackNavigator();
 const EventStack = createStackNavigator();
 
-const ShopStackScreen = () => {
+const ShopStackScreen = React.memo(() => {
+  const renderBackButton = useCallback((navigation, isDetailScreen) => {
+    return backButton(navigation, isDetailScreen);
+  }, []);
+
   return (
     <ShopStack.Navigator>
       <ShopStack.Screen
         name="ProductListScreen"
         component={ShopScreen}
-        options={({ navigation, route }) => ({
-          headerLeft: () => backButton(navigation, false),
+        options={({ navigation }) => ({
+          headerLeft: () => renderBackButton(navigation, false),
           headerShown: false,
           gestureEnabled: true,
           gestureDirection: "horizontal",
@@ -46,7 +50,7 @@ const ShopStackScreen = () => {
         component={ProductDetailScreen}
         options={({ navigation, route }) => ({
           headerLeft: () =>
-            backButton(navigation, route.name === "ProductDetailScreen"),
+            renderBackButton(navigation, route.name === "ProductDetailScreen"),
           headerShown: false,
           headerTitle: "",
           gestureEnabled: true,
@@ -55,14 +59,15 @@ const ShopStackScreen = () => {
       />
     </ShopStack.Navigator>
   );
-};
-const EventStackScreen = () => {
+});
+
+const EventStackScreen = React.memo(() => {
   return (
     <EventStack.Navigator>
       <EventStack.Screen
         name="EventListScreen"
         component={EventsScreen}
-        options={({ navigation, route }) => ({
+        options={({ navigation }) => ({
           headerLeft: () => backButton(navigation, false),
           headerShown: false,
           gestureEnabled: true,
@@ -72,8 +77,8 @@ const EventStackScreen = () => {
       <EventStack.Screen
         name="EventView"
         component={EventView}
-        options={({ navigation, route }) => ({
-          headerLeft: () => backButton(navigation),
+        options={({ navigation }) => ({
+          headerLeft: () => backButton(navigation, true),
           headerShown: false,
           headerTitle: "",
           gestureEnabled: true,
@@ -82,7 +87,7 @@ const EventStackScreen = () => {
       />
     </EventStack.Navigator>
   );
-};
+});
 
 const backButton = (navigation, showBackButton) => {
   return showBackButton ? (
@@ -107,43 +112,40 @@ export default function App() {
     default: "system",
   });
 
-  // Function to hide SplashScreen after 3 seconds
+  const SPLASH_SCREEN_TIMEOUT = 2000; // Timeout duration in milliseconds
+
   useEffect(() => {
-    const timer = setTimeout(async () => {
-      await SplashScreen.hideAsync();
-    }, 2000);
+    const timer = setTimeout(() => {
+      SplashScreen.hideAsync();
+    }, SPLASH_SCREEN_TIMEOUT);
 
     return () => clearTimeout(timer); // Cleanup the timer on component unmount
   }, []); // Run only once on component mount
 
-  // Function to check stayLoggedIn state
-  useEffect(() => {
-    const checkStayLoggedIn = async () => {
-      try {
-        const [stayLoggedInValue, savedEmail, savedPassword] =
-          await Promise.all([
-            AsyncStorage.getItem("stayLoggedIn"),
-            AsyncStorage.getItem("email"),
-            AsyncStorage.getItem("password"),
-          ]);
+  const checkStayLoggedIn = useCallback(async () => {
+    try {
+      const [stayLoggedInValue, savedEmail, savedPassword] = await Promise.all([
+        AsyncStorage.getItem("stayLoggedIn"),
+        AsyncStorage.getItem("email"),
+        AsyncStorage.getItem("password"),
+      ]);
 
-        if (stayLoggedInValue) {
-          setStayLoggedIn(JSON.parse(stayLoggedInValue));
+      if (stayLoggedInValue) {
+        setStayLoggedIn(JSON.parse(stayLoggedInValue));
 
-          if (savedEmail && savedPassword) {
-            await loginUser(savedEmail, savedPassword);
-            setAuthenticated(true); // Automatically authenticate if stayLoggedIn is true
-          }
+        if (savedEmail && savedPassword) {
+          await loginUser(savedEmail, savedPassword);
+          setAuthenticated(true); // Automatically authenticate if stayLoggedIn is true
         }
-      } catch (error) {
-        console.error("Error retrieving stayLoggedIn state:", error);
       }
-    };
-
-
-
-    checkStayLoggedIn();
+    } catch (error) {
+      console.error("Error retrieving stayLoggedIn state:", error);
+    }
   }, []);
+
+  useEffect(() => {
+    checkStayLoggedIn();
+  }, [checkStayLoggedIn]);
 
   return (
     <NavigationContainer>

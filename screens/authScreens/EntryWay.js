@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 
 import { StatusBar } from "expo-status-bar";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -36,37 +36,40 @@ const backButton = (navigation, showBackButton) => {
   ) : null;
 };
 
-const GuestShopStackScreen = () => {
+const GuestShopStackScreen = React.memo(() => {
+  const renderBackButton = useCallback((navigation, showBackButton) => {
+    return backButton(navigation, showBackButton);
+  }, []);
+
   return (
     <GuestShopStack.Navigator>
       <GuestShopStack.Screen
         name="GuestShop"
         component={GuestShop}
         options={({ navigation }) => ({
-          headerLeft: () => backButton(navigation, false),
+          headerLeft: () => renderBackButton(navigation, false),
           headerShown: false,
           gestureEnabled: true,
           gestureDirection: "horizontal",
         })}
         initialParams={{ screenName: "GuestShop" }}
       />
-
       <GuestShopStack.Screen
         name="GuestProductDetail"
         component={GuestProductDetail}
         options={({ navigation, route }) => ({
           headerLeft: () =>
-            backButton(navigation, route.name === "GuestProductDetail"),
+            renderBackButton(navigation, route.name === "GuestProductDetail"),
           headerShown: false,
           headerTitle: "",
           gestureEnabled: true,
           gestureDirection: "horizontal",
         })}
-        initialParams={{ screenName: "GuestProductDetail" }} // Pass initialParams
+        initialParams={{ screenName: "GuestProductDetail" }}
       />
     </GuestShopStack.Navigator>
   );
-};
+});
 
 const GuestEventStackScreen = () => {
   return (

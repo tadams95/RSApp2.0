@@ -6,24 +6,18 @@ import {
   ScrollView,
   StyleSheet,
   Pressable,
-  Alert,
-  Modal,
   Platform,
   Dimensions,
 } from "react-native";
 import { GlobalStyles } from "../../constants/styles";
-import { useDispatch } from "react-redux";
-import { addToCart } from "../../store/redux/cartSlice";
 
 import Swiper from "react-native-swiper";
 
 export default function GuestProductDetail({ route, navigation }) {
   const { data } = route.params;
   const {
-    productId,
     title,
     images,
-    variants,
     price,
     description,
     // Add other necessary fields
@@ -34,15 +28,14 @@ export default function GuestProductDetail({ route, navigation }) {
   };
 
   const formattedAmount = parseFloat(price.amount).toFixed(2);
-  const displayPrice = `${formattedAmount}`;
 
   return (
     <ScrollView style={{ backgroundColor: "black" }}>
       <View style={styles.container}>
-        <Text style={styles.title}> {title}</Text>
+        <Text style={styles.title}>{title}</Text>
 
-        {/* Display product images with Swiper */}
         <View style={styles.swiperContainer}>
+      
           <Swiper
             showsButtons={false}
             paginationStyle={{ bottom: 10, backgroundColor: "transparent" }}
@@ -58,6 +51,7 @@ export default function GuestProductDetail({ route, navigation }) {
               height: 12,
               borderRadius: 6,
             }}
+            removeClippedSubviews={false}
             style={{ height: Dimensions.get("window").width * 0.9 }} // Adjust height dynamically
           >
             {images &&
@@ -281,5 +275,24 @@ const styles = StyleSheet.create({
     paddingBottom: 25,
     marginTop: 10,
     borderColor: "white",
+  },
+  dotContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 10,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginHorizontal: 5,
+  },
+  activeDot: {
+    backgroundColor: "red",
+    width: 12,
+    height: 12,
+  },
+  inactiveDot: {
+    backgroundColor: "rgba(255, 255, 255, 1)",
   },
 });

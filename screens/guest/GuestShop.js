@@ -1,5 +1,4 @@
-import React, { useState, useLayoutEffect } from "react";
-
+import React, { useState, useLayoutEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,108 +10,7 @@ import {
   Image,
 } from "react-native";
 import { GlobalStyles } from "../../constants/styles";
-
 import fetchShopifyProducts from "../../shopify/shopifyService";
-
-export default function GuestShop({ navigation, setAuthenticated }) {
-  const [products, setProducts] = useState([]);
-
-  function handleProductPress(product) {
-    const serializeObject = (obj) => {
-      if (typeof obj !== "object" || obj === null) {
-        return obj;
-      }
-
-      if (Array.isArray(obj)) {
-        return obj.map(serializeObject);
-      }
-
-      const serialized = {};
-      for (const key in obj) {
-        if (key !== "nextPageQueryAndPath" && typeof obj[key] !== "function") {
-          serialized[key] = serializeObject(obj[key]);
-        }
-      }
-      return serialized;
-    };
-
-    // Serialize product data
-    const serializedProduct = {
-      id: product.id,
-      title: product.title,
-      images: product.images.map((image) => ({ src: image.src })),
-      variants: product.variants.map((variant) => {
-        const [size, color] = (variant.title.split(" / ") || []).map((str) =>
-          str.trim()
-        );
-
-        return {
-          size:
-            size ||
-            (color
-              ? variant.selectedOptions.find((opt) => opt.name === "Size")
-                  ?.value
-              : null),
-          color: color ? color : "Default",
-          price: {
-            amount: variant.price.amount,
-            currencyCode: variant.price.currencyCode,
-          },
-          available: variant.available,
-          // Add more variant details as needed
-        };
-      }),
-
-      price: {
-        amount: product.variants[0].price.amount,
-        currencyCode: product.variants[0].price.currencyCode,
-      },
-      description: product.description,
-      // Add other necessary data here
-    };
-
-    navigation.navigate("GuestProductDetail", { data: serializedProduct });
-  }
-
-  useLayoutEffect(() => {
-    const fetchData = async () => {
-      try {
-        const fetchedProducts = await fetchShopifyProducts();
-        setProducts(fetchedProducts);
-      } catch (error) {
-        // Handle errors
-        console.error(error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  return (
-    <ScrollView style={{ backgroundColor: "#000" }}>
-      <View style={styles.container}>
-        {products.map((product) => (
-          <View key={product.id} style={styles.itemsContainer}>
-            <Pressable
-              onPress={() => handleProductPress(product)}
-              style={({ pressed }) => pressed && styles.pressed}
-            >
-              <Image
-                source={{ uri: product.images[0].src }}
-                style={styles.image}
-              />
-              <Text style={styles.title}>{product.title}</Text>
-              <Text style={styles.price}>
-                ${product.variants[0].price.amount}0{" "}
-                {product.variants[0].price.currencyCode}
-              </Text>
-            </Pressable>
-          </View>
-        ))}
-      </View>
-    </ScrollView>
-  );
-}
 
 const windowHeight = Dimensions.get("window").height;
 const windowWidth = Dimensions.get("window").width;
@@ -166,3 +64,113 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 });
+
+const GuestShop = ({ navigation, setAuthenticated }) => {
+  const [products, setProducts] = useState([]);
+
+  const serializeObject = useMemo(() => {
+    const serialize = (obj) => {
+      if (typeof obj !== "object" || obj === null) {
+        return obj;
+      }
+
+      if (Array.isArray(obj)) {
+        return obj.map(serialize);
+      }
+
+      const serialized = {};
+      for (const key in obj) {
+        if (key !== "nextPageQueryAndPath" && typeof obj[key] !== "function") {
+          serialized[key] = serialize(obj[key]);
+        }
+      }
+      return serialized;
+    };
+    return serialize;
+  }, []);
+
+  const handleProductPress = useCallback(
+    (product) => {
+      // Serialize product data
+      const serializedProduct = {
+        id: product.id,
+        title: product.title,
+        images: product.images.map((image) => ({ src: image.src })),
+        variants: product.variants.map((variant) => {
+          const [size, color] = (variant.title.split(" / ") || []).map((str) =>
+            str.trim()
+          );
+
+          const selectedSize =
+            size ||
+            variant.selectedOptions.find((opt) => opt.name === "Size")?.value ||
+            null;
+          const selectedColor = color || "Default";
+
+          return {
+            size: selectedSize,
+            color: selectedColor,
+            price: {
+              amount: variant.price.amount,
+              currencyCode: variant.price.currencyCode,
+            },
+            available: variant.available,
+            // Add more variant details as needed
+          };
+        }),
+        price: {
+          amount: product.variants[0].price.amount,
+          currencyCode: product.variants[0].price.currencyCode,
+        },
+        description: product.description,
+        // Add other necessary data here
+      };
+
+      navigation.navigate("GuestProductDetail", { data: serializedProduct });
+    },
+    [navigation, serializeObject]
+  );
+
+  useLayoutEffect(() => {
+    const fetchData = async () => {
+      try {
+        const fetchedProducts = await fetchShopifyProducts();
+        setProducts(fetchedProducts);
+      } catch (error) {
+        // Handle errors
+        console.error(error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item: product }) => (
+      <View key={product.id} style={styles.itemsContainer}>
+        <Pressable
+          onPress={() => handleProductPress(product)}
+          style={({ pressed }) => pressed && styles.pressed}
+        >
+          <Image source={{ uri: product.images[0].src }} style={styles.image} />
+          <Text style={styles.title}>{product.title}</Text>
+          <Text style={styles.price}>
+            ${product.variants[0].price.amount}0{" "}
+            {product.variants[0].price.currencyCode}
+          </Text>
+        </Pressable>
+      </View>
+    ),
+    [handleProductPress]
+  );
+
+  return (
+    <ScrollView style={{ backgroundColor: "#000" }}>
+      <View style={styles.container}>
+        {products.map((product) => renderItem({ item: product }))}
+      </View>
+    </ScrollView>
+  );
+};
+
+export default GuestShop;
