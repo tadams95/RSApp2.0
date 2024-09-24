@@ -117,6 +117,7 @@ export default function ProductDetailScreen({ route }) {
               height: 12,
               borderRadius: 6,
             }}
+            removeClippedSubviews={false}
             style={{ height: Dimensions.get("window").width * 0.9 }} // Adjust height dynamically
           >
             {images &&
