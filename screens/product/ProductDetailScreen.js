@@ -17,6 +17,7 @@ import { addToCart } from "../../store/redux/cartSlice";
 
 import Swiper from "react-native-swiper";
 
+
 export default function ProductDetailScreen({ route }) {
   const { data } = route.params;
   const {
@@ -28,6 +29,8 @@ export default function ProductDetailScreen({ route }) {
     description,
     // Add other necessary fields
   } = data;
+
+  const contentWidth = Dimensions.get("window").width;
 
   const dispatch = useDispatch();
 
@@ -103,7 +106,10 @@ export default function ProductDetailScreen({ route }) {
         {/* Display product images with Swiper */}
         <View style={styles.swiperContainer}>
           <Swiper
-            showsButtons={false}
+            showsButtons={true}
+            buttonWrapperStyle={{ backgroundColor: "transparent" }}
+            nextButton={<Text style={styles.swiperButton}>›</Text>}
+            prevButton={<Text style={styles.swiperButton}>‹</Text>}
             paginationStyle={{ bottom: 10, backgroundColor: "transparent" }}
             dotStyle={{
               backgroundColor: "rgba(255, 255, 255, 1)",
@@ -131,18 +137,11 @@ export default function ProductDetailScreen({ route }) {
           </Swiper>
         </View>
 
-        {/* Display product description */}
-        {description && (
-          <View
-            style={{
-              borderWidth: 2,
-              borderRadius: 10,
-              paddingHorizontal: 10,
-              paddingBottom: 25,
-              marginTop: 20,
-              borderColor: "white",
-            }}
-          >
+    
+
+             {/* Display product description */}
+             {description && (
+          <View style={styles.descriptionContainer}>
             <Text style={styles.description}>{description}</Text>
           </View>
         )}
@@ -513,5 +512,18 @@ const styles = StyleSheet.create({
     color: GlobalStyles.colors.red4,
     textAlign: "center",
     marginBottom: 50,
+  },
+  descriptionContainer: {
+    borderWidth: 2,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 25,
+    marginTop: 10,
+    borderColor: "white",
+  },
+  swiperButton: {
+    color: "white",
+    fontSize: 50,
+    marginBottom: 70,
   },
 });

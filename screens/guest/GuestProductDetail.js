@@ -27,7 +27,7 @@ export default function GuestProductDetail({ route, navigation }) {
     navigation.navigate("WelcomeScreen");
   };
 
-  const formattedAmount = parseFloat(price.amount).toFixed(2);
+  console.log("Description: ", description);
 
   return (
     <ScrollView style={{ backgroundColor: "black" }}>
@@ -35,9 +35,11 @@ export default function GuestProductDetail({ route, navigation }) {
         <Text style={styles.title}>{title}</Text>
 
         <View style={styles.swiperContainer}>
-      
           <Swiper
-            showsButtons={false}
+            showsButtons={true}
+            buttonWrapperStyle={{ backgroundColor: "transparent" }}
+            nextButton={<Text style={styles.swiperButton}>›</Text>}
+            prevButton={<Text style={styles.swiperButton}>‹</Text>}
             paginationStyle={{ bottom: 10, backgroundColor: "transparent" }}
             dotStyle={{
               backgroundColor: "rgba(255, 255, 255, 1)",
@@ -51,6 +53,8 @@ export default function GuestProductDetail({ route, navigation }) {
               height: 12,
               borderRadius: 6,
             }}
+            //  autoplay={true}
+
             removeClippedSubviews={false}
             style={{ height: Dimensions.get("window").width * 0.9 }} // Adjust height dynamically
           >
@@ -294,5 +298,10 @@ const styles = StyleSheet.create({
   },
   inactiveDot: {
     backgroundColor: "rgba(255, 255, 255, 1)",
+  },
+  swiperButton: {
+    color: "white",
+    fontSize: 50,
+    marginBottom: 70,
   },
 });
