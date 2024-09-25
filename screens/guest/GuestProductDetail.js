@@ -27,7 +27,7 @@ export default function GuestProductDetail({ route, navigation }) {
     navigation.navigate("WelcomeScreen");
   };
 
-  console.log("Description: ", description);
+  // console.log("Description: ", description);
 
   return (
     <ScrollView style={{ backgroundColor: "black" }}>
