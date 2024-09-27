@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from "react-native";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 
 import {
   getDatabase,
@@ -50,32 +50,17 @@ export default function AccountScreen({ setAuthenticated }) {
   // Get a reference to the database
   const db = getDatabase();
 
-  useEffect(() => {
-    // Fetch user data from the database when the component mounts
-    fetchUserData();
-  }, []);
-
-  // Callback function to fetch user data after profile update
-  const handleProfileUpdated = () => {
-    fetchUserData();
-  };
-
-  const fetchUserData = () => {
-    // Specify the path to the user data in the database
+  const fetchUserData = useCallback(() => {
     const userRef = databaseRef(db, `users/${localId}`);
 
-    // Fetch the user data asynchronously
     get(userRef)
       .then((snapshot) => {
         if (snapshot.exists()) {
-          // Extract the user's name and profile picture URL from the snapshot data
           const userData = snapshot.val();
-          const name = userData.firstName + " " + userData.lastName;
+          const name = `${userData.firstName} ${userData.lastName}`;
           const profilePicture = userData.profilePicture;
 
-          // Dispatch the setUserName action with the fetched user name
           dispatch(setUserName(name));
-
           setProfilePicture(profilePicture);
         } else {
           console.error("No data available");
@@ -84,34 +69,42 @@ export default function AccountScreen({ setAuthenticated }) {
       .catch((error) => {
         console.error("Error fetching user data:", error);
       });
-  };
+  }, [db, localId, dispatch]);
 
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
 
-    if (!result.canceled) {
-      const imageUri = result.assets[0].uri;
+  const handleProfileUpdated = useCallback(() => {
+    fetchUserData();
+  }, [fetchUserData]);
 
-      // Get reference to Firebase Storage
-      const storage = getStorage();
+  const pickImage = useCallback(async () => {
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
 
-      // Create a reference to the profile picture in Firebase Storage
-      const profilePictureRef = storageRef(
-        storage,
-        `profilePictures/${localId}`
-      );
+      if (!result.canceled) {
+        const imageUri = result.assets[0].uri;
 
-      // Convert imageUri to blob
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
+        // Get reference to Firebase Storage
+        const storage = getStorage();
 
-      // Upload the image to Firebase Storage
-      try {
+        // Create a reference to the profile picture in Firebase Storage
+        const profilePictureRef = storageRef(
+          storage,
+          `profilePictures/${localId}`
+        );
+
+        // Convert imageUri to blob
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+
+        // Upload the image to Firebase Storage
         await uploadBytes(profilePictureRef, blob);
 
         // Get the download URL of the uploaded image
@@ -123,11 +116,17 @@ export default function AccountScreen({ setAuthenticated }) {
 
         // Once uploaded, set the profile picture URI in your component state
         setProfilePicture(downloadURL);
-      } catch (error) {
-        console.error("Error uploading profile picture:", error);
       }
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
     }
-  };
+  }, [localId, db]);
+
+  const imageSource = useMemo(() => {
+    return profilePicture
+      ? { uri: profilePicture }
+      : require("../assets/trollFace.png");
+  }, [profilePicture]);
 
   const handleEditProfile = () => {
     setShowEditProfileModal(!showEditProfileModal);
@@ -158,12 +157,9 @@ export default function AccountScreen({ setAuthenticated }) {
           {/* Profile Picture */}
           <Pressable onPress={pickImage}>
             <Image
-              source={
-                profilePicture
-                  ? { uri: profilePicture }
-                  : require("../assets/trollFace.png")
-              }
+              source={imageSource}
               style={styles.profilePicture}
+              resizeMode="cover"
             />
           </Pressable>
 
