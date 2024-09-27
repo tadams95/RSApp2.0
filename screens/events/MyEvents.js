@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -19,13 +19,12 @@ import {
   query,
   updateDoc,
   doc,
+  getFirestore,
 } from "firebase/firestore";
-import { getFirestore } from "firebase/firestore";
 
 import { getDatabase, ref, get } from "firebase/database";
 
 import { getAuth } from "firebase/auth";
-
 
 import { CameraView, Camera } from "expo-camera";
 import * as Notifications from "expo-notifications";
@@ -69,14 +68,13 @@ const MyEvents = () => {
   const [selectedTicketId, setSelectedTicketId] = useState("");
   const [eventNameTransfer, setEventNameTransfer] = useState("");
 
-  // Function to fetch events data
-  const fetchEventsData = async () => {
+  const fetchEventsData = useCallback(async () => {
     try {
       if (currentUser) {
         const eventsCollectionRef = collection(firestore, "events");
         const querySnapshot = await getDocs(eventsCollectionRef);
-        const eventsData = [];
-        for (const doc of querySnapshot.docs) {
+
+        const eventsDataPromises = querySnapshot.docs.map(async (doc) => {
           const eventData = doc.data();
           const ragersCollectionRef = collection(
             firestore,
@@ -84,6 +82,7 @@ const MyEvents = () => {
             doc.id,
             "ragers"
           );
+
           // Add a where clause to filter tickets where active is true
           const ragersQuerySnapshot = await getDocs(
             query(
@@ -92,19 +91,23 @@ const MyEvents = () => {
               where("active", "==", true)
             )
           );
+
           const ragersData = ragersQuerySnapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
           }));
-          eventsData.push({ id: doc.id, eventData, ragersData });
-        }
+
+          return { id: doc.id, eventData, ragersData };
+        });
+
+        const eventsData = await Promise.all(eventsDataPromises);
         setEventsData(eventsData);
         setLoading(false);
       }
     } catch (error) {
       console.error("Error fetching events data:", error);
     }
-  };
+  }, [currentUser]);
 
   useEffect(() => {
     fetchEventsData();
@@ -126,106 +129,96 @@ const MyEvents = () => {
     requestPermissions();
   }, []);
 
-  const handleBarCodeScanned = async ({ type, data }) => {
+  const fetchRecipientData = async (data) => {
+    const recipientRef = ref(getDatabase(), `users/${data}`);
+    const snapshot = await get(recipientRef);
+    if (snapshot.exists()) {
+      const recipientData = snapshot.val();
+      return {
+        firstName: recipientData.firstName,
+        lastName: recipientData.lastName,
+        email: recipientData.email,
+        expoPushToken: recipientData.expoPushToken,
+        id: data,
+      };
+    } else {
+      throw new Error("Recipient data not found");
+    }
+  };
+
+  const transferTicket = async (ticketUrl, recipientData) => {
+    await updateDoc(doc(firestore, ticketUrl), {
+      active: true,
+      email: recipientData.email,
+      expoPushToken: recipientData.expoPushToken,
+      firebaseId: recipientData.id,
+      owner: recipientData.id,
+    });
+  };
+
+const handleBarCodeScanned = useCallback(
+  async ({ type, data }) => {
     // Stop further scanning
     setScanningAllowed(false);
     // Store the scanned data
     setScannedData({ type, data });
 
     try {
-      // Fetch recipient's data from database using the firebaseId
-      const recipientRef = ref(getDatabase(), `users/${data}`);
-      const snapshot = await get(recipientRef);
-      if (snapshot.exists()) {
-        const recipientFirstName = snapshot.val().firstName;
-        const recipientLastName = snapshot.val().lastName;
-        const recipientEmail = snapshot.val().email;
-        const recipientExpoToken = snapshot.val().expoPushToken;
-        const recipientId = data;
-        // Concatenate first and last names to form the recipient's full name
-        const recipientName = `${recipientFirstName} ${recipientLastName}`;
+      const recipientData = await fetchRecipientData(data);
+      const recipientName = `${recipientData.firstName} ${recipientData.lastName}`;
+      const ticketUrl = `/events/${eventNameTransfer}/ragers/${selectedTicketId}`;
 
-        // Construct the URL for the ticket based on the event name and ticket ID
-        const ticketUrl = `/events/${eventNameTransfer}/ragers/${selectedTicketId}`;
+      Alert.alert(
+        "Confirm Transfer",
+        `Do you want to transfer your ticket to ${recipientName}?`,
+        [
+          {
+            text: "Cancel",
+            onPress: () => {
+              // Reset scanned data and allow scanning again
+              setScannedData(null);
+              setScanningAllowed(true);
+              setTransferModalVisible(false);
+            },
+            style: "cancel",
+          },
+          {
+            text: "Send",
+            onPress: async () => {
+              try {
+                // Update the database to transfer ownership of the ticket
+                await transferTicket(ticketUrl, recipientData);
 
-        // Define a function to transfer the ticket
-        const transferTicket = async (
-          ticketUrl,
-          recipientEmail,
-          recipientExpoToken,
-          recipientId
-        ) => {
-          await updateDoc(doc(firestore, ticketUrl), {
-            active: true,
-            email: recipientEmail,
-            expoPushToken: recipientExpoToken,
-            firebaseId: recipientId,
-            owner: recipientId,
-          });
-        };
+                // Send push notification to the recipient
+                await sendPushNotification(recipientData.expoPushToken);
 
-        Alert.alert(
-          "Confirm Transfer",
-          `Do you want to transfer your ticket to ${recipientName}?`,
-          [
-            {
-              text: "Cancel",
-              onPress: () => {
-                // Reset scanned data and allow scanning again
-                setScannedData(null);
-                setScanningAllowed(true);
+                // Handle sending ticket
+                const message = `You transferred your ticket to ${recipientName}`;
+                alert(message);
+                fetchEventsData(); // Refresh events data
                 setTransferModalVisible(false);
-              },
-              style: "cancel",
+                // Allow scanning again
+                setScanningAllowed(true);
+              } catch (error) {
+                console.error("Error transferring ticket:", error);
+                // Handle error
+              }
             },
-            {
-              text: "Send",
-              onPress: async () => {
-                try {
-                  // Update the database to transfer ownership of the ticket
-                  await transferTicket(
-                    ticketUrl,
-                    recipientEmail,
-                    recipientExpoToken,
-                    recipientId
-                  );
-
-                  // Send push notification to the recipient
-                  await sendPushNotification(recipientExpoToken);
-
-                  // Handle sending ticket
-                  const message = `You transferred your ticket to ${recipientName}`;
-                  alert(message);
-                  fetchEventsData(); // Refresh events data
-                  setTransferModalVisible(false);
-                  // Allow scanning again
-                  setScanningAllowed(true);
-                } catch (error) {
-                  console.error("Error transferring ticket:", error);
-                  // Handle error
-                }
-              },
-            },
-          ],
-          { cancelable: false }
-        );
-      } else {
-        // Handle case where recipient data is not found
-        Alert.alert("Error", "Recipient data not found");
-        // Reset scanned data and allow scanning again
-        setScannedData(null);
-        setScanningAllowed(true);
-        setTransferModalVisible(false);
-      }
+          },
+        ],
+        { cancelable: false }
+      );
     } catch (error) {
-      // Handle database fetch error
       console.error("Error fetching recipient data:", error);
+      Alert.alert("Error", error.message);
       // Reset scanned data and allow scanning again
       setScannedData(null);
       setScanningAllowed(true);
       setTransferModalVisible(false);
     }
-  };
+  },
+  [currentUser, eventNameTransfer, selectedTicketId, fetchEventsData, sendPushNotification]
+);
 
   const sendPushNotification = async (expoPushToken) => {
     try {
