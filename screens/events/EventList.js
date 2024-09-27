@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import {
   Image,
@@ -16,7 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import { db } from "../../firebase/firebase";
 
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 import { format } from "date-fns";
 
@@ -25,47 +25,42 @@ export default function EventList() {
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchEventData = async () => {
-      try {
-        const eventCollectionRef = collection(db, "events");
-        const eventSnapshot = await getDocs(eventCollectionRef);
+  const fetchEventData = useCallback(async () => {
+    try {
+      const currentDate = new Date();
+      const eventCollectionRef = collection(db, "events");
+      const q = query(eventCollectionRef, where("dateTime", ">=", currentDate));
+      const eventSnapshot = await getDocs(q);
 
-        const currentDate = new Date();
+      const eventData = eventSnapshot.docs.map((doc) => doc.data());
 
-        // Filter out past events
-        const eventData = eventSnapshot.docs
-          .map((doc) => doc.data())
-          .filter((event) => {
-            const eventDateTime = event.dateTime.toDate();
-            return eventDateTime >= currentDate;
-          });
-
-        setEvents(eventData);
-      } catch (error) {
-        console.error("Error fetching event data:", error);
-      } finally {
-        // Once data fetching is complete, set isLoading to false
-        setIsLoading(false);
-      }
-    };
-
-    fetchEventData();
+      setEvents(eventData);
+    } catch (error) {
+      console.error("Error fetching event data:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  // Inside the EventList component
-  const handleEventPress = (event) => {
-    const formattedDateTime = format(
-      event.dateTime.toDate(),
-      "MMM dd, yyyy hh:mm a"
-    );
-    navigation.navigate("EventView", {
-      eventData: { ...event, dateTime: formattedDateTime },
-    });
-  };
+  useEffect(() => {
+    fetchEventData();
+  }, [fetchEventData]);
+
+  const handleEventPress = useCallback(
+    (event) => {
+      const formattedDateTime = format(
+        event.dateTime.toDate(),
+        "MMM dd, yyyy hh:mm a"
+      );
+      navigation.navigate("EventView", {
+        eventData: { ...event, dateTime: formattedDateTime },
+      });
+    },
+    [navigation]
+  );
 
   return (
-    <ScrollView style={{ backgroundColor: "black" }}>
+    <ScrollView style={styles.scrollView}>
       <View style={styles.container}>
         {/* Conditional rendering based on isLoading state */}
         {isLoading ? (
@@ -114,6 +109,9 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     padding: 20,
+    backgroundColor: "black",
+  },
+  scrollView: {
     backgroundColor: "black",
   },
   eventContainer: {
