@@ -70,19 +70,79 @@ export default function CartScreen() {
   const [stripePaymentIntent, setStripePaymentIntent] = useState("");
   const [showAddressSheet, setShowAddressSheet] = useState(false);
   const [addressDetails, setAddressDetails] = useState(null);
+  const [shippingCost, setShippingCost] = useState(0);
+  const [taxAmount, setTaxAmount] = useState(0);
 
   const API_URL =
     "https://us-central1-ragestate-app.cloudfunctions.net/stripePayment";
 
+  // Function to check if there are clothing items in the cart
+  const hasClothingItems = cartItems.some((item) => !item.eventDetails);
+  const shipping = hasClothingItems ? "$9.99" : "$0.00";
+
   useEffect(() => {
-    // Calculate total price and update checkout price
+    // Calculate total price
     const newTotalPrice = cartItems.reduce((accumulator, item) => {
       const itemPrice = item.price.amount * item.selectedQuantity;
       return accumulator + itemPrice;
     }, 0);
-    setTotalPrice(newTotalPrice);
-    dispatch(setCheckoutPrice(newTotalPrice * 100)); // Convert to cents and update checkout price
+
+    // Function to check if there are clothing items in the cart
+    const hasClothingItems = cartItems.some((item) => !item.eventDetails);
+    const shippingCost = hasClothingItems ? 9.99 : 0.0;
+
+    // Calculate tax (assuming a tax rate of 10%)
+    const taxRate = 0.1;
+    const taxAmount = newTotalPrice * taxRate;
+
+    // Calculate final total price including shipping and tax
+    const finalTotalPrice = newTotalPrice + shippingCost + taxAmount;
+
+    // Update state
+    setTotalPrice(finalTotalPrice);
+    setShippingCost(shippingCost);
+    setTaxAmount(taxAmount);
+
+    // Dispatch the updated checkout price (convert to cents)
+    dispatch(setCheckoutPrice(finalTotalPrice * 100));
   }, [cartItems, dispatch]);
+
+  const handleCheckout = async () => {
+    const totalPriceInCents = Math.round(totalPrice * 100); // Convert dollars to cents
+    dispatch(setCheckoutPrice(totalPriceInCents));
+
+    try {
+      if (hasClothingItems) {
+        // If there are clothing items, first present the address sheet
+        setShowAddressSheet(true);
+
+        // Wait for the address sheet submission
+        const addressDetails = await new Promise((resolve) => {
+          // Add a callback function to execute when the address sheet is submitted
+          onSubmitAddressSheet = resolve;
+        });
+
+        // Initialize payment sheet and fetch payment intent prefix
+        const { paymentIntentPrefix } = await initializePaymentSheet(
+          addressDetails
+        );
+
+        // Open payment sheet with the retrieved payment intent prefix and addressDetails
+        await openPaymentSheet(paymentIntentPrefix, addressDetails);
+      } else {
+        // Initialize payment sheet and fetch payment intent prefix
+        const { paymentIntentPrefix } = await initializePaymentSheet(
+          addressDetails
+        );
+
+        // Open payment sheet with the retrieved payment intent prefix
+        await openPaymentSheet(paymentIntentPrefix, addressDetails);
+      }
+    } catch (error) {
+      console.error("Error handling checkout:", error);
+      // Display error message to the user or retry checkout
+    }
+  };
 
   useEffect(() => {}, [stripePaymentIntent]);
 
@@ -341,46 +401,6 @@ export default function CartScreen() {
     }
   };
 
-  const handleCheckout = async () => {
-    const totalPriceInCents = Math.round(totalPrice * 100); // Convert dollars to cents
-    dispatch(setCheckoutPrice(totalPriceInCents));
-
-    try {
-      if (hasClothingItems) {
-        // If there are clothing items, first present the address sheet
-        setShowAddressSheet(true);
-
-        // Wait for the address sheet submission
-        const addressDetails = await new Promise((resolve) => {
-          // Add a callback function to execute when the address sheet is submitted
-          onSubmitAddressSheet = resolve;
-        });
-
-        // Initialize payment sheet and fetch payment intent prefix
-        const { paymentIntentPrefix } = await initializePaymentSheet(
-          addressDetails
-        );
-
-        // Open payment sheet with the retrieved payment intent prefix and addressDetails
-        await openPaymentSheet(paymentIntentPrefix, addressDetails);
-      } else {
-        // Initialize payment sheet and fetch payment intent prefix
-        const { paymentIntentPrefix } = await initializePaymentSheet(
-          addressDetails
-        );
-
-        // Open payment sheet with the retrieved payment intent prefix
-        await openPaymentSheet(paymentIntentPrefix, addressDetails);
-      }
-    } catch (error) {
-      console.error("Error handling checkout:", error);
-      // Display error message to the user or retry checkout
-    }
-  };
-
-  // Function to check if there are clothing items in the cart
-  const hasClothingItems = cartItems.some((item) => !item.eventDetails);
-
   const primaryAddyStyle = Platform.select({
     ios: "#222222",
     android: "#2e2e2e",
@@ -525,33 +545,56 @@ export default function CartScreen() {
               )}
 
             {checkoutInProgress && (
-              <View style={styles.bottomButtonContainer}>
-                <Pressable style={styles.clearButton} onPress={handleClearCart}>
-                  <MaterialCommunityIcons
-                    name="trash-can-outline"
-                    color={GlobalStyles.colors.redVivid4}
-                    size={30}
-                  />
-                </Pressable>
-                {/* Display total price */}
-                <View>
-                  <Text style={styles.totalPriceContainer}>
-                    ${totalPrice.toFixed(2)}
-                  </Text>
-                </View>
+              <>
+                {/* Container for shipping cost, tax, and bottom button */}
+                <View style={styles.costContainer}>
+                  {/* Display shipping cost */}
+                  <View style={styles.textContainer}>
+                    <Text style={styles.shippingCostContainer}>
+                      Shipping: {shipping}
+                    </Text>
+                  </View>
 
-                {/* Checkout Button */}
-                <Pressable
-                  style={styles.checkoutButton}
-                  onPress={handleCheckout}
-                >
-                  <MaterialCommunityIcons
-                    name="cart-arrow-right"
-                    color="white"
-                    size={30}
-                  />
-                </Pressable>
-              </View>
+                  {/* Display tax */}
+                  <View style={styles.textContainer}>
+                    <Text style={styles.taxContainer}>
+                      Tax: ${taxAmount.toFixed(2)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.bottomButtonContainer}>
+                    <Pressable
+                      style={styles.clearButton}
+                      onPress={handleClearCart}
+                    >
+                      <MaterialCommunityIcons
+                        name="trash-can-outline"
+                        color={GlobalStyles.colors.redVivid4}
+                        size={28}
+                      />
+                    </Pressable>
+
+                    {/* Display total price */}
+                    <View style={styles.textContainer}>
+                      <Text style={styles.totalPriceContainer}>
+                        ${totalPrice.toFixed(2)}
+                      </Text>
+                    </View>
+
+                    {/* Checkout Button */}
+                    <Pressable
+                      style={styles.checkoutButton}
+                      onPress={handleCheckout}
+                    >
+                      <MaterialCommunityIcons
+                        name="cart-arrow-right"
+                        color="white"
+                        size={28}
+                      />
+                    </Pressable>
+                  </View>
+                </View>
+              </>
             )}
           </>
         )}
@@ -724,24 +767,47 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "500",
   },
-  bottomButtonContainer: {
+  costContainer: {
+    backgroundColor: "black",
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: GlobalStyles.colors.grey0,
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
+  },
+
+  textContainer: {
+    alignItems: "center", // Center-align the text
+    marginVertical: 5,
+  },
+
+  shippingCostContainer: {
+    fontSize: 16,
+    color: "white",
+  },
+
+  taxContainer: {
+    fontSize: 16,
+    color: "white",
+  },
+
+  bottomButtonContainer: {
     flexDirection: "row",
     backgroundColor: "black",
-    padding: 10,
+    paddingTop: 8,
     justifyContent: "space-between",
-    borderTopWidth: 1,
+    borderTopWidth: 2,
     borderTopColor: GlobalStyles.colors.grey0,
+    marginTop: 10,
   },
+
   totalPriceContainer: {
-    flex: 1,
-    alignItems: "center",
     fontFamily,
-    paddingTop: 5,
-    fontSize: 18,
+    fontSize: 16,
     color: "white",
   },
   checkoutButton: {
