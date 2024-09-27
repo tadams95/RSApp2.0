@@ -192,7 +192,10 @@ export default function AccountScreen({ setAuthenticated }) {
           {/* Edit Profile, History, and QR Modal Container */}
           <View style={styles.modalContainer}>
             {showEditProfileModal && (
-              <EditProfile onProfileUpdated={handleProfileUpdated} />
+              <EditProfile
+                onProfileUpdated={handleProfileUpdated}
+                onCancel={() => setShowEditProfileModal(false)}
+              />
             )}
             {showQRModal && <QRCodeModal />}
             {showHistoryModal && <HistoryModal />}

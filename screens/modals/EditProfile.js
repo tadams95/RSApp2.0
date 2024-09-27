@@ -15,7 +15,7 @@ import { ref, update, getDatabase } from "firebase/database";
 import { selectLocalId } from "../../store/redux/userSlice";
 import { useSelector } from "react-redux";
 
-export default function EditProfile({ onProfileUpdated }) {
+export default function EditProfile({ onProfileUpdated, onCancel }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -28,6 +28,7 @@ export default function EditProfile({ onProfileUpdated }) {
     setLastName("");
     setEmail("");
     setPhoneNumber("");
+    onCancel();
   }
 
   function resetFields() {
