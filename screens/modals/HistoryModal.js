@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,16 +11,17 @@ import { useSelector } from "react-redux";
 import { selectLocalId } from "../../store/redux/userSlice";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 
+// Memoize the Firestore instance
+const firestore = getFirestore();
+
 const fetchUserPurchases = async (userId) => {
   try {
-    const firestore = getFirestore();
     const purchasesRef = collection(firestore, `customers/${userId}/purchases`);
     const querySnapshot = await getDocs(purchasesRef);
-    const userPurchases = [];
-    querySnapshot.forEach((doc) => {
-      const purchaseData = doc.data();
-      userPurchases.push(purchaseData);
-    });
+
+    // Use map to transform the query snapshot into an array
+    const userPurchases = querySnapshot.docs.map((doc) => doc.data());
+
     return userPurchases;
   } catch (error) {
     console.error("Error fetching user purchases:", error);
@@ -32,15 +33,52 @@ const HistoryModal = () => {
   const userId = useSelector(selectLocalId);
   const [userPurchases, setUserPurchases] = useState([]);
 
+  const fetchPurchases = useCallback(async () => {
+    try {
+      const userPurchases = await fetchUserPurchases(userId);
+      setUserPurchases(userPurchases);
+    } catch (error) {
+      console.error("Error: ", error);
+    }
+  }, [userId]);
+
   useEffect(() => {
-    fetchUserPurchases(userId)
-      .then((userPurchases) => {
-        setUserPurchases(userPurchases);
-      })
-      .catch((error) => {
-        console.error("Error: ", error);
-      });
-  }, [userId]); // Ensure useEffect runs when userId changes
+    fetchPurchases();
+  }, [fetchPurchases]);
+
+  const purchaseHistory = useMemo(() => {
+    return (
+      <>
+        <Text style={styles.headline}>Your Purchase History</Text>
+        {userPurchases.map((purchase, index) => (
+          <View key={index} style={styles.purchaseContainer}>
+            <View style={styles.dateContainer}>
+              <Text style={styles.purchaseDate}>
+                Purchase Date: {purchase.dateTime.toDate().toLocaleDateString()}
+              </Text>
+            </View>
+            {purchase.cartItems.map((item, itemIndex) => (
+              <View key={itemIndex} style={styles.cartItem}>
+                <Image
+                  source={{ uri: item.productImageSrc }}
+                  style={styles.productImage}
+                />
+                <Text style={styles.itemTitle}> {item.title}</Text>
+                <Text style={styles.itemText}>QTY: {item.quantity}</Text>
+                <Text style={styles.itemText}>Price: ${item.price}</Text>
+                {item.color && (
+                  <Text style={styles.itemText}>Color: {item.color}</Text>
+                )}
+                {item.size && (
+                  <Text style={styles.itemText}>Size: {item.size}</Text>
+                )}
+              </View>
+            ))}
+          </View>
+        ))}
+      </>
+    );
+  }, [userPurchases]);
 
   return (
     <View style={styles.container}>
@@ -48,38 +86,7 @@ const HistoryModal = () => {
         {userPurchases.length === 0 ? (
           <Text style={styles.headline}>No Purchase History</Text>
         ) : (
-          <>
-            <Text style={styles.headline}>Your Purchase History</Text>
-            {userPurchases.map((purchase, index) => (
-              <View key={index} style={styles.purchaseContainer}>
-                <View style={styles.dateContainer}>
-                  <Text style={styles.purchaseDate}>
-                    Purchase Date:{" "}
-                    {purchase.dateTime.toDate().toLocaleDateString()}
-                  </Text>
-                </View>
-
-                {purchase.cartItems.map((item, itemIndex) => (
-                  <View key={itemIndex} style={styles.cartItem}>
-                    <Image
-                      source={{ uri: item.productImageSrc }}
-                      style={styles.productImage}
-                    />
-                    <Text style={styles.itemTitle}> {item.title}</Text>
-                    <Text style={styles.itemText}>QTY: {item.quantity}</Text>
-                    <Text style={styles.itemText}>Price: ${item.price}</Text>
-                    {item.color && (
-                      <Text style={styles.itemText}>Color: {item.color}</Text>
-                    )}
-                    {item.size && (
-                      <Text style={styles.itemText}>Size: {item.size}</Text>
-                    )}
-                    {/* Add more details as needed */}
-                  </View>
-                ))}
-              </View>
-            ))}
-          </>
+          purchaseHistory
         )}
       </View>
     </View>
@@ -106,7 +113,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: "white",
     fontWeight: "500",
-    textTransform: "uppercase"
+    textTransform: "uppercase",
   },
   purchaseContainer: {
     marginBottom: 20,
