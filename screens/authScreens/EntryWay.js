@@ -211,7 +211,7 @@ const EntryWay = ({ setAuthenticated }) => {
                   ),
                   tabBarIcon: ({ focused }) => (
                     <MaterialCommunityIcons
-                      name="shopping"
+                      name="ticket-percent"
                       color={focused ? "black" : "white"} // Set color based on tab focus
                       size={20}
                     />
