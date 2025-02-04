@@ -2,7 +2,7 @@
   "expo": {
     "name": "RAGESTATE",
     "slug": "ragestate-app",
-    "version": "2.43.0",
+    "version": "2.45.0",
     "orientation": "portrait",
     "icon": "./assets/RSLogo2025.png",
     "userInterfaceStyle": "light",
@@ -12,11 +12,16 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
-      "buildNumber": "43"
+      "buildNumber": "43",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +29,10 @@
         "backgroundColor": "#ffffff"
       },
       "googleServicesFile": "./google-services.json",
-      "permissions": ["android.permission.RECORD_AUDIO"],
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
+      ],
       "package": "com.tyrelle.ragestate",
       "versionCode": 13
     },
