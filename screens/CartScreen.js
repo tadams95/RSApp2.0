@@ -78,7 +78,7 @@ export default function CartScreen() {
 
   // Function to check if there are clothing items in the cart
   const hasClothingItems = cartItems.some((item) => !item.eventDetails);
-  const shipping = hasClothingItems ? "$9.99" : "$0.00";
+  const shipping = hasClothingItems ? "$4.99" : "$0.00";
 
   useEffect(() => {
     // Calculate total price
@@ -89,7 +89,7 @@ export default function CartScreen() {
 
     // Function to check if there are clothing items in the cart
     const hasClothingItems = cartItems.some((item) => !item.eventDetails);
-    const shippingCost = hasClothingItems ? 9.99 : 0.0;
+    const shippingCost = hasClothingItems ? 4.99 : 0.0;
 
     // Calculate tax (assuming a tax rate of 10%)
     const taxRate = 0.1;

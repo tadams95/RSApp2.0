@@ -31,13 +31,13 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headlineSection}>
-        <Text style={styles.headline}>Welcome to RAGESTATE</Text>
+        {/* <Text style={styles.headline}>Welcome to RAGESTATE</Text> */}
       </View>
 
       <View style={[styles.imageSection, styles.imageContainer]}>
         <Image
           style={styles.image}
-          source={require("../../assets/RSLogoNew.png")}
+          source={require("../../assets/RSLogo2025.png")}
         />
       </View>
 
@@ -108,8 +108,8 @@ const styles = StyleSheet.create({
     marginTop: windowHeight * 0.08, // Adjust margin dynamically based on window height
   },
   image: {
-    height: windowHeight * 0.5, // Adjust height dynamically based on window height
-    width: windowWidth * 0.5, // Adjust width dynamically based on window width
+    height: windowHeight * 0.25, // Adjust height dynamically based on window height
+    width: windowWidth * 0.72, // Adjust width dynamically based on window width
     alignSelf: "center",
   },
   tabContainer: {

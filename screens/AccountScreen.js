@@ -125,7 +125,7 @@ export default function AccountScreen({ setAuthenticated }) {
   const imageSource = useMemo(() => {
     return profilePicture
       ? { uri: profilePicture }
-      : require("../assets/trollFace.png");
+      : require("../assets/user.png");
   }, [profilePicture]);
 
   const handleEditProfile = () => {

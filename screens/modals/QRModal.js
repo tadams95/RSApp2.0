@@ -5,7 +5,7 @@ import QRCode from "react-native-qrcode-svg";
 import MyEvents from "../events/MyEvents";
 
 export default function QRCodeModal() {
-  let logo = require("../../assets/RSLogoRounded.png");
+  let logo = require("../../assets/RSLogo2025.png");
   // Access the localId from the Redux store
   const localId = useSelector((state) => state.user.localId);
 
@@ -15,7 +15,7 @@ export default function QRCodeModal() {
     <View style={styles.QRCodeContainer}>
       <Text style={styles.headline}>Show code to enter RAGESTATE events</Text>
       <View style={styles.QRBackground}>
-        <QRCode value={localId} size={size} logo={logo} logoSize={50} />
+        <QRCode value={localId} size={size} logo={logo} logoSize={30} />
       </View>
       <MyEvents />
     </View>

@@ -201,7 +201,7 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
       <View style={styles.container}>
         <Image
           style={styles.image}
-          source={require("../../assets/RSLogoRounded.png")}
+          source={require("../../assets/RSLogo2025.png")}
         />
         <ScrollView style={{ flex: 1 }}>
           <Text style={styles.headline}>Welcome back, login below</Text>
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   },
   image: {
     height: 100,
-    width: 100,
+    width: 125,
     alignSelf: "center",
     marginVertical: Dimensions.get("window").height * 0.05,
   },

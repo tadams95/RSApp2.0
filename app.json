@@ -4,16 +4,15 @@
     "slug": "ragestate-app",
     "version": "2.43.0",
     "orientation": "portrait",
-    "icon": "./assets/RSLogo.png",
+    "icon": "./assets/RSLogo2025.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/RSLogoNew.png",
+      "image": "./assets/RSLogo2025.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
@@ -21,18 +20,16 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/RSLogo.png",
+        "foregroundImage": "./assets/RSLogo2025.png",
         "backgroundColor": "#ffffff"
       },
       "googleServicesFile": "./google-services.json",
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ],
+      "permissions": ["android.permission.RECORD_AUDIO"],
       "package": "com.tyrelle.ragestate",
       "versionCode": 13
     },
     "web": {
-      "favicon": "./assets/RSLogoNew.png"
+      "favicon": "./assets/RSLogo2025.png"
     },
     "plugins": [
       [
@@ -51,7 +48,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/RSLogo.png",
+          "icon": "./assets/RSLogo2025.png",
           "color": "#000000"
         }
       ],
