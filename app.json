@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
@@ -50,7 +48,7 @@
         "@stripe/stripe-react-native",
         {
           "merchantIdentifier": "merchant.com.tyrelle.ragestate-beta",
-          "enableGooglePay": false
+          "enableGooglePay": true
         }
       ],
       [
