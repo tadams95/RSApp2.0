@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     borderColor: "white",
   },
   eventImage: {
-    height: windowWidth > 600 ? windowHeight * 0.7 : windowHeight * 0.4,
+    height: windowWidth > 600 ? windowHeight * 0.7 : windowHeight * 0.6,
     width: "auto",
     borderRadius: 8,
     marginBottom: 5,
