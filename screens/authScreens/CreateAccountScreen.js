@@ -7,12 +7,10 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   Alert,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 

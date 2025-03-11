@@ -1,11 +1,19 @@
-import axios from "axios";
-
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  sendPasswordResetEmail,
+  getIdToken 
+} from "firebase/auth";
 import { auth } from "../firebase/firebase";
+import { getFirestore, doc, setDoc, updateDoc, getDoc } from "firebase/firestore";
+import { getDatabase, ref, set, update, get } from "firebase/database";
 
-import { setLocalId } from "../store/redux/userSlice";
+import { setLocalId, setUserEmail } from "../store/redux/userSlice";
 
-const API_KEY = "AIzaSyDcHCRWrYonzJa_Pyfwzbfp-r3bxz2bUX8";
+// Initialize Firestore and Realtime Database
+const db = getFirestore();
+const rtdb = getDatabase();
 
 export async function createUser(
   email,
@@ -14,91 +22,220 @@ export async function createUser(
   lastName,
   phoneNumber,
   expoPushToken,
-  dispatch
+  dispatch // Make dispatch optional
 ) {
   try {
-    const response = await axios.post(
-      "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" +
-        API_KEY,
-      {
-        email: email,
-        password: password,
-        returnSecureToken: true,
-      }
-    );
-
-    // Save additional user data to real-time database
-    const userId = response.data.localId; // Assuming Firebase returns the user ID
-    await axios.put(
-      `https://ragestate-app-default-rtdb.firebaseio.com/users/${userId}.json`,
-      {
-        email: email,
-        firstName: firstName,
-        lastName: lastName,
-        phoneNumber: phoneNumber,
-        expoPushToken: expoPushToken,
-        qrCode: userId,
-      }
-    );
-
-    // Dispatch an action to update the userId in the Redux store
-    dispatch(setLocalId(userId));
-
-    return response.data; // You might want to return the response data for further processing
-  } catch (error) {
-    // console.error("Error creating user:", error.response.data);
-
-    if (error.response && error.response.data && error.response.data.error) {
-      const errorCode = error.response.data.error.message;
-      if (errorCode === "EMAIL_EXISTS") {
-        throw new Error("Email exists, please try logging in or forgot password.");
-      }
-    }
-
-    throw new Error("Error creating user"); // You might want to throw an error for the calling code to handle
-  }
-}
-
-export async function loginUser(email, password) {
-  try {
-    // Sign in the user with email and password using Firebase Authentication
-    const userCredential = await signInWithEmailAndPassword(
+    const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
       password
     );
 
-    // Extract user data or token from the userCredential if needed
+    const userId = userCredential.user.uid;
+    const timestamp = new Date().toISOString();
+    const displayName = `${firstName} ${lastName}`;
+    
+    const userData = {
+      email: email,
+      firstName: firstName,
+      lastName: lastName,
+      displayName: displayName,
+      phoneNumber: phoneNumber,
+      expoPushToken: expoPushToken || "",
+      qrCode: userId,
+      userId: userId,
+      createdAt: timestamp,
+      lastLogin: timestamp,
+      lastUpdated: timestamp,
+      profilePicture: "",
+      stripeCustomerId: "",
+      isAdmin: false,
+      migratedFromRTDB: false
+    };
+
+    // Save to both databases in parallel using Firebase SDK
+    await Promise.all([
+      // Save to Realtime Database
+      set(ref(rtdb, `users/${userId}`), userData),
+      
+      // Save to Firestore
+      setDoc(doc(db, "customers", userId), {
+        ...userData,
+        migrationDate: ""
+      })
+    ]);
+
+    // Only dispatch if the function is provided
+    if (typeof dispatch === 'function') {
+      dispatch(setLocalId(userId));
+      dispatch(setUserEmail(email));
+    }
+
+    return {
+      user: userCredential.user,
+      userData
+    };
+  } catch (error) {
+    const errorMessage = handleAuthError(error);
+    throw new Error(errorMessage);
+  }
+}
+
+export async function loginUser(email, password, dispatch) {
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-    // Return user data or perform additional actions
+    const userId = user.uid;
+    const timestamp = new Date().toISOString();
+    
+    await Promise.all([
+      update(ref(rtdb, `users/${userId}`), { lastLogin: timestamp }),
+      updateDoc(doc(db, "customers", userId), {
+        lastLogin: timestamp,
+        lastUpdated: timestamp
+      })
+    ]);
+    
+    // Only dispatch if the function is provided
+    if (typeof dispatch === 'function') {
+      dispatch(setLocalId(userId));
+      dispatch(setUserEmail(email));
+    }
 
     return user;
   } catch (error) {
-    // Handle errors
-    console.error("Error logging user in:", error.message);
-    throw error;
+    const errorMessage = handleAuthError(error);
+    throw new Error(errorMessage);
   }
 }
 
 export async function forgotPassword(email) {
   try {
-    const response = await axios.post(
-      "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" +
-        API_KEY,
-      {
-        requestType: "PASSWORD_RESET",
-        email: email,
-      }
-    );
-
-    // Handle successful response
-    console.log("Password reset email sent successfully:", response.data);
-    // You might want to return a success message or a boolean indicating success here
-    return true;
+    // Using Firebase's built-in password reset functionality
+    await sendPasswordResetEmail(auth, email);
+    return { success: true, message: "Password reset email sent successfully" };
   } catch (error) {
-    // Handle errors
-    console.error("Password reset failed:", error.response.data.error.message);
-    // You might want to return an error message or a boolean indicating failure here
-    return false;
+    const errorMessage = handleAuthError(error);
+    return { success: false, message: errorMessage };
   }
+}
+
+export async function logoutUser(dispatch) {
+  try {
+    await signOut(auth);
+    // Clear user data in Redux store
+    dispatch(setLocalId(null));
+    dispatch(setUserEmail(null));
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
+export async function getUserData(userId) {
+  try {
+    // Try Firestore first
+    const firestoreDoc = await getDoc(doc(db, "customers", userId));
+    
+    if (firestoreDoc.exists()) {
+      return firestoreDoc.data();
+    }
+    
+    // Get current user's token for RTDB
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("No authenticated user");
+    }
+    const idToken = await getIdToken(currentUser);
+    
+    // Fall back to RTDB
+    const rtdbSnapshot = await get(ref(rtdb, `users/${userId}`));
+    
+    if (rtdbSnapshot.exists()) {
+      const rtdbData = rtdbSnapshot.val();
+      const timestamp = new Date().toISOString();
+      
+      // Prepare and migrate data to Firestore
+      const firestoreData = {
+        ...rtdbData,
+        displayName: rtdbData.firstName && rtdbData.lastName ? 
+          `${rtdbData.firstName} ${rtdbData.lastName}` : "",
+        lastUpdated: timestamp,
+        migratedFromRTDB: true,
+        migrationDate: timestamp,
+        isAdmin: rtdbData.isAdmin || false,
+        profilePicture: rtdbData.profilePicture || "",
+        stripeCustomerId: rtdbData.stripeCustomerId || ""
+      };
+      
+      // Migrate to Firestore
+      await setDoc(doc(db, "customers", userId), firestoreData);
+      
+      return firestoreData;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    throw new Error("Failed to retrieve user data");
+  }
+}
+
+export async function updateUserData(userId, userData) {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("No authenticated user");
+    }
+    const idToken = await getIdToken(currentUser);
+    const timestamp = new Date().toISOString();
+    const updatedData = {
+      ...userData,
+      lastUpdated: timestamp
+    };
+    
+    // Update both databases using Firebase SDK
+    await Promise.all([
+      // Update RTDB
+      update(ref(rtdb, `users/${userId}`), updatedData),
+      
+      // Update Firestore
+      updateDoc(doc(db, "customers", userId), updatedData)
+    ]);
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating user data:", error);
+    return { success: false, message: "Failed to update user data" };
+  }
+}
+
+// Helper function to standardize error handling
+function handleAuthError(error) {
+  console.error("Authentication error:", error);
+  
+  if (error.code) {
+    switch (error.code) {
+      case "auth/email-already-in-use":
+        return "This email is already in use. Please try logging in.";
+      case "auth/invalid-email":
+        return "Invalid email format.";
+      case "auth/operation-not-allowed":
+        return "Password sign-in is disabled for this project.";
+      case "auth/weak-password":
+        return "Password is too weak. Please use a stronger password.";
+      case "auth/user-disabled":
+        return "This account has been disabled.";
+      case "auth/user-not-found":
+        return "No account found with this email.";
+      case "auth/wrong-password":
+        return "Incorrect password.";
+      case "auth/too-many-requests":
+        return "Too many failed attempts. Please try again later.";
+      default:
+        return `Authentication error: ${error.message}`;
+    }
+  }
+  
+  return "An unexpected error occurred. Please try again.";
 }
