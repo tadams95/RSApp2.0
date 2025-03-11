@@ -210,6 +210,29 @@ export async function updateUserData(userId, userData) {
   }
 }
 
+export async function updateUserStripeId(userId, stripeCustomerId) {
+  try {
+    // Update both databases using Firebase SDK
+    await Promise.all([
+      // Update RTDB
+      update(ref(rtdb, `users/${userId}`), {
+        stripeCustomerId: stripeCustomerId
+      }),
+      
+      // Update Firestore
+      updateDoc(doc(db, "customers", userId), {
+        stripeCustomerId: stripeCustomerId,
+        lastUpdated: new Date().toISOString()
+      })
+    ]);
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating Stripe customer ID:", error);
+    throw new Error('Failed to update user with Stripe customer ID');
+  }
+}
+
 // Helper function to standardize error handling
 function handleAuthError(error) {
   console.error("Authentication error:", error);

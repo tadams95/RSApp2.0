@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { createUser, loginUser } from "../../util/auth";
+import { createUser, loginUser, updateUserStripeId } from "../../util/auth";
 import { usePushNotifications } from "../../notifications/PushNotifications";
 import { useDispatch } from "react-redux";
 import { setStripeCustomerId } from "../../store/redux/userSlice";
@@ -127,18 +127,17 @@ export default function CreateAccountScreen({ navigation, setAuthenticated }) {
   async function confirmCreateHandler() {
     try {
       setIsAuthenticating(true);
-      // Perform email validation if needed
+
+      // Validate inputs
       const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
       if (!emailRegex.test(email)) {
         throw new Error("Please enter a valid email address");
       }
-
-      // Perform password validation if needed
       validatePassword(password);
 
-      //Register for push notifications after successful credential validation
       const expoPushToken = await registerForPushNotifications();
 
+      // 1. First create the user
       const createdUser = await createUser(
         email,
         password,
@@ -146,11 +145,11 @@ export default function CreateAccountScreen({ navigation, setAuthenticated }) {
         lastName,
         phoneNumber,
         expoPushToken,
+        null, // initial stripe ID is null
         dispatch
       );
 
-      await loginUser(email, password);
-
+      // 2. Create Stripe customer
       const stripeCustomerResponse = await fetch(`${API_URL}/create-customer`, {
         method: "POST",
         headers: {
@@ -159,12 +158,11 @@ export default function CreateAccountScreen({ navigation, setAuthenticated }) {
         body: JSON.stringify({
           email: email,
           name: `${firstName} ${lastName}`,
-          firebaseId: createdUser.localId, // Assuming the createdUser object contains the localId
+          firebaseId: createdUser.userData.userId,
         }),
       });
 
       if (!stripeCustomerResponse.ok) {
-        // Log response status and error message if available
         console.error(
           "Failed to create Stripe customer. Status:",
           stripeCustomerResponse.status
@@ -176,9 +174,19 @@ export default function CreateAccountScreen({ navigation, setAuthenticated }) {
 
       const stripeCustomerData = await stripeCustomerResponse.json();
 
-      dispatch(setStripeCustomerId(stripeCustomerData));
+      // 3. Update the user with Stripe customer ID
+      await updateUserStripeId(
+        createdUser.userData.userId,
+        stripeCustomerData.customerId
+      );
 
-      // Reset input fields after successful creation
+      // Update Redux store
+      dispatch(setStripeCustomerId(stripeCustomerData.customerId));
+
+      // 4. Complete login
+      await loginUser(email, password);
+
+      // Reset form and finish
       setFirstName("");
       setLastName("");
       setEmail("");
