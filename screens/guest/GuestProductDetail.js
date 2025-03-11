@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     borderColor: "white",
     borderRadius: 8,
     marginTop: 16,
-    padding: 16,
+    padding: 12,
     alignItems: "center",
   },
   actionButtonText: {
