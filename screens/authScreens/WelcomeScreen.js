@@ -61,7 +61,7 @@ export default function WelcomeScreen() {
         />
 
         <View style={styles.actionContainer}>
-          <Text style={styles.headline}>Welcome to RageState</Text>
+          <Text style={styles.headline}>LIVE IN YOUR WORLD, RAGE IN OURS</Text>
           
           <View style={styles.buttonsContainer}>
             <TouchableOpacity
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   },
   headline: {
     fontFamily,
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "700",
     textAlign: "center",
     color: "white",

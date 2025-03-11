@@ -27,7 +27,7 @@ import {
   setStripeCustomerId,
 } from "../../store/redux/userSlice";
 
-import { getDatabase, ref as databaseRef, get } from "firebase/database";
+import { getDatabase, ref, get } from "firebase/database";
 
 import { usePushNotifications } from "../../notifications/PushNotifications";
 
@@ -40,6 +40,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const API_URL =
   "https://us-central1-ragestate-app.cloudfunctions.net/stripePayment";
+const rtdb = getDatabase();
 
 export default function LoginScreen2({ navigation, setAuthenticated }) {
   const [email, setEmail] = useState("");
@@ -113,11 +114,8 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
   };
 
   const loginHandler = async () => {
-    // Get a reference to the database
-    const db = getDatabase();
-
+    // Handle Remember Me logic
     if (rememberMe) {
-      // Save the login credentials (email and password) securely
       try {
         await AsyncStorage.setItem("email", email);
         await AsyncStorage.setItem("password", password);
@@ -126,7 +124,6 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
         console.error("Error saving login credentials:", error);
       }
     } else {
-      // Clear the saved login credentials if "Remember Me" is not selected
       try {
         await AsyncStorage.removeItem("email");
         await AsyncStorage.removeItem("password");
@@ -138,49 +135,35 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
     try {
       setIsAuthenticating(true);
 
-      // Call loginUser function
-      const userData = await loginUser(email, password);
-      const localId = userData.uid;
-      const userEmail = userData.email;
-      dispatch(setLocalId(localId));
-      dispatch(setUserEmail(userEmail));
-
-      // Register for push notifications after successful login
+      const user = await loginUser(email, password, dispatch);
+      
+      // Get push token if possible (will be null in Expo Go)
       const token = await registerForPushNotifications();
+      
+      // Get user data from RTDB
+      const userRef = ref(rtdb, `users/${user.uid}`);
+      const userSnapshot = await get(userRef);
+      
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.val();
+        const name = `${userData.firstName} ${userData.lastName}`;
+        dispatch(setUserName(name));
+      }
 
-      const userRef = databaseRef(db, `users/${localId}`);
-
-      get(userRef)
-        .then((snapshot) => {
-          if (snapshot.exists()) {
-            // Extract the user's name and profile picture URL from the snapshot data
-            const userData = snapshot.val();
-            const name = userData.firstName + " " + userData.lastName;
-
-            // Dispatch the setUserName action with the fetched user name
-            dispatch(setUserName(name));
-          } else {
-            // console.log("No data available");
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching user data:", error);
-        });
-
+      // Create or get Stripe customer
       const stripeCustomerResponse = await fetch(`${API_URL}/create-customer`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: email,
+          email: user.email,
           name: userName,
-          firebaseId: localId,
+          firebaseId: user.uid,
         }),
       });
 
       if (!stripeCustomerResponse.ok) {
-        // Log response status and error message if available
         console.error(
           "Failed to create Stripe customer. Status:",
           stripeCustomerResponse.status
@@ -191,29 +174,30 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
       }
 
       const stripeCustomerData = await stripeCustomerResponse.json();
-
+      
+      // Update Redux store
       dispatch(setStripeCustomerId(stripeCustomerData));
+      
+      // Only update push token if we got one
+      if (token) {
+        dispatch(setExpoPushToken(token));
+      }
 
-      dispatch(setExpoPushToken(token));
-
-      // Reset form fields and loading state
+      // Reset form and complete authentication
       setEmail("");
       setPassword("");
       setAuthenticated(true);
       setIsAuthenticating(false);
+      
     } catch (error) {
-      console.error("Error during login:", error); // Log the error for debugging purposes
-
+      console.error("Error during login:", error);
+      
       let errorMessage = "An error occurred while logging in.";
       if (error.code === "auth/invalid-credential") {
-        errorMessage =
-          "Invalid email or password. Please check your credentials and try again.";
+        errorMessage = "Invalid email or password. Please check your credentials and try again.";
       }
 
-      // Alert the user with the appropriate error message
       Alert.alert("Error", errorMessage);
-
-      // Reset loading state
       setIsAuthenticating(false);
     }
   };
