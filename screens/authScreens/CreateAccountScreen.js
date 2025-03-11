@@ -11,15 +11,15 @@ import {
   ScrollView,
   Alert,
   Image,
+  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { createUser, loginUser } from "../../util/auth";
-
 import { usePushNotifications } from "../../notifications/PushNotifications";
-
 import { useDispatch } from "react-redux";
 import { setStripeCustomerId } from "../../store/redux/userSlice";
-
 import LoadingOverlay from "../../ui/LoadingOverlay";
 
 export default function CreateAccountScreen({ navigation, setAuthenticated }) {
@@ -32,13 +32,63 @@ export default function CreateAccountScreen({ navigation, setAuthenticated }) {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const dispatch = useDispatch();
   const { registerForPushNotifications } = usePushNotifications();
+  const [formErrors, setFormErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   const API_URL =
     "https://us-central1-ragestate-app.cloudfunctions.net/stripePayment";
 
   useEffect(() => {
     // Handle state updates here if needed
-  }, [firstName, lastName, email, phoneNumber]);
+    validateForm();
+  }, [firstName, lastName, email, phoneNumber, password, confirmPassword]);
+
+  const validateForm = () => {
+    const errors = {};
+
+    // Email validation
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    if (email && !emailRegex.test(email)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    // Password validation
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (password && !passwordRegex.test(password)) {
+      errors.password =
+        "Password must have 8+ chars with uppercase, lowercase, number, and special char";
+    }
+
+    // Confirm password validation
+    if (confirmPassword && password !== confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
+    }
+
+    // Phone validation (basic)
+    const phoneRegex = /^\d{10,}$/;
+    if (phoneNumber && !phoneRegex.test(phoneNumber.replace(/\D/g, ""))) {
+      errors.phoneNumber = "Please enter a valid phone number";
+    }
+
+    setFormErrors(errors);
+
+    // Check if form is valid overall
+    const requiredFields = [
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      password,
+      confirmPassword,
+    ];
+    const isValid =
+      requiredFields.every((field) => field && field.trim().length > 0) &&
+      Object.keys(errors).length === 0;
+    setIsFormValid(isValid);
+  };
 
   function cancelCreateHandler() {
     setFirstName("");
@@ -57,6 +107,22 @@ export default function CreateAccountScreen({ navigation, setAuthenticated }) {
       throw new Error(
         "Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one digit, and one special character."
       );
+    }
+  }
+
+  function formatPhoneNumber(input) {
+    const cleaned = input.replace(/\D/g, "");
+
+    // Format: (XXX) XXX-XXXX
+    if (cleaned.length <= 3) {
+      return cleaned;
+    } else if (cleaned.length <= 6) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+    } else {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(
+        6,
+        10
+      )}`;
     }
   }
 
@@ -144,6 +210,60 @@ export default function CreateAccountScreen({ navigation, setAuthenticated }) {
     }
   }
 
+  const renderFormField = (
+    label,
+    value,
+    setter,
+    placeholder,
+    secureTextEntry = false,
+    keyboardType = "default",
+    error = null,
+    isPasswordField = false,
+    showPasswordState = false,
+    setShowPasswordState = null
+  ) => {
+    return (
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>{label}</Text>
+        <View style={[styles.inputWrapper, error && styles.inputError]}>
+          <TextInput
+            style={styles.input}
+            placeholder={placeholder}
+            placeholderTextColor="#999"
+            value={value}
+            onChangeText={(text) => {
+              if (keyboardType === "phone-pad") {
+                setter(formatPhoneNumber(text));
+              } else {
+                setter(text);
+              }
+            }}
+            secureTextEntry={secureTextEntry && !showPasswordState}
+            keyboardType={keyboardType}
+            autoCapitalize={
+              keyboardType === "email-address" || secureTextEntry
+                ? "none"
+                : "words"
+            }
+          />
+          {isPasswordField && (
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={() => setShowPasswordState(!showPasswordState)}
+            >
+              <Ionicons
+                name={showPasswordState ? "eye-off-outline" : "eye-outline"}
+                size={24}
+                color="#888"
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+        {error && <Text style={styles.errorText}>{error}</Text>}
+      </View>
+    );
+  };
+
   if (isAuthenticating) {
     return <LoadingOverlay message="Creating Account..." />;
   }
@@ -152,82 +272,116 @@ export default function CreateAccountScreen({ navigation, setAuthenticated }) {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
     >
-      <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Image
           style={styles.image}
-          source={require("../../assets/RSLogoRounded.png")}
+          source={require("../../assets/RSLogo2025.png")}
         />
-        <ScrollView style={{ flex: 1 }}>
-          <Text style={styles.headline}>Create your account below</Text>
 
-          <View style={styles.editProfileContainer}>
-            <Text style={styles.subtitle}>First Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="First Name"
-              value={firstName}
-              onChangeText={setFirstName}
-              autoCapitalize="words"
-            />
-            <Text style={styles.subtitle}>Last Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Last Name"
-              value={lastName}
-              onChangeText={setLastName}
-            />
-            <Text style={styles.subtitle}>Phone Number</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Phone Number"
-              autoCapitalize="none"
-              secureTextEntry={false}
-              onChangeText={setPhoneNumber}
-              value={phoneNumber}
-              inputMode="numeric"
-            />
-            <Text style={styles.subtitle}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              autoCapitalize="none"
-              secureTextEntry={false}
-              onChangeText={setEmail}
-              value={email}
-            />
-            <Text style={styles.subtitle}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              autoCapitalize="none"
-              secureTextEntry={true}
-              onChangeText={setPassword}
-              value={password}
-            />
-            <Text style={styles.subtitle}>Confirm Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              autoCapitalize="none"
-              secureTextEntry={true}
-              onChangeText={setConfirmPassword}
-              value={confirmPassword}
-            />
+        <View style={styles.formContainer}>
+          <Text style={styles.headline}>Create your account</Text>
+
+          <View style={styles.nameRow}>
+            {renderFormField(
+              "First Name",
+              firstName,
+              setFirstName,
+              "First Name",
+              false,
+              "default",
+              formErrors.firstName
+            )}
+
+            {renderFormField(
+              "Last Name",
+              lastName,
+              setLastName,
+              "Last Name",
+              false,
+              "default",
+              formErrors.lastName
+            )}
           </View>
 
-          {/* Tab Container */}
-          <View style={styles.tabContainer}>
-            <Pressable onPress={cancelCreateHandler} style={styles.tabButton}>
-              <Text style={styles.secondaryText}>CANCEL</Text>
-            </Pressable>
+          {renderFormField(
+            "Phone Number",
+            phoneNumber,
+            setPhoneNumber,
+            "(555) 555-5555",
+            false,
+            "phone-pad",
+            formErrors.phoneNumber
+          )}
 
-            <Pressable onPress={confirmCreateHandler} style={styles.tabButton}>
-              <Text style={styles.secondaryText}>CREATE</Text>
-            </Pressable>
+          {renderFormField(
+            "Email",
+            email,
+            setEmail,
+            "your.email@example.com",
+            false,
+            "email-address",
+            formErrors.email
+          )}
+
+          {renderFormField(
+            "Password",
+            password,
+            setPassword,
+            "Create Password",
+            true,
+            "default",
+            formErrors.password,
+            true,
+            showPassword,
+            setShowPassword
+          )}
+
+          {renderFormField(
+            "Confirm Password",
+            confirmPassword,
+            setConfirmPassword,
+            "Confirm Password",
+            true,
+            "default",
+            formErrors.confirmPassword,
+            true,
+            showConfirmPassword,
+            setShowConfirmPassword
+          )}
+
+          <View style={styles.actionContainer}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.cancelButton]}
+              onPress={cancelCreateHandler}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.createButton,
+                !isFormValid && styles.disabledButton,
+              ]}
+              onPress={confirmCreateHandler}
+              disabled={!isFormValid}
+            >
+              <Text style={styles.createButtonText}>Create Account</Text>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-      </View>
+
+          <Text style={styles.termsText}>
+            By creating an account, you agree to our Terms of Service and
+            Privacy Policy
+          </Text>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -238,68 +392,130 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
+const windowWidth = Dimensions.get("window").width;
+const windowHeight = Dimensions.get("window").height;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: Dimensions.get("window").height * 0.05,
     backgroundColor: "#000",
+    marginTop: windowHeight * 0.08,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingVertical: 30,
+    paddingHorizontal: 20,
     alignItems: "center",
-    marginVertical: 20,
+  },
+  image: {
+    height: 80,
+    width: 120,
+    resizeMode: "contain",
+    marginBottom: 20,
+  },
+  formContainer: {
+    width: "100%",
+    maxWidth: 500,
+    alignSelf: "center",
   },
   headline: {
     fontFamily,
+    fontSize: 24,
     fontWeight: "700",
-    paddingTop: 10,
     textAlign: "center",
-    textTransform: "uppercase",
     color: "white",
+    marginBottom: 24,
   },
-  subtitle: {
+  nameRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  inputContainer: {
+    flex: 1,
+    marginBottom: 16,
+    paddingHorizontal: 5,
+  },
+  label: {
     fontFamily,
-    fontWeight: "500",
-    paddingBottom: 5,
-    fontSize: 18,
     color: "white",
+    marginBottom: 6,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1a1a1a",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#333",
+    overflow: "hidden",
   },
   input: {
-    backgroundColor: "#FFF",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5,
-    fontFamily,
-    fontWeight: "500",
-    width: Dimensions.get("window").width * 0.9,
-    fontSize: 18,
-  },
-  editProfileContainer: {
-    paddingTop: 10,
-  },
-  tabContainer: {
     flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    alignItems: "center",
-    marginTop: 20,
-  },
-  tabButton: {
-    backgroundColor: "black",
-    padding: 6,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "white",
-    width: "30%",
-  },
-  secondaryText: {
-    fontFamily,
-    fontWeight: "500",
-    textAlign: "center",
     color: "white",
+    padding: 12,
+    fontSize: 16,
+    fontFamily,
   },
-  image: {
-    height: 100,
-    width: 100,
-    alignSelf: "center",
-    marginBottom: Dimensions.get("window").height * 0.01,
+  inputError: {
+    borderColor: "#ff5252",
+    borderWidth: 1,
+  },
+  errorText: {
+    color: "#ff5252",
+    fontSize: 12,
+    marginTop: 4,
+    fontFamily,
+  },
+  eyeIcon: {
+    padding: 10,
+  },
+  actionContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 24,
+  },
+  actionButton: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 5,
+    borderWidth: 1,
+  },
+  cancelButton: {
+    backgroundColor: "transparent",
+    borderColor: "#555",
+  },
+  createButton: {
+    backgroundColor: "#222",
+    borderColor: "#fff",
+  },
+  disabledButton: {
+    borderColor: "#555",
+    opacity: 0.5,
+  },
+  cancelButtonText: {
+    fontFamily,
+    color: "#ddd",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  createButtonText: {
+    fontFamily,
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  termsText: {
+    fontFamily,
+    color: "#777",
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 20,
   },
 });

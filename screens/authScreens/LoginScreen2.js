@@ -11,8 +11,9 @@ import {
   Image,
   Alert,
   Platform,
+  TouchableOpacity,
 } from "react-native";
-
+import { Ionicons } from "@expo/vector-icons";
 import { CheckBox } from "@rneui/themed";
 
 import { useDispatch, useSelector } from "react-redux";
@@ -47,6 +48,9 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const userName = useSelector(selectUserName);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const [isFormValid, setIsFormValid] = useState(false);
 
   const dispatch = useDispatch();
 
@@ -59,6 +63,7 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
   const cancelHandler = () => {
     navigation.goBack();
   };
+
   useEffect(() => {
     const loadSavedCredentials = async () => {
       try {
@@ -77,6 +82,35 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
 
     loadSavedCredentials();
   }, []);
+
+  useEffect(() => {
+    // Validate form on input change
+    validateForm();
+  }, [email, password]);
+
+  const validateForm = () => {
+    const errors = {};
+
+    // Email validation
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    if (email && !emailRegex.test(email)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    // Basic password validation
+    if (password && password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+    }
+
+    setFormErrors(errors);
+
+    // Check if form is valid overall
+    const requiredFields = [email, password];
+    const isValid =
+      requiredFields.every((field) => field && field.trim().length > 0) &&
+      Object.keys(errors).length === 0;
+    setIsFormValid(isValid);
+  };
 
   const loginHandler = async () => {
     // Get a reference to the database
@@ -183,6 +217,55 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
       setIsAuthenticating(false);
     }
   };
+
+  const renderFormField = (
+    label,
+    value,
+    setter,
+    placeholder,
+    secureTextEntry = false,
+    keyboardType = "default",
+    error = null,
+    isPasswordField = false,
+    showPasswordState = false,
+    setShowPasswordState = null
+  ) => {
+    return (
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>{label}</Text>
+        <View style={[styles.inputWrapper, error && styles.inputError]}>
+          <TextInput
+            style={styles.input}
+            placeholder={placeholder}
+            placeholderTextColor="#999"
+            value={value}
+            onChangeText={(text) => setter(text)}
+            secureTextEntry={secureTextEntry && !showPasswordState}
+            keyboardType={keyboardType}
+            autoCapitalize={
+              keyboardType === "email-address" || secureTextEntry
+                ? "none"
+                : "words"
+            }
+          />
+          {isPasswordField && (
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={() => setShowPasswordState(!showPasswordState)}
+            >
+              <Ionicons
+                name={showPasswordState ? "eye-off-outline" : "eye-outline"}
+                size={24}
+                color="#888"
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+        {error && <Text style={styles.errorText}>{error}</Text>}
+      </View>
+    );
+  };
+
   if (showForgotPasswordModal) {
     return (
       <ForgotPasswordModal
@@ -197,67 +280,90 @@ export default function LoginScreen2({ navigation, setAuthenticated }) {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container}>
-      <View style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Image
           style={styles.image}
           source={require("../../assets/RSLogo2025.png")}
         />
-        <ScrollView style={{ flex: 1 }}>
-          <Text style={styles.headline}>Welcome back, login below</Text>
 
-          <View style={styles.loginContainer}>
-            <Text style={styles.subtitle}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              autoCapitalize="none"
-              secureTextEntry={false}
-              onChangeText={(text) => setEmail(text)}
-              value={email}
+        <View style={styles.formContainer}>
+          <Text style={styles.headline}>Welcome back</Text>
+
+          {renderFormField(
+            "Email",
+            email,
+            setEmail,
+            "your.email@example.com",
+            false,
+            "email-address",
+            formErrors.email
+          )}
+
+          {renderFormField(
+            "Password",
+            password,
+            setPassword,
+            "Enter Password",
+            true,
+            "default",
+            formErrors.password,
+            true,
+            showPassword,
+            setShowPassword
+          )}
+
+          <View style={styles.rememberMeContainer}>
+            <CheckBox
+              title="Remember Me"
+              checked={rememberMe}
+              onPress={() => setRememberMe(!rememberMe)}
+              iconType="material-community"
+              checkedIcon="checkbox-marked"
+              uncheckedIcon="checkbox-blank-outline"
+              checkedColor="white"
+              containerStyle={styles.checkBoxContainer}
+              textStyle={styles.checkBoxText}
             />
-            <Text style={styles.subtitle}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              autoCapitalize="none"
-              secureTextEntry={true}
-              onChangeText={(text) => setPassword(text)}
-              value={password}
-            />
           </View>
 
-          <CheckBox
-            title="Remember Me"
-            fontFamily={fontFamily}
-            checked={rememberMe}
-            center
-            iconType="material-community"
-            checkedIcon="checkbox-marked"
-            uncheckedIcon="checkbox-blank-outline"
-            checkedColor="white" // Adjusted color to match the theme
-            containerStyle={styles.checkBoxContainer} // Added containerStyle prop
-            textStyle={styles.checkBoxText} // Added textStyle prop
-            onPress={() => setRememberMe(!rememberMe)}
-          />
+          <View style={styles.actionContainer}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.cancelButton]}
+              onPress={cancelHandler}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
 
-          {/* Tab Container */}
-          <View style={styles.tabContainer}>
-            <Pressable onPress={cancelHandler} style={styles.tabButton}>
-              <Text style={styles.buttonText}>CANCEL</Text>
-            </Pressable>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.loginButton,
+                !isFormValid && styles.disabledButton,
+              ]}
+              onPress={loginHandler}
+              disabled={!isFormValid}
+            >
+              <Text style={styles.loginButtonText}>Login</Text>
+            </TouchableOpacity>
+          </View>
 
-            <Pressable onPress={loginHandler} style={styles.tabButton}>
-              <Text style={styles.buttonText}>LOGIN</Text>
-            </Pressable>
-          </View>
-          <View style={styles.tabContainer}>
-            <Pressable onPress={forgotHandler} style={styles.tabButton2}>
-              <Text style={styles.buttonText}>FORGOT PASSWORD</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </View>
+          <TouchableOpacity
+            style={styles.forgotPasswordButton}
+            onPress={forgotHandler}
+          >
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -268,97 +374,145 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
+const windowWidth = Dimensions.get("window").width;
+const windowHeight = Dimensions.get("window").height;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#000",
-    alignItems: "center",
-    marginTop: Dimensions.get("window").height * 0.07,
+    marginTop: windowHeight * 0.1,
   },
-  headline: {
-    fontWeight: "700",
-    textAlign: "center",
-    textTransform: "uppercase",
-    marginTop: Dimensions.get("window").height * 0.03,
-    fontSize: 20,
-    marginBottom: 20,
-    color: "white",
-    fontFamily,
-  },
-  subtitle: {
-    paddingBottom: 5,
-    fontSize: 18,
-    color: "white",
-    fontFamily,
-    fontWeight: "500",
-  },
-  input: {
-    backgroundColor: "#F6F6F6",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5,
-    width: Dimensions.get("window").width * 0.9,
-    fontSize: 18,
-    fontFamily,
-    fontWeight: "500",
-  },
-  loginContainer: {
-    paddingTop: 10,
-  },
-  tabContainer: {
+  scrollView: {
     flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    alignItems: "center",
-    marginTop: 15,
-    marginBottom: 15,
   },
-  tabButton: {
-    backgroundColor: "#000",
-    padding: 6,
-    borderRadius: 10,
+  scrollContent: {
+    paddingVertical: 30,
+    paddingHorizontal: 20,
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "white",
-    width: "30%",
-  },
-  tabContainer2: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    alignItems: "center",
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  tabButton2: {
-    backgroundColor: "#000",
-    padding: 6,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "white",
-    width: "50%",
-  },
-  buttonText: {
-    textAlign: "center",
-    color: "white",
-    fontFamily,
-    fontWeight: "500",
+    minHeight: "100%",
   },
   image: {
-    height: 100,
-    width: 125,
+    height: 80,
+    width: 120,
+    resizeMode: "contain",
+    marginBottom: 20,
+    marginTop: windowHeight * 0.08,
+  },
+  formContainer: {
+    width: "100%",
+    maxWidth: 500,
     alignSelf: "center",
-    marginVertical: Dimensions.get("window").height * 0.05,
+  },
+  headline: {
+    fontFamily,
+    fontSize: 24,
+    fontWeight: "700",
+    textAlign: "center",
+    color: "white",
+    marginBottom: 24,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    fontFamily,
+    color: "white",
+    marginBottom: 6,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1a1a1a",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#333",
+    overflow: "hidden",
+  },
+  input: {
+    flex: 1,
+    color: "white",
+    padding: 12,
+    fontSize: 16,
+    fontFamily,
+  },
+  inputError: {
+    borderColor: "#ff5252",
+    borderWidth: 1,
+  },
+  errorText: {
+    color: "#ff5252",
+    fontSize: 12,
+    marginTop: 4,
+    fontFamily,
+  },
+  eyeIcon: {
+    padding: 10,
+  },
+  rememberMeContainer: {
+    marginVertical: 10,
   },
   checkBoxContainer: {
-    backgroundColor: "transparent", // Set background to transparent
-    borderWidth: 0, // Remove border
-    paddingHorizontal: 0, // Adjust horizontal padding
-    marginVertical: 10, // Adjust vertical margin
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    padding: 0,
+    margin: 0,
   },
   checkBoxText: {
-    color: "white", // Adjust text color to match the theme
-    marginLeft: 10, // Adjust left margin to add space between the checkbox and text
+    color: "white",
+    fontSize: 14,
+    fontWeight: "400",
+    fontFamily,
+  },
+  actionContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 24,
+  },
+  actionButton: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 5,
+    borderWidth: 1,
+  },
+  cancelButton: {
+    backgroundColor: "transparent",
+    borderColor: "#555",
+  },
+  loginButton: {
+    backgroundColor: "#222",
+    borderColor: "#fff",
+  },
+  disabledButton: {
+    borderColor: "#555",
+    opacity: 0.5,
+  },
+  cancelButtonText: {
+    fontFamily,
+    color: "#ddd",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  loginButtonText: {
+    fontFamily,
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  forgotPasswordButton: {
+    alignSelf: "center",
+    marginTop: 20,
+    padding: 10,
+  },
+  forgotPasswordText: {
+    color: "#aaa",
+    fontSize: 14,
+    fontFamily,
+    textDecorationLine: "underline",
   },
 });
