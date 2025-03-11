@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   Image,
-  Pressable,
+  TouchableOpacity,
   ActivityIndicator,
   Modal,
   Platform,
@@ -38,18 +38,19 @@ const EventListItem = ({
   toggleTransferModal,
 }) => (
   <View style={styles.innerContainer}>
-    <Pressable style={styles.itemContainer}>
+    <View style={styles.itemContainer}>
       <Image style={styles.tinyLogo} source={{ uri: imageUrl }} />
       <Text style={styles.text}>{eventName}</Text>
       <Text style={styles.text}>{eventDate}</Text>
 
-      <MaterialCommunityIcons
-        name="send"
-        size={20}
-        color="white"
-        onPress={toggleTransferModal}
-      />
-    </Pressable>
+      <TouchableOpacity onPress={toggleTransferModal}>
+        <MaterialCommunityIcons
+          name="send"
+          size={20}
+          color="white"
+        />
+      </TouchableOpacity>
+    </View>
   </View>
 );
 
@@ -241,13 +242,9 @@ const handleBarCodeScanned = useCallback(
   if (!permission || !hasPermission) {
     return (
       <View style={styles.container}>
-        {/* <Text style={styles.permissionText}>
-        View Your Tickets
-        </Text> */}
-
-        <Pressable style={styles.dropdownButton} onPress={requestPermission}>
-          <Text style={styles.permissionText2}>View Ticket(s)</Text>
-        </Pressable>
+        <TouchableOpacity style={styles.actionButton} onPress={requestPermission}>
+          <Text style={styles.buttonText}>View Ticket(s)</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -256,7 +253,7 @@ const handleBarCodeScanned = useCallback(
     return (
       <ActivityIndicator
         size="large"
-        color="#000000"
+        color="#ffffff"
         style={{ marginVertical: 20 }}
       />
     );
@@ -273,10 +270,10 @@ const handleBarCodeScanned = useCallback(
     <View style={styles.container}>
       <Text style={styles.headline}>Your event ticket(s)</Text>
       {eventsData.length === 0 ? (
-        <Text>No tickets</Text>
+        <Text style={styles.noTicketsText}>No tickets found</Text>
       ) : eventsData.some((event) => event.ragersData.length > 0) ? (
         eventsData.map((event) => (
-          <View style={{ flex: 1 }} key={event.id}>
+          <View key={event.id}>
             {event.ragersData.map((ticket) => (
               <EventListItem
                 key={ticket.id}
@@ -295,10 +292,10 @@ const handleBarCodeScanned = useCallback(
           </View>
         ))
       ) : (
-        <Text style={styles.permissionText}>None</Text>
+        <Text style={styles.noTicketsText}>No active tickets</Text>
       )}
       <Modal
-        animationType="none"
+        animationType="fade"
         transparent={true}
         visible={transferModalVisible}
       >
@@ -320,18 +317,16 @@ const handleBarCodeScanned = useCallback(
                   barcodeScannerSettings={{
                     barcodeTypes: ["qr", "pdf417"],
                   }}
-                  style={{ width: 200, height: 200 }}
+                  style={styles.camera}
                 />
               )}
             </View>
-            <View style={styles.modalButtonsContainer}>
-              <Pressable
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={toggleTransferModal}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </Pressable>
-            </View>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={toggleTransferModal}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -341,7 +336,6 @@ const handleBarCodeScanned = useCallback(
 
 // Define the modal content height based on the platform
 const modalContentHeight = Platform.OS === "ios" ? "60%" : "75%";
-const permissionWidth = Platform.OS === "ios" ? "40%" : "50%";
 
 const fontFamily = Platform.select({
   ios: "Helvetica Neue",
@@ -353,49 +347,48 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingVertical: 10,
+    width: "100%",
   },
   innerContainer: {
-    flex: 1,
-    flexDirection: "row",
-    // borderWidth: 1,
-    borderRadius: 10,
-    marginTop: 10,
-    marginHorizontal: 10,
-    padding: 8,
-
-    alignItems: "center",
-    backgroundColor: "black",
+    marginVertical: 6,
+    marginHorizontal: 0,
+    borderRadius: 8,
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1, 
+    borderColor: "#333",
+    overflow: "hidden",
   },
   itemContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    width: "100%", // Make sure the container takes the full width
-    paddingHorizontal: 10,
+    width: "100%",
+    padding: 12,
   },
   tinyLogo: {
-    width: 30,
-    height: 30,
+    width: 36,
+    height: 36,
+    borderRadius: 4,
   },
   headline: {
     fontFamily,
     textAlign: "center",
     textTransform: "uppercase",
-    marginTop: 10,
+    marginVertical: 16,
     color: "white",
-    fontWeight: "500",
+    fontWeight: "600",
+    fontSize: 16,
   },
   text: {
     color: "white",
-    paddingLeft: 10,
     fontFamily,
     fontWeight: "500",
   },
-  text2: {
-    color: "white",
-    paddingLeft: 10,
-    paddingRight: 20,
+  noTicketsText: {
+    color: "#aaa",
+    textAlign: "center",
     fontFamily,
+    marginTop: 16,
   },
   modalContainer: {
     flex: 1,
@@ -404,30 +397,33 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.8)",
   },
   modalContent: {
-    backgroundColor: GlobalStyles.colors.grey0,
-    backgroundColor: `rgba(200, 200, 200, 0.95)`,
+    backgroundColor: "#1a1a1a",
     borderRadius: 8,
-    width: "80%", // Adjust the width to make it more centered
+    width: "80%",
     padding: 20,
-    alignItems: "center", // Center content horizontally
+    alignItems: "center",
     elevation: 5,
-    height: modalContentHeight, // Adjust the height as needed
-    justifyContent: "space-between", // Add this to evenly space the elements vertically
+    height: modalContentHeight,
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#333",
   },
   ticketInfoContainer: {
     alignItems: "center",
+    marginVertical: 16,
   },
   ticketName: {
     fontFamily,
     fontWeight: "700",
     fontSize: 18,
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: "center",
+    color: "white",
   },
   ticketImage: {
     width: 100,
     height: 100,
-    marginBottom: 10,
+    marginBottom: 12,
     borderRadius: 8,
   },
   ticketQuantity: {
@@ -435,65 +431,64 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     fontWeight: "500",
+    color: "white",
   },
   cameraContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    width: "100%",
+    marginVertical: 16,
   },
   camera: {
     height: 200,
     width: 200,
+    borderRadius: 8,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#333",
   },
-  modalButtonsContainer: {
-    flexDirection: "column",
-    alignItems: "center",
+  cancelButton: {
+    backgroundColor: "#222",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
     width: "100%",
-  },
-  modalButton: {
-    paddingVertical: 10,
-    borderRadius: 5,
-    width: "48%",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#555",
+    marginTop: 16,
+  },
+  cancelButtonText: {
+    fontFamily,
+    color: "white",
+    fontWeight: "600",
   },
   modalText: {
     fontFamily,
-    fontSize: 18,
-    marginBottom: 15,
+    fontSize: 20,
+    marginBottom: 16,
     textAlign: "center",
-  },
-  cancelButton: {
-    backgroundColor: "#000",
-  },
-  confirmButton: {
-    backgroundColor: GlobalStyles.colors.grey9,
-  },
-  modalButtonText: {
-    fontFamily,
     color: "white",
+    fontWeight: "700",
   },
-  permissionText: {
-    fontFamily,
-    textAlign: "center",
-    textTransform: "uppercase",
-    marginVertical: 10,
-    color: "white",
-  },
-  permissionText2: {
-    fontFamily,
-    textAlign: "center",
-    textTransform: "uppercase",
-    color: "white",
-  },
-  dropdownButton: {
+  actionButton: {
     margin: 10,
-    borderWidth: 2,
-    padding: 10,
-    borderRadius: 10,
-    width: permissionWidth,
+    borderWidth: 1,
+    padding: 12,
+    borderRadius: 8,
+    width: "50%",
     alignItems: "center",
     alignSelf: "center",
-    borderColor: "white",
+    borderColor: "#555",
+    backgroundColor: "#222",
+  },
+  buttonText: {
+    fontFamily,
+    textAlign: "center",
+    textTransform: "uppercase",
+    color: "white",
+    fontWeight: "600",
   },
 });
 

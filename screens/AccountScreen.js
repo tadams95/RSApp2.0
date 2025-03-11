@@ -4,9 +4,9 @@ import {
   StyleSheet,
   Image,
   ScrollView,
-  Pressable,
   Platform,
   Dimensions,
+  TouchableOpacity,
 } from "react-native";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -151,42 +151,64 @@ export default function AccountScreen({ setAuthenticated }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <ScrollView>
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.container}>
           {/* Profile Picture */}
-          <Pressable onPress={pickImage}>
+          <TouchableOpacity
+            onPress={pickImage}
+            style={styles.profilePictureContainer}
+          >
             <Image
               source={imageSource}
               style={styles.profilePicture}
               resizeMode="cover"
             />
-          </Pressable>
+          </TouchableOpacity>
 
           {/* Profile Name */}
           <Text style={styles.nameTag}>{userName}</Text>
 
           {/* Edit Profile Button */}
-          <Pressable
+          <TouchableOpacity
             onPress={handleEditProfile}
-            style={styles.editProfileButton}
+            style={styles.actionButton}
           >
-            <Text style={styles.secondaryText}>EDIT PROFILE</Text>
-          </Pressable>
+            <Text style={styles.buttonText}>EDIT PROFILE</Text>
+          </TouchableOpacity>
 
           {/* Tab Container */}
           <View style={styles.tabContainer}>
-            <Pressable onPress={showAccountHistory} style={styles.tabButton}>
-              <Text style={styles.secondaryText}>HISTORY</Text>
-            </Pressable>
+            <TouchableOpacity
+              onPress={showAccountHistory}
+              style={styles.tabButton}
+            >
+              <Text style={styles.buttonText}>HISTORY</Text>
+            </TouchableOpacity>
 
-            <Pressable onPress={eventQRHandler} style={styles.tabButton}>
-              <Text style={styles.secondaryText}>QR</Text>
-            </Pressable>
+            <TouchableOpacity
+              onPress={eventQRHandler}
+              style={[styles.tabButton, showQRModal && styles.activeTabButton]}
+            >
+              <Text
+                style={[
+                  styles.buttonText,
+                  showQRModal && styles.activeButtonText,
+                ]}
+              >
+                QR
+              </Text>
+            </TouchableOpacity>
 
-            <Pressable onPress={showSettingsHandler} style={styles.tabButton}>
-              <Text style={styles.secondaryText}>SETTINGS</Text>
-            </Pressable>
+            <TouchableOpacity
+              onPress={showSettingsHandler}
+              style={styles.tabButton}
+            >
+              <Text style={styles.buttonText}>SETTINGS</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Edit Profile, History, and QR Modal Container */}
@@ -201,15 +223,15 @@ export default function AccountScreen({ setAuthenticated }) {
             {showHistoryModal && <HistoryModal />}
           </View>
         </View>
-
-        {showSettingsModal && (
-          <SettingsModal
-            visible={showSettingsModal}
-            handleClose={() => setShowSettingsModal(false)}
-            setAuthenticated={setAuthenticated}
-          />
-        )}
       </ScrollView>
+
+      {showSettingsModal && (
+        <SettingsModal
+          visible={showSettingsModal}
+          handleClose={() => setShowSettingsModal(false)}
+          setAuthenticated={setAuthenticated}
+        />
+      )}
 
       <Text style={styles.footerText}>THANKS FOR RAGING WITH US</Text>
     </View>
@@ -223,68 +245,93 @@ const fontFamily = Platform.select({
 });
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
   container: {
     flex: 1,
-    backgroundColor: "black",
     alignItems: "center",
     justifyContent: "center",
   },
   modalContainer: {
     flex: 1,
-    // backgroundColor: GlobalStyles.colors.red0,
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 20,
   },
   nameTag: {
     fontFamily,
     fontWeight: "700",
     fontSize: 24,
-    marginTop: 10,
+    marginTop: 16,
+    marginBottom: 8,
     color: "white",
   },
-  secondaryText: {
-    fontFamily,
-    textAlign: "center",
-    color: "white",
-    fontWeight: "500",
+  profilePictureContainer: {
+    borderRadius: 10,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "#333",
+    marginTop: 20,
   },
   profilePicture: {
     width: Dimensions.get("window").width * 0.45,
     height: Dimensions.get("window").width * 0.45,
-    borderRadius: 10,
-    marginTop: 10,
   },
   footerText: {
-    backgroundColor: "#000",
     textAlign: "center",
     fontFamily,
     fontSize: 14,
-    marginBottom: 10,
-    color: "white",
+    padding: 16,
+    color: "#aaa",
     fontWeight: "500",
   },
-  editProfileButton: {
-    margin: 10,
-    borderWidth: 2,
-    padding: 5,
-    borderRadius: 10,
-    width: "30%",
+  actionButton: {
+    marginVertical: 16,
+    borderWidth: 1,
+    padding: 12,
+    borderRadius: 8,
+    width: "50%",
     alignItems: "center",
-    borderColor: "white",
+    borderColor: "#555",
+    backgroundColor: "#222",
+  },
+  buttonText: {
+    fontFamily,
+    color: "white",
+    fontWeight: "600",
   },
   tabContainer: {
-    flex: 1,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginTop: 10,
+    width: "100%",
   },
   tabButton: {
-    padding: 6,
-    borderRadius: 10,
+    padding: 12,
+    borderRadius: 8,
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "white",
-    width: "30%",
-    margin: 5,
+    borderWidth: 1,
+    borderColor: "#555",
+    backgroundColor: "transparent",
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  activeTabButton: {
+    borderColor: "#fff",
+    backgroundColor: "#222",
+  },
+  activeButtonText: {
+    color: "#fff",
   },
 });
