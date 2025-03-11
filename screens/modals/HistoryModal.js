@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Platform,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { selectLocalId } from "../../store/redux/userSlice";
@@ -63,15 +64,17 @@ const HistoryModal = () => {
                   source={{ uri: item.productImageSrc }}
                   style={styles.productImage}
                 />
-                <Text style={styles.itemTitle}> {item.title}</Text>
-                <Text style={styles.itemText}>QTY: {item.quantity}</Text>
-                <Text style={styles.itemText}>Price: ${item.price}</Text>
-                {item.color && (
-                  <Text style={styles.itemText}>Color: {item.color}</Text>
-                )}
-                {item.size && (
-                  <Text style={styles.itemText}>Size: {item.size}</Text>
-                )}
+                <View style={styles.itemDetails}>
+                  <Text style={styles.itemTitle}>{item.title}</Text>
+                  <Text style={styles.itemText}>QTY: {item.quantity}</Text>
+                  <Text style={styles.itemText}>Price: ${item.price}</Text>
+                  {item.color && (
+                    <Text style={styles.itemText}>Color: {item.color}</Text>
+                  )}
+                  {item.size && (
+                    <Text style={styles.itemText}>Size: {item.size}</Text>
+                  )}
+                </View>
               </View>
             ))}
           </View>
@@ -81,15 +84,15 @@ const HistoryModal = () => {
   }, [userPurchases]);
 
   return (
-    <View style={styles.container}>
-      <View>
+    <ScrollView style={styles.container}>
+      <View style={styles.contentContainer}>
         {userPurchases.length === 0 ? (
           <Text style={styles.headline}>No Purchase History</Text>
         ) : (
           purchaseHistory
         )}
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -102,77 +105,80 @@ const fontFamily = Platform.select({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#000",
   },
+  contentContainer: {
+    padding: 16,
+  },
   headline: {
-    backgroundColor: "#000",
     textAlign: "center",
     fontFamily,
-    fontSize: 14,
-    marginBottom: 10,
+    fontSize: 16,
+    marginBottom: 20,
     color: "white",
-    fontWeight: "500",
+    fontWeight: "600",
     textTransform: "uppercase",
   },
   purchaseContainer: {
-    marginBottom: 20,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    borderWidth: 2,
-    padding: 10,
+    marginBottom: 24,
+    borderWidth: 1,
+    padding: 16,
     borderRadius: 8,
-    backgroundColor: "black",
+    backgroundColor: "#111",
     elevation: 3,
-    // color: "#000",
+    borderColor: "#555",
     shadowOffset: {
       width: 0,
       height: 2,
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    borderColor: "white",
   },
   dateContainer: {
-    // Added
-    alignItems: "center", // Added
-    marginBottom: 10, // Adjust as needed
-    width: "100%", // Added
-  }, // Added
+    alignItems: "center",
+    marginBottom: 14,
+    width: "100%",
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
+    paddingBottom: 8,
+  },
   purchaseDate: {
     fontWeight: "bold",
     textAlign: "center",
     textTransform: "uppercase",
     color: "white",
+    fontFamily,
   },
   cartItem: {
-    width: "48%", // Adjust as needed for spacing
-    marginBottom: 10,
+    marginBottom: 16,
     borderRadius: 8,
-    backgroundColor: "#000",
+    backgroundColor: "#222",
     borderWidth: 1,
-    borderColor: "white",
+    borderColor: "#444",
+    overflow: "hidden",
+  },
+  itemDetails: {
+    padding: 12,
   },
   itemTitle: {
     fontFamily,
     fontSize: 14,
-    padding: 5,
+    marginBottom: 6,
     textTransform: "uppercase",
-    textAlign: "center",
     color: "white",
+    fontWeight: "600",
   },
   itemText: {
     fontFamily,
     fontSize: 14,
-    padding: 5,
-    textTransform: "uppercase",
-    color: "white",
+    marginBottom: 4,
+    color: "#ccc",
   },
   productImage: {
     width: "100%",
-    height: Dimensions.get("window").width * 0.42,
-    borderRadius: 8,
+    height: Dimensions.get("window").width * 0.5,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
   },
 });
 

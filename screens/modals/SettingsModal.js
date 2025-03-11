@@ -7,6 +7,7 @@ import {
   Alert,
   StyleSheet,
   Platform,
+  ScrollView,
 } from "react-native";
 import { auth } from "../../firebase/firebase";
 
@@ -146,32 +147,43 @@ const SettingsModal = ({ visible, setAuthenticated, handleClose }) => {
   return (
     <Modal
       visible={visible}
-      animationType="none"
-      style={{ backgroundColor: "black" }}
+      animationType="slide"
+      transparent={false}
+      style={styles.modal}
     >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.headerText}>Settings</Text>
-          <Pressable style={styles.closeButton} onPress={toggleAdminVisibility}>
-            <Text style={styles.closeButtonText}>Admin</Text>
-          </Pressable>
-          <AdminModal
-            visible={adminModalVisible}
-            toggleModal={toggleAdminVisibility}
-            admin={admin}
-          />
-          <Pressable style={styles.closeButton} onPress={handleClose}>
-            <Text style={styles.closeButtonText}>Close</Text>
-          </Pressable>
-          <Pressable style={styles.closeButton} onPress={handleLogout}>
-            <Text style={styles.closeButtonText}>Logout</Text>
-          </Pressable>
-          <Pressable style={styles.deleteButton} onPress={handleDeleteAccount}>
-            <Text style={styles.deleteButtonText}>Delete Account</Text>
-          </Pressable>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.headerText}>Settings</Text>
+          </View>
+          
+          <View style={styles.content}>
+            {isAdmin && (
+              <Pressable style={styles.actionButton} onPress={toggleAdminVisibility}>
+                <Text style={styles.buttonText}>ADMIN PANEL</Text>
+              </Pressable>
+            )}
+            
+            <Pressable style={styles.actionButton} onPress={handleLogout}>
+              <Text style={styles.buttonText}>LOGOUT</Text>
+            </Pressable>
+            
+            <Pressable style={styles.deleteActionButton} onPress={handleDeleteAccount}>
+              <Text style={styles.deleteButtonText}>DELETE ACCOUNT</Text>
+            </Pressable>
+            
+            <Pressable style={styles.actionButton} onPress={handleClose}>
+              <Text style={styles.buttonText}>CLOSE</Text>
+            </Pressable>
+          </View>
         </View>
-        <View style={styles.content}></View>
-      </View>
+      </ScrollView>
+      
+      <AdminModal
+        visible={adminModalVisible}
+        toggleModal={toggleAdminVisibility}
+        admin={admin}
+      />
     </Modal>
   );
 };
@@ -185,141 +197,66 @@ const fontFamily = Platform.select({
 });
 
 export const styles = StyleSheet.create({
-  modalContainer: {
-    backgroundColor: "black",
-    flex: 1,
-    justifyContent: "center",
-  },
-  modalContent: {
+  modal: {
+    margin: 0,
     backgroundColor: "#000",
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  modalContainer: {
+    flex: 1,
     padding: 20,
-    borderRadius: 10,
-    width: "80%",
-    maxWidth: 400,
-    maxHeight: 600,
+    backgroundColor: "#000",
+  },
+  modalHeader: {
+    alignItems: "center",
+    marginBottom: 30,
+    marginTop: 50,
   },
   headerText: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontWeight: "700",
     fontFamily,
-    alignSelf: "center",
-    textTransform: "uppercase",
     color: "white",
-  },
-  inputContainer: {
-    marginVertical: 10,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  input: {
-    fontSize: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: "#ccc",
-    backgroundColor: "#fff",
-    marginBottom: 10,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-  },
-  closeButton: {
-    backgroundColor: "#000",
-    padding: 10,
-    marginTop: 10,
-    borderRadius: 5,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "white",
-    width: "50%",
-    alignSelf: "center",
-  },
-  closeButtonText: {
-    color: "white",
-    fontSize: 12,
-    fontFamily,
-    fontWeight: "500",
     textTransform: "uppercase",
   },
-  cancelButton: {
-    backgroundColor: "#ccc",
-  },
-  saveButton: {
-    backgroundColor: "#2ecc71",
-    color: "#fff",
-  },
-  deleteButton: {
-    backgroundColor: "#000",
-    padding: 10,
-    marginTop: 10,
-    borderRadius: 5,
+  content: {
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "red",
-    width: "50%",
-    alignSelf: "center",
+  },
+  actionButton: {
+    marginVertical: 12,
+    borderWidth: 1,
+    padding: 16,
+    borderRadius: 8,
+    width: "80%",
+    alignItems: "center",
+    borderColor: "#555",
+    backgroundColor: "#222",
+  },
+  deleteActionButton: {
+    marginVertical: 12,
+    borderWidth: 1,
+    padding: 16,
+    borderRadius: 8,
+    width: "80%",
+    alignItems: "center",
+    borderColor: "#ff3b30",
+    backgroundColor: "#222",
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+    fontFamily,
+    fontWeight: "600",
+    textTransform: "uppercase",
   },
   deleteButtonText: {
-    color: "red",
-    fontSize: 12,
+    color: "#ff3b30",
+    fontSize: 16,
     fontFamily,
-    fontWeight: "500",
+    fontWeight: "600",
     textTransform: "uppercase",
-  },
-  confirmationModalContainer: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    justifyContent: "center",
-  },
-  confirmationModalTitle: {
-    fontWeight: "bold",
-    marginBottom: 10,
-    fontFamily,
-    textAlign: "center",
-  },
-  confirmationModalInput: {
-    width: "100%",
-    backgroundColor: "#F6F6F6",
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 5,
-  },
-  confirmationModalButtonContainer: {
-    marginTop: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  confirmationModalButton: {
-    backgroundColor: "black",
-    padding: 15,
-    borderRadius: 5,
-    width: "48%",
-    alignItems: "center",
-  },
-  confirmationModalButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-    fontFamily,
-  },
-  confirmationModalCancelButton: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 2,
-    borderColor: "black",
-  },
-  confirmationModalCancelButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-    fontFamily,
-  },
-  blackout: {
-    backgroundColor: "black",
   },
 });

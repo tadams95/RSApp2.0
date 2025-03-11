@@ -73,6 +73,7 @@ export default function EditProfile({ onProfileUpdated, onCancel }) {
           <TextInput
             style={styles.input}
             placeholder="First Name Change"
+            placeholderTextColor="#666"
             value={firstName}
             onChangeText={setFirstName}
             autoCapitalize="words"
@@ -82,6 +83,7 @@ export default function EditProfile({ onProfileUpdated, onCancel }) {
           <TextInput
             style={styles.input}
             placeholder="Last Name Change"
+            placeholderTextColor="#666"
             value={lastName}
             onChangeText={setLastName}
           />
@@ -90,6 +92,7 @@ export default function EditProfile({ onProfileUpdated, onCancel }) {
           <TextInput
             style={styles.input}
             placeholder="Email"
+            placeholderTextColor="#666"
             autoCapitalize="none"
             secureTextEntry={false}
             onChangeText={setEmail}
@@ -100,6 +103,7 @@ export default function EditProfile({ onProfileUpdated, onCancel }) {
           <TextInput
             style={styles.input}
             placeholder="Phone Number"
+            placeholderTextColor="#666"
             autoCapitalize="none"
             secureTextEntry={false}
             onChangeText={setPhoneNumber}
@@ -111,11 +115,11 @@ export default function EditProfile({ onProfileUpdated, onCancel }) {
         {/* Tab Container */}
         <View style={styles.tabContainer}>
           <Pressable onPress={cancelEditHandler} style={styles.tabButton}>
-            <Text style={styles.secondaryText}>CANCEL</Text>
+            <Text style={styles.buttonText}>CANCEL</Text>
           </Pressable>
 
           <Pressable onPress={confirmEditHandler} style={styles.tabButton}>
-            <Text style={styles.secondaryText}>CONFIRM</Text>
+            <Text style={styles.buttonText}>CONFIRM</Text>
           </Pressable>
         </View>
       </View>
@@ -133,50 +137,63 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     marginBottom: Dimensions.get("window").height * 0.12,
+    width: '100%',
   },
   headline: {
     fontFamily,
     paddingTop: 10,
     textAlign: "center",
     textTransform: "uppercase",
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 20,
   },
   subtitle: {
     fontFamily,
     paddingBottom: 5,
-    fontSize: 18,
+    fontSize: 16,
     color: "white",
+    fontWeight: "500",
   },
   input: {
-    backgroundColor: "#F6F6F6",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5,
+    backgroundColor: "#222",
+    padding: 14,
+    marginBottom: 16,
+    borderRadius: 8,
     fontFamily,
-    width: Dimensions.get("window").width * 0.9,
-    fontSize: 18,
+    width: "100%",
+    fontSize: 16,
+    color: "white",
+    borderWidth: 1,
+    borderColor: "#555",
   },
   editProfileContainer: {
     paddingTop: 10,
+    width: "100%",
+    paddingHorizontal: 20,
   },
   tabContainer: {
-    flex: 1,
     flexDirection: "row",
-    justifyContent: "space-evenly",
-    alignItems: "center",
-    marginTop: 10,
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    marginTop: 20,
+    width: "100%",
   },
   tabButton: {
-    backgroundColor: "#000",
-    padding: 6,
-    borderRadius: 10,
+    backgroundColor: "#222",
+    padding: 14,
+    borderRadius: 8,
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "white",
-    width: "30%",
+    borderWidth: 1,
+    borderColor: "#555",
+    width: "48%",
   },
-  secondaryText: {
+  buttonText: {
     fontFamily,
     textAlign: "center",
     color: "white",
+    fontWeight: "600",
+    textTransform: "uppercase",
   },
 });
