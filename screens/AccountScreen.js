@@ -184,9 +184,16 @@ export default function AccountScreen({ setAuthenticated }) {
           <View style={styles.tabContainer}>
             <TouchableOpacity
               onPress={showAccountHistory}
-              style={styles.tabButton}
+              style={[styles.tabButton, showHistoryModal && styles.activeTabButton]}
             >
-              <Text style={styles.buttonText}>HISTORY</Text>
+              <Text 
+                style={[
+                  styles.buttonText,
+                  showHistoryModal && styles.activeButtonText,
+                ]}
+              >
+                HISTORY
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -211,7 +218,7 @@ export default function AccountScreen({ setAuthenticated }) {
             </TouchableOpacity>
           </View>
 
-          {/* Edit Profile, History, and QR Modal Container */}
+          {/* Modal Container */}
           <View style={styles.modalContainer}>
             {showEditProfileModal && (
               <EditProfile
@@ -262,11 +269,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   modalContainer: {
-    flex: 1,
     width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
+    flex: 1,
     marginTop: 20,
+    alignItems: "center", 
+    justifyContent: "flex-start",
   },
   nameTag: {
     fontFamily,
@@ -314,24 +321,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 16,
+    marginBottom: 8,
     width: "100%",
   },
   tabButton: {
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: "#555",
-    backgroundColor: "transparent",
+    backgroundColor: "#111",
     flex: 1,
     marginHorizontal: 4,
+    height: 45,
   },
   activeTabButton: {
-    borderColor: "#fff",
+    borderColor: "#ff3c00",
     backgroundColor: "#222",
   },
   activeButtonText: {
-    color: "#fff",
+    color: "#ff3c00",
   },
 });
