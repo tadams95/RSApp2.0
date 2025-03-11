@@ -2,15 +2,17 @@ import {
   View,
   Text,
   Image,
-  Pressable,
   StyleSheet,
   Modal,
   ScrollView,
   Alert,
   Platform,
   Dimensions,
+  StatusBar,
+  TouchableOpacity,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
+import { Ionicons } from "@expo/vector-icons";
 
 import {
   selectCartItems,
@@ -46,11 +48,10 @@ import {
   AddressSheet,
 } from "@stripe/stripe-react-native";
 
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
 import { GlobalStyles } from "../constants/styles";
 
-export default function CartScreen() {
+export default function CartScreen({ navigation }) {
   const dispatch = useDispatch();
   const cartItems = useSelector(selectCartItems);
   const [totalPrice, setTotalPrice] = useState(0);
@@ -107,7 +108,9 @@ export default function CartScreen() {
     dispatch(setCheckoutPrice(finalTotalPrice * 100));
   }, [cartItems, dispatch]);
 
+  // Rest of the logic functions remain the same
   const handleCheckout = async () => {
+    // ...existing code...
     const totalPriceInCents = Math.round(totalPrice * 100); // Convert dollars to cents
     dispatch(setCheckoutPrice(totalPriceInCents));
 
@@ -144,8 +147,6 @@ export default function CartScreen() {
     }
   };
 
-  useEffect(() => {}, [stripePaymentIntent]);
-
   const handleRemoveFromCart = (productId, selectedColor, selectedSize) => {
     dispatch(removeFromCart({ productId, selectedColor, selectedSize }));
   };
@@ -162,6 +163,7 @@ export default function CartScreen() {
   const cancelClearCart = () => {
     setClearConfirmationModalVisible(false);
   };
+
   const sendPurchaseNotification = async () => {
     try {
       // Schedule a notification to be sent to the user
@@ -179,6 +181,7 @@ export default function CartScreen() {
   };
 
   const fetchPaymentSheetParams = async (addressDetails) => {
+    // ...existing code...
     try {
       const { address } = addressDetails; // Extract the address object from addressDetails
       const shipping = {
@@ -234,6 +237,7 @@ export default function CartScreen() {
   };
 
   const initializePaymentSheet = async (addressDetails) => {
+    // ...existing code...
     try {
       if (!addressDetails) {
         addressDetails = {
@@ -306,6 +310,7 @@ export default function CartScreen() {
   };
 
   const openPaymentSheet = async (paymentIntentPrefix, addressDetails) => {
+    // ...existing code...
     try {
       const { error } = await presentPaymentSheet();
 
@@ -426,203 +431,233 @@ export default function CartScreen() {
       }
       merchantIdentifier="merchant.com.tyrelle.ragestate-beta"
     >
-      <View style={styles.container}>
+      <View style={styles.rootContainer}>
+        <StatusBar barStyle="light-content" />
+
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>My Cart</Text>
+          {cartItems.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={handleClearCart}
+              accessible={true}
+              accessibilityLabel="Clear cart"
+              accessibilityRole="button"
+            >
+              <Text style={styles.clearButtonText}>Clear All</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {cartItems.length === 0 ? (
           <View style={styles.emptyCartContainer}>
-            <Text style={styles.subtitle2}>Your Cart is currently empty</Text>
-
-            {/* <MaterialCommunityIcons
-              name="cart-arrow-down"
-              color={"white"}
-              size={40}
-            /> */}
+            <Ionicons name="cart-outline" size={64} color="#333" />
+            <Text style={styles.emptyCartText}>Your cart is empty</Text>
+            <TouchableOpacity
+              style={styles.shopButton}
+              onPress={() => navigation.navigate("Shop")}
+            >
+              <Text style={styles.shopButtonText}>Continue Shopping</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <>
             {checkoutInProgress && (
               <ScrollView
-                style={{ marginBottom: 30, backgroundColor: "black" }}
+                style={styles.scrollView}
+                showsVerticalScrollIndicator={false}
               >
                 {/* Display cart items */}
-                {cartItems.map((item, index) => {
-                  return (
-                    <View
-                      style={styles.productContainer}
-                      key={`${item.productId}-${item.selectedColor}-${item.selectedSize}-${index}`}
-                    >
-                      <Image
-                        source={{ uri: item.images[0].src }} // Use the imgURL directly
-                        style={styles.image}
-                      />
+                {cartItems.map((item, index) => (
+                  <View
+                    style={styles.cartItemCard}
+                    key={`${item.productId}-${item.selectedColor}-${item.selectedSize}-${index}`}
+                  >
+                    <Image
+                      source={{ uri: item.images[0].src }}
+                      style={styles.itemImage}
+                      resizeMode="cover"
+                    />
 
-                      <View style={styles.detailsContainer}>
-                        <Text style={styles.title}>{item.title}</Text>
-                        <Text style={styles.subtitle}>
-                          {item.eventDetails
-                            ? "Event"
-                            : `Color: ${item.selectedColor}`}
-                        </Text>
-                        {item.selectedSize && (
-                          <Text style={styles.subtitle}>
-                            Size: {item.selectedSize}
-                          </Text>
+                    <View style={styles.itemDetailsContainer}>
+                      <Text
+                        style={styles.itemTitle}
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                      >
+                        {item.title}
+                      </Text>
+
+                      <View style={styles.itemMetaContainer}>
+                        {item.eventDetails ? (
+                          <Text style={styles.itemType}>Event</Text>
+                        ) : (
+                          <>
+                            {item.selectedColor && (
+                              <Text style={styles.itemMeta}>
+                                Color:{" "}
+                                <Text style={styles.itemMetaValue}>
+                                  {item.selectedColor}
+                                </Text>
+                              </Text>
+                            )}
+                            {item.selectedSize && (
+                              <Text style={styles.itemMeta}>
+                                Size:{" "}
+                                <Text style={styles.itemMetaValue}>
+                                  {item.selectedSize}
+                                </Text>
+                              </Text>
+                            )}
+                          </>
                         )}
-                        <Text style={styles.subtitle}>
-                          Quantity: {item.selectedQuantity}
+                        <Text style={styles.itemMeta}>
+                          Qty:{" "}
+                          <Text style={styles.itemMetaValue}>
+                            {item.selectedQuantity}
+                          </Text>
                         </Text>
-                        <Text style={styles.price}>
-                          ${`${item.price.amount} ${item.price.currencyCode}`}
+                      </View>
+
+                      <View style={styles.itemBottomRow}>
+                        <Text style={styles.itemPrice}>
+                          $
+                          {(item.price.amount * item.selectedQuantity).toFixed(
+                            2
+                          )}
                         </Text>
-                        <View style={styles.buttonsContainer}>
-                          <Pressable
-                            style={styles.button}
-                            onPress={() =>
-                              handleRemoveFromCart(
-                                item.productId,
-                                item.selectedColor,
-                                item.selectedSize
-                              )
-                            }
-                          >
-                            <Text style={styles.buttonText}>Remove</Text>
-                          </Pressable>
-                        </View>
+                        <TouchableOpacity
+                          style={styles.removeButton}
+                          onPress={() =>
+                            handleRemoveFromCart(
+                              item.productId,
+                              item.selectedColor,
+                              item.selectedSize
+                            )
+                          }
+                        >
+                          <Text style={styles.removeButtonText}>Remove</Text>
+                        </TouchableOpacity>
                       </View>
                     </View>
-                  );
-                })}
+                  </View>
+                ))}
               </ScrollView>
             )}
 
-            {checkoutInProgress &&
-              hasClothingItems && ( // Show AddressSheet only if there are clothing items
-                <AddressSheet
-                  visible={showAddressSheet}
-                  onSubmit={async (addressDetails) => {
-                    // Make sure to set `visible` back to false to dismiss the address element.
+            {checkoutInProgress && hasClothingItems && (
+              <AddressSheet
+                visible={showAddressSheet}
+                onSubmit={async (addressDetails) => {
+                  setShowAddressSheet(false);
+                  onSubmitAddressSheet(addressDetails);
+                }}
+                onError={(error) => {
+                  if (error.code === "Canceled") {
                     setShowAddressSheet(false);
-                    // console.log(addressDetails);
-
-                    // Handle result and update your UI
-                    onSubmitAddressSheet(addressDetails); // Resolve the promise to continue with checkout
-                  }}
-                  onError={(error) => {
-                    // Check if the error is due to cancellation
-                    if (error.code === "Canceled") {
-                      // Hide the address sheet if the user cancels
-                      setShowAddressSheet(false);
-                    } else {
-                      // Handle other errors
-                      console.log(error);
-                      // You can optionally show an alert or handle the error in another way
-                      // Alert.alert("Error", "There was an error. Check the logs for details.");
-                    }
-                  }}
-                  appearance={{
-                    colors: {
-                      primary: { primaryAddyStyle },
-                      background: { backgroundAddyStyle },
-                      secondaryText: "#000000",
-                      primaryText: { primaryText },
-                    },
-                  }}
-                  defaultValues={{
-                    phone: "111-222-3333",
-                    address: {
-                      country: "United States",
-                      city: "San Diego",
-                      state: "California",
-                    },
-                  }}
-                  additionalFields={{
-                    phoneNumber: "required",
-                  }}
-                  allowedCountries={["US"]}
-                  primaryButtonTitle={"Use this address"}
-                  sheetTitle={"Shipping Address"}
-                  presentationStyle="fullscreen"
-                />
-              )}
+                  } else {
+                    console.log(error);
+                  }
+                }}
+                appearance={{
+                  colors: {
+                    primary: { primaryAddyStyle },
+                    background: { backgroundAddyStyle },
+                    secondaryText: "#000000",
+                    primaryText: { primaryText },
+                  },
+                }}
+                defaultValues={{
+                  phone: "111-222-3333",
+                  address: {
+                    country: "United States",
+                    city: "San Diego",
+                    state: "California",
+                  },
+                }}
+                additionalFields={{
+                  phoneNumber: "required",
+                }}
+                allowedCountries={["US"]}
+                primaryButtonTitle={"Use this address"}
+                sheetTitle={"Shipping Address"}
+                presentationStyle="fullscreen"
+              />
+            )}
 
             {checkoutInProgress && (
-              <>
-                {/* Container for shipping cost, tax, and bottom button */}
-                <View style={styles.costContainer}>
-                  {/* Display shipping cost */}
-                  <View style={styles.textContainer}>
-                    <Text style={styles.shippingCostContainer}>
-                      Shipping: {shipping}
-                    </Text>
-                  </View>
+              <View style={styles.orderSummaryContainer}>
+                <Text style={styles.orderSummaryTitle}>Order Summary</Text>
 
-                  {/* Display tax */}
-                  <View style={styles.textContainer}>
-                    <Text style={styles.taxContainer}>
-                      Tax: ${taxAmount.toFixed(2)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.bottomButtonContainer}>
-                    <Pressable
-                      style={styles.clearButton}
-                      onPress={handleClearCart}
-                    >
-                      <MaterialCommunityIcons
-                        name="trash-can-outline"
-                        color={GlobalStyles.colors.redVivid4}
-                        size={28}
-                      />
-                    </Pressable>
-
-                    {/* Display total price */}
-                    <View style={styles.textContainer}>
-                      <Text style={styles.totalPriceContainer}>
-                        ${totalPrice.toFixed(2)}
-                      </Text>
-                    </View>
-
-                    {/* Checkout Button */}
-                    <Pressable
-                      style={styles.checkoutButton}
-                      onPress={handleCheckout}
-                    >
-                      <MaterialCommunityIcons
-                        name="cart-arrow-right"
-                        color="white"
-                        size={28}
-                      />
-                    </Pressable>
-                  </View>
+                <View style={styles.orderSummaryRow}>
+                  <Text style={styles.orderSummaryLabel}>Subtotal</Text>
+                  <Text style={styles.orderSummaryValue}>
+                    ${(totalPrice - shippingCost - taxAmount).toFixed(2)}
+                  </Text>
                 </View>
-              </>
+
+                <View style={styles.orderSummaryRow}>
+                  <Text style={styles.orderSummaryLabel}>Shipping</Text>
+                  <Text style={styles.orderSummaryValue}>{shipping}</Text>
+                </View>
+
+                <View style={styles.orderSummaryRow}>
+                  <Text style={styles.orderSummaryLabel}>Tax</Text>
+                  <Text style={styles.orderSummaryValue}>
+                    ${taxAmount.toFixed(2)}
+                  </Text>
+                </View>
+
+                <View style={[styles.orderSummaryRow, styles.totalRow]}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalValue}>
+                    ${totalPrice.toFixed(2)}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.checkoutButton}
+                  onPress={handleCheckout}
+                  accessible={true}
+                  accessibilityLabel="Proceed to checkout"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.checkoutButtonText}>
+                    PROCEED TO CHECKOUT
+                  </Text>
+                </TouchableOpacity>
+              </View>
             )}
           </>
         )}
 
         {/* Clear Confirmation Modal */}
         <Modal
-          animationType="none"
+          animationType="fade"
           transparent={true}
           visible={clearConfirmationModalVisible}
+          onRequestClose={() => setClearConfirmationModalVisible(false)}
         >
-          <View style={styles.modalContainer}>
+          <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Clear Cart</Text>
               <Text style={styles.modalText}>
-                Are you sure you want to clear your cart?
+                Are you sure you want to remove all items from your cart?
               </Text>
               <View style={styles.modalButtonsContainer}>
-                <Pressable
+                <TouchableOpacity
                   style={[styles.modalButton, styles.cancelButton]}
                   onPress={cancelClearCart}
                 >
-                  <Text style={styles.modalButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={[styles.modalButton, styles.confirmButton]}
                   onPress={confirmClearCart}
                 >
-                  <Text style={styles.modalButtonText}>Clear</Text>
-                </Pressable>
+                  <Text style={styles.confirmButtonText}>Clear</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -632,6 +667,9 @@ export default function CartScreen() {
   );
 }
 
+const windowHeight = Dimensions.get("window").height;
+const windowWidth = Dimensions.get("window").width;
+
 const fontFamily = Platform.select({
   ios: "Helvetica Neue",
   android: "Roboto",
@@ -639,184 +677,254 @@ const fontFamily = Platform.select({
 });
 
 const styles = StyleSheet.create({
-  container: {
+  rootContainer: {
     flex: 1,
-    backgroundColor: "#000",
-    padding: 16,
+    backgroundColor: "black",
   },
-  emptyCartContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: Dimensions.get("window").height * 0.333,
-  },
-  productContainer: {
+  header: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 50 : 20,
+    paddingBottom: 16,
+    backgroundColor: "black",
   },
-  image: {
-    height: 145,
-    width: Dimensions.get("window").width * 0.4, // Adjust as needed based on your layout
-    aspectRatio: 1, // Maintain aspect ratio
-
-    borderRadius: 8,
-
-    marginRight: 16,
-    padding: 10,
-  },
-  detailsContainer: {
-    flex: 1, // Occupy remaining space
-    marginLeft: Dimensions.get("window").width * 0.15, // Add some left margin for spacing
-    justifyContent: "flex-start", // Align contents to the start (top) of the container
-  },
-  title: {
-    fontFamily,
-    fontWeight: "700",
-    fontSize: 18,
-    marginBottom: 4,
+  headerTitle: {
     color: "white",
+    fontFamily,
+    fontSize: 22,
+    fontWeight: "600",
   },
-  subtitle: {
+  clearButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  clearButtonText: {
+    color: GlobalStyles.colors.red4,
     fontFamily,
     fontSize: 14,
-    marginBottom: 4,
-    color: "white",
+    fontWeight: "600",
   },
-  price: {
-    fontFamily,
-    fontSize: 16,
-    color: "white",
+  scrollView: {
+    flex: 1,
+    backgroundColor: "black",
   },
-  subtitle2: {
-    fontFamily,
-    fontWeight: "700",
-    textAlign: "center",
-    paddingTop: 8,
-    alignItems: "center",
-    color: "white",
-    textTransform: "uppercase",
-    fontSize: 16,
-  },
-  buttonsContainer: {
-    flexDirection: "row",
-    marginTop: 8,
-  },
-
-  button: {
-    backgroundColor: "white",
-    // borderWidth: 2,
-    padding: 8,
-    borderRadius: 8,
-    marginRight: 25,
-  },
-
-  buttonText: {
-    fontFamily,
-    fontSize: 12,
-  },
-
-  clearButton: {
-    alignItems: "center",
-    marginLeft: 15,
-  },
-
-  modalContainer: {
+  emptyCartContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "black",
+    paddingBottom: 100,
   },
-
-  modalContent: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    elevation: 5,
-  },
-
-  modalText: {
+  emptyCartText: {
+    color: "white",
     fontFamily,
     fontSize: 18,
-    marginBottom: 15,
-    textAlign: "center",
+    fontWeight: "500",
+    marginTop: 20,
+    marginBottom: 30,
+  },
+  shopButton: {
+    backgroundColor: "#222",
+    borderWidth: 1,
+    borderColor: "white",
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  shopButtonText: {
+    color: "white",
+    fontFamily,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  cartItemCard: {
+    flexDirection: "row",
+    backgroundColor: "#111",
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+  itemImage: {
+    width: windowWidth * 0.3,
+    height: "100%",
+  },
+  itemDetailsContainer: {
+    flex: 1,
+    padding: 12,
+    justifyContent: "space-between",
+  },
+  itemTitle: {
+    color: "white",
+    fontFamily,
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  itemMetaContainer: {
+    marginBottom: 8,
+  },
+  itemType: {
+    color: GlobalStyles.colors.red4,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  itemMeta: {
+    color: "#999",
+    fontFamily,
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  itemMetaValue: {
+    color: "white",
     fontWeight: "500",
   },
-
+  itemBottomRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  itemPrice: {
+    color: "white",
+    fontFamily,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  removeButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 4,
+  },
+  removeButtonText: {
+    color: GlobalStyles.colors.red4,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  orderSummaryContainer: {
+    backgroundColor: "#111",
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#333",
+  },
+  orderSummaryTitle: {
+    color: "white",
+    fontFamily,
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 15,
+  },
+  orderSummaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  orderSummaryLabel: {
+    color: "#999",
+    fontFamily,
+    fontSize: 14,
+  },
+  orderSummaryValue: {
+    color: "white",
+    fontFamily,
+    fontSize: 14,
+  },
+  totalRow: {
+    marginTop: 10,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#333",
+  },
+  totalLabel: {
+    color: "white",
+    fontFamily,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  totalValue: {
+    color: "white",
+    fontFamily,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  checkoutButton: {
+    backgroundColor: "#222",
+    borderWidth: 1,
+    borderColor: "white",
+    borderRadius: 8,
+    marginTop: 20,
+    padding: 15,
+    alignItems: "center",
+  },
+  checkoutButtonText: {
+    fontFamily,
+    color: "white",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#111",
+    borderRadius: 12,
+    padding: 20,
+    width: "80%",
+    alignItems: "center",
+  },
+  modalTitle: {
+    color: "white",
+    fontFamily,
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 15,
+  },
+  modalText: {
+    color: "white",
+    fontFamily,
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 20,
+  },
   modalButtonsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    width: "100%",
   },
-
   modalButton: {
-    padding: 10,
-    borderRadius: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
     width: "48%",
     alignItems: "center",
   },
-
   cancelButton: {
-    backgroundColor: GlobalStyles.colors.grey3,
+    backgroundColor: "#333",
   },
-
   confirmButton: {
-    backgroundColor: "black",
+    backgroundColor: GlobalStyles.colors.red4,
   },
-
-  modalButtonText: {
-    fontFamily,
+  cancelButtonText: {
     color: "white",
+    fontFamily,
+    fontSize: 16,
     fontWeight: "500",
   },
-  costContainer: {
-    backgroundColor: "black",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: GlobalStyles.colors.grey0,
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-
-  textContainer: {
-    alignItems: "center", // Center-align the text
-    marginVertical: 5,
-  },
-
-  shippingCostContainer: {
-    fontSize: 16,
+  confirmButtonText: {
     color: "white",
-  },
-
-  taxContainer: {
-    fontSize: 16,
-    color: "white",
-  },
-
-  bottomButtonContainer: {
-    flexDirection: "row",
-    backgroundColor: "black",
-    paddingTop: 8,
-    justifyContent: "space-between",
-    borderTopWidth: 2,
-    borderTopColor: GlobalStyles.colors.grey0,
-    marginTop: 10,
-  },
-
-  totalPriceContainer: {
     fontFamily,
     fontSize: 16,
-    color: "white",
-  },
-  checkoutButton: {
-    marginRight: 15,
-  },
-  webView: {
-    flex: 1,
-    backgroundColor: "white",
-    borderRadius: 8,
-    marginTop: 5,
+    fontWeight: "600",
   },
 });
