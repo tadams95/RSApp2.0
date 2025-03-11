@@ -21,7 +21,7 @@
     "@stripe/stripe-react-native": "^0.38.6",
     "axios": "^1.6.8",
     "date-fns": "^3.6.0",
-    "expo": "^52.0.28",
+    "expo": "~52.0.36",
     "expo-camera": "~16.0.14",
     "expo-device": "~7.0.2",
     "expo-image-picker": "~16.0.5",
