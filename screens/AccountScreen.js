@@ -12,11 +12,11 @@ import {
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 
 import {
-  getDatabase,
-  ref as databaseRef,
-  get,
-  update,
-} from "firebase/database";
+  getFirestore,
+  doc,
+  getDoc,
+  updateDoc,
+} from "firebase/firestore";
 
 import {
   getStorage,
@@ -47,23 +47,23 @@ export default function AccountScreen({ setAuthenticated }) {
 
   // Access the localId from the Redux store
   const localId = useSelector((state) => state.user.localId);
-  // Get a reference to the database
-  const db = getDatabase();
+  // Get a reference to the Firestore database
+  const db = getFirestore();
 
   const fetchUserData = useCallback(() => {
-    const userRef = databaseRef(db, `users/${localId}`);
+    const userDocRef = doc(db, `customers/${localId}`);
 
-    get(userRef)
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          const userData = snapshot.val();
+    getDoc(userDocRef)
+      .then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
           const name = `${userData.firstName} ${userData.lastName}`;
           const profilePicture = userData.profilePicture;
 
           dispatch(setUserName(name));
           setProfilePicture(profilePicture);
         } else {
-          console.error("No data available");
+          console.error("No user document found");
         }
       })
       .catch((error) => {
@@ -97,7 +97,7 @@ export default function AccountScreen({ setAuthenticated }) {
         // Create a reference to the profile picture in Firebase Storage
         const profilePictureRef = storageRef(
           storage,
-          `profilePictures/${localId}`
+          `profilePictures/${localId}/profile_${Date.now()}.jpeg`
         );
 
         // Convert imageUri to blob
@@ -110,9 +110,12 @@ export default function AccountScreen({ setAuthenticated }) {
         // Get the download URL of the uploaded image
         const downloadURL = await getDownloadURL(profilePictureRef);
 
-        // Update the user's record in the Realtime Database with the download URL
-        const userRef = databaseRef(db, `users/${localId}`);
-        await update(userRef, { profilePicture: downloadURL });
+        // Update the user's document in Firestore with the download URL
+        const userDocRef = doc(db, `customers/${localId}`);
+        await updateDoc(userDocRef, { 
+          profilePicture: downloadURL,
+          lastUpdated: new Date().toISOString()
+        });
 
         // Once uploaded, set the profile picture URI in your component state
         setProfilePicture(downloadURL);
