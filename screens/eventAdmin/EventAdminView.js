@@ -7,7 +7,8 @@ import {
   Pressable,
   Alert,
   Platform,
-  Dimensions
+  Dimensions,
+  ScrollView
 } from "react-native";
 
 import React, { useState, useEffect } from "react";
@@ -127,40 +128,58 @@ export default function EventAdminView({ visible, event, toggleModal }) {
   // Render the event details
   return (
     <Modal visible={visible} animationType="none">
-      <View style={styles.container}>
-        <Text style={styles.heading}>Event Admin View</Text>
-        <Image source={{ uri: event.imgURL }} style={styles.eventImage} />
-        <Text style={styles.label}>Event</Text>
-        <Text style={styles.text}>{event.name}</Text>
-        <Text style={styles.label}>Date</Text>
-        <Text style={styles.text}>
-          {event.dateTime.toDate().toLocaleDateString()}
-        </Text>
-        {/* Toggle button for showing/hiding the barcode scanner */}
-        <Pressable
-          style={styles.button}
-          onPress={() => setShowScanner(!showScanner)}
+      <View style={styles.root}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
         >
-          <Text style={styles.buttonText}>
-            {showScanner ? "Hide Scanner" : "Show Scanner"}
-          </Text>
-        </Pressable>
+          <View style={styles.container}>
+            <Text style={styles.headline}>EVENT ADMIN VIEW</Text>
+            
+            <View style={styles.eventInfoCard}>
+              <Image source={{ uri: event.imgURL }} style={styles.eventImage} />
+              
+              <View style={styles.infoSection}>
+                <Text style={styles.label}>Event</Text>
+                <Text style={styles.text}>{event.name}</Text>
+                
+                <Text style={styles.label}>Date</Text>
+                <Text style={styles.text}>
+                  {event.dateTime.toDate().toLocaleDateString()}
+                </Text>
+              </View>
+            </View>
 
-        {/* Render the barcode scanner if showScanner is true */}
-        {showScanner && hasPermission && (
-          <CameraView
-            onBarcodeScanned={handleBarCodeScanned}
-            barcodeScannerSettings={{
-              barcodeTypes: ["qr", "pdf417"],
-            }}
-            style={styles.scanner}
-          />
-        )}
-        {/* Add more event details as needed */}
+            {/* Scanner section */}
+            <Pressable
+              style={styles.actionButton}
+              onPress={() => setShowScanner(!showScanner)}
+            >
+              <Text style={styles.buttonText}>
+                {showScanner ? "HIDE SCANNER" : "SHOW SCANNER"}
+              </Text>
+            </Pressable>
 
-        <Pressable style={styles.button} onPress={toggleModal}>
-          <Text style={styles.buttonText}>Close</Text>
-        </Pressable>
+            {/* Render the barcode scanner if showScanner is true */}
+            {showScanner && hasPermission && (
+              <View style={styles.scannerContainer}>
+                <CameraView
+                  onBarcodeScanned={handleBarCodeScanned}
+                  barcodeScannerSettings={{
+                    barcodeTypes: ["qr", "pdf417"],
+                  }}
+                  style={styles.scanner}
+                />
+              </View>
+            )}
+
+            <Pressable style={styles.actionButton} onPress={toggleModal}>
+              <Text style={styles.buttonText}>CLOSE</Text>
+            </Pressable>
+          </View>
+          
+          <Text style={styles.footerText}>THANKS FOR RAGING WITH US</Text>
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -173,63 +192,113 @@ const fontFamily = Platform.select({
 });
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#000",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingVertical: 20,
     paddingHorizontal: 20,
   },
-  confirmed: {
-    backgroundColor: `rgba(100, 200, 100, 0.9)`,
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
   },
-  invalid: {
-    backgroundColor: `rgba(255, 0, 0, 0.95)`,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: "white",
-  },
-  text: {
-    fontSize: 16,
-    marginBottom: 15,
+  headline: {
     fontFamily,
+    paddingTop: 50,
+    paddingBottom: 30,
+    textAlign: "center",
+    alignSelf: "center",
+    fontSize: 24,
     color: "white",
-    fontWeight: "500",
+    fontWeight: "700",
+  },
+  eventInfoCard: {
+    width: "100%",
+    borderRadius: 8,
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#555",
+    overflow: "hidden",
+    marginBottom: 20,
+  },
+  eventImage: {
+    height: Dimensions.get("window").width * 0.5,
+    width: "100%",
+    resizeMode: "cover",
+  },
+  infoSection: {
+    padding: 16,
   },
   label: {
     fontFamily,
+    color: "#aaa",
+    marginTop: 10,
+    marginBottom: 5,
+    fontWeight: "500",
+    fontSize: 14,
+    textTransform: "uppercase",
+  },
+  text: {
+    fontSize: 18,
+    marginBottom: 10,
+    fontFamily,
     color: "white",
-    marginVertical: 5,
     fontWeight: "500",
   },
-  eventImage: {
-    height:  Dimensions.get("window").width * 0.45,
-    width:  Dimensions.get("window").width * 0.45,
-    alignSelf: "center",
+  scannerContainer: {
+    width: "100%",
+    height: Dimensions.get("window").width * 0.7,
     borderRadius: 8,
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#555",
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: 20,
   },
   scanner: {
-    height:  Dimensions.get("window").width * 0.45,
-    width:  Dimensions.get("window").width * 0.45,
-    marginVertical: 10,
+    width: "100%",
+    height: "100%",
   },
-  button: {
-    backgroundColor: "#000",
-    padding: 10,
-    marginVertical: 10,
-    borderRadius: 5,
+  actionButton: {
+    marginVertical: 16,
+    borderWidth: 1,
+    padding: 12,
+    borderRadius: 8,
+    width: "70%",
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "white",
-    width: "45%",
     alignSelf: "center",
+    borderColor: "#555",
+    backgroundColor: "#222",
   },
   buttonText: {
     fontFamily,
     color: "white",
+    fontWeight: "600",
+  },
+  confirmed: {
+    backgroundColor: `rgba(100, 200, 100, 0.2)`,
+    borderColor: `rgba(100, 200, 100, 0.5)`,
+  },
+  invalid: {
+    backgroundColor: `rgba(255, 0, 0, 0.2)`,
+    borderColor: `rgba(255, 0, 0, 0.5)`,
+  },
+  footerText: {
+    textAlign: "center",
+    fontFamily,
+    fontSize: 14,
+    padding: 16,
+    color: "#aaa",
     fontWeight: "500",
+    marginTop: 20,
   },
 });

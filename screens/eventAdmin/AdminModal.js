@@ -61,45 +61,52 @@ const AdminModal = ({ visible, toggleModal }) => {
 
   return (
     <Modal visible={visible} animationType="none">
-      <ScrollView style={{ backgroundColor: "black" }}>
-        <View style={styles.container}>
-          <Text style={styles.headline}>RAGESTATE ADMIN EVENT MANAGEMENT</Text>
+      <View style={styles.root}>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.container}>
+            <Text style={styles.headline}>RAGESTATE ADMIN EVENT MANAGEMENT</Text>
 
-          {events.length === 0 ? ( // Check if events array is empty
-            <View style={styles.noEventsContainer}>
-              <Text style={styles.noEventsText}>No events available</Text>
-            </View>
-          ) : (
-            // Render events if there are any
-            events.reverse().map((event, index) => (
-              <View key={index} style={styles.eventContainer}>
-                <Pressable
-                  onPress={() => handleEventPress(event)}
-                  style={({ pressed }) => pressed && styles.pressed}
-                >
-                  <Image
-                    source={{ uri: event.imgURL }}
-                    style={styles.eventImage}
-                  />
-                  <Text style={styles.title}>{event.name}</Text>
-                  <Text style={styles.subtitle}>
-                    {event.dateTime.toDate().toDateString()}
-                  </Text>
-                  {/* Add other event details as needed */}
-                </Pressable>
+            {events.length === 0 ? (
+              <View style={styles.noEventsContainer}>
+                <Text style={styles.noEventsText}>No events available</Text>
               </View>
-            ))
-          )}
-          <EventAdminView
-            visible={eventAdminViewVisible}
-            event={selectedEvent} // Pass the selected event to EventAdminView
-            toggleModal={toggleEventAdminViewVisibility}
-          />
-        </View>
-        <Pressable style={styles.modalButton} onPress={toggleModal}>
-          <Text style={styles.buttonText}>CLOSE</Text>
-        </Pressable>
-      </ScrollView>
+            ) : (
+              // Render events if there are any
+              events.reverse().map((event, index) => (
+                <View key={index} style={styles.eventContainer}>
+                  <Pressable
+                    onPress={() => handleEventPress(event)}
+                    style={({ pressed }) => pressed && styles.pressed}
+                  >
+                    <Image
+                      source={{ uri: event.imgURL }}
+                      style={styles.eventImage}
+                    />
+                    <Text style={styles.title}>{event.name}</Text>
+                    <Text style={styles.subtitle}>
+                      {event.dateTime.toDate().toDateString()}
+                    </Text>
+                    {/* Add other event details as needed */}
+                  </Pressable>
+                </View>
+              ))
+            )}
+            <EventAdminView
+              visible={eventAdminViewVisible}
+              event={selectedEvent} // Pass the selected event to EventAdminView
+              toggleModal={toggleEventAdminViewVisibility}
+            />
+          </View>
+          <Pressable style={styles.actionButton} onPress={toggleModal}>
+            <Text style={styles.buttonText}>CLOSE</Text>
+          </Pressable>
+          
+          <Text style={styles.footerText}>THANKS FOR RAGING WITH US</Text>
+        </ScrollView>
+      </View>
     </Modal>
   );
 };
@@ -111,94 +118,105 @@ const fontFamily = Platform.select({
 });
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
   container: {
-    justifyContent: "space-between",
-    padding: 25,
-    backgroundColor: "black",
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
   },
   eventContainer: {
     width: "100%",
     marginVertical: 10,
     borderRadius: 8,
-    backgroundColor: "#000",
-    elevation: 3,
-    shadowColor: GlobalStyles.colors.neutral6,
-    shadowRadius: 3,
-    shadowOffset: { width: 1, height: 1 },
-    shadowOpacity: 0.25,
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#555",
+    overflow: "hidden",
   },
   noEventsContainer: {
     width: "100%",
     marginTop: Dimensions.get("window").height * 0.25,
     borderRadius: 8,
-    backgroundColor: "#000",
-    elevation: 3,
-    shadowColor: GlobalStyles.colors.neutral6,
-    shadowRadius: 3,
-    shadowOffset: { width: 1, height: 1 },
-    shadowOpacity: 0.25,
+    backgroundColor: "#111",
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#555",
   },
   pressed: {
-    opacity: 0.5,
+    opacity: 0.7,
   },
   title: {
     fontFamily,
     textAlign: "center",
     paddingTop: 8,
-    alignItems: "center",
     color: "white",
-    fontWeight: "500",
+    fontWeight: "600",
+    fontSize: 18,
   },
   subtitle: {
     fontFamily,
     textAlign: "center",
-    alignItems: "center",
     paddingVertical: 4,
-    color: "white",
+    color: "#aaa",
+    paddingBottom: 12,
   },
   eventImage: {
-    height: Dimensions.get("window").height * 0.45,
+    height: Dimensions.get("window").height * 0.25,
     width: "100%",
     alignSelf: "center",
-    borderRadius: 8,
   },
-  modalButton: {
-    borderWidth: 2,
-    borderColor: "#FFF",
-    padding: 10,
-    marginBottom: 50,
-    borderRadius: 10,
-    width: "33%",
+  actionButton: {
+    marginVertical: 16,
+    borderWidth: 1,
+    padding: 12,
+    borderRadius: 8,
+    width: "50%",
+    alignItems: "center",
     alignSelf: "center",
+    borderColor: "#555",
+    backgroundColor: "#222",
   },
   buttonText: {
     fontFamily,
-    fontSize: 16,
-    textAlign: "center",
     color: "white",
-    fontWeight: "500",
+    fontWeight: "600",
   },
   headline: {
     fontFamily,
     paddingTop: 50,
-    paddingBottom: 10,
+    paddingBottom: 30,
     textAlign: "center",
-    textTransform: "uppercase",
     alignSelf: "center",
-    fontSize: 25,
+    fontSize: 24,
     color: "white",
     fontWeight: "700",
   },
   noEventsText: {
     fontFamily,
-    paddingTop: 50,
-    paddingBottom: 10,
     textAlign: "center",
-    textTransform: "uppercase",
-    alignSelf: "center",
-    fontSize: 25,
+    fontSize: 18,
     color: "white",
-    fontWeight: "700",
+    fontWeight: "500",
+  },
+  footerText: {
+    textAlign: "center",
+    fontFamily,
+    fontSize: 14,
+    padding: 16,
+    color: "#aaa",
+    fontWeight: "500",
+    marginTop: 20,
   },
 });
 
