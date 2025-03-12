@@ -277,16 +277,16 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     borderWidth: 1,
     padding: 14,
-    borderRadius: 8,
-    backgroundColor: "#111",
+    borderRadius: 12, // Match border radius with MyEvents
+    backgroundColor: "#111", // Match background color with MyEvents
     elevation: 3,
-    borderColor: "#555",
+    borderColor: "#444", // Match border color with MyEvents
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
     width: '100%',
   },
   orderHeader: {
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   },
   cartItem: {
     marginBottom: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: "#222",
     borderWidth: 1,
     borderColor: "#444",
@@ -345,19 +345,20 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    aspectRatio: 16/9,
+    aspectRatio: 16/9, // Match the aspect ratio with MyEvents
     overflow: 'hidden',
   },
   itemDetails: {
-    padding: 14,
+    padding: 16, // Match padding with MyEvents
   },
   itemTitle: {
     fontFamily,
-    fontSize: 15,
+    fontSize: 16, // Match font size with MyEvents
     marginBottom: 8,
     textTransform: "uppercase",
     color: "white",
     fontWeight: "600",
+    lineHeight: 22, // Match line height with MyEvents
   },
   itemRow: {
     flexDirection: 'row',

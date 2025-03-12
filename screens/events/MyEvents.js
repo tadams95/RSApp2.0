@@ -9,6 +9,8 @@ import {
   Modal,
   Platform,
   Alert,
+  ScrollView,
+  Dimensions,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
@@ -31,27 +33,44 @@ import * as Notifications from "expo-notifications";
 
 import { GlobalStyles } from "../../constants/styles";
 
-const EventListItem = ({
+// Calculate screen width once
+const screenWidth = Dimensions.get('window').width;
+
+// Updated card-style component for event tickets with larger vertical size
+const EventTicketCard = ({
   eventName,
   imageUrl,
   eventDate,
   toggleTransferModal,
 }) => (
-  <View style={styles.innerContainer}>
-    <View style={styles.itemContainer}>
-      <Image style={styles.tinyLogo} source={{ uri: imageUrl }} />
-      <Text style={styles.text}>{eventName}</Text>
-      <Text style={styles.text}>{eventDate}</Text>
-
-      <TouchableOpacity onPress={toggleTransferModal}>
-        <MaterialCommunityIcons
-          name="send"
-          size={20}
-          color="white"
-        />
-      </TouchableOpacity>
+  <TouchableOpacity 
+    style={styles.cardContainer}
+    onPress={toggleTransferModal}
+    activeOpacity={0.7}
+  >
+    <View style={styles.cardContent}>
+      <View style={styles.imageSection}>
+        <Image style={styles.cardImage} source={{ uri: imageUrl }} />
+        {eventDate && (
+          <View style={styles.dateContainer}>
+            <Text style={styles.dateText}>{eventDate}</Text>
+          </View>
+        )}
+      </View>
+      
+      <View style={styles.cardDetails}>
+        <Text style={styles.eventTitle} numberOfLines={2}>{eventName}</Text>
+        
+        <TouchableOpacity 
+          style={styles.transferSection}
+          onPress={toggleTransferModal}
+        >
+          <MaterialCommunityIcons name="send" size={20} color="white" />
+          <Text style={styles.transferText}>Transfer Ticket</Text>
+        </TouchableOpacity>
+      </View>
     </View>
-  </View>
+  </TouchableOpacity>
 );
 
 const MyEvents = () => {
@@ -268,32 +287,45 @@ const handleBarCodeScanned = useCallback(
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headline}>Your event ticket(s)</Text>
-      {eventsData.length === 0 ? (
+      <Text style={styles.headline}>Your events</Text>
+      
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#ffffff"
+          style={{ marginVertical: 20 }}
+        />
+      ) : eventsData.length === 0 ? (
         <Text style={styles.noTicketsText}>No tickets found</Text>
       ) : eventsData.some((event) => event.ragersData.length > 0) ? (
-        eventsData.map((event) => (
-          <View key={event.id}>
-            {event.ragersData.map((ticket) => (
-              <EventListItem
-                key={ticket.id}
-                eventName={event.eventData.name}
-                imageUrl={event.eventData.imgURL}
-                quantity={ticket.quantity}
-                toggleTransferModal={() =>
-                  toggleTransferModal(
-                    event.eventData,
-                    ticket.id,
-                    event.eventData.name
-                  )
-                }
-              />
-            ))}
-          </View>
-        ))
+        <ScrollView 
+          contentContainerStyle={styles.cardsContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {eventsData.map((event) => (
+            <View key={event.id} style={styles.cardWrapper}>
+              {event.ragersData.map((ticket) => (
+                <EventTicketCard
+                  key={ticket.id}
+                  eventName={event.eventData.name}
+                  imageUrl={event.eventData.imgURL}
+                  eventDate={event.eventData.date}
+                  toggleTransferModal={() =>
+                    toggleTransferModal(
+                      event.eventData,
+                      ticket.id,
+                      event.eventData.name
+                    )
+                  }
+                />
+              ))}
+            </View>
+          ))}
+        </ScrollView>
       ) : (
         <Text style={styles.noTicketsText}>No active tickets</Text>
       )}
+      
       <Modal
         animationType="fade"
         transparent={true}
@@ -349,6 +381,105 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     width: "100%",
   },
+  headline: {
+    fontFamily,
+    textAlign: "center",
+    textTransform: "uppercase",
+    marginVertical: 16,
+    color: "white",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  noTicketsText: {
+    color: "#aaa",
+    textAlign: "center",
+    fontFamily,
+    marginTop: 16,
+  },
+  
+  // Updated card styles for larger vertical size
+  cardsContainer: {
+    alignItems: 'center', // Center cards horizontally
+    paddingVertical: 12,
+  },
+  cardWrapper: {
+    width: '100%',
+    alignItems: 'center', // Center the card
+  },
+  cardContainer: {
+    width: screenWidth * 0.9, // 95% of screen width
+    backgroundColor: "#1a1a1a",
+    marginVertical: 12,
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#333",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  cardContent: {
+    width: "100%",
+  },
+  imageSection: {
+    position: "relative",
+  },
+  cardImage: {
+    width: "100%",
+    height: 400, // Increased from 160 to 200
+    resizeMode: "cover",
+  },
+  dateContainer: {
+    position: "absolute",
+    right: 10,
+    top: 10,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  dateText: {
+    color: "white",
+    fontSize: 13,
+    fontWeight: "600",
+    fontFamily,
+  },
+  cardDetails: {
+    padding: 20, // Increased padding from 16 to 20
+    flexDirection: "column", // Changed to column layout for more vertical space
+    justifyContent: "space-between",
+    gap: 16, // Add gap between title and button
+  },
+  eventTitle: {
+    color: "white",
+    fontFamily,
+    fontSize: 18, // Increased from 16 to 18
+    fontWeight: "700",
+    marginBottom: 6,
+    lineHeight: 24,
+  },
+  transferSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#333",
+    paddingVertical: 12, // Increased from 8 to 12
+    paddingHorizontal: 16, // Increased from 12 to 16
+    borderRadius: 8,
+    justifyContent: "center", // Center the content
+    borderWidth: 1,
+    borderColor: "#444",
+  },
+  transferText: {
+    color: "white",
+    marginLeft: 8,
+    fontSize: 14, // Increased from 12 to 14
+    fontWeight: "600",
+    fontFamily,
+  },
+  
+  // Keep other existing styles...
   innerContainer: {
     marginVertical: 6,
     marginHorizontal: 0,
@@ -370,25 +501,10 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 4,
   },
-  headline: {
-    fontFamily,
-    textAlign: "center",
-    textTransform: "uppercase",
-    marginVertical: 16,
-    color: "white",
-    fontWeight: "600",
-    fontSize: 16,
-  },
   text: {
     color: "white",
     fontFamily,
     fontWeight: "500",
-  },
-  noTicketsText: {
-    color: "#aaa",
-    textAlign: "center",
-    fontFamily,
-    marginTop: 16,
   },
   modalContainer: {
     flex: 1,

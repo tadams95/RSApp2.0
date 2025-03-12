@@ -424,6 +424,30 @@ export default function CartScreen({ navigation }) {
     default: "system",
   });
 
+  // Define a custom appearance object for AddressSheet with proper hex format
+  const addressSheetAppearance = {
+    colors: {
+      primary: "#ff3c00",             // Brand accent color for primary actions
+      background: "#111111",          // Dark background matching the app (6 characters)
+      componentBackground: "#222222", // Slightly lighter for form fields (6 characters)
+      componentBorder: "#444444",     // Border color matching cards (6 characters)
+      componentDivider: "#333333",    // Divider color matching the app (6 characters)
+      componentText: "#FFFFFF",       // White text matching the app
+      secondaryText: "#AAAAAA",       // Gray text for secondary information
+      placeholderText: "#777777",     // Placeholder text color
+      icon: "#CCCCCC",                // Icon color
+      error: "#FF5555",               // Error color
+    },
+    fonts: {
+      scale: 1.0,                     // Standard scale
+      family: fontFamily,             // Use the same font family as the app
+    },
+    shapes: {
+      borderRadius: 8,                // Match the border radius used in your app
+      borderWidth: 1,                 // Match the border width used in your app
+    }
+  };
+
   return (
     <StripeProvider
       publishableKey={
@@ -560,14 +584,7 @@ export default function CartScreen({ navigation }) {
                     console.log(error);
                   }
                 }}
-                appearance={{
-                  colors: {
-                    primary: { primaryAddyStyle },
-                    background: { backgroundAddyStyle },
-                    secondaryText: "#000000",
-                    primaryText: { primaryText },
-                  },
-                }}
+                appearance={addressSheetAppearance}
                 defaultValues={{
                   phone: "111-222-3333",
                   address: {
@@ -580,7 +597,7 @@ export default function CartScreen({ navigation }) {
                   phoneNumber: "required",
                 }}
                 allowedCountries={["US"]}
-                primaryButtonTitle={"Use this address"}
+                primaryButtonTitle={"CONFIRM ADDRESS"}
                 sheetTitle={"Shipping Address"}
                 presentationStyle="fullscreen"
               />
