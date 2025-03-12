@@ -208,8 +208,8 @@ export default function HomeScreen() {
     try {
       const result = await Share.share({
         message: "You should be raging with us.",
-        url: "https://ragestate.com/products",
-        title: "RAGESTATE App",
+        url: "https://ragestate.com/events",
+        title: "RAGESTATE Events",
       });
       if (result.action === Share.sharedAction) {
       } else if (result.action === Share.dismissedAction) {
