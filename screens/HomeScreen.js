@@ -7,10 +7,10 @@ import {
   Share,
   Pressable,
   Dimensions,
-  Image,
   ScrollView,
   Platform,
   Alert,
+  Image,
 } from "react-native";
 
 import {
@@ -28,7 +28,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { getDatabase, ref as databaseRef, get, set } from "firebase/database";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 
 import TickerAnnouncement from "../ui/TickerAnnouncement";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -46,15 +46,38 @@ export default function HomeScreen() {
   const userName = useSelector(selectUserName);
 
   const navigation = useNavigation();
-
   const dispatch = useDispatch();
 
-  const navigateToEventsScreen = () => {
-    navigation.navigate("Events"); // Navigate to the 'Events' screen
-  };
+  // Feature navigation options
+  const featureOptions = [
+    {
+      name: "Events",
+      icon: "calendar",
+      description: "Upcoming events & tickets",
+      navigateTo: "Events",
+    },
+    {
+      name: "Shop",
+      icon: "cart",
+      description: "Merch & gear",
+      navigateTo: "Shop",
+    },
+    // {
+    //   name: "Community",
+    //   icon: "people",
+    //   description: "Connect with others",
+    //   navigateTo: "Community",
+    // },
+    {
+      name: "Account",
+      icon: "person",
+      description: "Your account details",
+      navigateTo: "Account",
+    },
+  ];
 
-  const navigateToShopScreen = () => {
-    navigation.navigate("Shop"); // Navigate to the 'Shop' screen
+  const navigateToScreen = (screenName) => {
+    navigation.navigate(screenName);
   };
 
   useEffect(() => {
@@ -162,7 +185,6 @@ export default function HomeScreen() {
   const userRef = databaseRef(db, `users/${userId}`);
   const userId = useSelector(selectLocalId);
   const username = useSelector(selectUserName);
-  // const firstName = username.split(" ")[0];
   const stripeCustomerID = useSelector(selectStripeCustomerId);
   const expoPushToken = useSelector(selectExpoPushToken);
 
@@ -220,30 +242,60 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={{ backgroundColor: "#000", paddingBottom: 25 }}>
+    <View style={{ backgroundColor: "#000", paddingBottom: 25, flex: 1 }}>
       <View>
         <TickerAnnouncement announcements={announcements} />
       </View>
       <ScrollView contentContainerStyle={styles.scrollViewContainer}>
         <View style={styles.container}>
-          <Pressable
-            onPress={navigateToEventsScreen}
-            style={({ pressed }) => pressed && styles.pressed}
-          >
-            <Image
-              source={require("../assets/BlurHero_1.3.png")}
-              style={styles.heroImage}
+          {/* Logo */}
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('../assets/RSLogo2025.png')}
+              style={styles.logo}
+              resizeMode="contain"
             />
-          </Pressable>
-          <Pressable
-            onPress={navigateToShopScreen}
-            style={({ pressed }) => pressed && styles.pressed}
-          >
-            <Image
-              source={require("../assets/ShopHero_1.png")}
-              style={styles.heroImage}
-            />
-          </Pressable>
+          </View>
+
+          {/* Welcome header */}
+          <View style={styles.welcomeSection}>
+            <Text style={styles.welcomeHeading}>
+              LIVE IN YOUR WORLD, RAGE IN OURS
+            </Text>
+            <Text style={styles.welcomeSubheading}>
+              Find your next adventure
+            </Text>
+          </View>
+
+          {/* Feature navigation grid */}
+          <View style={styles.featureGrid}>
+            {featureOptions.map((feature, index) => (
+              <Pressable
+                key={index}
+                style={({ pressed }) => [
+                  styles.featureCard,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => navigateToScreen(feature.navigateTo)}
+              >
+                <View style={styles.featureIconContainer}>
+                  <Ionicons name={feature.icon} size={32} color="#fff" />
+                </View>
+                <Text style={styles.featureTitle}>{feature.name}</Text>
+                <Text style={styles.featureDescription}>
+                  {feature.description}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Upcoming feature preview or highlight */}
+          <View style={styles.highlightSection}>
+            <Text style={styles.highlightTitle}>Feed Coming Soon</Text>
+            <Text style={styles.highlightDescription}>
+              Stay tuned for exclusive content and special features
+            </Text>
+          </View>
 
           <Pressable onPress={shareContent} style={styles.shareButton}>
             <View style={styles.buttonContent}>
@@ -269,59 +321,120 @@ const fontFamily = Platform.select({
 const styles = StyleSheet.create({
   scrollViewContainer: {
     flexGrow: 1,
+    paddingVertical: 16,
   },
   container: {
     flex: 1,
     backgroundColor: "#000",
+    paddingHorizontal: 16,
   },
-  content: {
-    justifyContent: "center",
+  welcomeSection: {
+    marginBottom: 24,
     alignItems: "center",
-    marginBottom: windowHeight * 0.05, // Adjust marginBottom dynamically
   },
-  text: {
-    fontSize: windowHeight * 0.04, // Adjust fontSize dynamically
-    fontWeight: "bold",
-    marginBottom: windowHeight * 0.02, // Adjust marginBottom dynamically
-    color: "#333",
+  welcomeHeading: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 6,
     fontFamily,
   },
-  subtitle: {
-    fontSize: windowHeight * 0.01, // Adjust fontSize dynamically
-    color: "#666",
+  welcomeSubheading: {
+    fontSize: 16,
+    color: "#aaa",
+    fontFamily,
+  },
+  featureGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+  featureCard: {
+    width: windowWidth > 500 ? "48%" : "48%",
+    backgroundColor: "#111",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#333",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 140,
+  },
+  featureIconContainer: {
+    marginBottom: 12,
+    backgroundColor: "#222",
+    borderRadius: 50,
+    width: 60,
+    height: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  featureTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#fff",
+    marginBottom: 6,
+    fontFamily,
+  },
+  featureDescription: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+    fontFamily,
+  },
+  highlightSection: {
+    backgroundColor: "#0a0a0a",
+    borderRadius: 12,
+    padding: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: "#444",
+    marginBottom: 24,
+  },
+  highlightTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#fff",
+    marginBottom: 6,
+    fontFamily,
+  },
+  highlightDescription: {
+    fontSize: 14,
+    color: "#aaa",
     fontFamily,
   },
   shareButton: {
-    backgroundColor: "black",
+    backgroundColor: "#222",
     borderRadius: 8,
-    paddingVertical: windowHeight * 0.02, // Adjust padding vertically dynamically
-    paddingHorizontal: windowHeight * 0.04, // Adjust padding horizontally dynamically
-    elevation: 3,
-    margin: windowHeight * 0.02, // Adjust margin dynamically
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     alignSelf: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#444",
   },
   shareButtonText: {
     color: "#fff",
-    fontSize: windowHeight * 0.0175, // Adjust fontSize dynamically
-    fontWeight: "700",
+    fontSize: 16,
+    fontWeight: "600",
     fontFamily,
-    marginRight: windowHeight * 0.01, // Adjust marginRight dynamically
+    marginRight: 8,
   },
   buttonContent: {
     flexDirection: "row",
     alignItems: "center",
   },
-  heroImage: {
-    height: windowWidth > 600 ? windowHeight * 0.6 : windowHeight * 0.39, // Adjust height dynamically based on screen size
-    width: "100%",
-    resizeMode: "cover",
-  },
   pressed: {
-    opacity: 0.5,
+    opacity: 0.7,
+    backgroundColor: "#1a1a1a",
   },
-  pressable: {
-    width: "90%", // Adjust width to be responsive
-    marginVertical: 10, // Add some margin for spacing
+  logoContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  logo: {
+    width: 150,
+    height: 100,
   },
 });
