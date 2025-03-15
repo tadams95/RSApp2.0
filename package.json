@@ -26,6 +26,7 @@
     "expo-camera": "~16.0.14",
     "expo-device": "~7.0.2",
     "expo-image-picker": "~16.0.5",
+    "expo-linear-gradient": "^14.0.2",
     "expo-notifications": "^0.29.13",
     "expo-splash-screen": "^0.29.21",
     "expo-status-bar": "~2.0.1",
