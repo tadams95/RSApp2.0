@@ -21,6 +21,7 @@ import {
   query,
   updateDoc,
   doc,
+  getDoc,
   getFirestore,
 } from "firebase/firestore";
 
@@ -167,78 +168,109 @@ const MyEvents = () => {
   };
 
   const transferTicket = async (ticketUrl, recipientData) => {
-    await updateDoc(doc(firestore, ticketUrl), {
-      active: true,
-      email: recipientData.email,
-      expoPushToken: recipientData.expoPushToken,
-      firebaseId: recipientData.id,
-      owner: recipientData.id,
-    });
+    try {
+      // Check if the ticket belongs to the current user before attempting to transfer
+      const ticketRef = doc(firestore, ticketUrl);
+      const ticketSnapshot = await getDoc(ticketRef);
+      
+      if (!ticketSnapshot.exists()) {
+        throw new Error("Ticket not found");
+      }
+      
+      const ticketData = ticketSnapshot.data();
+      
+      // Verify the current user is the ticket owner
+      if (ticketData.firebaseId !== currentUser) {
+        throw new Error("You don't have permission to transfer this ticket");
+      }
+      
+      // Now attempt to update the ticket
+      await updateDoc(ticketRef, {
+        active: true,
+        email: recipientData.email,
+        expoPushToken: recipientData.expoPushToken,
+        firebaseId: recipientData.id,
+        owner: recipientData.id,
+      });
+      
+      console.log("Ticket transferred successfully");
+    } catch (error) {
+      console.error("Error in transferTicket:", error);
+      throw error; // Re-throw to be handled by caller
+    }
   };
 
-const handleBarCodeScanned = useCallback(
-  async ({ type, data }) => {
-    // Stop further scanning
-    setScanningAllowed(false);
-    // Store the scanned data
-    setScannedData({ type, data });
+  const handleBarCodeScanned = useCallback(
+    async ({ type, data }) => {
+      // Stop further scanning
+      setScanningAllowed(false);
+      // Store the scanned data
+      setScannedData({ type, data });
 
-    try {
-      const recipientData = await fetchRecipientData(data);
-      const recipientName = `${recipientData.firstName} ${recipientData.lastName}`;
-      const ticketUrl = `/events/${eventNameTransfer}/ragers/${selectedTicketId}`;
+      try {
+        const recipientData = await fetchRecipientData(data);
+        const recipientName = `${recipientData.firstName} ${recipientData.lastName}`;
+        // Remove leading slash from path
+        const ticketUrl = `events/${eventNameTransfer}/ragers/${selectedTicketId}`;
 
-      Alert.alert(
-        "Confirm Transfer",
-        `Do you want to transfer your ticket to ${recipientName}?`,
-        [
-          {
-            text: "Cancel",
-            onPress: () => {
-              // Reset scanned data and allow scanning again
-              setScannedData(null);
-              setScanningAllowed(true);
-              setTransferModalVisible(false);
-            },
-            style: "cancel",
-          },
-          {
-            text: "Send",
-            onPress: async () => {
-              try {
-                // Update the database to transfer ownership of the ticket
-                await transferTicket(ticketUrl, recipientData);
-
-                // Send push notification to the recipient
-                await sendPushNotification(recipientData.expoPushToken);
-
-                // Handle sending ticket
-                const message = `You transferred your ticket to ${recipientName}`;
-                alert(message);
-                fetchEventsData(); // Refresh events data
-                setTransferModalVisible(false);
-                // Allow scanning again
+        Alert.alert(
+          "Confirm Transfer",
+          `Do you want to transfer your ticket to ${recipientName}?`,
+          [
+            {
+              text: "Cancel",
+              onPress: () => {
+                // Reset scanned data and allow scanning again
+                setScannedData(null);
                 setScanningAllowed(true);
-              } catch (error) {
-                console.error("Error transferring ticket:", error);
-                // Handle error
-              }
+                setTransferModalVisible(false);
+              },
+              style: "cancel",
             },
-          },
-        ],
-        { cancelable: false }
-      );
-    } catch (error) {
-      console.error("Error fetching recipient data:", error);
-      Alert.alert("Error", error.message);
-      // Reset scanned data and allow scanning again
-      setScannedData(null);
-      setScanningAllowed(true);
-      setTransferModalVisible(false);
-    }
-  },
-  [currentUser, eventNameTransfer, selectedTicketId, fetchEventsData, sendPushNotification]
-);
+            {
+              text: "Send",
+              onPress: async () => {
+                try {
+                  // Update the database to transfer ownership of the ticket
+                  await transferTicket(ticketUrl, recipientData);
+
+                  // Send push notification to the recipient
+                  await sendPushNotification(recipientData.expoPushToken);
+
+                  // Handle sending ticket
+                  const message = `You transferred your ticket to ${recipientName}`;
+                  alert(message);
+                  fetchEventsData(); // Refresh events data
+                  setTransferModalVisible(false);
+                  // Allow scanning again
+                  setScanningAllowed(true);
+                } catch (error) {
+                  console.error("Error transferring ticket:", error);
+                  // More helpful error message
+                  Alert.alert(
+                    "Transfer Failed", 
+                    `Could not transfer ticket: ${error.message || "Permission denied"}`
+                  );
+                  // Reset state
+                  setScannedData(null);
+                  setScanningAllowed(true);
+                }
+              },
+            },
+          ],
+          { cancelable: false }
+        );
+      } catch (error) {
+        console.error("Error fetching recipient data:", error);
+        Alert.alert("Error", error.message);
+        // Reset scanned data and allow scanning again
+        setScannedData(null);
+        setScanningAllowed(true);
+        setTransferModalVisible(false);
+      }
+    },
+    [currentUser, eventNameTransfer, selectedTicketId, fetchEventsData, sendPushNotification]
+  );
 
   const sendPushNotification = async (expoPushToken) => {
     try {
@@ -270,11 +302,13 @@ const handleBarCodeScanned = useCallback(
 
   if (loading) {
     return (
-      <ActivityIndicator
-        size="large"
-        color="#ffffff"
-        style={{ marginVertical: 20 }}
-      />
+      <View style={styles.container}>
+        <ActivityIndicator
+          size="large"
+          color="#ffffff"
+          style={{ marginVertical: 20 }}
+        />
+      </View>
     );
   }
 
@@ -310,7 +344,7 @@ const handleBarCodeScanned = useCallback(
                   eventName={event.eventData.name}
                   imageUrl={event.eventData.imgURL}
                   eventDate={event.eventData.date}
-                  toggleTransferModal={() =>
+                  toggleTransferModal={() => 
                     toggleTransferModal(
                       event.eventData,
                       ticket.id,
@@ -478,14 +512,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontFamily,
   },
-  
   // Keep other existing styles...
   innerContainer: {
     marginVertical: 6,
     marginHorizontal: 0,
     borderRadius: 8,
     backgroundColor: "#1a1a1a",
-    borderWidth: 1, 
+    borderWidth: 1,
     borderColor: "#333",
     overflow: "hidden",
   },
@@ -579,32 +612,34 @@ const styles = StyleSheet.create({
     fontFamily,
     color: "white",
     fontWeight: "600",
-  },
-  modalText: {
-    fontFamily,
-    fontSize: 20,
-    marginBottom: 16,
+    textTransform: "uppercase",
     textAlign: "center",
-    color: "white",
-    fontWeight: "700",
-  },
-  actionButton: {
-    margin: 10,
-    borderWidth: 1,
-    padding: 12,
-    borderRadius: 8,
-    width: "50%",
-    alignItems: "center",
-    alignSelf: "center",
-    borderColor: "#555",
-    backgroundColor: "#222",
   },
   buttonText: {
-    fontFamily,
-    textAlign: "center",
-    textTransform: "uppercase",
-    color: "white",
     fontWeight: "600",
+    color: "white",
+    textTransform: "uppercase",
+    textAlign: "center",
+    fontFamily,
+  },
+  actionButton: {
+    backgroundColor: "#222",
+    borderColor: "#555",
+    alignSelf: "center",
+    alignItems: "center",
+    width: "50%",
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    margin: 10,
+  },
+  modalText: {
+    fontWeight: "700",
+    color: "white",
+    textAlign: "center",
+    marginBottom: 16,
+    fontSize: 20,
+    fontFamily,
   },
 });
 

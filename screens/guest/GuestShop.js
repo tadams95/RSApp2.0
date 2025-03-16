@@ -118,6 +118,29 @@ const styles = StyleSheet.create({
     marginVertical: 4,
     alignSelf: 'center',
     borderRadius: 4,
+  },
+  outOfStock: {
+    opacity: 0.7,
+  },
+  imageContainer: {
+    position: 'relative',
+    width: '100%',
+  },
+  soldOutBadge: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -40 }, { translateY: -15 }],
+    backgroundColor: 'rgba(220, 38, 38, 0.8)',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 4,
+  },
+  soldOutText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontFamily,
+    fontSize: 14,
   }
 });
 
@@ -150,6 +173,14 @@ const GuestShop = ({ navigation, setAuthenticated }) => {
 
   const handleProductPress = useCallback(
     (product) => {
+      // Check if product is out of stock before navigation
+      const isOutOfStock = product.variants.every(variant => !variant.available);
+      
+      if (isOutOfStock) {
+        // If product is out of stock, don't navigate
+        return;
+      }
+      
       // Serialize product data
       const serializedProduct = {
         id: product.id,
@@ -215,28 +246,44 @@ const GuestShop = ({ navigation, setAuthenticated }) => {
   }, [fetchProducts]);
 
   const renderItem = useCallback(
-    ({ item: product }) => (
-      <View key={product.id} style={styles.itemsContainer}>
-        <Pressable
-          onPress={() => handleProductPress(product)}
-          style={({ pressed }) => pressed && styles.pressed}
-          accessible={true}
-          accessibilityLabel={`${product.title}, $${product.variants[0].price.amount}0 ${product.variants[0].price.currencyCode}`}
-          accessibilityRole="button"
-        >
-          <Image 
-            source={{ uri: product.images[0].src }} 
-            style={styles.image}
-            accessibilityLabel={`Image of ${product.title}`}
-          />
-          <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{product.title}</Text>
-          <Text style={styles.price}>
-            ${product.variants[0].price.amount}0{" "}
-            {product.variants[0].price.currencyCode}
-          </Text>
-        </Pressable>
-      </View>
-    ),
+    ({ item: product }) => {
+      // Check if product is out of stock
+      const isOutOfStock = product.variants.every(variant => !variant.available);
+      
+      return (
+        <View key={product.id} style={styles.itemsContainer}>
+          <Pressable
+            onPress={() => handleProductPress(product)}
+            style={({ pressed }) => [
+              isOutOfStock && styles.outOfStock,
+              pressed && styles.pressed
+            ]}
+            accessible={true}
+            accessibilityLabel={`${product.title}, $${product.variants[0].price.amount}0 ${product.variants[0].price.currencyCode}${isOutOfStock ? ', Sold Out' : ''}`}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isOutOfStock }}
+          >
+            <View style={styles.imageContainer}>
+              <Image 
+                source={{ uri: product.images[0].src }} 
+                style={styles.image}
+                accessibilityLabel={`Image of ${product.title}`}
+              />
+              {isOutOfStock && (
+                <View style={styles.soldOutBadge}>
+                  <Text style={styles.soldOutText}>SOLD OUT</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{product.title}</Text>
+            <Text style={styles.price}>
+              ${product.variants[0].price.amount}0{" "}
+              {product.variants[0].price.currencyCode}
+            </Text>
+          </Pressable>
+        </View>
+      );
+    },
     [handleProductPress]
   );
 
