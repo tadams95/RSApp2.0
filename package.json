@@ -6,7 +6,9 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "update-deps": "npx expo install --check && npx expo install",
+    "doctor": "npx expo-doctor"
   },
   "dependencies": {
     "@babel/helper-create-class-features-plugin": "^7.25.9",

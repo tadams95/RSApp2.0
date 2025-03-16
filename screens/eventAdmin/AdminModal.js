@@ -9,12 +9,13 @@ import {
   Image,
   Platform,
   Dimensions,
+  Alert,
+  Linking,
 } from "react-native";
 
 import { db } from "../../firebase/firebase";
-
+import { Camera } from "expo-camera";
 import { collection, getDocs } from "firebase/firestore";
-import { GlobalStyles } from "../../constants/styles";
 
 import EventAdminView from "./EventAdminView";
 
@@ -22,8 +23,11 @@ const AdminModal = ({ visible, toggleModal }) => {
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [eventAdminViewVisible, setEventAdminViewVisible] = useState(false);
+  const [cameraPermission, setCameraPermission] = useState(null);
 
+  // Fetch events and check camera permission on component mount
   useEffect(() => {
+    // Function to fetch event data
     const fetchEventData = async () => {
       try {
         const eventCollectionRef = collection(db, "events");
@@ -46,17 +50,93 @@ const AdminModal = ({ visible, toggleModal }) => {
     };
 
     fetchEventData();
-  }, []);
+    
+    // Better camera permission check with logging
+    const checkCameraPermission = async () => {
+      try {
+        console.log("Checking camera permission...");
+        const { status } = await Camera.getCameraPermissionsAsync();
+        console.log("Camera permission status:", status);
+        setCameraPermission(status === "granted");
+      } catch (error) {
+        console.error("Error checking camera permission:", error);
+        setCameraPermission(false);
+      }
+    };
+    
+    checkCameraPermission();
+  }, [visible]); // Re-check permission when modal becomes visible
 
-  // const { firstName, isAdmin, lastName, qrCode } = admin;
+  // Function to request camera permission with improved logic
+  const requestCameraPermission = async () => {
+    try {
+      console.log("Requesting camera permission...");
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      console.log("Camera permission request result:", status);
+      
+      // Add a small delay to ensure the OS has processed the permission change
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Check permission status again after delay
+      const { status: updatedStatus } = await Camera.getCameraPermissionsAsync();
+      console.log("Updated camera permission status:", updatedStatus);
+      
+      setCameraPermission(updatedStatus === "granted");
+      return updatedStatus === "granted";
+    } catch (error) {
+      console.error("Error requesting camera permission:", error);
+      return false;
+    }
+  };
 
-  const handleEventPress = (event) => {
-    setSelectedEvent(event); // Set the selected event when an event is pressed
-    setEventAdminViewVisible(true); // Show the EventAdminView
+  const handleEventPress = async (event) => {
+    // First, get the current permission state directly
+    const { status } = await Camera.getCameraPermissionsAsync();
+    
+    if (status === "granted") {
+      // Permission already granted, proceed
+      setSelectedEvent(event);
+      setEventAdminViewVisible(true);
+    } else {
+      // Need to request permission
+      Alert.alert(
+        "Camera Permission Required",
+        "Admin functions require camera access for QR scanning.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Grant Permission", 
+            onPress: async () => {
+              const granted = await requestCameraPermission();
+              if (granted) {
+                setSelectedEvent(event);
+                setEventAdminViewVisible(true);
+              } else {
+                // If permission still denied after request, guide user to settings
+                Alert.alert(
+                  "Permission Required",
+                  "Please enable camera access in your device settings for RAGESTATE.",
+                  [
+                    { text: "Not Now", style: "cancel" },
+                    { 
+                      text: "Open Settings", 
+                      onPress: () => {
+                        // On iOS this will open camera settings, on Android it may open app settings
+                        Linking.openSettings();
+                      }
+                    }
+                  ]
+                );
+              }
+            }
+          }
+        ]
+      );
+    }
   };
 
   const toggleEventAdminViewVisibility = () => {
-    setEventAdminViewVisible(!eventAdminViewVisible); // Toggle the visibility of EventAdminView
+    setEventAdminViewVisible(!eventAdminViewVisible);
   };
 
   return (
@@ -98,6 +178,8 @@ const AdminModal = ({ visible, toggleModal }) => {
               visible={eventAdminViewVisible}
               event={selectedEvent} // Pass the selected event to EventAdminView
               toggleModal={toggleEventAdminViewVisibility}
+              cameraPermission={cameraPermission}
+              requestCameraPermission={requestCameraPermission}
             />
           </View>
           <Pressable style={styles.actionButton} onPress={toggleModal}>

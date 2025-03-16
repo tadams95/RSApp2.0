@@ -11,6 +11,7 @@ import {
   Alert,
   ScrollView,
   Dimensions,
+  Linking,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
@@ -80,7 +81,6 @@ const MyEvents = () => {
   const firestore = getFirestore();
   const auth = getAuth();
   const currentUser = auth.currentUser.uid;
-  const [permission, requestPermission] = useState(null); // Initialize permission state
   const [hasPermission, setHasPermission] = useState(null);
   const [transferModalVisible, setTransferModalVisible] = useState(false);
   const [eventData, setEventData] = useState([]);
@@ -134,20 +134,50 @@ const MyEvents = () => {
     fetchEventsData();
   }, [currentUser]);
 
-  // Function to request camera permissions
+  // Function to request camera permissions with improved error handling
   const requestPermissions = async () => {
     try {
+      console.log("Requesting camera permission...");
       const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === "granted");
+      console.log("Camera permission status:", status);
+      
+      // Force a small delay to ensure the OS has processed the permission change
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Check permission status again after delay
+      const { status: updatedStatus } = await Camera.getCameraPermissionsAsync();
+      console.log("Updated camera permission status:", updatedStatus);
+      
+      setHasPermission(updatedStatus === "granted");
+      return updatedStatus === "granted";
     } catch (error) {
       console.error("Error requesting camera permissions:", error);
-      // Handle errors
+      return false;
     }
   };
 
-  // Request camera permission on component mount
+  // Request camera permission on component mount with retry mechanism
   useEffect(() => {
-    requestPermissions();
+    const checkPermission = async () => {
+      // First check if we already have permission
+      const { status } = await Camera.getCameraPermissionsAsync();
+      
+      if (status === "granted") {
+        setHasPermission(true);
+        return;
+      }
+      
+      // If not, request it
+      const granted = await requestPermissions();
+      
+      // If permission wasn't granted, we can add a retry mechanism
+      if (!granted) {
+        // Consider adding some UI feedback here
+        console.log("Camera permission not granted initially");
+      }
+    };
+    
+    checkPermission();
   }, []);
 
   const fetchRecipientData = async (data) => {
@@ -290,14 +320,55 @@ const MyEvents = () => {
     }
   };
 
-  if (!permission || !hasPermission) {
-    return (
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.actionButton} onPress={requestPermission}>
-          <Text style={styles.buttonText}>View Ticket(s)</Text>
-        </TouchableOpacity>
-      </View>
-    );
+  function toggleTransferModal(eventData, ticketId, eventName) {
+    // First check current permission status directly from the API
+    Camera.getCameraPermissionsAsync().then(({ status }) => {
+      if (status === "granted") {
+        // We already have permission, proceed
+        setTransferModalVisible(true);
+        setEventData(eventData);
+        setSelectedTicketId(ticketId);
+        setEventNameTransfer(eventName);
+      } else {
+        // Need to request permission
+        Alert.alert(
+          "Camera Permission Required", 
+          "To transfer tickets, you need to allow RAGESTATE to access your camera.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { 
+              text: "Grant Permission", 
+              onPress: async () => {
+                const granted = await requestPermissions();
+                if (granted) {
+                  // Success! Now open the modal
+                  setTransferModalVisible(true);
+                  setEventData(eventData);
+                  setSelectedTicketId(ticketId);
+                  setEventNameTransfer(eventName);
+                } else {
+                  // If still not granted, guide the user to settings
+                  Alert.alert(
+                    "Permission Required",
+                    "Please enable camera access in your device settings to use this feature.",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { 
+                        text: "Open Settings", 
+                        onPress: () => {
+                          // Open device settings so user can manually enable permissions
+                          Linking.openSettings();
+                        }
+                      }
+                    ]
+                  );
+                }
+              }
+            }
+          ]
+        );
+      }
+    });
   }
 
   if (loading) {
@@ -310,13 +381,6 @@ const MyEvents = () => {
         />
       </View>
     );
-  }
-
-  function toggleTransferModal(eventData, ticketId, eventName) {
-    setTransferModalVisible((prev) => !prev);
-    setEventData(eventData);
-    setSelectedTicketId(ticketId); // Assuming you have state to store the selected ticket ID
-    setEventNameTransfer(eventName);
   }
 
   return (
@@ -364,6 +428,12 @@ const MyEvents = () => {
         animationType="fade"
         transparent={true}
         visible={transferModalVisible}
+        onShow={() => {
+          // Recheck permission when modal shows
+          Camera.getCameraPermissionsAsync().then(({ status }) => {
+            setHasPermission(status === "granted");
+          });
+        }}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -377,7 +447,25 @@ const MyEvents = () => {
               <Text style={styles.ticketQuantity}>Quantity: 1</Text>
             </View>
             <View style={styles.cameraContainer}>
-              {scanningAllowed && (
+              {hasPermission === false ? (
+                <View style={styles.permissionContainer}>
+                  <Text style={styles.permissionText}>
+                    Camera permission is required to scan QR codes
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.permissionButton}
+                    onPress={requestPermissions}
+                  >
+                    <Text style={styles.permissionButtonText}>Grant Permission</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.permissionButton, { marginTop: 10 }]}
+                    onPress={Linking.openSettings}
+                  >
+                    <Text style={styles.permissionButtonText}>Open Settings</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : scanningAllowed && (
                 <CameraView
                   onBarcodeScanned={handleBarCodeScanned}
                   barcodeScannerSettings={{
@@ -389,7 +477,7 @@ const MyEvents = () => {
             </View>
             <TouchableOpacity
               style={styles.cancelButton}
-              onPress={toggleTransferModal}
+              onPress={() => setTransferModalVisible(false)}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
@@ -640,6 +728,36 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 20,
     fontFamily,
+  },
+  permissionContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 200,
+    width: 200,
+    borderRadius: 8,
+    backgroundColor: "#222",
+    borderWidth: 1,
+    borderColor: "#555",
+  },
+  permissionText: {
+    color: "white",
+    textAlign: "center",
+    marginBottom: 16,
+    fontFamily,
+    padding: 8,
+  },
+  permissionButton: {
+    backgroundColor: "#333",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#555",
+  },
+  permissionButtonText: {
+    color: "white",
+    fontFamily,
+    fontWeight: "600",
   },
 });
 
