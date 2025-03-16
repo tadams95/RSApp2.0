@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
@@ -28,6 +30,8 @@
       },
       "googleServicesFile": "./google-services.json",
       "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA"
       ],
@@ -73,6 +77,12 @@
       }
     },
     "owner": "tyrelle",
-    "scheme": "ragestate"
+    "scheme": "ragestate",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0b623ccd-8529-45cb-bc54-dd7265c22a26"
+    }
   }
 }

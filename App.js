@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Pressable, View, Platform } from "react-native";
+import { Pressable, View, Platform, Alert, AppState } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
+import * as Updates from 'expo-updates';
 
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -146,6 +147,53 @@ export default function App() {
   useEffect(() => {
     checkStayLoggedIn();
   }, [checkStayLoggedIn]);
+
+  async function checkForUpdates() {
+    try {
+      const update = await Updates.checkForUpdateAsync();
+      
+      if (update.isAvailable) {
+        Alert.alert(
+          "Update Available",
+          "A new version is available. Would you like to update now?",
+          [
+            {
+              text: "Later",
+              style: "cancel"
+            },
+            { 
+              text: "Update", 
+              onPress: async () => {
+                try {
+                  await Updates.fetchUpdateAsync();
+                  await Updates.reloadAsync();
+                } catch (error) {
+                  console.log('Error fetching or reloading update:', error);
+                }
+              }
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.log('Error checking for updates:', error);
+    }
+  }
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') {
+      checkForUpdates();
+      
+      // Also check for updates when app returns to foreground
+      const subscription = AppState.addEventListener('change', nextAppState => {
+        if (nextAppState === 'active') {
+          checkForUpdates();
+        }
+      });
+      
+      return () => subscription.remove();
+    }
+  }, []);
 
   return (
     <NavigationContainer>
