@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
@@ -39,7 +37,8 @@
       "versionCode": 18
     },
     "web": {
-      "favicon": "./assets/RSLogo2025.png"
+      "favicon": "./assets/RSLogo2025.png",
+      "bundler": "metro"
     },
     "plugins": [
       [
