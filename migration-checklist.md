@@ -5,12 +5,12 @@ Use this checklist to track progress on the migration to Expo Router and impleme
 ## Project Setup
 
 - [ ] Install required dependencies
-  - [ ] `expo-router`
-  - [ ] `react-native-safe-area-context`
-  - [ ] `react-native-screens`
-  - [ ] `expo-linking`
-  - [ ] `expo-constants`
-  - [ ] `expo-status-bar`
+  - [✅] `expo-router`(version ~5.0.7)
+  - [✅] `react-native-safe-area-context`(version 5.4.0)
+  - [✅] `react-native-screens` (version ~4.10.0)
+  - [✅] `expo-linking`(version ~7.1.5)
+  - [✅] `expo-constants`(version ~17.1.6)
+  - [✅] `expo-status-bar`(version ~2.2.3)
 - [ ] Update configuration files
   - [ ] Set main entry point to "expo-router/entry" in package.json
   - [ ] Add scheme "ragestate" to app.json

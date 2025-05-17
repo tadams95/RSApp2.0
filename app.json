@@ -69,7 +69,8 @@
           "microphonePermission": "Allow RAGESTATE mic access for Admin Functions",
           "recordAudioAndroid": true
         }
-      ]
+      ],
+      "expo-router"
     ],
     "extra": {
       "eas": {
