@@ -73,6 +73,22 @@ Use this checklist to track progress on the migration to Expo Router and impleme
 
 ## Technical Improvements
 
+- [ ] Package Dependency Updates
+
+  - [ ] Replace unmaintained packages
+    - [ ] Replace `@rneui/base` and `@rneui/themed` with a maintained UI library:
+      - [ ] Option 1: Install and migrate to `react-native-paper`
+      - [ ] Option 2: Install and migrate to `react-native-ui-lib`
+    - [ ] Replace `react-native-swiper` with a maintained alternative:
+      - [ ] Option 1: Install and migrate to `react-native-reanimated-carousel`
+      - [ ] Option 2: Install and migrate to `react-native-snap-carousel`
+  - [ ] Verify compatibility of packages with no metadata
+    - [ ] Evaluate if `@babel/helper-create-class-features-plugin` can be removed or updated
+    - [ ] Ensure `firebase` SDK compatibility with latest Expo version
+    - [ ] Check if `fs-extra` is necessary (typically only used in build scripts)
+    - [ ] Validate `shopify-buy` SDK for compatibility with current Shopify API
+  - [ ] Run `npx expo-doctor` regularly to monitor package health
+
 - [ ] TypeScript Migration
   - [ ] Set up TypeScript configuration
   - [ ] Convert utility functions
