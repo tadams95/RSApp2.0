@@ -47,9 +47,9 @@ Use this checklist to track progress on the migration to Expo Router and impleme
   - [✅] Forgot password screen
 - [✓] Main App Screens
   - [✅] Home screen
-  - [ ] Shop screens
-    - [ ] Product list
-    - [ ] Product details (dynamic route)
+  - [✅] Shop screens
+    - [✅] Product list
+    - [✅] Product details (dynamic route)
   - [ ] Event screens
     - [ ] Event list
     - [ ] Event details (dynamic route)
@@ -179,3 +179,9 @@ Use this checklist to track progress on the migration to Expo Router and impleme
   - [ ] Monitor for errors
   - [ ] Collect analytics
   - [ ] Gather user feedback
+
+## File Migration Progress
+
+- [ ] `favorites.js`
+- [✅] `cartSlice.js`
+- [ ] `store.js`

@@ -1,0 +1,62 @@
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { RootState } from "./store";
+
+interface UserState {
+  localId: string | null;
+  userEmail: string | null;
+  userName: string | null;
+  stripeCustomerId: string | null;
+  expoPushToken: string | null;
+}
+
+const initialState: UserState = {
+  localId: null,
+  userEmail: null,
+  userName: null,
+  stripeCustomerId: null,
+  expoPushToken: null,
+};
+
+export const userSlice = createSlice({
+  name: "user",
+  initialState,
+  reducers: {
+    setLocalId: (state, action: PayloadAction<string | null>) => {
+      state.localId = action.payload;
+    },
+    setUserEmail: (state, action: PayloadAction<string | null>) => {
+      state.userEmail = action.payload;
+    },
+    setUserName: (state, action: PayloadAction<string | null>) => {
+      state.userName = action.payload;
+    },
+    setStripeCustomerId: (state, action: PayloadAction<string | null>) => {
+      state.stripeCustomerId = action.payload;
+    },
+    setExpoPushToken: (state, action: PayloadAction<string | null>) => {
+      state.expoPushToken = action.payload;
+    },
+  },
+});
+
+export const {
+  setLocalId,
+  setUserEmail,
+  setUserName,
+  setStripeCustomerId,
+  setExpoPushToken,
+} = userSlice.actions;
+
+// Typed selectors
+export const selectLocalId = (state: RootState): string | null =>
+  state.user.localId;
+export const selectUserEmail = (state: RootState): string | null =>
+  state.user.userEmail;
+export const selectUserName = (state: RootState): string | null =>
+  state.user.userName;
+export const selectStripeCustomerId = (state: RootState): string | null =>
+  state.user.stripeCustomerId;
+export const selectExpoPushToken = (state: RootState): string | null =>
+  state.user.expoPushToken;
+
+export default userSlice.reducer;

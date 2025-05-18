@@ -1,4 +1,12 @@
 {
-  "compilerOptions": {},
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "lib": ["es2015", "dom"], // Added "es2015" for Set iteration and "dom" for general web APIs
+    "downlevelIteration": true, // Added for Set iteration
+    "strict": true // It's good practice to enable strict mode
+  },
   "extends": "expo/tsconfig.base"
 }
