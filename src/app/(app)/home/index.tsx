@@ -12,7 +12,7 @@ export default function HomeScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Image
-          source={require("../../../assets/RSLogo2025.png")}
+          source={require("../../../../assets/RSLogo2025.png")}
           style={styles.logo}
           resizeMode="contain"
         />
