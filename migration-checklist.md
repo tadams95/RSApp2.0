@@ -23,30 +23,30 @@ Use this checklist to track progress on the migration to Expo Router and impleme
 
 ## Core Structure Implementation
 
-- [ ] Root Layout (src/app/\_layout.tsx)
-  - [ ] Splash screen handling
-  - [ ] App update checking
-  - [ ] Redux Provider setup
-  - [ ] Auth Provider implementation
-- [ ] Authentication Context
-  - [ ] Create AuthContext.tsx
-  - [ ] Implement authentication state management
-  - [ ] Handle "stay logged in" functionality
-  - [ ] Connect auth state to routing
-- [ ] Route Groups
-  - [ ] Auth group layout (/(auth)/\_layout.tsx)
-  - [ ] App group layout (/(app)/\_layout.tsx)
-  - [ ] Guest group layout (/(guest)/\_layout.tsx)
+- [✅] Root Layout (src/app/\_layout.tsx)
+  - [✅] Splash screen handling
+  - [✅] App update checking
+  - [✅] Redux Provider setup
+  - [✅] Auth Provider implementation
+- [✅] Authentication Context
+  - [✅] Create AuthContext.tsx
+  - [✅] Implement authentication state management
+  - [✅] Handle "stay logged in" functionality
+  - [✅] Connect auth state to routing
+- [✅] Route Groups
+  - [✅] Auth group layout (/(auth)/\_layout.tsx)
+  - [✅] App group layout (/(app)/\_layout.tsx)
+  - [✅] Guest group layout (/(guest)/\_layout.tsx)
 
 ## Page Implementations
 
-- [ ] Auth Screens
-  - [ ] Entry/Welcome screen
-  - [ ] Login screen
+- [✓] Auth Screens
+  - [✅] Entry/Welcome screen
+  - [✅] Login screen
   - [ ] Signup screen
   - [ ] Forgot password screen
-- [ ] Main App Screens
-  - [ ] Home screen
+- [✓] Main App Screens
+  - [✅] Home screen
   - [ ] Shop screens
     - [ ] Product list
     - [ ] Product details (dynamic route)
