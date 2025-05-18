@@ -185,3 +185,28 @@ Use this checklist to track progress on the migration to Expo Router and impleme
 - [ ] `favorites.js`
 - [✅] `cartSlice.js`
 - [ ] `store.js`
+
+## Files/Folders to Remove After Migration
+
+- [ ] **Root Files**
+
+  - [ ] `App.js` (replaced by `src/app/_layout.tsx`)
+  - [ ] `jsconfig.json` (replaced by TypeScript configuration)
+
+- [ ] **Legacy Directories**
+
+  - [ ] `screens/` (replaced by routes in `src/app/`)
+  - [ ] `ui/` (moved to `src/components/ui/`)
+  - [ ] `util/` (moved to `src/utils/`)
+  - [ ] `templates/` (no longer needed with TypeScript)
+  - [ ] `components/` (moved to `src/components/`)
+  - [ ] `constants/` (moved to `src/constants/`)
+  - [ ] `store/` (if using Zustand instead of Redux)
+    - [ ] Or partially for migrated files if keeping Redux
+
+- [ ] **Temporary Migration Files**
+  - [ ] `implementation-guide.md`
+  - [ ] `implementation-plan.md`
+  - [ ] `migration-checklist.md`
+  - [ ] `technical-improvements.md`
+  - [ ] `analytics-and-styling-guide.md`
