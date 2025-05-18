@@ -12,6 +12,7 @@ type AuthContextType = {
   authenticated: boolean;
   setAuthenticated: (value: boolean) => void;
   isLoading: boolean;
+  signOut: () => Promise<void>;
 };
 
 // Create the context with default values
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   authenticated: false,
   setAuthenticated: () => {},
   isLoading: true,
+  signOut: async () => {},
 });
 
 // Provider component
@@ -28,6 +30,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
   const segments = useSegments();
   const router = useRouter();
+
+  // Sign out function
+  const signOut = async (): Promise<void> => {
+    try {
+      await auth.signOut();
+      await AsyncStorage.removeItem("stayLoggedIn");
+      setAuthenticated(false);
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   useEffect(() => {
     // Check if user has selected "stay logged in" option
@@ -94,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ authenticated, setAuthenticated, isLoading }}
+      value={{ authenticated, setAuthenticated, isLoading, signOut }}
     >
       {children}
     </AuthContext.Provider>

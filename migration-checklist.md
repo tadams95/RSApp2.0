@@ -55,7 +55,7 @@ Use this checklist to track progress on the migration to Expo Router and impleme
     - [✅] Event details (dynamic route)
     - [✅] My events screen
   - [✅] Cart screen
-  - [ ] Account screen
+  - [✅] Account screen
 - [ ] Guest Mode
   - [ ] Guest shop screens
   - [ ] Guest event screens
@@ -70,6 +70,10 @@ Use this checklist to track progress on the migration to Expo Router and impleme
   - [ ] UI components
   - [ ] Loading overlays
   - [ ] Modals
+    - [✅] SettingsModal
+    - [✅] QRModal
+    - [ ] HistoryModal
+    - [ ] EditProfile
   - [ ] Form components
 
 ## Technical Improvements
