@@ -43,8 +43,8 @@ Use this checklist to track progress on the migration to Expo Router and impleme
 - [✓] Auth Screens
   - [✅] Entry/Welcome screen
   - [✅] Login screen
-  - [ ] Signup screen
-  - [ ] Forgot password screen
+  - [✅] Signup screen
+  - [✅] Forgot password screen
 - [✓] Main App Screens
   - [✅] Home screen
   - [ ] Shop screens
