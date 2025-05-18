@@ -1,55 +1,47 @@
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  Modal,
-  ScrollView,
-  Alert,
-  Platform,
-  Dimensions,
-  TouchableOpacity,
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { useSelector, useDispatch } from "react-redux";
 import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
 import {
-  selectCartItems,
-  removeFromCart,
+  Alert,
+  Dimensions,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+import {
   clearCart,
-  setCheckoutPrice,
+  removeFromCart,
+  selectCartItems,
   selectCheckoutPrice,
+  setCheckoutPrice,
 } from "../../../store/redux/cartSlice";
 
 // Import the actual CartItem type from the redux slice if available
 // Or define a type that matches the structure in the Redux store
 import {
-  selectUserEmail,
-  selectLocalId,
-  selectUserName,
-  selectStripeCustomerId,
-  selectExpoPushToken,
-} from "../../../store/redux/userSlice";
-import * as Notifications from "expo-notifications";
-import {
-  doc,
-  setDoc,
-  updateDoc,
-  getDoc,
-  collection,
-  addDoc,
-} from "firebase/firestore";
-import { getFirestore } from "firebase/firestore";
-import {
+  AddressDetails,
+  AddressSheet,
   StripeProvider,
   useStripe,
-  AddressSheet,
-  AddressDetails,
 } from "@stripe/stripe-react-native";
-import { useState, useEffect } from "react";
-import { GlobalStyles } from "../../../constants/styles";
+import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
-import { CartItemMetadata, EventDetails } from "../../../types/cart";
+import { addDoc, collection, getFirestore } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { GlobalStyles } from "../../../constants/styles";
+import {
+  selectExpoPushToken,
+  selectLocalId,
+  selectStripeCustomerId,
+  selectUserEmail,
+  selectUserName,
+} from "../../../store/redux/userSlice";
+import { EventDetails } from "../../../types/cart";
 
 // Define interfaces for TypeScript
 interface CartItem {
@@ -93,10 +85,13 @@ export default function CartScreen() {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const firestore = getFirestore();
   const [loading, setLoading] = useState<boolean>(false);
-  const [paymentSheetInitialized, setPaymentSheetInitialized] = useState<boolean>(false);
+  const [paymentSheetInitialized, setPaymentSheetInitialized] =
+    useState<boolean>(false);
   const [stripePaymentIntent, setStripePaymentIntent] = useState<string>("");
   const [showAddressSheet, setShowAddressSheet] = useState<boolean>(false);
-  const [addressDetails, setAddressDetails] = useState<AddressDetails | null>(null);
+  const [addressDetails, setAddressDetails] = useState<AddressDetails | null>(
+    null
+  );
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [taxAmount, setTaxAmount] = useState<number>(0);
 
@@ -129,7 +124,9 @@ export default function CartScreen() {
     setTotalPrice(newTotalPrice + shippingCost + calculatedTaxAmount);
 
     // Update Redux store with checkout price
-    dispatch(setCheckoutPrice(newTotalPrice + shippingCost + calculatedTaxAmount));
+    dispatch(
+      setCheckoutPrice(newTotalPrice + shippingCost + calculatedTaxAmount)
+    );
   }, [cartItems, dispatch]);
 
   // Handle the checkout process
@@ -152,18 +149,27 @@ export default function CartScreen() {
       }
     } catch (error) {
       console.error("Checkout error:", error);
-      Alert.alert("Checkout Error", "There was an issue with checkout. Please try again.");
+      Alert.alert(
+        "Checkout Error",
+        "There was an issue with checkout. Please try again."
+      );
       setLoading(false);
     }
   };
 
-  const handleRemoveFromCart = (productId: string, selectedColor?: string | null, selectedSize?: string | null) => {
+  const handleRemoveFromCart = (
+    productId: string,
+    selectedColor?: string | null,
+    selectedSize?: string | null
+  ) => {
     // Use type assertion to tell TypeScript we know what we're doing
-    dispatch(removeFromCart({ 
-      productId, 
-      selectedColor, 
-      selectedSize 
-    } as any));
+    dispatch(
+      removeFromCart({
+        productId,
+        selectedColor,
+        selectedSize,
+      } as any)
+    );
   };
 
   const handleClearCart = () => {
@@ -197,22 +203,29 @@ export default function CartScreen() {
     }
   };
 
-  const fetchPaymentSheetParams = async (addressDetails: AddressDetails | null) => {
+  const fetchPaymentSheetParams = async (
+    addressDetails: AddressDetails | null
+  ) => {
     try {
-      const response = await fetch(`${API_URL}?amount=${Math.round(totalPrice * 100)}&customerEmail=${userEmail}&customerId=${stripeCustomerId || ""}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: firebaseId,
-          amount: Math.round(totalPrice * 100),
-          customerEmail: userEmail,
-          isExistingCustomer: !!stripeCustomerId,
-          customerId: stripeCustomerId || "",
-          address: addressDetails || {},
-        }),
-      });
+      const response = await fetch(
+        `${API_URL}?amount=${Math.round(
+          totalPrice * 100
+        )}&customerEmail=${userEmail}&customerId=${stripeCustomerId || ""}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: firebaseId,
+            amount: Math.round(totalPrice * 100),
+            customerEmail: userEmail,
+            isExistingCustomer: !!stripeCustomerId,
+            customerId: stripeCustomerId || "",
+            address: addressDetails || {},
+          }),
+        }
+      );
 
       const { paymentIntent, ephemeralKey, customer } = await response.json();
       return { paymentIntent, ephemeralKey, customer };
@@ -222,11 +235,14 @@ export default function CartScreen() {
     }
   };
 
-  const initializePaymentSheet = async (addressDetails: AddressDetails | null) => {
+  const initializePaymentSheet = async (
+    addressDetails: AddressDetails | null
+  ) => {
     try {
-      const { paymentIntent, ephemeralKey, customer } = await fetchPaymentSheetParams(addressDetails);
+      const { paymentIntent, ephemeralKey, customer } =
+        await fetchPaymentSheetParams(addressDetails);
       setStripePaymentIntent(paymentIntent);
-      
+
       const { error } = await initPaymentSheet({
         merchantDisplayName: "RAGESTATE",
         customerId: customer,
@@ -243,17 +259,26 @@ export default function CartScreen() {
         setPaymentSheetInitialized(true);
       } else {
         console.error("Error initializing payment sheet:", error);
-        Alert.alert("Payment Error", "Unable to initialize payment. Please try again.");
+        Alert.alert(
+          "Payment Error",
+          "Unable to initialize payment. Please try again."
+        );
       }
     } catch (error) {
       console.error("Payment initialization error:", error);
-      Alert.alert("Payment Error", "Unable to initialize payment. Please try again.");
+      Alert.alert(
+        "Payment Error",
+        "Unable to initialize payment. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const openPaymentSheet = async (paymentIntentPrefix: string, addressDetails: AddressDetails | null) => {
+  const openPaymentSheet = async (
+    paymentIntentPrefix: string,
+    addressDetails: AddressDetails | null
+  ) => {
     try {
       if (!paymentSheetInitialized) {
         await initializePaymentSheet(addressDetails);
@@ -281,7 +306,12 @@ export default function CartScreen() {
           if (!firebaseId) {
             throw new Error("User ID is required to save order");
           }
-          const ordersRef = collection(firestore, "users", firebaseId, "orders");
+          const ordersRef = collection(
+            firestore,
+            "users",
+            firebaseId,
+            "orders"
+          );
           await addDoc(ordersRef, orderDetails);
 
           // Send notification
@@ -289,7 +319,7 @@ export default function CartScreen() {
 
           // Clear cart after successful purchase
           dispatch(clearCart());
-          
+
           Alert.alert(
             "Payment Successful!",
             "Your order has been placed successfully.",
@@ -352,13 +382,11 @@ export default function CartScreen() {
     shapes: {
       borderRadius: 8,
       borderWidth: 1,
-    }
+    },
   };
 
   return (
-    <StripeProvider
-      publishableKey="pk_test_51KKkvnDcnPBRlCcSHabYQ8vdzxj2Rxla6Qek3YpKXhsirsJ7JkXHxZDsZLQYJnwY6wOJqy8B4jgyLpS5W1BYEfYY00XSeLDFDw"
-    >
+    <StripeProvider publishableKey="pk_test_51KKkvnDcnPBRlCcSHabYQ8vdzxj2Rxla6Qek3YpKXhsirsJ7JkXHxZDsZLQYJnwY6wOJqy8B4jgyLpS5W1BYEfYY00XSeLDFDw">
       <View style={styles.rootContainer}>
         <StatusBar style="light" />
         <View style={styles.header}>
@@ -454,7 +482,8 @@ export default function CartScreen() {
                     </View>
                     <View style={styles.itemBottomRow}>
                       <Text style={styles.itemPrice}>
-                        ${(item.price.amount * item.selectedQuantity).toFixed(2)}
+                        $
+                        {(item.price.amount * item.selectedQuantity).toFixed(2)}
                       </Text>
                       <TouchableOpacity
                         style={styles.removeButton}
@@ -496,7 +525,10 @@ export default function CartScreen() {
                 }}
                 onError={(error) => {
                   console.error("Address sheet error:", error);
-                  Alert.alert("Address Error", "Could not validate address. Please try again.");
+                  Alert.alert(
+                    "Address Error",
+                    "Could not validate address. Please try again."
+                  );
                   setLoading(false);
                 }}
                 sheetTitle={"Shipping Address"}
