@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "./store"; // Assuming the store is in the same directory
 
+// Import shared types
+import { CartItemMetadata } from "../../types/cart";
+
 // Define types for the cart items and state
 export interface CartItem {
   productId: string;
@@ -13,6 +16,14 @@ export interface CartItem {
   price?: string;
   currencyCode?: string;
   variantId?: string;
+  // Optional event-specific data
+  eventDetails?: {
+    dateTime: string;
+    location: string;
+    [key: string]: any;
+  };
+  // Generic metadata for different product types (events, clothing, etc)
+  metadata?: CartItemMetadata;
 }
 
 interface CartState {

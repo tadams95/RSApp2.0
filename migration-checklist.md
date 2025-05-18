@@ -50,9 +50,10 @@ Use this checklist to track progress on the migration to Expo Router and impleme
   - [✅] Shop screens
     - [✅] Product list
     - [✅] Product details (dynamic route)
-  - [ ] Event screens
-    - [ ] Event list
-    - [ ] Event details (dynamic route)
+  - [✅] Event screens
+    - [✅] Event list
+    - [✅] Event details (dynamic route)
+    - [✅] My events screen
   - [ ] Cart screen
   - [ ] Account screen
 - [ ] Guest Mode
