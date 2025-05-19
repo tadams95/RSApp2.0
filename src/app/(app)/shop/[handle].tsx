@@ -233,10 +233,7 @@ export default function ProductDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator
-          size="large"
-          color={GlobalStyles.colors.primary500}
-        />
+        <ActivityIndicator size="large" color={GlobalStyles.colors.red7} />
       </View>
     );
   }
@@ -577,7 +574,7 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 20,
     fontWeight: "600",
-    color: GlobalStyles.colors.primary500 || "#00C5EA",
+    color: GlobalStyles.colors.red7 || "#00C5EA",
     flex: 1,
     textAlign: "right",
   }, // Use theme color
@@ -616,7 +613,7 @@ const styles = StyleSheet.create({
   },
   optionText: { fontFamily, fontSize: 15, color: "white", marginRight: 8 },
   actionButton: {
-    backgroundColor: GlobalStyles.colors.primary500 || "#00C5EA",
+    backgroundColor: GlobalStyles.colors.red7 || "#00C5EA",
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: "center",
@@ -689,7 +686,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   confirmationButton: {
-    backgroundColor: GlobalStyles.colors.primary500 || "#00C5EA",
+    backgroundColor: GlobalStyles.colors.red7 || "#00C5EA",
     paddingVertical: 10,
     paddingHorizontal: 30,
     borderRadius: 5,

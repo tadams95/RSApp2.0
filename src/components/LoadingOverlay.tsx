@@ -1,9 +1,17 @@
 import React from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
-function LoadingOverlay({ message }) {
+interface LoadingOverlayProps {
+  message?: string;
+}
+
+function LoadingOverlay({ message }: LoadingOverlayProps) {
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      accessibilityLabel="Loading indicator"
+      accessibilityRole="progressbar"
+    >
       <ActivityIndicator size="large" color="#ff3b30" />
       {message && <Text style={styles.message}>{message}</Text>}
     </View>
