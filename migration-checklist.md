@@ -56,9 +56,9 @@ Use this checklist to track progress on the migration to Expo Router and impleme
     - [✅] My events screen
   - [✅] Cart screen
   - [✅] Account screen
-- [ ] Guest Mode
-  - [ ] Guest shop screens
-  - [ ] Guest event screens
+- [✅] Guest Mode
+  - [✅] Guest shop screens
+  - [✅] Guest event screens
 
 ## Component Adaptations
 
@@ -67,8 +67,9 @@ Use this checklist to track progress on the migration to Expo Router and impleme
   - [ ] Replace navigation.navigate() with router.navigate()
   - [ ] Update goBack() functions
 - [ ] Adapt shared components
-  - [ ] UI components
-  - [ ] Loading overlays
+  - [✅] UI components
+    - [✅] TickerAnnouncement
+  - [✅] Loading overlays
   - [✅] Modals
     - [✅] SettingsModal
     - [✅] QRModal
@@ -94,11 +95,17 @@ Use this checklist to track progress on the migration to Expo Router and impleme
     - [ ] Validate `shopify-buy` SDK for compatibility with current Shopify API
   - [ ] Run `npx expo-doctor` regularly to monitor package health
 
-- [ ] TypeScript Migration
-  - [ ] Set up TypeScript configuration
-  - [ ] Convert utility functions
-  - [ ] Convert shared components
-  - [ ] Convert screens
+- [✅] TypeScript Migration
+  - [✅] Set up TypeScript configuration
+  - [✅] Convert utility functions
+    - [✅] auth.ts
+  - [✅] Convert shared components
+    - [✅] LoadingOverlay
+  - [✅] Convert screens (guest mode)
+    - [✅] GuestEventView
+    - [✅] GuestEvent
+    - [✅] GuestShop
+    - [✅] GuestIndexPage
 - [ ] State Management
   - [ ] Implement React Query for server state
   - [ ] Consider Zustand for client state
