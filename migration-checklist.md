@@ -69,11 +69,11 @@ Use this checklist to track progress on the migration to Expo Router and impleme
 - [ ] Adapt shared components
   - [ ] UI components
   - [ ] Loading overlays
-  - [ ] Modals
+  - [✅] Modals
     - [✅] SettingsModal
     - [✅] QRModal
-    - [ ] HistoryModal
-    - [ ] EditProfile
+    - [✅] HistoryModal
+    - [✅] EditProfile
   - [ ] Form components
 
 ## Technical Improvements

@@ -23,10 +23,15 @@ import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "../../../hooks/AuthContext";
 import { selectUserName, setUserName } from "../../../store/redux/userSlice";
 // Import the newly migrated modals from the barrel file
-import { QRModal, SettingsModal } from "../../../components/modals";
+import {
+  EditProfile,
+  HistoryModal,
+  QRModal,
+  SettingsModal,
+} from "../../../components/modals";
 
 // Define the types for modals
-// Once modals are migrated to TypeScript, these can be imported
+// These are kept here for future extensions
 interface ModalProps {
   visible?: boolean;
   handleClose?: () => void;
@@ -34,14 +39,6 @@ interface ModalProps {
   onCancel?: () => void;
   setAuthenticated?: (auth: boolean) => void;
 }
-
-// Import remaining modals from the legacy paths until migrated
-const HistoryModal = React.lazy(
-  () => import("../../../../screens/modals/HistoryModal")
-);
-const EditProfile = React.lazy(
-  () => import("../../../../screens/modals/EditProfile")
-);
 
 const AccountScreen: React.FC = () => {
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
