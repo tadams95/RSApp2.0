@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Stack, router } from "expo-router";
+import { Stack } from "expo-router";
 import React from "react";
 import {
   Platform,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { navigateToAuth, navigateToGuest } from "../../utils/navigation";
 
 /**
  * Guest index page that serves as an entry point for the guest flow
@@ -15,7 +16,7 @@ import {
  */
 const GuestIndex: React.FC = () => {
   const handleNavigateToAuth = () => {
-    router.replace("/(auth)/");
+    navigateToAuth();
   };
 
   return (
@@ -40,7 +41,7 @@ const GuestIndex: React.FC = () => {
       <View style={styles.optionsContainer}>
         <TouchableOpacity
           style={styles.option}
-          onPress={() => router.navigate("/(guest)/shop/")}
+          onPress={() => navigateToGuest("shop/")}
           accessibilityRole="button"
           accessibilityLabel="Browse shop as guest"
         >
@@ -50,7 +51,7 @@ const GuestIndex: React.FC = () => {
 
         <TouchableOpacity
           style={styles.option}
-          onPress={() => router.navigate("/(guest)/events/")}
+          onPress={() => navigateToGuest("events/")}
           accessibilityRole="button"
           accessibilityLabel="Browse events as guest"
         >

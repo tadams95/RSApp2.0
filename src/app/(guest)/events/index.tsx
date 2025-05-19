@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, Stack } from "expo-router";
+import { Stack } from "expo-router";
 import { collection, getDocs, Timestamp } from "firebase/firestore";
+import { navigateToGuestEvent } from "../../../utils/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -96,18 +97,15 @@ const GuestEvent: React.FC = () => {
       "MMM dd, yyyy hh:mm a"
     );
 
-    // Navigate using Expo Router
-    router.push({
-      pathname: "/(guest)/events/[id]",
-      params: {
-        id: event.id || event.name,
-        name: event.name,
-        dateTime: formattedDateTime,
-        price: event.price.toString(),
-        imgURL: event.imgURL,
-        description: event.description || "",
-        location: event.location || "",
-      },
+    // Navigate using our utility function
+    navigateToGuestEvent({
+      id: event.id || event.name,
+      name: event.name,
+      dateTime: formattedDateTime,
+      price: event.price.toString(),
+      imgURL: event.imgURL,
+      description: event.description || "",
+      location: event.location || ""
     });
   };
 

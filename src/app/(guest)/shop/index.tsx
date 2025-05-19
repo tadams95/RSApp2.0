@@ -1,5 +1,5 @@
-import { router } from "expo-router";
 import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import { navigateToGuestProduct } from "../../../utils/navigation";
 import {
   Dimensions,
   Image,
@@ -149,14 +149,8 @@ const GuestShop: React.FC = () => {
         description: product.description,
       };
 
-      // Navigate using Expo Router instead of React Navigation
-      router.push({
-        pathname: "/(guest)/shop/[id]",
-        params: {
-          id: product.id,
-          data: JSON.stringify(serializedProduct),
-        },
-      });
+      // Navigate using our navigation utility function
+      navigateToGuestProduct(product.id, serializedProduct);
     },
     [serializeObject]
   );

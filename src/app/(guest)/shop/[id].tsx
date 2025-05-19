@@ -1,4 +1,5 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
+import { goBack, navigateToAuth } from "../../../utils/navigation";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -54,7 +55,6 @@ const windowHeight = Dimensions.get("window").height;
 export default function GuestProductDetail() {
   // Get params from URL
   const params = useLocalSearchParams();
-  const router = useRouter();
 
   // Parse the serialized product data
   const data: ProductData = JSON.parse(params.data as string);
@@ -80,7 +80,7 @@ export default function GuestProductDetail() {
 
   const handleGuestCheckout = (): void => {
     // Navigate to welcome screen for authentication
-    router.push("/(auth)/");
+    navigateToAuth();
   };
 
   // Format price for display
@@ -105,6 +105,16 @@ export default function GuestProductDetail() {
             backgroundColor: "black",
           },
           headerTintColor: "white",
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={goBack}
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+              style={{padding: 8}}
+            >
+              <Text style={{color: 'white', fontSize: 16}}>Back</Text>
+            </TouchableOpacity>
+          ),
         }}
       />
       <ScrollView

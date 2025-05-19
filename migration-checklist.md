@@ -62,10 +62,10 @@ Use this checklist to track progress on the migration to Expo Router and impleme
 
 ## Component Adaptations
 
-- [ ] Update navigation references
-  - [ ] Create navigation utility functions
-  - [ ] Replace navigation.navigate() with router.navigate()
-  - [ ] Update goBack() functions
+- [✅] Update navigation references
+  - [✅] Create navigation utility functions
+  - [✅] Replace navigation.navigate() with router.navigate()
+  - [✅] Update goBack() functions
 - [ ] Adapt shared components
   - [✅] UI components
     - [✅] TickerAnnouncement

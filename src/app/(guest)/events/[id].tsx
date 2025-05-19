@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { collection, getDocs, getFirestore } from "firebase/firestore";
+import { goBack, navigateToAuth } from "../../../utils/navigation";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -66,11 +67,11 @@ const GuestEventView: React.FC = () => {
   }, [eventName]);
 
   const handleGuestCheckout = (): void => {
-    router.replace("/(auth)/");
+    navigateToAuth();
   };
 
   const handleBackPress = (): void => {
-    router.back();
+    goBack();
   };
 
   const handleOpenMaps = (): void => {
