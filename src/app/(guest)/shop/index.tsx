@@ -1,5 +1,4 @@
 import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
-import { navigateToGuestProduct } from "../../../utils/navigation";
 import {
   Dimensions,
   Image,
@@ -12,6 +11,7 @@ import {
   View,
 } from "react-native";
 import fetchShopifyProducts from "../../../services/shopifyService";
+import { navigateToGuestProduct } from "../../../utils/navigation";
 
 // Define interfaces for Shopify products
 interface ShopifyPrice {

@@ -1,4 +1,4 @@
-import { router, Route } from "expo-router";
+import { router } from "expo-router";
 
 /**
  * Navigation utilities for Expo Router
@@ -10,10 +10,16 @@ import { router, Route } from "expo-router";
  * @param path The path segment after /(app)/
  * @param params Optional parameters to pass to the route
  */
-export function navigateToApp(path: string, params?: Record<string, string | number | (string | number)[] | null | undefined>): void {
+export function navigateToApp(
+  path: string,
+  params?: Record<
+    string,
+    string | number | (string | number)[] | null | undefined
+  >
+): void {
   router.push({
     pathname: `/(app)/${path}`,
-    params
+    params,
   });
 }
 
@@ -22,10 +28,16 @@ export function navigateToApp(path: string, params?: Record<string, string | num
  * @param path The path segment after /(auth)/
  * @param params Optional parameters to pass to the route
  */
-export function navigateToAuth(path: string = "", params?: Record<string, string | number | (string | number)[] | null | undefined>): void {
+export function navigateToAuth(
+  path: string = "",
+  params?: Record<
+    string,
+    string | number | (string | number)[] | null | undefined
+  >
+): void {
   router.push({
     pathname: `/(auth)/${path}`,
-    params
+    params,
   });
 }
 
@@ -34,10 +46,16 @@ export function navigateToAuth(path: string = "", params?: Record<string, string
  * @param path The path segment after /(guest)/
  * @param params Optional parameters to pass to the route
  */
-export function navigateToGuest(path: string, params?: Record<string, string | number | (string | number)[] | null | undefined>): void {
+export function navigateToGuest(
+  path: string,
+  params?: Record<
+    string,
+    string | number | (string | number)[] | null | undefined
+  >
+): void {
   router.push({
     pathname: `/(guest)/${path}`,
-    params
+    params,
   });
 }
 
@@ -155,10 +173,16 @@ export function goBack(): void {
  * @param pathname The full path to navigate to
  * @param params Optional parameters to pass to the route
  */
-export function replaceScreen(pathname: string, params?: Record<string, string | number | (string | number)[] | null | undefined>): void {
+export function replaceScreen(
+  pathname: string,
+  params?: Record<
+    string,
+    string | number | (string | number)[] | null | undefined
+  >
+): void {
   router.replace({
     pathname,
-    params
+    params,
   });
 }
 

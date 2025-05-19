@@ -1,5 +1,4 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { goBack, navigateToAuth } from "../../../utils/navigation";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,6 +12,7 @@ import {
   View,
 } from "react-native";
 import Swiper from "react-native-swiper";
+import { goBack, navigateToAuth } from "../../../utils/navigation";
 
 // Define types for product data
 interface ProductPrice {
@@ -110,9 +110,9 @@ export default function GuestProductDetail() {
               onPress={goBack}
               accessibilityLabel="Go back"
               accessibilityRole="button"
-              style={{padding: 8}}
+              style={{ padding: 8 }}
             >
-              <Text style={{color: 'white', fontSize: 16}}>Back</Text>
+              <Text style={{ color: "white", fontSize: 16 }}>Back</Text>
             </TouchableOpacity>
           ),
         }}

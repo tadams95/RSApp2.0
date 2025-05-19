@@ -3,7 +3,6 @@ import { format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack } from "expo-router";
 import { collection, getDocs, Timestamp } from "firebase/firestore";
-import { navigateToGuestEvent } from "../../../utils/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -17,6 +16,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { navigateToGuestEvent } from "../../../utils/navigation";
 
 // Import Firebase
 import { getFirestore } from "firebase/firestore";
@@ -105,7 +105,7 @@ const GuestEvent: React.FC = () => {
       price: event.price.toString(),
       imgURL: event.imgURL,
       description: event.description || "",
-      location: event.location || ""
+      location: event.location || "",
     });
   };
 

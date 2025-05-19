@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { collection, getDocs, getFirestore } from "firebase/firestore";
-import { goBack, navigateToAuth } from "../../../utils/navigation";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { goBack, navigateToAuth } from "../../../utils/navigation";
 
 // Define interfaces for the component props and parameters
 interface EventDetailParams {
