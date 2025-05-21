@@ -267,7 +267,7 @@ export default function SignupScreen() {
       >
         <Image
           style={styles.image}
-          source={require("../../../../assets/RSLogo2025.png")} // TODO: Update path if assets are moved
+          source={require("../../assets/RSLogo2025.png")}
         />
 
         <View style={styles.formContainer}>
