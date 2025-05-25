@@ -90,7 +90,8 @@ export default function GuestProductDetail() {
       : "Price unavailable";
 
   // Check if all variants are sold out
-  const isSoldOut = variants.every((variant) => !variant.available);
+  const isSoldOut = variants && Array.isArray(variants) && variants.length > 0 ? 
+    variants.every((variant) => !variant.available) : true;
 
   return (
     <>

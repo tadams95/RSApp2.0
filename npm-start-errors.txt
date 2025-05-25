@@ -1,90 +1,28 @@
-/* 
-NEW RESOLUTION PLAN FOR NPM START ERRORS (Updated May 25, 2025):
+ WARN  [Layout children]: No route named "events/index" exists in nested children: ["account/index", "cart/index", "events", "home/index", "shop/[handle]", "shop/index"]
+ WARN  [Layout children]: No route named "events/index" exists in nested children: ["account/index", "cart/index", "events", "home/index", "shop/[handle]", "shop/index"]
+ WARN  [Layout children]: No route named "events/index" exists in nested children: ["account/index", "cart/index", "events", "home/index", "shop/[handle]", "shop/index"]
+ WARN  [Layout children]: No route named "events/index" exists in nested children: ["account/index", "cart/index", "events", "home/index", "shop/[handle]", "shop/index"]
+ WARN  [Layout children]: No route named "events/index" exists in nested children: ["account/index", "cart/index", "events", "home/index", "shop/[handle]", "shop/index"]
+ WARN  [Layout children]: No route named "events/index" exists in nested children: ["account/index", "cart/index", "events", "home/index", "shop/[handle]", "shop/index"]
+ WARN  [Layout children]: No route named "events/index" exists in nested children: ["account/index", "cart/index", "events", "home/index", "shop/[handle]", "shop/index"]
+ WARN  [Layout children]: No route named "events/index" exists in nested children: ["account/index", "cart/index", "events", "home/index", "shop/[handle]", "shop/index"]
+ ERROR  Warning: TypeError: product.variants.every is not a function (it is undefined)
 
-ANALYSIS:
-The primary issue is that despite having named exports for route group components (auth, app, guest), 
-Expo Router is still not properly registering these components. The Firebase warning about Auth 
-initialization suggests the Firebase auth setup might be interfering with Expo Router's component 
-registration system.
+This error is located at:
 
-ROOT CAUSE:
-1. Firebase Auth is not properly initialized with AsyncStorage persistence, causing auth state issues
-2. The "Component auth has not been registered yet" error suggests a fundamental issue with how 
-   Expo Router is discovering and registering route group components
-3. Missing imports in root _layout.tsx - the named exports are not being imported anywhere
-4. Potential circular dependency issues between Firebase auth initialization and route registration
+  43 |
+  44 | export default function ShopScreen() {
+> 45 |   const [products, setProducts] = useState<ShopifyProduct[]>([]);
+     |                                           ^
+  46 |   const [isLoading, setIsLoading] = useState(true);
+  47 |   const [error, setError] = useState<string | null>(null);
+  48 |   const [refreshing, setRefreshing] = useState(false);
 
-RESOLUTION PLAN:
-
-1. Fix Firebase Auth Initialization (CRITICAL):
-   - Add back the AsyncStorage persistence to Firebase auth in firebase.tsx
-   - This will resolve the auth state persistence warning and potential conflicts
-   - Ensure Firebase auth is properly initialized before Expo Router tries to register components
-
-2. Fix Component Registration in Root Layout:
-   - Add proper imports for all route group components in src/app/_layout.tsx
-   - Import { auth } from "./(auth)/_layout"
-   - Import { app } from "./(app)/_layout" 
-   - Import { guest } from "./(guest)/_layout"
-   - This ensures components are registered during app initialization
-
-3. Verify Default Exports in All Route Files:
-   - Double-check that all route components have proper default exports
-   - Files showing "missing default export" warnings need to be verified
-   - Ensure no conflicting exports exist
-
-4. Update Shopify API Version:
-   - Change from deprecated "2023-10" to a supported version like "2024-10"
-   - Update in src/services/shopifyService.tsx
-
-5. Clean Up Component Registration Pattern:
-   - Remove duplicate or conflicting auth component registrations
-   - Ensure consistent export pattern across all route groups
-   - Consider using a single registration file to avoid conflicts
-
-IMPLEMENTATION ORDER:
-1. Fix Firebase auth initialization first (highest priority)
-2. Fix root layout imports for component registration
-3. Verify all default exports
-4. Update Shopify API version
-5. Test and validate all routes work correctly
-
-The Firebase auth initialization issue is likely the root cause blocking proper component 
-registration in Expo Router.
-*/
-
-iOS Bundled 843ms node_modules/expo-router/entry.js (1977 modules)
- WARN  [2025-05-25T20:04:10.081Z]  @firebase/auth: Auth (10.14.1): 
-You are initializing Firebase Auth for React Native without providing
-AsyncStorage. Auth state will default to memory persistence and will not
-persist between sessions. In order to persist auth state, install the package
-"@react-native-async-storage/async-storage" and provide it to
-initializeAuth:
-
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-});
- ERROR  Error: Component auth has not been registered yet, js engine: hermes
- WARN  Route "./(app)/_layout.tsx" is missing the required default export. Ensure a React component is exported as default.
- ERROR  Error: Component auth has not been registered yet, js engine: hermes
- WARN  Route "./(app)/account/index.tsx" is missing the required default export. Ensure a React component is exported as default.
- WARN  expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Read more at https://docs.expo.dev/develop/development-builds/introduction/.
- WARN  `expo-notifications` functionality is not fully supported in Expo Go:
-We recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client.
- ERROR  Error: Component auth has not been registered yet, js engine: hermes
- WARN  Route "./(app)/events/index.tsx" is missing the required default export. Ensure a React component is exported as default.
- ERROR  Error: Component auth has not been registered yet, js engine: hermes
- WARN  Route "./(app)/home/index.tsx" is missing the required default export. Ensure a React component is exported as default.
- WARN  Storefront API Client: the provided apiVersion ("2023-10") is likely deprecated or not supported. Currently supported API versions: 2024-07, 2024-10, 2025-01, 2025-04, 2025-07, unstable
- ERROR  Error: Component auth has not been registered yet, js engine: hermes
- WARN  Route "./(auth)/_layout.tsx" is missing the required default export. Ensure a React component is exported as default.
- ERROR  Error: Component auth has not been registered yet, js engine: hermes
- WARN  Route "./(auth)/forgotPassword.tsx" is missing the required default export. Ensure a React component is exported as default.
- ERROR  Error: Component auth has not been registered yet, js engine: hermes
- WARN  Route "./(auth)/login.tsx" is missing the required default export. Ensure a React component is exported as default.
- ERROR  Error: Component auth has not been registered yet, js engine: hermes
- WARN  Route "./(auth)/signup.tsx" is missing the required default export. Ensure a React component is exported as default.
- ERROR  Error: Component auth has not been registered yet, js engine: hermes
- WARN  Route "./_layout.tsx" is missing the required default export. Ensure a React component is exported as default.
+Call Stack
+  ShopScreen (src/app/(app)/shop/index.tsx:45:43)
+  AppLayout (src/app/(app)/_layout.tsx:18:47)
+  AuthProvider (src/hooks/AuthContext.tsx:28:40)
+  RootLayout (src/app/_layout.tsx:24:12)
+  RNCSafeAreaProvider (<anonymous>)
+  App (<anonymous>)
+  ErrorOverlay (<anonymous>)
