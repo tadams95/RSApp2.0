@@ -6,7 +6,7 @@ import {
 // Define the client configuration
 const clientConfig = {
   storeDomain: "ragestate.myshopify.com", // Corrected from domain to storeDomain
-  apiVersion: "2023-10", // Example API version, adjust as needed
+  apiVersion: "2024-10", // Updated to supported API version
   publicAccessToken: "e4803750ab24a8c8b98cc614e0f34d98", // Corrected from storefrontAccessToken to publicAccessToken
 };
 

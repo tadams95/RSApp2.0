@@ -1,40 +1,71 @@
 /* 
-RESOLUTION PLAN FOR NPM START ERRORS:
+NEW RESOLUTION PLAN FOR NPM START ERRORS (Updated May 25, 2025):
 
-1. Asset Resolution Issue:
-   - Problem: Unable to resolve asset "./assets/RSLogo2025.png" from "icon" in app.json
-   - Fix: Verify that the RSLogo2025.png exists in the src/assets directory. The correct path should be "./src/assets/RSLogo2025.png" in app.json
+ANALYSIS:
+The primary issue is that despite having named exports for route group components (auth, app, guest), 
+Expo Router is still not properly registering these components. The Firebase warning about Auth 
+initialization suggests the Firebase auth setup might be interfering with Expo Router's component 
+registration system.
 
-2. Missing Default Exports:
-   - Problem: Multiple route files are missing required default exports
-   - Fix: Ensure all route files export a default React component as recommended by expo-router
-   - Files to update:
-     - src/app/(app)/_layout.tsx (already has default export but something is wrong)
-     - src/app/(app)/account/index.tsx
-     - src/app/(app)/events/index.tsx
-     - src/app/(app)/home/index.tsx
-     - src/app/(auth)/_exports.tsx
-     - src/app/(auth)/_layout.tsx (already has default export but something is wrong)
-     - src/app/(auth)/forgotPassword.tsx
-     - src/app/(auth)/login.tsx
-     - src/app/(auth)/signup.tsx
-     - src/app/_layout.tsx
+ROOT CAUSE:
+1. Firebase Auth is not properly initialized with AsyncStorage persistence, causing auth state issues
+2. The "Component auth has not been registered yet" error suggests a fundamental issue with how 
+   Expo Router is discovering and registering route group components
+3. Missing imports in root _layout.tsx - the named exports are not being imported anywhere
+4. Potential circular dependency issues between Firebase auth initialization and route registration
 
-3. "Component auth has not been registered yet" Errors:
-   - Problem: It appears the auth component is not properly registered with React Navigation
-   - Fix: Update the export name in auth layout files to match the route group name
-   - Files to update:
-     - src/app/(auth)/_layout.tsx - Ensure export statements use correct naming
+RESOLUTION PLAN:
 
-4. Shopify API version warning:
-   - Problem: Current apiVersion ("2023-10") is deprecated
-   - Fix: Update to a supported version (2024-07, 2024-10, 2025-01, 2025-04, 2025-07)
-   - Files to update: Locate Shopify client initialization in services/shopifyService.tsx
+1. Fix Firebase Auth Initialization (CRITICAL):
+   - Add back the AsyncStorage persistence to Firebase auth in firebase.tsx
+   - This will resolve the auth state persistence warning and potential conflicts
+   - Ensure Firebase auth is properly initialized before Expo Router tries to register components
+
+2. Fix Component Registration in Root Layout:
+   - Add proper imports for all route group components in src/app/_layout.tsx
+   - Import { auth } from "./(auth)/_layout"
+   - Import { app } from "./(app)/_layout" 
+   - Import { guest } from "./(guest)/_layout"
+   - This ensures components are registered during app initialization
+
+3. Verify Default Exports in All Route Files:
+   - Double-check that all route components have proper default exports
+   - Files showing "missing default export" warnings need to be verified
+   - Ensure no conflicting exports exist
+
+4. Update Shopify API Version:
+   - Change from deprecated "2023-10" to a supported version like "2024-10"
+   - Update in src/services/shopifyService.tsx
+
+5. Clean Up Component Registration Pattern:
+   - Remove duplicate or conflicting auth component registrations
+   - Ensure consistent export pattern across all route groups
+   - Consider using a single registration file to avoid conflicts
+
+IMPLEMENTATION ORDER:
+1. Fix Firebase auth initialization first (highest priority)
+2. Fix root layout imports for component registration
+3. Verify all default exports
+4. Update Shopify API version
+5. Test and validate all routes work correctly
+
+The Firebase auth initialization issue is likely the root cause blocking proper component 
+registration in Expo Router.
 */
 
-› Reloading apps
-Unable to resolve asset "./assets/RSLogo2025.png" from "icon" in your app.json or app.config.js
-iOS Bundled 871ms node_modules/expo-router/entry.js (1890 modules)
+iOS Bundled 843ms node_modules/expo-router/entry.js (1977 modules)
+ WARN  [2025-05-25T20:04:10.081Z]  @firebase/auth: Auth (10.14.1): 
+You are initializing Firebase Auth for React Native without providing
+AsyncStorage. Auth state will default to memory persistence and will not
+persist between sessions. In order to persist auth state, install the package
+"@react-native-async-storage/async-storage" and provide it to
+initializeAuth:
+
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+});
  ERROR  Error: Component auth has not been registered yet, js engine: hermes
  WARN  Route "./(app)/_layout.tsx" is missing the required default export. Ensure a React component is exported as default.
  ERROR  Error: Component auth has not been registered yet, js engine: hermes
@@ -47,7 +78,6 @@ We recommend you instead use a development build to avoid limitations. Learn mor
  ERROR  Error: Component auth has not been registered yet, js engine: hermes
  WARN  Route "./(app)/home/index.tsx" is missing the required default export. Ensure a React component is exported as default.
  WARN  Storefront API Client: the provided apiVersion ("2023-10") is likely deprecated or not supported. Currently supported API versions: 2024-07, 2024-10, 2025-01, 2025-04, 2025-07, unstable
- WARN  Route "./(auth)/_exports.tsx" is missing the required default export. Ensure a React component is exported as default.
  ERROR  Error: Component auth has not been registered yet, js engine: hermes
  WARN  Route "./(auth)/_layout.tsx" is missing the required default export. Ensure a React component is exported as default.
  ERROR  Error: Component auth has not been registered yet, js engine: hermes

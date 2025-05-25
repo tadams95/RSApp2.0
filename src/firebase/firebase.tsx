@@ -1,7 +1,8 @@
 // src/firebase/firebase.ts
 
+import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getReactNativePersistence, initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -19,9 +20,11 @@ const firebaseConfig = {
 // Initialize Firebase app
 const app = initializeApp(firebaseConfig);
 
-// Use standard auth initialization without persistence
+// Initialize Firebase Auth with AsyncStorage persistence
 // Rename auth to firebaseAuth to avoid conflicting with the auth component needed by Expo Router
-const firebaseAuth = getAuth(app);
+const firebaseAuth = initializeAuth(app, {
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+});
 
 // Initialize Firebase Firestore
 const db = getFirestore(app);
