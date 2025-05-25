@@ -106,8 +106,12 @@ const GuestShop: React.FC = () => {
   const handleProductPress = useCallback(
     (product: ShopifyProduct) => {
       // Check if product is out of stock before navigation
-      const isOutOfStock = product.variants && Array.isArray(product.variants) && product.variants.length > 0 ? 
-        product.variants.every((variant) => !variant.available) : true;
+      const isOutOfStock =
+        product.variants &&
+        Array.isArray(product.variants) &&
+        product.variants.length > 0
+          ? product.variants.every((variant) => !variant.available)
+          : true;
 
       if (isOutOfStock) {
         // If product is out of stock, don't navigate
@@ -118,38 +122,45 @@ const GuestShop: React.FC = () => {
       const serializedProduct: SerializedProduct = {
         id: product.id,
         title: product.title,
-        images: product.images && Array.isArray(product.images) ? 
-          product.images.map((image) => ({ src: image.src })) : [],
-        variants: product.variants && Array.isArray(product.variants) ? 
-          product.variants.map((variant) => {
-            const [size, color] = (variant.title.split(" / ") || []).map((str) =>
-              str.trim()
-            );
+        images:
+          product.images && Array.isArray(product.images)
+            ? product.images.map((image) => ({ src: image.src }))
+            : [],
+        variants:
+          product.variants && Array.isArray(product.variants)
+            ? product.variants.map((variant) => {
+                const [size, color] = (variant.title.split(" / ") || []).map(
+                  (str) => str.trim()
+                );
 
-            const selectedSize =
-              size ||
-              variant.selectedOptions?.find((opt) => opt.name === "Size")
-                ?.value ||
-              null;
-            const selectedColor = color || "Default";
+                const selectedSize =
+                  size ||
+                  variant.selectedOptions?.find((opt) => opt.name === "Size")
+                    ?.value ||
+                  null;
+                const selectedColor = color || "Default";
 
-            return {
-              size: selectedSize,
-              color: selectedColor,
-              price: {
-                amount: variant.price.amount,
-                currencyCode: variant.price.currencyCode,
+                return {
+                  size: selectedSize,
+                  color: selectedColor,
+                  price: {
+                    amount: variant.price.amount,
+                    currencyCode: variant.price.currencyCode,
+                  },
+                  available: variant.available,
+                };
+              })
+            : [],
+        price:
+          product.variants && product.variants[0] && product.variants[0].price
+            ? {
+                amount: product.variants[0].price.amount,
+                currencyCode: product.variants[0].price.currencyCode,
+              }
+            : {
+                amount: "0",
+                currencyCode: "USD",
               },
-              available: variant.available,
-            };
-          }) : [],
-        price: product.variants && product.variants[0] && product.variants[0].price ? {
-          amount: product.variants[0].price.amount,
-          currencyCode: product.variants[0].price.currencyCode,
-        } : {
-          amount: "0",
-          currencyCode: "USD"
-        },
         description: product.description,
       };
 
@@ -190,8 +201,12 @@ const GuestShop: React.FC = () => {
   const renderItem = useCallback(
     ({ item: product }: { item: ShopifyProduct }) => {
       // Check if product is out of stock
-      const isOutOfStock = product.variants && Array.isArray(product.variants) && product.variants.length > 0 ?
-        product.variants.every((variant) => !variant.available) : true;
+      const isOutOfStock =
+        product.variants &&
+        Array.isArray(product.variants) &&
+        product.variants.length > 0
+          ? product.variants.every((variant) => !variant.available)
+          : true;
 
       return (
         <View key={product.id} style={styles.itemsContainer}>
@@ -203,7 +218,9 @@ const GuestShop: React.FC = () => {
             ]}
             accessible={true}
             accessibilityLabel={`${product.title}${
-              product.variants && product.variants[0] && product.variants[0].price
+              product.variants &&
+              product.variants[0] &&
+              product.variants[0].price
                 ? `, $${product.variants[0].price.amount}0 ${product.variants[0].price.currencyCode}`
                 : ""
             }${isOutOfStock ? ", Sold Out" : ""}`}
@@ -212,7 +229,12 @@ const GuestShop: React.FC = () => {
           >
             <View style={styles.imageContainer}>
               <Image
-                source={{ uri: product.images && product.images[0] ? product.images[0].src : "" }}
+                source={{
+                  uri:
+                    product.images && product.images[0]
+                      ? product.images[0].src
+                      : "",
+                }}
                 style={styles.image}
                 accessibilityLabel={`Image of ${product.title}`}
               />
@@ -226,7 +248,9 @@ const GuestShop: React.FC = () => {
               {product.title}
             </Text>
             <Text style={styles.price}>
-              {product.variants && product.variants[0] && product.variants[0].price
+              {product.variants &&
+              product.variants[0] &&
+              product.variants[0].price
                 ? `$${product.variants[0].price.amount}0 ${product.variants[0].price.currencyCode}`
                 : "Price unavailable"}
             </Text>

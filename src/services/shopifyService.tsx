@@ -135,30 +135,32 @@ const fetchShopifyProducts = async (): Promise<any[]> => {
     `;
     // The actual response type will be more specific based on your query
     const response: any = await client.request(query);
-    
+
     // Transform the response to match expected interface
-    return (response.data?.products.edges.map((edge: any) => {
-      const product = edge.node;
-      return {
-        id: product.id,
-        title: product.title,
-        handle: product.handle,
-        descriptionHtml: product.descriptionHtml,
-        description: product.descriptionHtml, // Adding description for compatibility
-        // Transform images
-        images: product.images.edges.map((imgEdge: any) => ({
-          src: imgEdge.node.url,
-          altText: imgEdge.node.altText
-        })),
-        // Transform variants
-        variants: product.variants.edges.map((varEdge: any) => ({
-          id: varEdge.node.id,
-          title: varEdge.node.title || 'Default',
-          price: varEdge.node.price,
-          available: varEdge.node.availableForSale, // Use the availableForSale field from the query
-        }))
-      };
-    })) || [];
+    return (
+      response.data?.products.edges.map((edge: any) => {
+        const product = edge.node;
+        return {
+          id: product.id,
+          title: product.title,
+          handle: product.handle,
+          descriptionHtml: product.descriptionHtml,
+          description: product.descriptionHtml, // Adding description for compatibility
+          // Transform images
+          images: product.images.edges.map((imgEdge: any) => ({
+            src: imgEdge.node.url,
+            altText: imgEdge.node.altText,
+          })),
+          // Transform variants
+          variants: product.variants.edges.map((varEdge: any) => ({
+            id: varEdge.node.id,
+            title: varEdge.node.title || "Default",
+            price: varEdge.node.price,
+            available: varEdge.node.availableForSale, // Use the availableForSale field from the query
+          })),
+        };
+      }) || []
+    );
   } catch (error: any) {
     console.error("Error fetching Shopify products:", error);
     throw error;

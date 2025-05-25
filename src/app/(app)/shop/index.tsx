@@ -51,12 +51,17 @@ export default function ShopScreen() {
   const handleProductPress = useCallback(
     (product: ShopifyProduct) => {
       // Check if variants is defined before calling every
-      const isOutOfStock = product.variants && Array.isArray(product.variants) && product.variants.length > 0 ? 
-        product.variants.every((variant) => 
-          // Check for both availableForSale (app interface) and available (guest interface)
-          !(variant.availableForSale || (variant as any).available)
-        ) : true;
-        
+      const isOutOfStock =
+        product.variants &&
+        Array.isArray(product.variants) &&
+        product.variants.length > 0
+          ? product.variants.every(
+              (variant) =>
+                // Check for both availableForSale (app interface) and available (guest interface)
+                !(variant.availableForSale || (variant as any).available)
+            )
+          : true;
+
       if (isOutOfStock) {
         return;
       }
@@ -95,20 +100,25 @@ export default function ShopScreen() {
   const renderItem = useCallback(
     (product: ShopifyProduct) => {
       // Safe check for variants and availability
-      const isOutOfStock = product.variants && Array.isArray(product.variants) && product.variants.length > 0 ? 
-        product.variants.every((variant) => 
-          // Check for both availableForSale (app interface) and available (guest interface)
-          !(variant.availableForSale || (variant as any).available)
-        ) : true;
-        
+      const isOutOfStock =
+        product.variants &&
+        Array.isArray(product.variants) &&
+        product.variants.length > 0
+          ? product.variants.every(
+              (variant) =>
+                // Check for both availableForSale (app interface) and available (guest interface)
+                !(variant.availableForSale || (variant as any).available)
+            )
+          : true;
+
       // Handle different image field structures (url for app shop, src for guest shop)
-      const firstImage = 
-        product.images && product.images.length > 0 
-          ? product.images[0] 
-          : null;
-          
+      const firstImage =
+        product.images && product.images.length > 0 ? product.images[0] : null;
+
       const firstVariant =
-        product.variants && Array.isArray(product.variants) && product.variants.length > 0
+        product.variants &&
+        Array.isArray(product.variants) &&
+        product.variants.length > 0
           ? product.variants[0]
           : null;
 
