@@ -11,9 +11,9 @@ import {
   View,
 } from "react-native";
 import { useDispatch } from "react-redux";
-import { loginUser } from "../../../util/auth";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import { useAuth } from "../../hooks/AuthContext";
+import { loginUser } from "../../utils/auth";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");

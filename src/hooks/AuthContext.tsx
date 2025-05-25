@@ -3,9 +3,10 @@ import { useRouter, useSegments } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { auth } from "../../firebase/firebase";
 import { setLocalId, setUserEmail } from "../../store/redux/userSlice";
-import { loginUser } from "../../util/auth";
+// Import the Firebase auth instance
+import { auth as firebaseAuth } from "../firebase/firebase";
+import { loginUser } from "../utils/auth";
 
 // Define the context type
 type AuthContextType = {
@@ -34,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign out function
   const signOut = async (): Promise<void> => {
     try {
-      await auth.signOut();
+      await firebaseAuth.signOut();
       await AsyncStorage.removeItem("stayLoggedIn");
       setAuthenticated(false);
     } catch (error) {
@@ -75,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Listen to Firebase auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
       if (user) {
         dispatch(setLocalId(user.uid));
         dispatch(setUserEmail(user.email || ""));

@@ -1,6 +1,11 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
+// Named export for guest component registration
+export function guest() {
+  return null;
+}
+
 export default function GuestLayout() {
   return (
     <Tabs

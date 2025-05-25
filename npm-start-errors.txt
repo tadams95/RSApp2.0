@@ -1,0 +1,60 @@
+/* 
+RESOLUTION PLAN FOR NPM START ERRORS:
+
+1. Asset Resolution Issue:
+   - Problem: Unable to resolve asset "./assets/RSLogo2025.png" from "icon" in app.json
+   - Fix: Verify that the RSLogo2025.png exists in the src/assets directory. The correct path should be "./src/assets/RSLogo2025.png" in app.json
+
+2. Missing Default Exports:
+   - Problem: Multiple route files are missing required default exports
+   - Fix: Ensure all route files export a default React component as recommended by expo-router
+   - Files to update:
+     - src/app/(app)/_layout.tsx (already has default export but something is wrong)
+     - src/app/(app)/account/index.tsx
+     - src/app/(app)/events/index.tsx
+     - src/app/(app)/home/index.tsx
+     - src/app/(auth)/_exports.tsx
+     - src/app/(auth)/_layout.tsx (already has default export but something is wrong)
+     - src/app/(auth)/forgotPassword.tsx
+     - src/app/(auth)/login.tsx
+     - src/app/(auth)/signup.tsx
+     - src/app/_layout.tsx
+
+3. "Component auth has not been registered yet" Errors:
+   - Problem: It appears the auth component is not properly registered with React Navigation
+   - Fix: Update the export name in auth layout files to match the route group name
+   - Files to update:
+     - src/app/(auth)/_layout.tsx - Ensure export statements use correct naming
+
+4. Shopify API version warning:
+   - Problem: Current apiVersion ("2023-10") is deprecated
+   - Fix: Update to a supported version (2024-07, 2024-10, 2025-01, 2025-04, 2025-07)
+   - Files to update: Locate Shopify client initialization in services/shopifyService.tsx
+*/
+
+› Reloading apps
+Unable to resolve asset "./assets/RSLogo2025.png" from "icon" in your app.json or app.config.js
+iOS Bundled 871ms node_modules/expo-router/entry.js (1890 modules)
+ ERROR  Error: Component auth has not been registered yet, js engine: hermes
+ WARN  Route "./(app)/_layout.tsx" is missing the required default export. Ensure a React component is exported as default.
+ ERROR  Error: Component auth has not been registered yet, js engine: hermes
+ WARN  Route "./(app)/account/index.tsx" is missing the required default export. Ensure a React component is exported as default.
+ WARN  expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Read more at https://docs.expo.dev/develop/development-builds/introduction/.
+ WARN  `expo-notifications` functionality is not fully supported in Expo Go:
+We recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client.
+ ERROR  Error: Component auth has not been registered yet, js engine: hermes
+ WARN  Route "./(app)/events/index.tsx" is missing the required default export. Ensure a React component is exported as default.
+ ERROR  Error: Component auth has not been registered yet, js engine: hermes
+ WARN  Route "./(app)/home/index.tsx" is missing the required default export. Ensure a React component is exported as default.
+ WARN  Storefront API Client: the provided apiVersion ("2023-10") is likely deprecated or not supported. Currently supported API versions: 2024-07, 2024-10, 2025-01, 2025-04, 2025-07, unstable
+ WARN  Route "./(auth)/_exports.tsx" is missing the required default export. Ensure a React component is exported as default.
+ ERROR  Error: Component auth has not been registered yet, js engine: hermes
+ WARN  Route "./(auth)/_layout.tsx" is missing the required default export. Ensure a React component is exported as default.
+ ERROR  Error: Component auth has not been registered yet, js engine: hermes
+ WARN  Route "./(auth)/forgotPassword.tsx" is missing the required default export. Ensure a React component is exported as default.
+ ERROR  Error: Component auth has not been registered yet, js engine: hermes
+ WARN  Route "./(auth)/login.tsx" is missing the required default export. Ensure a React component is exported as default.
+ ERROR  Error: Component auth has not been registered yet, js engine: hermes
+ WARN  Route "./(auth)/signup.tsx" is missing the required default export. Ensure a React component is exported as default.
+ ERROR  Error: Component auth has not been registered yet, js engine: hermes
+ WARN  Route "./_layout.tsx" is missing the required default export. Ensure a React component is exported as default.

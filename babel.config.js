@@ -3,7 +3,7 @@ module.exports = function (api) {
   return {
     presets: ["babel-preset-expo"],
     plugins: [
-      "expo-router/babel",
+      // Removed "expo-router/babel" as it's deprecated in SDK 50+
       "react-native-reanimated/plugin",
       [
         "module-resolver",

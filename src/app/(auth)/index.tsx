@@ -7,7 +7,7 @@ export default function EntryScreen() {
     <View style={styles.container}>
       <View style={styles.logoContainer}>
         <Image
-          source={require("../../../assets/RSLogo2025.png")}
+          source={require("../../assets/RSLogo2025.png")}
           style={styles.logo}
           resizeMode="contain"
         />

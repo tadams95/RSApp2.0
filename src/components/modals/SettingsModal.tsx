@@ -29,14 +29,11 @@ import { auth } from "../../firebase/firebase";
 interface AdminModalProps {
   visible: boolean;
   toggleModal: () => void;
-  admin: any; // Replace with proper type when AdminModal is migrated
+  admin: any;
 }
 
-// Import from the legacy location until migrated
-// Use dynamic import with type casting
-const AdminModal = React.lazy(
-  () => import("../../../screens/eventAdmin/AdminModal")
-) as unknown as React.FC<AdminModalProps>;
+// Import from the new location
+import AdminModal from "./AdminModal";
 
 interface AdminUser {
   isAdmin: boolean;

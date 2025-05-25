@@ -10,8 +10,9 @@ import {
   View,
 } from "react-native";
 // TODO: Update this path when auth utilities are moved to src
-import { forgotPassword } from "../../../util/auth";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import { forgotPassword } from "../../utils/auth";
+
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");

@@ -4,14 +4,24 @@ import * as Updates from "expo-updates";
 import React, { useEffect } from "react";
 import { Alert, AppState, View } from "react-native";
 import { Provider } from "react-redux";
-import { store } from "../../store/redux/store";
 import { AuthProvider } from "../hooks/AuthContext";
+import { store } from "../store/redux/store";
+
+// Import named exports for component registration
+import { auth } from "./(auth)/_layout";
+import { app } from "./(app)/_layout";
+import { guest } from "./(guest)/_layout";
 
 // Prevent auto-hide of splash screen
 SplashScreen.preventAutoHideAsync().catch(() => {
   // If we can't prevent the splash screen from hiding, it's not fatal
   console.warn("Unable to prevent splash screen from auto-hiding");
 });
+
+// Named export for root component registration with Expo Router
+export function Root() {
+  return null;
+}
 
 export default function RootLayout() {
   useEffect(() => {

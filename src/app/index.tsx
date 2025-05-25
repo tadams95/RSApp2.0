@@ -1,13 +1,15 @@
 import { Link } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
+// Import from auth to ensure components are registered
+import { auth } from "./(auth)/_layout";
+import { app } from "./(app)/_layout";
+import { guest } from "./(guest)/_layout";
 
 export default function Index() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Rage State</Text>
-      <Text style={styles.subtitle}>
-        Live in your world, Rage in ours.
-      </Text>
+      <Text style={styles.subtitle}>Live in your world, Rage in ours.</Text>
 
       <View style={styles.linkContainer}>
         <Link href="/(auth)/" style={styles.link}>

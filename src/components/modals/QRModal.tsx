@@ -3,9 +3,8 @@ import { Dimensions, Platform, StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { useSelector } from "react-redux";
 
-// Import MyEvents from legacy path until it's migrated
-// We'll use dynamic import with React.lazy when we integrate this component
-const MyEvents = React.lazy(() => import("../../../screens/events/MyEvents"));
+// Import the migrated TypeScript version of MyEvents
+import MyEvents from "./MyEvents";
 
 // Define types for our Redux state
 interface RootState {
@@ -20,7 +19,7 @@ interface QRModalProps {}
 const QRModal: React.FC<QRModalProps> = () => {
   // Use type-safe image import
   // Update the path to match the new directory structure
-  const logo = require("../../../assets/RSLogo2025.png");
+  const logo = require("../../assets/RSLogo2025.png");
 
   // Access the localId from the Redux store with proper typing
   const localId = useSelector((state: RootState) => state.user.localId);

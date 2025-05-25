@@ -40,7 +40,8 @@ interface ModalProps {
   setAuthenticated?: (auth: boolean) => void;
 }
 
-const AccountScreen: React.FC = () => {
+// Convert to default export
+export default function AccountScreen() {
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [showEditProfileModal, setShowEditProfileModal] =
@@ -148,7 +149,7 @@ const AccountScreen: React.FC = () => {
   const imageSource = useMemo(() => {
     return profilePicture
       ? { uri: profilePicture }
-      : require("../../../../assets/user.png"); // Update path to asset
+      : require("../../../assets/user.png"); // Update path to asset
   }, [profilePicture]);
 
   const handleEditProfile = () => {
@@ -290,7 +291,7 @@ const AccountScreen: React.FC = () => {
       <Text style={styles.footerText}>THANKS FOR RAGING WITH US</Text>
     </View>
   );
-};
+}
 
 const fontFamily = Platform.select({
   ios: "Helvetica Neue",
@@ -392,5 +393,3 @@ const styles = StyleSheet.create({
     color: "#ff3c00",
   },
 });
-
-export default AccountScreen;

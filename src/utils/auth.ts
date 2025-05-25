@@ -16,7 +16,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { Dispatch } from "redux";
-import { auth } from "../firebase/firebase";
+import { auth as firebaseAuth } from "../firebase/firebase";
 
 import { setLocalId, setUserEmail } from "../store/redux/userSlice";
 
@@ -65,8 +65,8 @@ export async function createUser(
   dispatch?: Dispatch
 ): Promise<CreateUserResult> {
   try {
-    const userCredential: UserCredential = await createUserWithEmailAndPassword(
-      auth,
+    const userCredential: UserCredential =    await createUserWithEmailAndPassword(
+      firebaseAuth,
       email,
       password
     );
@@ -127,8 +127,8 @@ export async function loginUser(
   dispatch?: Dispatch
 ): Promise<User> {
   try {
-    const userCredential: UserCredential = await signInWithEmailAndPassword(
-      auth,
+    const userCredential: UserCredential =    await signInWithEmailAndPassword(
+      firebaseAuth,
       email,
       password
     );
@@ -160,7 +160,7 @@ export async function loginUser(
 export async function forgotPassword(email: string): Promise<AuthResult> {
   try {
     // Using Firebase's built-in password reset functionality
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(firebaseAuth, email);
     return { success: true, message: "Password reset email sent successfully" };
   } catch (error: any) {
     const errorMessage = handleAuthError(error);
@@ -170,7 +170,7 @@ export async function forgotPassword(email: string): Promise<AuthResult> {
 
 export async function logoutUser(dispatch: Dispatch): Promise<AuthResult> {
   try {
-    await signOut(auth);
+    await signOut(firebaseAuth);
     // Clear user data in Redux store
     dispatch(setLocalId(null));
     dispatch(setUserEmail(null));
@@ -190,7 +190,7 @@ export async function getUserData(userId: string): Promise<UserData | null> {
     }
 
     // Get current user's token for RTDB
-    const currentUser = auth.currentUser;
+    const currentUser = firebaseAuth.currentUser;
     if (!currentUser) {
       throw new Error("No authenticated user");
     }
@@ -236,7 +236,7 @@ export async function updateUserData(
   userData: Partial<UserData>
 ): Promise<AuthResult> {
   try {
-    const currentUser = auth.currentUser;
+    const currentUser = firebaseAuth.currentUser;
     if (!currentUser) {
       throw new Error("No authenticated user");
     }

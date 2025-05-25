@@ -3,6 +3,11 @@ import { Redirect, Tabs } from "expo-router";
 import { Platform } from "react-native";
 import { useAuth } from "../../hooks/AuthContext";
 
+// Named export for app component registration
+export function app() {
+  return null;
+}
+
 const fontFamily = Platform.select({
   ios: "Helvetica Neue",
   android: "Roboto",

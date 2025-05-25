@@ -15,14 +15,13 @@ import {
   View,
 } from "react-native";
 
-// TODO: Update these paths when auth utilities are moved to src
-import { createUser, loginUser, updateUserStripeId } from "../../../util/auth";
+import { createUser, loginUser, updateUserStripeId } from "../../utils/auth";
 
 // import { usePushNotifications } from "../../../../notifications/PushNotifications";
 import { useDispatch } from "react-redux";
-// TODO: Update this path when redux store is moved to src
-import { setStripeCustomerId } from "../../../store/redux/userSlice";
+// Updated import path for userSlice
 import LoadingOverlay from "../../components/LoadingOverlay";
+import { setStripeCustomerId } from "../../store/redux/userSlice";
 
 interface FormErrors {
   firstName?: string;
@@ -137,15 +136,15 @@ export default function SignupScreen() {
       validatePassword(password);
 
       // const expoPushToken = await registerForPushNotifications(); // TODO: Re-enable
-      const expoPushToken = null; // Placeholder
+      // const expoPushToken = null; // Placeholder
 
       const createdUser = await createUser(
         email,
         password,
         firstName,
         lastName,
-        phoneNumber,
-        expoPushToken
+        phoneNumber
+        // expoPushToken
       );
 
       const stripeCustomerResponse = await fetch(`${API_URL}/create-customer`, {
