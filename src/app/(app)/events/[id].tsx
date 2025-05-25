@@ -87,8 +87,10 @@ export default function EventDetailScreen() {
       selectedColor: "", // Required by CartItem interface
       selectedSize: "", // Required by CartItem interface
       image: imgURL,
-      price: price.toString(),
-      currencyCode: "USD",
+      price: {
+        amount: parseFloat(price.toString()),
+        currencyCode: "USD"
+      },
       eventDetails: {
         dateTime: dateTime,
         location: location,

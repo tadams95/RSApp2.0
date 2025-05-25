@@ -13,8 +13,10 @@ export interface CartItem {
   // Additional product information
   title?: string;
   image?: string;
-  price?: string;
-  currencyCode?: string;
+  price: {
+    amount: number;
+    currencyCode: string;
+  };
   variantId?: string;
   // Optional event-specific data
   eventDetails?: {

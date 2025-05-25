@@ -3,7 +3,8 @@ import { useRouter, useSegments } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { setLocalId, setUserEmail } from "../../store/redux/userSlice";
+import { setLocalId, setUserEmail } from "../store/redux/userSlice";
+
 // Import the Firebase auth instance
 import { auth as firebaseAuth } from "../firebase/firebase";
 import { loginUser } from "../utils/auth";

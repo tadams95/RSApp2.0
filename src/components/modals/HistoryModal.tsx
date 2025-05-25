@@ -17,7 +17,7 @@ import {
   View,
 } from "react-native";
 import { useSelector } from "react-redux";
-import { selectLocalId } from "../../../store/redux/userSlice";
+import { selectLocalId } from "../../store/redux/userSlice";
 
 // Define interfaces for our data structures
 interface PurchaseItem {

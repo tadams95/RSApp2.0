@@ -177,8 +177,10 @@ export default function ProductDetailScreen() {
       // Additional cart information
       title: product.title,
       image: product.images[0]?.url,
-      price: matchedVariant.price.amount,
-      currencyCode: matchedVariant.price.currencyCode,
+      price: {
+        amount: parseFloat(matchedVariant.price.amount),
+        currencyCode: matchedVariant.price.currencyCode
+      },
       variantId: matchedVariant.id,
     };
     dispatch(addToCart(productToAdd));

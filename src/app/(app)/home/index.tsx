@@ -1,8 +1,8 @@
 import React from "react";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSelector } from "react-redux";
-import { selectUserEmail } from "../../../../store/redux/userSlice";
 import { useAuth } from "../../../hooks/AuthContext";
+import { selectUserEmail } from "../../../store/redux/userSlice";
 
 export default function HomeScreen() {
   const { authenticated } = useAuth();

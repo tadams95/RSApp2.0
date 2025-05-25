@@ -13,7 +13,7 @@ import {
 import { getDatabase, ref, update } from "firebase/database";
 
 import { useSelector } from "react-redux";
-import { selectLocalId } from "../../../store/redux/userSlice";
+import { selectLocalId } from "../../store/redux/userSlice";
 
 // Define interfaces for component props
 interface EditProfileProps {
