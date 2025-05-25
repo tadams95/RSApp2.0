@@ -28,6 +28,7 @@ Use this checklist to track progress on the migration to Expo Router and impleme
   - [✅] App update checking
   - [✅] Redux Provider setup
   - [✅] Auth Provider implementation
+  - [✅] Component registration for Expo Router
 - [✅] Authentication Context
   - [✅] Create AuthContext.tsx
   - [✅] Implement authentication state management
@@ -37,6 +38,7 @@ Use this checklist to track progress on the migration to Expo Router and impleme
   - [✅] Auth group layout (/(auth)/\_layout.tsx)
   - [✅] App group layout (/(app)/\_layout.tsx)
   - [✅] Guest group layout (/(guest)/\_layout.tsx)
+  - [✅] Component naming exports for each route group
 
 ## Page Implementations
 
@@ -66,6 +68,9 @@ Use this checklist to track progress on the migration to Expo Router and impleme
   - [✅] Create navigation utility functions
   - [✅] Replace navigation.navigate() with router.navigate()
   - [✅] Update goBack() functions
+  - [✅] Fix tab navigation structure with proper layout files
+  - [✅] Fix tab naming to use directory names without '/index' suffix
+  - [✅] Organize dynamic routes properly under stack navigators
 - [ ] Adapt shared components
   - [✅] UI components
     - [✅] TickerAnnouncement
@@ -79,7 +84,7 @@ Use this checklist to track progress on the migration to Expo Router and impleme
 
 ## Technical Improvements
 
-- [ ] Package Dependency Updates
+- [⚠️] Package Dependency Updates
 
   - [ ] Replace unmaintained packages
     - [ ] Replace `@rneui/base` and `@rneui/themed` with a maintained UI library:
@@ -88,11 +93,15 @@ Use this checklist to track progress on the migration to Expo Router and impleme
     - [ ] Replace `react-native-swiper` with a maintained alternative:
       - [ ] Option 1: Install and migrate to `react-native-reanimated-carousel`
       - [ ] Option 2: Install and migrate to `react-native-snap-carousel`
-  - [ ] Verify compatibility of packages with no metadata
+  - [⚠️] Verify compatibility of packages with no metadata
     - [ ] Evaluate if `@babel/helper-create-class-features-plugin` can be removed or updated
-    - [ ] Ensure `firebase` SDK compatibility with latest Expo version
+    - [✅] Ensure `firebase` SDK compatibility with latest Expo version
+      - [✅] Fixed Firebase Auth initialization with AsyncStorage persistence
+      - [✅] Resolved component auth registration issues
     - [ ] Check if `fs-extra` is necessary (typically only used in build scripts)
-    - [ ] Validate `shopify-buy` SDK for compatibility with current Shopify API
+    - [✅] Update `shopify-buy` SDK compatibility with current Shopify API
+      - [✅] Updated Shopify API version from "2023-10" to "2024-10"
+      - [✅] Fixed product data transformation for variants
   - [ ] Run `npx expo-doctor` regularly to monitor package health
 
 - [✅] TypeScript Migration
@@ -106,10 +115,13 @@ Use this checklist to track progress on the migration to Expo Router and impleme
     - [✅] GuestEvent
     - [✅] GuestShop
     - [✅] GuestIndexPage
-- [ ] State Management
+- [⚠️] State Management
   - [ ] Implement React Query for server state
-  - [ ] Consider Zustand for client state
-  - [ ] Update Redux implementation if keeping it
+  - [ ] Consider Zustand for client state (future option)
+  - [✅] Update Redux implementation to TypeScript
+    - [✅] Added proper typing for state and actions
+    - [✅] Created type-safe selectors
+    - [✅] Migrated all Redux files to src/store/redux
 - [ ] Performance Optimizations
   - [ ] Implement virtualized lists
   - [ ] Add image optimizations
@@ -122,9 +134,12 @@ Use this checklist to track progress on the migration to Expo Router and impleme
   - [ ] Set up Jest
   - [ ] Add React Native Testing Library
   - [ ] Add basic test coverage
-- [ ] Error Handling
+- [⚠️] Error Handling
   - [ ] Implement error boundaries
-  - [ ] Add API error handling
+  - [✅] Add API error handling
+    - [✅] Added null/undefined checks for product data
+    - [✅] Added Array.isArray() checks for collections
+    - [✅] Added fallbacks for missing data
   - [ ] Improve UX for error states
 - [ ] Offline Support
   - [ ] Implement data caching
@@ -156,10 +171,17 @@ Use this checklist to track progress on the migration to Expo Router and impleme
 
 ## Testing and Validation
 
-- [ ] Core Functionality Testing
-  - [ ] Authentication flow
-  - [ ] Navigation system
-  - [ ] Product browsing and details
+- [⚠️] Core Functionality Testing
+  - [⚠️] Authentication flow
+    - [✅] Fixed Firebase Auth initialization
+    - [⚠️] Need full auth flow testing
+  - [✅] Navigation system
+    - [✅] Tab navigation works without component registration errors
+    - [✅] Dynamic routes are properly configured
+    - [✅] Stack navigators set up for each route section
+  - [⚠️] Product browsing and details
+    - [✅] Shop product listings display correctly
+    - [⚠️] Need to test complete product details
   - [ ] Shopping cart
   - [ ] Checkout process
   - [ ] Account management
@@ -195,26 +217,39 @@ Use this checklist to track progress on the migration to Expo Router and impleme
 ## File Migration Progress
 
 - [ ] `favorites.js`
-- [✅] `cartSlice.js`
-- [ ] `store.js`
+- [✅] `cartSlice.js` → `cartSlice.tsx`
+- [✅] `store.js` → `store.tsx`
+- [✅] `firebase.js` → `firebase.tsx`
+- [✅] `shopifyService.js` → `shopifyService.tsx`
+- [✅] Layout files
+  - [✅] `src/app/_layout.tsx`
+  - [✅] `src/app/(app)/_layout.tsx`
+  - [✅] `src/app/(auth)/_layout.tsx`
+  - [✅] `src/app/(guest)/_layout.tsx`
+  - [✅] `src/app/(app)/shop/_layout.tsx`
+  - [✅] `src/app/(app)/events/_layout.tsx`
+  - [✅] `src/app/(app)/home/_layout.tsx`
+  - [✅] `src/app/(app)/cart/_layout.tsx`
+  - [✅] `src/app/(app)/account/_layout.tsx`
+- [✅] Route group exports
+  - [✅] `src/app/(auth)/_exports.tsx`
 
 ## Files/Folders to Remove After Migration
 
-- [ ] **Root Files**
+- [✅] **Root Files**
 
-  - [ ] `App.js` (replaced by `src/app/_layout.tsx`)
-  - [ ] `jsconfig.json` (replaced by TypeScript configuration)
+  - [✅] `App.js` (replaced by `src/app/_layout.tsx`)
+  - [✅] `jsconfig.json` (replaced by TypeScript configuration)
 
-- [ ] **Legacy Directories**
+- [✅] **Legacy Directories**
 
-  - [ ] `screens/` (replaced by routes in `src/app/`)
-  - [ ] `ui/` (moved to `src/components/ui/`)
-  - [ ] `util/` (moved to `src/utils/`)
-  - [ ] `templates/` (no longer needed with TypeScript)
-  - [ ] `components/` (moved to `src/components/`)
-  - [ ] `constants/` (moved to `src/constants/`)
-  - [ ] `store/` (if using Zustand instead of Redux)
-    - [ ] Or partially for migrated files if keeping Redux
+  - [✅] `screens/` (replaced by routes in `src/app/`)
+  - [✅] `ui/` (moved to `src/components/ui/`)
+  - [✅] `util/` (moved to `src/utils/`)
+  - [✅] `templates/` (no longer needed with TypeScript)
+  - [✅] `components/` (moved to `src/components/`)
+  - [✅] `constants/` (moved to `src/constants/`)
+  - [✅] `store/` (fully migrated to `src/store/` with TypeScript)
 
 - [ ] **Temporary Migration Files**
   - [ ] `implementation-guide.md`
