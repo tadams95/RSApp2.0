@@ -8,9 +8,6 @@ import { AuthProvider } from "../hooks/AuthContext";
 import { store } from "../store/redux/store";
 
 // Import named exports for component registration
-import { auth } from "./(auth)/_layout";
-import { app } from "./(app)/_layout";
-import { guest } from "./(guest)/_layout";
 
 // Prevent auto-hide of splash screen
 SplashScreen.preventAutoHideAsync().catch(() => {

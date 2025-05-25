@@ -1,9 +1,6 @@
 import { Link } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 // Import from auth to ensure components are registered
-import { auth } from "./(auth)/_layout";
-import { app } from "./(app)/_layout";
-import { guest } from "./(guest)/_layout";
 
 export default function Index() {
   return (

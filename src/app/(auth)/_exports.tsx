@@ -7,4 +7,4 @@ export function auth() {
 }
 
 // This helps Expo Router recognize the auth route group
-export { auth as default }
+export { auth as default };

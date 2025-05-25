@@ -65,7 +65,7 @@ export async function createUser(
   dispatch?: Dispatch
 ): Promise<CreateUserResult> {
   try {
-    const userCredential: UserCredential =    await createUserWithEmailAndPassword(
+    const userCredential: UserCredential = await createUserWithEmailAndPassword(
       firebaseAuth,
       email,
       password
@@ -127,7 +127,7 @@ export async function loginUser(
   dispatch?: Dispatch
 ): Promise<User> {
   try {
-    const userCredential: UserCredential =    await signInWithEmailAndPassword(
+    const userCredential: UserCredential = await signInWithEmailAndPassword(
       firebaseAuth,
       email,
       password
