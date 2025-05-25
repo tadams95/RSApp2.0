@@ -39,7 +39,7 @@ export default function AppLayout() {
       }}
     >
       <Tabs.Screen
-        name="home/index"
+        name="home"
         options={{
           title: "RAGESTATE",
           tabBarIcon: ({ color }) => (
@@ -48,7 +48,7 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="shop/index"
+        name="shop"
         options={{
           title: "Shop",
           tabBarIcon: ({ color }) => (
@@ -57,7 +57,7 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="events/index"
+        name="events"
         options={{
           title: "Events",
           tabBarIcon: ({ color }) => (
@@ -66,7 +66,7 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="cart/index"
+        name="cart"
         options={{
           title: "Cart",
           tabBarIcon: ({ color }) => (
@@ -75,7 +75,7 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="account/index"
+        name="account"
         options={{
           title: "Account",
           tabBarIcon: ({ color }) => (
