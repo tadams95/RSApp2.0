@@ -133,9 +133,9 @@ export default function ShopScreen() {
               pressed && styles.pressed,
             ]}
             accessible={true}
-            accessibilityLabel={`${product.title}, $${
+            accessibilityLabel={`${product.title}, $${parseFloat(
               firstVariant.price.amount
-            } ${firstVariant.price.currencyCode}${
+            ).toFixed(2)} ${firstVariant.price.currencyCode}${
               isOutOfStock ? ", Sold Out" : ""
             }`}
             accessibilityRole="button"
@@ -159,7 +159,8 @@ export default function ShopScreen() {
               {product.title}
             </Text>
             <Text style={styles.price}>
-              ${firstVariant.price.amount} {firstVariant.price.currencyCode}
+              ${parseFloat(firstVariant.price.amount).toFixed(2)}{" "}
+              {firstVariant.price.currencyCode}
             </Text>
           </Pressable>
         </View>

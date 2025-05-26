@@ -89,7 +89,7 @@ export default function EventDetailScreen() {
       image: imgURL,
       price: {
         amount: parseFloat(price.toString()),
-        currencyCode: "USD"
+        currencyCode: "USD",
       },
       eventDetails: {
         dateTime: dateTime,

@@ -179,7 +179,7 @@ export default function ProductDetailScreen() {
       image: product.images[0]?.url,
       price: {
         amount: parseFloat(matchedVariant.price.amount),
-        currencyCode: matchedVariant.price.currencyCode
+        currencyCode: matchedVariant.price.currencyCode,
       },
       variantId: matchedVariant.id,
     };
