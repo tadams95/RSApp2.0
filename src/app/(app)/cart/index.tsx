@@ -95,6 +95,14 @@ export default function CartScreen() {
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [taxAmount, setTaxAmount] = useState<number>(0);
 
+  // Debugging logs to track state changes
+  useEffect(() => {
+    console.log("showAddressSheet state changed:", showAddressSheet);
+    if (!showAddressSheet) {
+      setLoading(false); // Ensure loading state is reset when sheet is closed
+    }
+  }, [showAddressSheet]);
+
   const API_URL =
     "https://us-central1-ragestate-app.cloudfunctions.net/stripePayment";
 
@@ -139,11 +147,10 @@ export default function CartScreen() {
     try {
       setLoading(true);
 
-      // Show the address sheet for shipping information
       if (hasClothingItems) {
-        setShowAddressSheet(true);
+        console.log("Opening AddressSheet...");
+        setShowAddressSheet(true); // Show the address sheet
       } else {
-        // If only digital items, proceed directly to payment
         await initializePaymentSheet(null);
         await openPaymentSheet("RS-EVENT", null);
       }
@@ -385,6 +392,21 @@ export default function CartScreen() {
     },
   };
 
+  const handleAddressSheetError = (error: any) => {
+    console.error("Address sheet error:", error);
+    if (error.code === "Canceled" || error.code === "Cancelled") {
+      console.log("AddressSheet canceled by user.");
+      setShowAddressSheet(false); // Explicitly set to false
+      setLoading(false);
+    } else {
+      Alert.alert(
+        "Address Error",
+        "Could not validate address. Please try again."
+      );
+      setLoading(false);
+    }
+  };
+
   return (
     <StripeProvider publishableKey="pk_test_51KKkvnDcnPBRlCcSHabYQ8vdzxj2Rxla6Qek3YpKXhsirsJ7JkXHxZDsZLQYJnwY6wOJqy8B4jgyLpS5W1BYEfYY00XSeLDFDw">
       <View style={styles.rootContainer}>
@@ -507,36 +529,27 @@ export default function CartScreen() {
               <View style={{ height: 200 }} />
             </ScrollView>
 
-            {showAddressSheet && (
-              <AddressSheet
-                appearance={addressSheetAppearance}
-                defaultValues={{
-                  name: userName || "",
-                  phone: "",
-                  address: {
-                    country: "US",
-                  },
-                }}
-                onSubmit={(addressDetails) => {
-                  setAddressDetails(addressDetails);
-                  setShowAddressSheet(false);
-                  initializePaymentSheet(addressDetails);
-                  openPaymentSheet("RS-MERCH", addressDetails);
-                }}
-                onError={(error) => {
-                  console.error("Address sheet error:", error);
-                  Alert.alert(
-                    "Address Error",
-                    "Could not validate address. Please try again."
-                  );
-                  setLoading(false);
-                }}
-                sheetTitle={"Shipping Address"}
-                primaryButtonTitle={"Continue to Payment"}
-                presentationStyle="fullscreen"
-                visible={showAddressSheet}
-              />
-            )}
+            <AddressSheet
+              appearance={addressSheetAppearance}
+              defaultValues={{
+                name: userName || "",
+                phone: "",
+                address: {
+                  country: "US",
+                },
+              }}
+              onSubmit={(addressDetails) => {
+                setAddressDetails(addressDetails);
+                setShowAddressSheet(false);
+                initializePaymentSheet(addressDetails);
+                openPaymentSheet("RS-MERCH", addressDetails);
+              }}
+              onError={handleAddressSheetError}
+              sheetTitle={"Shipping Address"}
+              primaryButtonTitle={"Continue to Payment"}
+              presentationStyle="fullscreen"
+              visible={showAddressSheet}
+            />
 
             {checkoutInProgress && (
               <View style={styles.orderSummaryContainer}>
