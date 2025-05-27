@@ -97,7 +97,7 @@ export default function CartScreen() {
 
   // Debugging logs to track state changes
   useEffect(() => {
-    console.log("showAddressSheet state changed:", showAddressSheet);
+    // console.log("showAddressSheet state changed:", showAddressSheet);
     if (!showAddressSheet) {
       setLoading(false); // Ensure loading state is reset when sheet is closed
     }
@@ -148,7 +148,7 @@ export default function CartScreen() {
       setLoading(true);
 
       if (hasClothingItems) {
-        console.log("Opening AddressSheet...");
+        // console.log("Opening AddressSheet...");
         setShowAddressSheet(true); // Show the address sheet
       } else {
         await initializePaymentSheet(null);
@@ -368,43 +368,46 @@ export default function CartScreen() {
     default: "system",
   });
 
-  // Define a custom appearance object for AddressSheet with proper hex format
+  // Define a custom appearance object for AddressSheet consistent with app styling
   const addressSheetAppearance = {
     colors: {
-      primary: "#ff3c00",
-      background: "#111111",
-      componentBackground: "#222222",
-      componentBorder: "#444444",
-      componentDivider: "#333333",
-      componentText: "#FFFFFF",
-      secondaryText: "#AAAAAA",
-      placeholderText: "#777777",
-      icon: "#CCCCCC",
-      error: "#FF5555",
+      primary: GlobalStyles.colors.red4, // Using app's primary red color
+      background: "#000000", // Black background consistent with app
+      componentBackground: GlobalStyles.colors.grey9, // Using app's dark gray
+      componentBorder: GlobalStyles.colors.grey8, // Subtle border matching app style
+      componentDivider: GlobalStyles.colors.grey8, // Consistent divider color
+      componentText: "#FFFFFF", // White text
+      secondaryText: GlobalStyles.colors.grey4, // Consistent secondary text
+      placeholderText: GlobalStyles.colors.grey6, // Better placeholder contrast
+      icon: GlobalStyles.colors.grey3, // Consistent icon color
+      error: GlobalStyles.colors.red3, // Using app's error color
     },
     fonts: {
       scale: 1.0,
       family: fontFamily,
     },
     shapes: {
-      borderRadius: 8,
+      borderRadius: 8, // Consistent with app's rounded corners
       borderWidth: 1,
     },
   };
 
   const handleAddressSheetError = (error: any) => {
-    console.error("Address sheet error:", error);
-    if (error.code === "Canceled" || error.code === "Cancelled") {
-      console.log("AddressSheet canceled by user.");
-      setShowAddressSheet(false); // Explicitly set to false
-      setLoading(false);
-    } else {
+    // Only log actual errors, not cancellations
+    if (error.code !== "Canceled" && error.code !== "Cancelled") {
+      console.error("Address sheet error:", error);
       Alert.alert(
         "Address Error",
         "Could not validate address. Please try again."
       );
-      setLoading(false);
+    } else {
+      // Handle cancellation silently
+      // console.log("AddressSheet flow canceled by user - this is normal behavior");
     }
+
+    // In all cases, clean up the UI state
+    setShowAddressSheet(false);
+    setLoading(false);
   };
 
   return (
