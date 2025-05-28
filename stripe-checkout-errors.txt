@@ -1,183 +1,99 @@
- ERROR  Address sheet error: {"code": "Canceled", "declineCode": null, "localizedMessage": "The flow has been canceled.", "message": "The flow has been canceled.", "stripeErrorCode": null, "type": null}
- ERROR  Address sheet error: {"code": "Canceled", "declineCode": null, "localizedMessage": "The flow has been canceled.", "message": "The flow has been canceled.", "stripeErrorCode": null, "type": null}
- ERROR  Address sheet error: {"code": "Canceled", "declineCode": null, "localizedMessage": "The flow has been canceled.", "message": "The flow has been canceled.", "stripeErrorCode": null, "type": null}
- ERROR  Error fetching payment sheet params: [SyntaxError: JSON Parse error: Unexpected character: <]
+ // CURRENT ERRORS
+ERROR  Error fetching payment sheet params: [SyntaxError: JSON Parse error: Unexpected character: <]
  ERROR  Payment initialization error: [Error: Failed to initiate payment process]
  ERROR  Error fetching payment sheet params: [SyntaxError: JSON Parse error: Unexpected character: <]
  ERROR  Payment initialization error: [Error: Failed to initiate payment process]
  ERROR  Payment error: {"code": "Failed", "declineCode": null, "localizedMessage": "No payment sheet has been initialized yet. You must call `initPaymentSheet` before `presentPaymentSheet`.", "message": "No payment sheet has been initialized yet. You must call `initPaymentSheet` before `presentPaymentSheet`.", "stripeErrorCode": null, "type": null}
 
-# STRIPE CHECKOUT RESOLUTION PLAN
+// IMPLEMENTED FIXES (May 27, 2025)
+1. Fixed API endpoint usage - Now targeting `/payment-sheet` endpoint specifically
+2. Enhanced error handling in fetchPaymentSheetParams:
+   - Added response validation and detailed error reporting
+   - Added Accept header for JSON responses
+   - Improved error messages with raw response data for debugging
+3. Improved payment sheet initialization:
+   - Added timeout protection (15 seconds)
+   - Improved state management with proper reset between attempts
+   - Added consistent styling with the app's design language
+4. Enhanced payment flow sequence:
+   - Added retry logic for initialization failures
+   - Added proper state cleanup after completion
+   - Better synchronization between address collection and payment
+5. Added delay between AddressSheet closing and payment initialization
+6. Improved user feedback with more specific error messages
+7. Added comprehensive logging for easier troubleshooting
 
-## Error Analysis
+// NEW ERROR IDENTIFIED (May 27, 2025)
+ERROR: "Invalid API Key provided: pk_test_***********************************************************************************************DFDw"
 
-1. **Address Sheet Cancellation Errors**
-   - These errors occur when users cancel the address sheet flow
-   - This is expected behavior and not a critical issue, but should be handled gracefully
+ROOT CAUSE:
+There is a mismatch between the Stripe API environment keys. The cloud function is using LIVE mode keys 
+while the client app is using TEST mode keys. Specifically:
 
-2. **JSON Parse Errors**
-   - The errors `[SyntaxError: JSON Parse error: Unexpected character: <]` indicate the API is returning HTML instead of JSON
-   - This likely means the Firebase Cloud Function endpoint is not responding correctly or is returning an error page
+1. Server (Cloud Function):
+   - Creates payment intents with LIVE keys
+   - Returns ephemeral keys starting with "ek_live_"
+   - Is configured to return "pk_live_51NFhuOHnXmOBmfaDu16tJEuppfYKPUivMapB9XLXaBpiOLqiPRz2uoPAiifxqiLT49dyPCHOSKs74wjBspzJ8zo600yGYluqUe"
 
-3. **Payment Sheet Initialization Failures**
-   - The error `No payment sheet has been initialized yet` indicates a sequence issue where `presentPaymentSheet` is being called before proper initialization
-   - This is likely a result of the previous API errors
+2. Client (Mobile App):
+   - Was using StripeProvider with TEST key: "pk_test_51KKkvnDcnPBRlCcSHabYQ8vdzxj2Rxla6Qek3YpKXhsirsJ7JkXHxZDsZLQYJnwY6wOJqy8B4jgyLpS5W1BYEfYY00XSeLDFDw"
 
-## Root Causes
+SOLUTION IMPLEMENTED:
+1. Updated client to use LIVE key that matches server
+   - Changed the StripeProvider publishableKey to match the live key from the server:
+     "pk_live_51NFhuOHnXmOBmfaDu16tJEuppfYKPUivMapB9XLXaBpiOLqiPRz2uoPAiifxqiLT49dyPCHOSKs74wjBspzJ8zo600yGYluqUe"
+   - Added proper merchant identifier for Apple Pay: "merchant.com.ragestate.app"
+   - Added URL scheme for deeplinks: "ragestate"
+   - Added returnURL to payment initialization for 3D Secure authentication
 
-1. **Firebase Cloud Function Issues**
-   - The Stripe API endpoint at `https://us-central1-ragestate-app.cloudfunctions.net/stripePayment` may be:
-     - Not properly deployed
-     - Have configuration issues
-     - Missing proper Stripe API keys
-     - Returning HTML error pages instead of JSON responses
+2. Fixed warnings about missing returnURL:
+   - Added returnURL parameter to initPaymentSheet configuration: "ragestate://stripe-redirect"
 
-2. **Sequence and State Management Issues**
-   - The app may be attempting to present the payment sheet even when initialization fails
-   - The `paymentSheetInitialized` state may not be properly tracked
+IMPORTANT FOR PRODUCTION:
+- The app is now configured to process REAL payments with REAL money
+- Test with real cards but small amounts initially
+- Monitor the Stripe dashboard for successful transactions
 
-## Resolution Steps
+// ORIGINAL RESOLUTION PLAN
 
-### 1. Firebase Cloud Function Fixes
+The errors above indicate three key issues in the Stripe checkout flow:
 
-1. **Deploy and Verify Cloud Functions**
-   - Ensure the Firebase functions are properly deployed
-   - Verify the functions are accessible via direct HTTP requests
+1. JSON Parse Error: The API is returning HTML or non-JSON content instead of the expected JSON
+2. Payment Sheet Initialization Failures: Failed to initialize the payment sheet
+3. Sequence Error: Attempting to present a payment sheet before it's initialized
 
-2. **Add Error Logging and Response Formatting**
-   - Add better error handling in the Firebase function
-   - Ensure all responses are properly formatted as JSON, even error responses
-   - Add these lines to the Express app in `functions/index.js`:
-   ```javascript
-   app.use(express.json());
-   app.use((err, req, res, next) => {
-     console.error(err.stack);
-     res.status(500).json({ error: err.message });
-   });
-   ```
+Steps to resolve these issues:
 
-3. **Check Stripe API Keys**
-   - Verify the Stripe secret key is correctly set in the Firebase function
-   - The current function is using `stripe = require('stripe')()` without providing an API key
-   - Update to: `stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)`
-   - Set proper environment variables for Firebase functions
+A. API/Backend Issues:
+   1. Verify the Cloud Function deployment status - ensure "stripePayment" function is properly deployed
+   2. Check Firebase logs for the "stripePayment" function to identify server-side errors
+   3. Verify the Firebase project and region match the API URL being used
+   4. Add better error handling in the cloud function to return valid JSON even in error cases
+   5. Ensure proper CORS headers are set in the Express app
 
-### 2. Frontend App Fixes
+B. Client-Side Fixes:
+   1. Improve error handling in fetchPaymentSheetParams:
+      - Add response status code checks
+      - Validate response is JSON before parsing
+      - Add detailed logging of raw response when parsing fails
+   
+   2. Fix state management in payment flow:
+      - Ensure paymentSheetInitialized state is properly reset between attempts
+      - Add retry logic with exponential backoff for API failures
+      - Add timeout handling to prevent UI from being stuck in loading state
+   
+   3. Add better synchronization between AddressSheet and Payment flows:
+      - Ensure address details are properly passed to the payment process
+      - Add state verification before presenting payment sheet
 
-1. **Improve Error Handling**
-   - Add better error handling around the API calls
-   - Add response validation to ensure JSON is properly parsed
-   ```javascript
-   const fetchPaymentSheetParams = async (addressDetails: AddressDetails | null) => {
-     try {
-       const response = await fetch(`${API_URL}...`);
-       
-       // Check if response is successful
-       if (!response.ok) {
-         const errorText = await response.text();
-         throw new Error(`Server responded with ${response.status}: ${errorText}`);
-       }
-       
-       // Try to parse JSON
-       const data = await response.json();
-       
-       // Validate required fields
-       if (!data.paymentIntent || !data.ephemeralKey || !data.customer) {
-         throw new Error('Invalid server response: missing required fields');
-       }
-       
-       return data;
-     } catch (error) {
-       console.error("Error fetching payment sheet params:", error);
-       throw new Error("Failed to initiate payment process");
-     }
-   };
-   ```
+C. Implementation Order:
+   1. First implement the client-side logging improvements to get better error information
+   2. Check cloud function logs and fix any server-side issues
+   3. Implement client-side fixes for robustness
+   4. Add comprehensive error handling and fallbacks
 
-2. **Fix Payment Sheet Initialization Flow**
-   - Ensure state management properly tracks initialization status
-   - Add additional checks before presenting the payment sheet
-   ```javascript
-   const openPaymentSheet = async (paymentIntentPrefix: string, addressDetails: AddressDetails | null) => {
-     try {
-       // Check if already initialized or try to initialize
-       if (!paymentSheetInitialized) {
-         setLoading(true);
-         await initializePaymentSheet(addressDetails);
-         // Exit if initialization didn't set the flag (indicating failure)
-         if (!paymentSheetInitialized) {
-           Alert.alert("Payment Error", "Unable to initialize payment. Please try again.");
-           return;
-         }
-       }
-
-       const { error } = await presentPaymentSheet();
-       // ...rest of function...
-     }
-   };
-   ```
-
-3. **Handle Address Sheet Cancellations**
-   - Add specific handling for address sheet cancellations
-   - Reset loading state and provide user feedback
-   ```javascript
-   onError={(error) => {
-     console.error("Address sheet error:", error);
-     if (error.code === "Canceled") {
-       setLoading(false);
-       // User canceled, just reset state without showing error
-     } else {
-       Alert.alert(
-         "Address Error",
-         "Could not validate address. Please try again."
-       );
-       setLoading(false);
-     }
-   }}
-   ```
-
-### 3. Testing Recommendations
-
-1. **Test API Endpoint Directly**
-   - Use tools like Postman or curl to test the Firebase function endpoints
-   - Verify proper JSON responses from all API routes
-
-2. **Add Local Testing Mode**
-   - Create a test mode that bypasses actual API calls during development
-   - Implement mock responses for testing the payment flow locally
-
-3. **Check Network Requests**
-   - Use browser or mobile network debugging tools to inspect actual API calls
-   - Verify requests contain proper parameters
-   - Examine raw responses from the server
-
-### 4. Additional Considerations
-
-1. **Handle Network Issues**
-   - Add retry logic for transient network failures
-   - Implement offline detection and appropriate user messaging
-
-2. **Implement Logging**
-   - Add more structured logging throughout the payment process
-   - Consider integrating with a remote logging service for production issues
-
-3. **User Experience Improvements**
-   - Provide clear loading indicators during all API calls
-   - Consider adding a payment simulation mode for testing
-
-## Implementation Priority
-
-1. **Critical Fixes**
-   - Fix the Firebase Cloud Function to properly handle requests and return JSON
-   - Add proper Stripe API key configuration
-   - Improve error handling in API response processing
-
-2. **Secondary Improvements**
-   - Enhance state management and flow control
-   - Add better user feedback for various error states
-   - Implement more comprehensive logging
-
-3. **Future Enhancements**
-   - Add retry mechanisms
-   - Implement proper testing infrastructure
-   - Consider alternative payment solutions if Stripe integration proves problematic
+D. Testing Plan:
+   1. Test with both event tickets and physical items requiring shipping
+   2. Test with new and existing customers
+   3. Test error scenarios (network failures, etc.)
+   4. Verify cleanup after failed attempts

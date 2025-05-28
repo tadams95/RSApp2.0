@@ -147,18 +147,32 @@ export default function CartScreen() {
     try {
       setLoading(true);
 
+      // Reset payment state before starting checkout
+      setPaymentSheetInitialized(false);
+      setStripePaymentIntent("");
+
       if (hasClothingItems) {
-        // console.log("Opening AddressSheet...");
+        console.log("Physical items detected, opening address collection");
         setShowAddressSheet(true); // Show the address sheet
+        // The payment flow continues in the AddressSheet.onSubmit handler
       } else {
-        await initializePaymentSheet(null);
-        await openPaymentSheet("RS-EVENT", null);
+        console.log("Digital items only, proceeding directly to payment");
+        // For event tickets, go directly to payment
+        const initialized = await initializePaymentSheet(null);
+        if (initialized) {
+          await openPaymentSheet("RS-EVENT", null);
+        } else {
+          // Payment initialization failed
+          setLoading(false);
+        }
       }
     } catch (error) {
       console.error("Checkout error:", error);
       Alert.alert(
         "Checkout Error",
-        "There was an issue with checkout. Please try again."
+        `There was an issue with checkout: ${
+          error instanceof Error ? error.message : "Please try again."
+        }`
       );
       setLoading(false);
     }
@@ -214,30 +228,75 @@ export default function CartScreen() {
     addressDetails: AddressDetails | null
   ) => {
     try {
-      const response = await fetch(
-        `${API_URL}?amount=${Math.round(
-          totalPrice * 100
-        )}&customerEmail=${userEmail}&customerId=${stripeCustomerId || ""}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: firebaseId,
-            amount: Math.round(totalPrice * 100),
-            customerEmail: userEmail,
-            isExistingCustomer: !!stripeCustomerId,
-            customerId: stripeCustomerId || "",
-            address: addressDetails || {},
-          }),
-        }
-      );
+      // Use the correct API endpoint for payment-sheet
+      const apiEndpoint = `${API_URL}/payment-sheet`;
 
-      const { paymentIntent, ephemeralKey, customer } = await response.json();
-      return { paymentIntent, ephemeralKey, customer };
+      console.log("Making API request to:", apiEndpoint);
+
+      const requestBody = {
+        userId: firebaseId,
+        amount: Math.round(totalPrice * 100),
+        customerEmail: userEmail,
+        name: userName || "Unknown User",
+        firebaseId: firebaseId, // Match the expected parameter in cloud function
+        address: addressDetails || {},
+      };
+
+      console.log("Request payload:", JSON.stringify(requestBody));
+
+      const response = await fetch(apiEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      // First check if response is ok (status in 200-299 range)
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API error (${response.status}):`, errorText);
+        throw new Error(
+          `API returned error ${response.status}: ${response.statusText}`
+        );
+      }
+
+      // Try to parse the JSON response
+      let responseText;
+      try {
+        responseText = await response.text();
+
+        // Debug the raw response
+        console.log(
+          "Raw API response:",
+          responseText.substring(0, 200) +
+            (responseText.length > 200 ? "..." : "")
+        );
+
+        const responseData = JSON.parse(responseText);
+        const { paymentIntent, ephemeralKey, customer } = responseData;
+
+        if (!paymentIntent || !ephemeralKey || !customer) {
+          console.error(
+            "Missing required fields in payment response:",
+            responseData
+          );
+          throw new Error("Invalid payment response from server");
+        }
+
+        return { paymentIntent, ephemeralKey, customer };
+      } catch (parseError) {
+        console.error("Failed to parse JSON response:", parseError);
+        console.error("Response content:", responseText);
+        throw new Error("Invalid response format from payment server");
+      }
     } catch (error) {
       console.error("Error fetching payment sheet params:", error);
+      Alert.alert(
+        "Payment Setup Error",
+        "Could not connect to payment server. Please try again later."
+      );
       throw new Error("Failed to initiate payment process");
     }
   };
@@ -245,38 +304,94 @@ export default function CartScreen() {
   const initializePaymentSheet = async (
     addressDetails: AddressDetails | null
   ) => {
+    // Reset initialization state at the beginning
+    setPaymentSheetInitialized(false);
+
     try {
-      const { paymentIntent, ephemeralKey, customer } =
-        await fetchPaymentSheetParams(addressDetails);
+      console.log("Starting payment sheet initialization");
+
+      // Add timeout protection
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(
+          () => reject(new Error("Payment initialization timed out")),
+          15000
+        );
+      });
+
+      // Fetch payment parameters with timeout protection
+      const paramsPromise = fetchPaymentSheetParams(addressDetails);
+
+      // @ts-ignore - TypeScript doesn't recognize Promise.race return type correctly
+      const { paymentIntent, ephemeralKey, customer } = await Promise.race([
+        paramsPromise,
+        timeoutPromise,
+      ]);
+
+      console.log("Payment parameters obtained successfully");
       setStripePaymentIntent(paymentIntent);
 
-      const { error } = await initPaymentSheet({
+      const initResult = await initPaymentSheet({
         merchantDisplayName: "RAGESTATE",
         customerId: customer,
         customerEphemeralKeySecret: ephemeralKey,
         paymentIntentClientSecret: paymentIntent,
         allowsDelayedPaymentMethods: false,
+        returnURL: "ragestate://stripe-redirect", // For handling 3D Secure authentication returns
         defaultBillingDetails: {
           name: userName || "",
           email: userEmail || "",
         },
+        // Add appearance option for consistent styling
+        appearance: {
+          colors: {
+            primary: GlobalStyles.colors.red4,
+            background: "#000000",
+            componentBackground: GlobalStyles.colors.grey9,
+            componentBorder: GlobalStyles.colors.grey8,
+            componentDivider: GlobalStyles.colors.grey8,
+            primaryText: "#FFFFFF",
+            secondaryText: GlobalStyles.colors.grey4,
+            placeholderText: GlobalStyles.colors.grey6,
+            icon: GlobalStyles.colors.grey3,
+            error: GlobalStyles.colors.red3,
+          },
+        },
       });
 
-      if (!error) {
+      if (!initResult.error) {
+        console.log("Payment sheet initialized successfully");
         setPaymentSheetInitialized(true);
+        return true;
       } else {
-        console.error("Error initializing payment sheet:", error);
-        Alert.alert(
-          "Payment Error",
-          "Unable to initialize payment. Please try again."
-        );
+        console.error("Error initializing payment sheet:", initResult.error);
+
+        // Handle specific error codes
+        if (initResult.error.code === "Failed") {
+          Alert.alert(
+            "Payment Setup Error",
+            "Payment system is temporarily unavailable. Please try again later."
+          );
+        } else {
+          Alert.alert(
+            "Payment Error",
+            `Unable to initialize payment: ${
+              initResult.error.localizedMessage ||
+              initResult.error.message ||
+              "Unknown error"
+            }`
+          );
+        }
+        return false;
       }
     } catch (error) {
       console.error("Payment initialization error:", error);
       Alert.alert(
         "Payment Error",
-        "Unable to initialize payment. Please try again."
+        `Unable to initialize payment. ${
+          error instanceof Error ? error.message : "Please try again."
+        }`
       );
+      return false;
     } finally {
       setLoading(false);
     }
@@ -287,18 +402,61 @@ export default function CartScreen() {
     addressDetails: AddressDetails | null
   ) => {
     try {
+      setLoading(true);
+
+      // Make sure we have a properly initialized payment sheet
       if (!paymentSheetInitialized) {
-        await initializePaymentSheet(addressDetails);
+        console.log("Payment sheet not initialized, initializing now...");
+        const initialized = await initializePaymentSheet(addressDetails);
+        if (!initialized) {
+          console.log("Failed to initialize payment sheet, aborting");
+          setLoading(false);
+          return;
+        }
       }
 
+      console.log("Presenting payment sheet to user");
       const { error } = await presentPaymentSheet();
 
       if (error) {
         console.error("Payment error:", error);
-        Alert.alert("Payment Failed", error.message);
+
+        // Handle different error types
+        if (error.code === "Canceled") {
+          console.log("User canceled the payment");
+          // No need to show an alert for user-initiated cancellation
+        } else if (
+          error.code === "Failed" &&
+          error.message.includes("initialize")
+        ) {
+          // Reset initialization state and try again
+          setPaymentSheetInitialized(false);
+          Alert.alert(
+            "Payment Setup Error",
+            "The payment couldn't be processed. Would you like to try again?",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Try Again",
+                onPress: () => {
+                  // Try again with a delay
+                  setTimeout(() => {
+                    openPaymentSheet(paymentIntentPrefix, addressDetails);
+                  }, 1000);
+                },
+              },
+            ]
+          );
+        } else {
+          Alert.alert("Payment Failed", error.message || "Please try again");
+        }
       } else {
         // Payment successful, save order information
         try {
+          console.log("Payment successful, saving order");
           const orderDetails: OrderDetails = {
             orderId: `${paymentIntentPrefix}-${Date.now()}`,
             orderItems: cartItems,
@@ -320,12 +478,16 @@ export default function CartScreen() {
             "orders"
           );
           await addDoc(ordersRef, orderDetails);
+          console.log("Order saved to Firestore");
 
           // Send notification
           await sendPurchaseNotification();
 
           // Clear cart after successful purchase
           dispatch(clearCart());
+
+          // Reset payment state
+          setPaymentSheetInitialized(false);
 
           Alert.alert(
             "Payment Successful!",
@@ -341,10 +503,18 @@ export default function CartScreen() {
           );
         } catch (error) {
           console.error("Error saving order:", error);
+          Alert.alert(
+            "Order Processing",
+            "Your payment was successful, but we encountered an issue saving your order. Our team will contact you shortly."
+          );
         }
       }
     } catch (error) {
       console.error("Error in payment process:", error);
+      Alert.alert(
+        "Payment Error",
+        "An unexpected error occurred. Please try again later."
+      );
     } finally {
       setLoading(false);
     }
@@ -411,7 +581,11 @@ export default function CartScreen() {
   };
 
   return (
-    <StripeProvider publishableKey="pk_test_51KKkvnDcnPBRlCcSHabYQ8vdzxj2Rxla6Qek3YpKXhsirsJ7JkXHxZDsZLQYJnwY6wOJqy8B4jgyLpS5W1BYEfYY00XSeLDFDw">
+    <StripeProvider
+      publishableKey="pk_live_51NFhuOHnXmOBmfaDu16tJEuppfYKPUivMapB9XLXaBpiOLqiPRz2uoPAiifxqiLT49dyPCHOSKs74wjBspzJ8zo600yGYluqUe"
+      merchantIdentifier="merchant.com.ragestate.app" // iOS Apple Pay integration
+      urlScheme="ragestate" // For return URL handling
+    >
       <View style={styles.rootContainer}>
         <StatusBar style="light" />
         <View style={styles.header}>
@@ -541,11 +715,33 @@ export default function CartScreen() {
                   country: "US",
                 },
               }}
-              onSubmit={(addressDetails) => {
+              onSubmit={async (addressDetails) => {
+                console.log(
+                  "Address submission successful, proceeding with payment"
+                );
                 setAddressDetails(addressDetails);
                 setShowAddressSheet(false);
-                initializePaymentSheet(addressDetails);
-                openPaymentSheet("RS-MERCH", addressDetails);
+
+                // Ensure we set a small delay before proceeding with payment
+                // to allow the AddressSheet to properly dismiss
+                setTimeout(async () => {
+                  try {
+                    const initialized = await initializePaymentSheet(
+                      addressDetails
+                    );
+                    if (initialized) {
+                      await openPaymentSheet("RS-MERCH", addressDetails);
+                    }
+                    // If initialization failed, the function already shows an error message
+                  } catch (error) {
+                    console.error("Error in address-to-payment flow:", error);
+                    Alert.alert(
+                      "Payment Error",
+                      "There was a problem proceeding to payment. Please try again."
+                    );
+                    setLoading(false);
+                  }
+                }, 500);
               }}
               onError={handleAddressSheetError}
               sheetTitle={"Shipping Address"}
