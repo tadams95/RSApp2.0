@@ -2,11 +2,15 @@ import React from "react";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSelector } from "react-redux";
 import { useAuth } from "../../../hooks/AuthContext";
-import { selectUserEmail } from "../../../store/redux/userSlice";
+import {
+  selectUserEmail,
+  selectUserName,
+} from "../../../store/redux/userSlice";
 
 export default function HomeScreen() {
   const { authenticated } = useAuth();
   const userEmail = useSelector(selectUserEmail);
+  const userName = useSelector(selectUserName);
 
   return (
     <ScrollView style={styles.container}>
@@ -16,12 +20,12 @@ export default function HomeScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>RAGE STATE</Text>
+        {/* <Text style={styles.title}>RAGE STATE</Text> */}
       </View>
 
       <View style={styles.welcomeSection}>
         <Text style={styles.welcomeText}>
-          Welcome{userEmail ? `, ${userEmail.split("@")[0]}` : ""}!
+          Welcome{userName ? `, ${userName.split("@")[0]}` : ""}!
         </Text>
         <Text style={styles.subtitle}>
           You're now using the new Expo Router migration.
