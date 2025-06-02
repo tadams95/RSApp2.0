@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -6,12 +7,13 @@ import {
   Image,
   Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import Swiper from "react-native-swiper";
+import { GlobalStyles } from "../../../constants/styles";
 import { goBack, navigateToAuth } from "../../../utils/navigation";
 
 // Define types for product data
@@ -34,9 +36,10 @@ interface ProductImage {
 interface ProductData {
   id: string;
   title: string;
+  handle?: string; // Added handle property for consistency
   images: ProductImage[];
   price: ProductPrice;
-  description?: string;
+  descriptionHtml?: string; 
   variants: ProductVariant[];
 }
 
@@ -58,20 +61,28 @@ export default function GuestProductDetail() {
 
   // Parse the serialized product data
   const data: ProductData = JSON.parse(params.data as string);
-  const { title, images, price, description, variants } = data;
+  const { title, images, price, descriptionHtml, variants } = data;
 
   // Component state
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [imagesLoaded, setImagesLoaded] = useState<number>(0);
   const [activeIndex, setActiveIndex] = useState<number>(0);
 
-  const totalImages = images.length;
+  const totalImages = images ? images.length : 0;
 
   useEffect(() => {
     // When all images are loaded, set loading to false
     if (imagesLoaded >= totalImages && totalImages > 0) {
       setIsLoading(false);
     }
+    
+    // Add a safety timeout to hide the spinner after 3 seconds
+    // even if image loading events fail to trigger
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+    
+    return () => clearTimeout(timer);
   }, [imagesLoaded, totalImages]);
 
   const handleImageLoad = (): void => {
@@ -86,7 +97,7 @@ export default function GuestProductDetail() {
   // Format price for display
   const formattedPrice: string =
     price && price.amount
-      ? `$${price.amount}0 ${price.currencyCode || "USD"}`
+      ? `$${parseFloat(price.amount).toFixed(2)} ${price.currencyCode || "USD"}`
       : "Price unavailable";
 
   // Check if all variants are sold out
@@ -95,106 +106,126 @@ export default function GuestProductDetail() {
       ? variants.every((variant) => !variant.available)
       : true;
 
+  const handlePreviousImage = () => {
+    setActiveIndex((prev) => (prev - 1 + totalImages) % totalImages);
+  };
+
+  const handleNextImage = () => {
+    setActiveIndex((prev) => (prev + 1) % totalImages);
+  };
+
+  const renderImageCarousel = () => {
+    if (!images || images.length === 0) {
+      return (
+        <View style={styles.swiperContainer}>
+          <View style={styles.noImageContainer}>
+            <Text style={styles.noImageText}>No images available</Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.swiperContainer}>
+        {isLoading && (
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color={GlobalStyles.colors.red7} />
+          </View>
+        )}
+
+        <Image
+          source={{ uri: images[activeIndex].src }}
+          style={styles.images}
+          resizeMode="cover"
+          onLoad={handleImageLoad}
+          onError={handleImageLoad} // Also trigger on error to prevent infinite loading
+          accessibilityLabel={`Product image ${
+            activeIndex + 1
+          } of ${totalImages}`}
+        />
+
+        {totalImages > 1 && (
+          <View style={styles.imageNavContainer}>
+            <TouchableOpacity
+              onPress={handlePreviousImage}
+              style={styles.imageNavButton}
+              accessibilityLabel="Previous image"
+              accessibilityRole="button"
+            >
+              <Ionicons name="chevron-back" size={24} color="white" />
+            </TouchableOpacity>
+
+            <Text style={styles.imageCounterText}>
+              {`${activeIndex + 1}/${totalImages}`}
+            </Text>
+
+            <TouchableOpacity
+              onPress={handleNextImage}
+              style={styles.imageNavButton}
+              accessibilityLabel="Next image"
+              accessibilityRole="button"
+            >
+              <Ionicons name="chevron-forward" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
-    <>
+    <View style={styles.rootContainer}>
+      <StatusBar barStyle="light-content" />
+
       <Stack.Screen
         options={{
-          title: title || "Product Detail",
-          headerTitleStyle: {
-            fontFamily,
-            color: "white",
-          },
-          headerStyle: {
-            backgroundColor: "black",
-          },
-          headerTintColor: "white",
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={goBack}
-              accessibilityLabel="Go back"
-              accessibilityRole="button"
-              style={{ padding: 8 }}
-            >
-              <Text style={{ color: "white", fontSize: 16 }}>Back</Text>
-            </TouchableOpacity>
-          ),
+          headerShown: false,
         }}
       />
+
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={goBack}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <Ionicons name="arrow-back" size={22} color="white" />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollViewContent}
         accessibilityLabel="Product details page"
       >
-        {/* Image Carousel */}
-        <View style={styles.imageContainer}>
-          {isLoading && (
-            <View style={styles.loaderContainer}>
-              <ActivityIndicator size="large" color="#ff3c00" />
-            </View>
-          )}
+        {renderImageCarousel()}
 
-          {images && images.length > 0 ? (
-            <Swiper
-              style={styles.swiper}
-              showsButtons={false}
-              loop={false}
-              onIndexChanged={setActiveIndex}
-              dot={<View style={styles.dot} />}
-              activeDot={<View style={styles.activeDot} />}
-              paginationStyle={styles.pagination}
-            >
-              {images.map((image, index) => (
-                <View key={index} style={styles.slide}>
-                  <Image
-                    source={{ uri: image.src }}
-                    style={styles.productImage}
-                    onLoad={handleImageLoad}
-                    accessibilityLabel={`Product image ${index + 1} of ${
-                      images.length
-                    }`}
-                  />
-                </View>
-              ))}
-            </Swiper>
-          ) : (
-            <View style={styles.noImageContainer}>
-              <Text style={styles.noImageText}>No images available</Text>
-            </View>
-          )}
+        <View style={styles.productInfoContainer}>
+          <View style={styles.titlePriceContainer}>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.price}>{formattedPrice}</Text>
+          </View>
 
-          {/* Image Counter */}
-          {totalImages > 1 && (
-            <View style={styles.imageCounter}>
-              <Text style={styles.imageCounterText}>
-                {activeIndex + 1}/{totalImages}
+          {descriptionHtml && (
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Description</Text>
+              <Text style={styles.description}>
+                {descriptionHtml.replace(/<[^>]+>/g, "")}
               </Text>
             </View>
           )}
-        </View>
 
-        {/* Product Info */}
-        <View style={styles.infoContainer}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.price}>{formattedPrice}</Text>
-
-          {/* Description */}
-          {description && (
-            <View style={styles.descriptionContainer}>
-              <Text style={styles.sectionTitle}>Description</Text>
-              <Text style={styles.description}>{description}</Text>
-            </View>
-          )}
-
-          {/* Available Variants */}
-          {variants.length > 0 && (
-            <View style={styles.variantsContainer}>
+          {variants && variants.length > 0 && (
+            <View style={styles.sectionContainer}>
               <Text style={styles.sectionTitle}>Available Options</Text>
               <View style={styles.variantsList}>
                 {variants
                   .filter((variant) => variant.available)
                   .map((variant, index) => (
-                    <View key={index} style={styles.variantItem}>
-                      <Text style={styles.variantText}>
+                    <View key={index} style={styles.optionContainer}>
+                      <Text style={styles.optionText}>
                         {variant.size && `Size: ${variant.size}`}
                         {variant.size && variant.color && " | "}
                         {variant.color &&
@@ -203,6 +234,7 @@ export default function GuestProductDetail() {
                       </Text>
                     </View>
                   ))}
+
                 {variants.filter((variant) => variant.available).length ===
                   0 && (
                   <Text style={styles.soldOutText}>
@@ -213,9 +245,8 @@ export default function GuestProductDetail() {
             </View>
           )}
 
-          {/* Add To Cart Button - For Guest users, this will redirect to auth */}
           <TouchableOpacity
-            style={[styles.addButton, isSoldOut && styles.disabledButton]}
+            style={[styles.actionButton, isSoldOut && styles.disabledButton]}
             onPress={handleGuestCheckout}
             disabled={isSoldOut}
             accessibilityRole="button"
@@ -224,32 +255,52 @@ export default function GuestProductDetail() {
             }
             accessibilityHint="Redirects to login screen"
           >
-            <Text style={styles.addButtonText}>
+            <Text style={styles.actionButtonText}>
               {isSoldOut ? "SOLD OUT" : "SIGN IN TO PURCHASE"}
             </Text>
           </TouchableOpacity>
 
-          {/* Reminder Text */}
           <Text style={styles.reminderText}>
             Sign in or create an account to purchase this item
           </Text>
         </View>
       </ScrollView>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  rootContainer: {
     flex: 1,
     backgroundColor: "black",
   },
-  contentContainer: {
+  header: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 50 : 20, // Adjust for status bar
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: "black",
+  },
+  scrollViewContent: {
     paddingBottom: 40,
   },
-  imageContainer: {
-    height: windowHeight * 0.5,
+  swiperContainer: {
+    height: windowWidth * 1.1,
     position: "relative",
+    backgroundColor: "#111",
   },
   loaderContainer: {
     position: "absolute",
@@ -262,18 +313,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.3)",
     zIndex: 10,
   },
-  swiper: {
-    height: windowHeight * 0.5,
-  },
-  slide: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  productImage: {
+  images: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
   },
   noImageContainer: {
     flex: 1,
@@ -286,81 +328,81 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 16,
   },
-  imageCounter: {
+  imageNavContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     position: "absolute",
-    right: 10,
-    bottom: 10,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
+    bottom: 20,
+    left: 20,
+    right: 20,
+  },
+  imageNavButton: {
+    backgroundColor: "rgba(0,0,0,0.4)",
+    padding: 8,
+    borderRadius: 20,
   },
   imageCounterText: {
     color: "white",
     fontFamily,
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: "600",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    alignSelf: "center",
   },
-  pagination: {
-    bottom: 10,
+  productInfoContainer: {
+    padding: 20,
+    backgroundColor: "#0d0d0d",
   },
-  dot: {
-    backgroundColor: "rgba(255,255,255,0.3)",
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginLeft: 3,
-    marginRight: 3,
-  },
-  activeDot: {
-    backgroundColor: "#fff",
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginLeft: 3,
-    marginRight: 3,
-  },
-  infoContainer: {
-    padding: 16,
+  titlePriceContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 15,
   },
   title: {
-    fontSize: 20,
     fontFamily,
-    fontWeight: "700",
+    fontSize: 22,
+    fontWeight: "bold",
     color: "white",
-    marginBottom: 8,
+    flex: 3,
+    marginRight: 10,
   },
   price: {
-    fontSize: 18,
     fontFamily,
-    color: "#ff3c00",
-    marginBottom: 16,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "600",
+    color: GlobalStyles.colors.red7 || "#ff3c00",
+    flex: 1,
+    textAlign: "right",
   },
-  descriptionContainer: {
+  sectionContainer: {
     marginBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#222",
+    paddingTop: 15,
   },
   sectionTitle: {
-    fontSize: 16,
     fontFamily,
-    fontWeight: "700",
+    fontSize: 16,
+    fontWeight: "bold",
     color: "white",
-    marginBottom: 8,
-    textTransform: "uppercase",
+    marginBottom: 10,
   },
   description: {
-    fontSize: 14,
     fontFamily,
+    fontSize: 14,
     color: "#ccc",
     lineHeight: 20,
-  },
-  variantsContainer: {
-    marginBottom: 20,
   },
   variantsList: {
     flexDirection: "row",
     flexWrap: "wrap",
   },
-  variantItem: {
+  optionContainer: {
     backgroundColor: "#222",
     borderRadius: 4,
     paddingHorizontal: 10,
@@ -368,10 +410,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
-  variantText: {
+  optionText: {
     color: "#ccc",
     fontFamily,
-    fontSize: 12,
+    fontSize: 14,
   },
   soldOutText: {
     color: "#ff6666",
@@ -379,22 +421,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 8,
   },
-  addButton: {
-    backgroundColor: "#ff3c00",
-    paddingVertical: 14,
+  actionButton: {
+    backgroundColor: GlobalStyles.colors.red7 || "#ff3c00",
+    paddingVertical: 15,
     borderRadius: 8,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 20,
   },
   disabledButton: {
     backgroundColor: "#333",
   },
-  addButtonText: {
-    color: "white",
+  actionButtonText: {
     fontFamily,
-    fontWeight: "700",
     fontSize: 16,
-    letterSpacing: 1,
+    fontWeight: "bold",
+    color: "white",
   },
   reminderText: {
     color: "#aaa",
@@ -402,17 +443,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
     marginTop: 12,
-  },
-  backButton: {
-    position: "absolute",
-    top: 10 + (Platform.OS === "ios" ? 40 : 10),
-    left: 10,
-    zIndex: 10,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 20,
   },
 });

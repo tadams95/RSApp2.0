@@ -39,7 +39,8 @@ interface ShopifyImage {
 interface ShopifyProduct {
   id: string;
   title: string;
-  description?: string;
+  description?: string; // Keep description for backward compatibility
+  descriptionHtml?: string; // Add descriptionHtml property to match authenticated shop
   images: ShopifyImage[];
   variants: ShopifyVariant[];
   handle?: string;
@@ -62,7 +63,8 @@ interface SerializedProduct {
     amount: string;
     currencyCode: string;
   };
-  description?: string;
+  descriptionHtml?: string; // Changed from description to descriptionHtml to match ProductData interface
+  handle?: string; // Added handle for consistency
 }
 
 const windowHeight = Dimensions.get("window").height;
@@ -161,7 +163,8 @@ const GuestShop: React.FC = () => {
                 amount: "0",
                 currencyCode: "USD",
               },
-        description: product.description,
+        descriptionHtml: product.descriptionHtml || product.description, // Use descriptionHtml with fallback to description
+        handle: product.handle,
       };
 
       // Navigate using our navigation utility function
