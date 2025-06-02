@@ -1,6 +1,7 @@
 import { Link } from "expo-router";
 import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { GlobalStyles } from "../../constants/styles";
 
 export default function EntryScreen() {
   return (
@@ -88,9 +89,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingVertical: 18,
     borderRadius: 12,
-    backgroundColor: "#ff3b30",
+    backgroundColor: GlobalStyles.colors.red7,
     alignItems: "center",
-    shadowColor: "#ff3b30",
+    shadowColor: GlobalStyles.colors.red7,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
