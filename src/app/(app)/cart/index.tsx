@@ -589,7 +589,7 @@ export default function CartScreen() {
       <View style={styles.rootContainer}>
         <StatusBar style="light" />
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Cart</Text>
+          {/* <Text style={styles.headerTitle}>Cart</Text> */}
           {cartItems.length > 0 && (
             <TouchableOpacity
               style={styles.clearButton}
@@ -880,6 +880,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "black",
     paddingBottom: 100,
+    paddingTop: 10,
   },
   emptyCartText: {
     color: "white",

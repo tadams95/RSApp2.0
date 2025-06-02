@@ -20,24 +20,17 @@ export default function HomeScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        {/* <Text style={styles.title}>RAGE STATE</Text> */}
       </View>
 
       <View style={styles.welcomeSection}>
         <Text style={styles.welcomeText}>
           Welcome{userName ? `, ${userName.split("@")[0]}` : ""}!
         </Text>
-        <Text style={styles.subtitle}>
-          You're now using the new Expo Router migration.
-        </Text>
       </View>
 
       <View style={styles.infoCard}>
         <Text style={styles.infoTitle}>Migration Complete</Text>
-        <Text style={styles.infoText}>
-          The Rage State app has been successfully migrated to use Expo Router.
-          Enjoy improved navigation and a more organized code structure!
-        </Text>
+        <Text style={styles.infoText}>We'll implement a feed here soon.</Text>
       </View>
     </ScrollView>
   );

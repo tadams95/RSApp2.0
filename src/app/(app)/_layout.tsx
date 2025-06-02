@@ -32,7 +32,7 @@ export default function AppLayout() {
         headerStyle: {
           backgroundColor: "black", // Set background color of the header
         },
-        headerTintColor: "white",
+        headerTintColor: "black", // Set text color of the header text
         tabBarActiveTintColor: "white",
         tabBarInactiveTintColor: "gray",
         tabBarShowLabel: false,
