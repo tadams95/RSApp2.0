@@ -8,13 +8,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { navigateToAuth, navigateToGuest } from "../../utils/navigation";
+import { navigateToAuth } from "../../utils/navigation";
 
 /**
- * Guest index page that serves as an entry point for the guest flow
- * It allows users to choose between exploring the shop or events
+ * Guest account page that provides authentication options
+ * It allows users to sign in or sign up for a full account
  */
-const GuestIndex: React.FC = () => {
+const GuestAccountPage: React.FC = () => {
   const handleNavigateToAuth = () => {
     navigateToAuth();
   };
@@ -23,8 +23,9 @@ const GuestIndex: React.FC = () => {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: "RAGESTATE",
+          title: "RAGESTATE ACCOUNT",
           headerShown: true,
+          headerTintColor: "white",
           headerStyle: {
             backgroundColor: "black",
           },
@@ -36,35 +37,42 @@ const GuestIndex: React.FC = () => {
         }}
       />
 
-      <Text style={styles.welcomeText}>Browse as Guest</Text>
+      <View style={styles.accountContainer}>
+        <MaterialCommunityIcons name="account-circle" size={80} color="white" />
+        <Text style={styles.welcomeText}>Guest Access</Text>
 
-      <View style={styles.optionsContainer}>
-        <TouchableOpacity
-          style={styles.option}
-          onPress={() => navigateToGuest("shop/")}
-          accessibilityRole="button"
-          accessibilityLabel="Browse shop as guest"
-        >
-          <MaterialCommunityIcons name="shopping" size={40} color="white" />
-          <Text style={styles.optionText}>Shop</Text>
-        </TouchableOpacity>
+        <Text style={styles.infoText}>
+          You're currently browsing as a guest. Create an account to:
+        </Text>
 
-        <TouchableOpacity
-          style={styles.option}
-          onPress={() => navigateToGuest("events/")}
-          accessibilityRole="button"
-          accessibilityLabel="Browse events as guest"
-        >
-          <MaterialCommunityIcons name="calendar" size={40} color="white" />
-          <Text style={styles.optionText}>Events</Text>
-        </TouchableOpacity>
+        <View style={styles.benefitsList}>
+          <View style={styles.benefitItem}>
+            <MaterialCommunityIcons name="shopping" size={24} color="white" />
+            <Text style={styles.benefitText}>Make purchases in the shop</Text>
+          </View>
+
+          <View style={styles.benefitItem}>
+            <MaterialCommunityIcons
+              name="calendar-check"
+              size={24}
+              color="white"
+            />
+            <Text style={styles.benefitText}>Register for events</Text>
+          </View>
+
+          <View style={styles.benefitItem}>
+            <MaterialCommunityIcons name="heart" size={24} color="white" />
+            <Text style={styles.benefitText}>Save favorite items</Text>
+          </View>
+
+          <View style={styles.benefitItem}>
+            <MaterialCommunityIcons name="history" size={24} color="white" />
+            <Text style={styles.benefitText}>Track order history</Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.noteText}>
-          Note: You'll need an account to make purchases or register for events
-        </Text>
-
         <TouchableOpacity
           style={styles.authButton}
           onPress={handleNavigateToAuth}
@@ -91,46 +99,51 @@ const styles = StyleSheet.create({
     backgroundColor: "black",
     padding: 20,
   },
+  accountContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
   welcomeText: {
     fontSize: 28,
     fontWeight: "700",
     color: "white",
     fontFamily,
-    marginTop: 40,
-    marginBottom: 40,
+    marginTop: 20,
+    marginBottom: 20,
     textAlign: "center",
   },
-  optionsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 40,
-  },
-  option: {
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#222",
-    width: 140,
-    height: 140,
-    borderRadius: 10,
-    padding: 20,
-  },
-  optionText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 15,
-    fontFamily,
-  },
-  footer: {
-    marginTop: 40,
-    alignItems: "center",
-  },
-  noteText: {
-    color: "#999",
+  infoText: {
+    color: "#ccc",
+    fontSize: 16,
     textAlign: "center",
     marginBottom: 30,
     fontFamily,
-    fontSize: 14,
+    paddingHorizontal: 20,
+  },
+  benefitsList: {
+    width: "100%",
+    marginTop: 20,
+  },
+  benefitItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 10,
+    backgroundColor: "#222",
+    padding: 15,
+    borderRadius: 8,
+  },
+  benefitText: {
+    color: "white",
+    fontSize: 16,
+    fontFamily,
+    marginLeft: 15,
+  },
+  footer: {
+    marginTop: "auto",
+    paddingVertical: 20,
+    width: "100%",
   },
   authButton: {
     backgroundColor: "#333",
@@ -149,4 +162,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default GuestIndex;
+export default GuestAccountPage;

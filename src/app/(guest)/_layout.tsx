@@ -17,16 +17,18 @@ export default function GuestLayout() {
         headerStyle: {
           backgroundColor: "black", // Set background color of the header
         },
-        headerTintColor: "white",
+        headerTintColor: "white", // Changed to white to match the dark theme
         tabBarActiveTintColor: "white",
         tabBarInactiveTintColor: "gray",
         tabBarShowLabel: false,
       }}
+      initialRouteName="shop/index" // Set shop as the initial route
     >
+      {/* Main tabs we want to show */}
       <Tabs.Screen
         name="shop/index"
         options={{
-          title: "Guest Shop",
+          title: "Shop",
           headerTitle: "RAGESTATE SHOP",
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="shopping" color={color} size={24} />
@@ -36,7 +38,7 @@ export default function GuestLayout() {
       <Tabs.Screen
         name="events/index"
         options={{
-          title: "Guest Events",
+          title: "Events",
           headerTitle: "RAGESTATE EVENTS",
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="calendar" color={color} size={24} />
@@ -46,11 +48,27 @@ export default function GuestLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Sign In",
-          headerTitle: "RAGESTATE",
+          title: "Account",
+          headerTitle: "RAGESTATE ACCOUNT",
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="login" color={color} size={24} />
+            <MaterialCommunityIcons name="account" color={color} size={24} />
           ),
+        }}
+      />
+
+      {/* Dynamic routes that should not appear as tabs */}
+      <Tabs.Screen
+        name="shop/[id]"
+        options={{
+          href: null, // This prevents the route from appearing in the tab bar
+          headerShown: true, // Still show the header for the product detail page
+        }}
+      />
+      <Tabs.Screen
+        name="events/[id]"
+        options={{
+          href: null, // This prevents the route from appearing in the tab bar
+          headerShown: true, // Still show the header for the event detail page
         }}
       />
     </Tabs>
