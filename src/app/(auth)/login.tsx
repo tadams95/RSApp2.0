@@ -3,6 +3,9 @@ import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -10,8 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import { GlobalStyles } from "../../constants/styles";
 import { useAuth } from "../../hooks/AuthContext";
 import { loginUser } from "../../utils/auth";
 
@@ -69,91 +74,123 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>LOG IN</Text>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
+      >
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>LOG IN</Text>
 
-      <View style={styles.formContainer}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>EMAIL</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your email"
-            placeholderTextColor="#666"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
+          <View style={styles.formContainer}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>EMAIL</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor="#666"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>PASSWORD</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your password"
-            placeholderTextColor="#666"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-        </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>PASSWORD</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your password"
+                placeholderTextColor="#666"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </View>
 
-        <TouchableOpacity
-          onPress={() => setStayLoggedIn(!stayLoggedIn)}
-          style={styles.checkboxContainer}
-        >
-          <View
-            style={[styles.checkbox, stayLoggedIn && styles.checkboxChecked]}
-          >
-            {stayLoggedIn && <Text style={styles.checkmark}>✓</Text>}
+            <TouchableOpacity
+              onPress={() => setStayLoggedIn(!stayLoggedIn)}
+              style={styles.checkboxContainer}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  stayLoggedIn && styles.checkboxChecked,
+                ]}
+              >
+                {stayLoggedIn && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.checkboxLabel}>Stay logged in</Text>
+            </TouchableOpacity>
+
+            <Link href="/(auth)/forgot" style={styles.forgotPassword}>
+              Forgot Password?
+            </Link>
+
+            <Pressable style={styles.button} onPress={loginHandler}>
+              <Text style={styles.buttonText}>LOG IN</Text>
+            </Pressable>
           </View>
-          <Text style={styles.checkboxLabel}>Stay logged in</Text>
-        </TouchableOpacity>
 
-        <Link href="/(auth)/forgot" style={styles.forgotPassword}>
-          Forgot Password?
-        </Link>
-
-        <Pressable style={styles.button} onPress={loginHandler}>
-          <Text style={styles.buttonText}>LOG IN</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Don't have an account? </Text>
-        <Link href="/(auth)/signup" style={styles.signupLink}>
-          Sign Up
-        </Link>
-      </View>
-    </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Don't have an account? </Text>
+            <Link href="/(auth)/signup" style={styles.signupLink}>
+              Sign Up
+            </Link>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
+
+const { width } = Dimensions.get("window");
+const MAX_FORM_WIDTH = 400;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#000",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  contentContainer: {
+    alignSelf: "center",
+    width: width > MAX_FORM_WIDTH ? MAX_FORM_WIDTH : width * 0.9,
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 30,
     paddingBottom: 40,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "bold",
     color: "#fff",
-    marginBottom: 40,
+    marginBottom: 32,
     textAlign: "center",
+    letterSpacing: 1,
   },
   formContainer: {
     width: "100%",
+    backgroundColor: "#0d0d0d",
+    borderRadius: 12,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 22,
   },
   label: {
-    color: "#888",
+    color: GlobalStyles.colors.grey3,
     fontSize: 14,
     marginBottom: 8,
+    fontWeight: "500",
+    letterSpacing: 0.5,
   },
   input: {
     backgroundColor: "#111",
@@ -161,11 +198,13 @@ const styles = StyleSheet.create({
     padding: 16,
     color: "#fff",
     fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#222",
   },
   checkboxContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 20,
   },
   checkbox: {
     width: 22,
@@ -178,8 +217,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxChecked: {
-    backgroundColor: "#ff3b30",
-    borderColor: "#ff3b30",
+    backgroundColor: GlobalStyles.colors.red7,
+    borderColor: GlobalStyles.colors.red7,
   },
   checkmark: {
     color: "#fff",
@@ -190,13 +229,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   forgotPassword: {
-    color: "#ff3b30",
+    color: GlobalStyles.colors.red7,
     textAlign: "right",
     marginBottom: 24,
     fontSize: 16,
   },
   button: {
-    backgroundColor: "#ff3b30",
+    backgroundColor: GlobalStyles.colors.red7,
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: "center",
@@ -211,14 +250,14 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 40,
+    marginTop: 24,
   },
   footerText: {
     color: "#888",
     fontSize: 16,
   },
   signupLink: {
-    color: "#ff3b30",
+    color: GlobalStyles.colors.red7,
     fontSize: 16,
     fontWeight: "bold",
   },
