@@ -39,7 +39,7 @@ interface ProductData {
   handle?: string; // Added handle property for consistency
   images: ProductImage[];
   price: ProductPrice;
-  descriptionHtml?: string; 
+  descriptionHtml?: string;
   variants: ProductVariant[];
 }
 
@@ -75,13 +75,13 @@ export default function GuestProductDetail() {
     if (imagesLoaded >= totalImages && totalImages > 0) {
       setIsLoading(false);
     }
-    
+
     // Add a safety timeout to hide the spinner after 3 seconds
     // even if image loading events fail to trigger
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 3000);
-    
+
     return () => clearTimeout(timer);
   }, [imagesLoaded, totalImages]);
 
