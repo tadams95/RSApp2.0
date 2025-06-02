@@ -86,23 +86,32 @@ Use this checklist to track progress on the migration to Expo Router and impleme
 
 - [⚠️] Package Dependency Updates
 
-  - [ ] Replace unmaintained packages
+  - [⚠️] Replace unmaintained packages
     - [ ] Replace `@rneui/base` and `@rneui/themed` with a maintained UI library:
       - [ ] Option 1: Install and migrate to `react-native-paper`
       - [ ] Option 2: Install and migrate to `react-native-ui-lib`
-    - [ ] Replace `react-native-swiper` with a maintained alternative:
-      - [ ] Option 1: Install and migrate to `react-native-reanimated-carousel`
-      - [ ] Option 2: Install and migrate to `react-native-snap-carousel`
-  - [⚠️] Verify compatibility of packages with no metadata
-    - [ ] Evaluate if `@babel/helper-create-class-features-plugin` can be removed or updated
+    - [✅] Replace `react-native-swiper` with a maintained alternative:
+      - [✅] Option 1: Installed and migrated to `react-native-reanimated-carousel`
+      - [✅] Created and implemented AppCarousel wrapper component
+      - [✅] Verified implementation across app and guest product detail screens
+      - [ ] ~~Option 2: Install and migrate to `react-native-snap-carousel`~~
+  - [✅] Verify compatibility of packages with no metadata
+    - [✅] Evaluate if `@babel/helper-create-class-features-plugin` can be removed or updated
+      - [✅] Removed `@babel/helper-create-class-features-plugin` as it was not directly used
     - [✅] Ensure `firebase` SDK compatibility with latest Expo version
       - [✅] Fixed Firebase Auth initialization with AsyncStorage persistence
       - [✅] Resolved component auth registration issues
-    - [ ] Check if `fs-extra` is necessary (typically only used in build scripts)
+    - [✅] Check if `fs-extra` is necessary (typically only used in build scripts)
+      - [✅] Removed `fs-extra` as it was not used in the project
     - [✅] Update `shopify-buy` SDK compatibility with current Shopify API
       - [✅] Updated Shopify API version from "2023-10" to "2024-10"
       - [✅] Fixed product data transformation for variants
-  - [ ] Run `npx expo-doctor` regularly to monitor package health
+  - [✅] Run `npx expo-doctor` regularly to monitor package health
+    - [✅] Configured doctor command in package.json
+  - [✅] Implement AppCarousel consistently across the app
+    - [✅] Created AppCarousel component in src/components/ui/
+    - [✅] Implemented AppCarousel in guest product detail page ([id].tsx)
+    - [✅] Implemented AppCarousel in app product detail page ([handle].tsx)
 
 - [✅] TypeScript Migration
   - [✅] Set up TypeScript configuration

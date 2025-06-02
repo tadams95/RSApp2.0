@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { AppCarousel } from "../../../components/ui";
 import { GlobalStyles } from "../../../constants/styles";
 import { goBack, navigateToAuth } from "../../../utils/navigation";
 
@@ -125,6 +126,50 @@ export default function GuestProductDetail() {
       );
     }
 
+    // Use the new AppCarousel component for multiple images
+    if (totalImages > 1) {
+      return (
+        <View style={styles.swiperContainer}>
+          {isLoading && (
+            <View style={styles.loaderContainer}>
+              <ActivityIndicator
+                size="large"
+                color={GlobalStyles.colors.red7}
+              />
+            </View>
+          )}
+
+          <AppCarousel
+            data={images}
+            height={windowWidth * 1.2}
+            currentIndex={activeIndex}
+            onSnapToItem={(index) => setActiveIndex(index)}
+            showsPagination={true}
+            paginationStyle={styles.pagination}
+            renderItem={({ item, index }) => (
+              <Image
+                source={{ uri: item.src }}
+                style={styles.images}
+                resizeMode="cover"
+                onLoad={handleImageLoad}
+                onError={handleImageLoad}
+                accessibilityLabel={`Product image ${
+                  index + 1
+                } of ${totalImages}`}
+              />
+            )}
+          />
+
+          <View style={styles.imageNavContainer}>
+            <Text style={styles.imageCounterText}>
+              {`${activeIndex + 1}/${totalImages}`}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    // For a single image, just display it without carousel functionality
     return (
       <View style={styles.swiperContainer}>
         {isLoading && (
@@ -134,41 +179,13 @@ export default function GuestProductDetail() {
         )}
 
         <Image
-          source={{ uri: images[activeIndex].src }}
+          source={{ uri: images[0].src }}
           style={styles.images}
           resizeMode="cover"
           onLoad={handleImageLoad}
-          onError={handleImageLoad} // Also trigger on error to prevent infinite loading
-          accessibilityLabel={`Product image ${
-            activeIndex + 1
-          } of ${totalImages}`}
+          onError={handleImageLoad}
+          accessibilityLabel="Product image"
         />
-
-        {totalImages > 1 && (
-          <View style={styles.imageNavContainer}>
-            <TouchableOpacity
-              onPress={handlePreviousImage}
-              style={styles.imageNavButton}
-              accessibilityLabel="Previous image"
-              accessibilityRole="button"
-            >
-              <Ionicons name="chevron-back" size={24} color="white" />
-            </TouchableOpacity>
-
-            <Text style={styles.imageCounterText}>
-              {`${activeIndex + 1}/${totalImages}`}
-            </Text>
-
-            <TouchableOpacity
-              onPress={handleNextImage}
-              style={styles.imageNavButton}
-              accessibilityLabel="Next image"
-              accessibilityRole="button"
-            >
-              <Ionicons name="chevron-forward" size={24} color="white" />
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     );
   };
@@ -301,6 +318,9 @@ const styles = StyleSheet.create({
     height: windowWidth * 1.1,
     position: "relative",
     backgroundColor: "#111",
+  },
+  pagination: {
+    bottom: 20,
   },
   loaderContainer: {
     position: "absolute",

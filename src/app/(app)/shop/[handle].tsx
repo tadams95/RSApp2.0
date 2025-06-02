@@ -19,9 +19,7 @@ import {
 import { useDispatch } from "react-redux";
 import { GlobalStyles } from "../../../constants/styles";
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
-// import Swiper from "react-native-swiper"; // react-native-swiper is marked for replacement
-// Consider using a maintained alternative like react-native-reanimated-carousel or react-native-snap-carousel
-// For now, we'll implement a basic image switcher or just display the first image.
+import { AppCarousel } from "../../../components/ui";
 import { fetchProductByHandle } from "../../../services/shopifyService"; // Fixed import path to use relative path
 
 // Define types based on your Shopify product structure (similar to ShopScreen)
@@ -197,37 +195,47 @@ export default function ProductDetailScreen() {
 
   const renderImageCarousel = () => {
     if (!product || !product.images || product.images.length === 0) return null;
+    
     const totalImages = product.images.length;
-
-    // Basic image display (replace with a carousel component later)
+    
+    // Use the AppCarousel component for multiple images
+    if (totalImages > 1) {
+      return (
+        <View style={styles.swiperContainer}>
+          <AppCarousel
+            data={product.images}
+            height={windowWidth * 1.1}
+            currentIndex={activeIndex}
+            onSnapToItem={(index) => setActiveIndex(index)}
+            showsPagination={true}
+            renderItem={({ item, index }) => (
+              <Image
+                source={{ uri: item.url }}
+                style={styles.images}
+                resizeMode="cover"
+                accessibilityLabel={`Product image ${index + 1} of ${totalImages}`}
+              />
+            )}
+          />
+          
+          <View style={styles.imageNavContainer}>
+            <Text style={styles.imageCounterText}>
+              {`${activeIndex + 1}/${totalImages}`}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+    
+    // For a single image, just display it without carousel functionality
     return (
       <View style={styles.swiperContainer}>
         <Image
-          source={{ uri: product.images[activeIndex].url }}
+          source={{ uri: product.images[0].url }}
           style={styles.images}
           resizeMode="cover"
+          accessibilityLabel="Product image"
         />
-        {totalImages > 1 && (
-          <View style={styles.imageNavContainer}>
-            <TouchableOpacity
-              onPress={() =>
-                setActiveIndex((prev) => (prev - 1 + totalImages) % totalImages)
-              }
-              style={styles.imageNavButton}
-            >
-              <Ionicons name="chevron-back" size={24} color="white" />
-            </TouchableOpacity>
-            <Text style={styles.imageCounterText}>{`${
-              activeIndex + 1
-            }/${totalImages}`}</Text>
-            <TouchableOpacity
-              onPress={() => setActiveIndex((prev) => (prev + 1) % totalImages)}
-              style={styles.imageNavButton}
-            >
-              <Ionicons name="chevron-forward" size={24} color="white" />
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     );
   };

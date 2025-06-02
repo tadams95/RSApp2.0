@@ -11,7 +11,6 @@
     "doctor": "npx expo-doctor"
   },
   "dependencies": {
-    "@babel/helper-create-class-features-plugin": "^7.25.9",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-community/hooks": "^100.1.0",
     "@react-native-masked-view/masked-view": "^0.3.2",
@@ -36,18 +35,17 @@
     "expo-status-bar": "~2.2.3",
     "expo-updates": "~0.28.13",
     "firebase": "^10.10.0",
-    "fs-extra": "^11.3.0",
     "react": "19.0.0",
     "react-native": "0.79.2",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-paper": "^5.14.4",
     "react-native-qrcode-svg": "^6.3.0",
     "react-native-reanimated": "~3.17.4",
+    "react-native-reanimated-carousel": "^4.0.2",
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "~4.10.0",
     "react-native-svg": "^15.8.0",
     "react-native-svg-transformer": "^1.5.1",
-    "react-native-swiper": "^1.6.0",
     "react-native-vector-icons": "^10.2.0",
     "react-redux": "^9.1.0",
     "shopify-buy": "^2.21.1"
