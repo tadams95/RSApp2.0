@@ -70,7 +70,7 @@ export default function Index() {
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>© 2025 RAGE STATE</Text>
+            <Text style={styles.footerText}>© 2025 RAGESTATE</Text>
           </View>
         </LinearGradient>
       </ImageBackground>

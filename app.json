@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "RAGESTATE",
+    "name": "",
     "slug": "ragestate-app",
     "version": "2.47.0",
     "orientation": "portrait",
@@ -10,7 +10,8 @@
     "splash": {
       "image": "./src/assets/RSLogo2025.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#000000",
+      "hideExponentText": true
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {

@@ -1,13 +1,11 @@
 import { Slot, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as Updates from "expo-updates";
-import React, { useEffect } from "react";
-import { Alert, AppState, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, AppState, Image, StyleSheet, View } from "react-native";
 import { Provider } from "react-redux";
 import { AuthProvider } from "../hooks/AuthContext";
 import { store } from "../store/redux/store";
-
-// Import named exports for component registration
 
 // Prevent auto-hide of splash screen
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -21,9 +19,12 @@ export function Root() {
 }
 
 export default function RootLayout() {
+  const [showSplash, setShowSplash] = useState(true);
+
   useEffect(() => {
-    // Hide splash screen after a timeout for a smoother launch experience
+    // Hide custom splash screen after a timeout
     const timer = setTimeout(() => {
+      setShowSplash(false);
       SplashScreen.hideAsync().catch(() => {
         console.warn("Failed to hide splash screen");
       });
@@ -79,6 +80,18 @@ export default function RootLayout() {
     }
   }
 
+  if (showSplash) {
+    return (
+      <View style={styles.splashContainer}>
+        <Image
+          source={require("../assets/RSLogo2025.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  }
+
   return (
     <Provider store={store}>
       <AuthProvider>
@@ -90,3 +103,16 @@ export default function RootLayout() {
     </Provider>
   );
 }
+
+const styles = StyleSheet.create({
+  splashContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000",
+  },
+  logo: {
+    width: 200,
+    height: 200,
+  },
+});
