@@ -17,10 +17,10 @@ import {
   View,
 } from "react-native";
 import { useDispatch } from "react-redux";
-import { GlobalStyles } from "../../../constants/styles";
-import { addToCart, CartItem } from "../../../store/redux/cartSlice";
 import { AppCarousel } from "../../../components/ui";
+import { GlobalStyles } from "../../../constants/styles";
 import { fetchProductByHandle } from "../../../services/shopifyService"; // Fixed import path to use relative path
+import { addToCart, CartItem } from "../../../store/redux/cartSlice";
 
 // Define types based on your Shopify product structure (similar to ShopScreen)
 interface ShopifyProductImage {
@@ -195,9 +195,9 @@ export default function ProductDetailScreen() {
 
   const renderImageCarousel = () => {
     if (!product || !product.images || product.images.length === 0) return null;
-    
+
     const totalImages = product.images.length;
-    
+
     // Use the AppCarousel component for multiple images
     if (totalImages > 1) {
       return (
@@ -213,11 +213,13 @@ export default function ProductDetailScreen() {
                 source={{ uri: item.url }}
                 style={styles.images}
                 resizeMode="cover"
-                accessibilityLabel={`Product image ${index + 1} of ${totalImages}`}
+                accessibilityLabel={`Product image ${
+                  index + 1
+                } of ${totalImages}`}
               />
             )}
           />
-          
+
           <View style={styles.imageNavContainer}>
             <Text style={styles.imageCounterText}>
               {`${activeIndex + 1}/${totalImages}`}
@@ -226,7 +228,7 @@ export default function ProductDetailScreen() {
         </View>
       );
     }
-    
+
     // For a single image, just display it without carousel functionality
     return (
       <View style={styles.swiperContainer}>
