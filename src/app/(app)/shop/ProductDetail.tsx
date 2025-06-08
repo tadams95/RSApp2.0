@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react"; // Ensured useMemo is imported
 import {
   ActivityIndicator,
   Alert,
@@ -16,39 +16,26 @@ import {
   View,
 } from "react-native";
 import { useDispatch } from "react-redux";
-import ErrorBoundary from "../../../components/ErrorBoundary";
 import { AppCarousel } from "../../../components/ui";
 import { GlobalStyles } from "../../../constants/styles";
-import { fetchProductByHandle } from "../../../services/shopifyService";
+import { useErrorHandler } from "../../../hooks/useErrorHandler";
+import { fetchProductByHandle } from "../../../services/shopifyService"; // Fixed import path to use relative path
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
 
-// Importing the ProductDetail component
-import ProductDetail from "./ProductDetail";
-
-// Wrapping the ProductDetail with ErrorBoundary
-export default function ProductDetailScreenWithErrorBoundary() {
-  const params = useLocalSearchParams<{ handle: string }>();
-
-  return (
-    <ErrorBoundary>
-      <ProductDetail handle={params.handle} />
-    </ErrorBoundary>
-  );
-}
-
-// Define types based on your Shopify product structure
+// Define types based on your Shopify product structure (similar to ShopScreen)
 interface ShopifyProductImage {
   url: string;
   altText?: string;
 }
 interface ShopifyProductVariant {
   id: string;
-  title: string;
+  title: string; // e.g., "Small / Red"
   price: {
     amount: string;
     currencyCode: string;
   };
   availableForSale?: boolean;
+  // Add other variant properties you need
   selectedOptions?: Array<{ name: string; value: string }>;
 }
 
@@ -61,14 +48,18 @@ interface ShopifyProduct {
   variants: ShopifyProductVariant[];
 }
 
-function ProductDetailScreen() {
-  const { handle } = useLocalSearchParams<{ handle: string }>();
+interface ProductDetailProps {
+  handle: string;
+}
+
+export default function ProductDetailScreen({ handle }: ProductDetailProps) {
   const router = useRouter();
   const dispatch = useDispatch();
+  const { error, setError, clearError } = useErrorHandler();
 
   const [product, setProduct] = useState<ShopifyProduct | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [productError, setProductError] = useState<string | null>(null);
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -84,17 +75,17 @@ function ProductDetailScreen() {
   const fetchProductDetails = useCallback(async () => {
     if (!handle) return;
     setIsLoading(true);
-    setError(null);
+    setProductError(null);
     try {
-      const foundProduct = await fetchProductByHandle(handle);
+      const foundProduct = await fetchProductByHandle(handle); // Using new function
       if (foundProduct) {
         setProduct(foundProduct as ShopifyProduct);
       } else {
-        setError("Product not found.");
+        setProductError("Product not found.");
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to load product details.");
+      setProductError(err.message || "Failed to load product details.");
     } finally {
       setIsLoading(false);
     }
@@ -110,15 +101,18 @@ function ProductDetailScreen() {
       .map((v) => v.selectedOptions?.find((opt) => opt.name === "Size")?.value)
       .filter(Boolean) as string[];
 
+    // Create an array of unique sizes without using spread operator on Set
     return Array.from(new Set(sizes));
   }, [product]);
 
   const availableColors = useMemo(() => {
     if (!product) return [];
+    // This might need refinement based on how your color variants are structured
     const colors = product.variants
       .map((v) => v.selectedOptions?.find((opt) => opt.name === "Color")?.value)
       .filter(Boolean) as string[];
 
+    // Create an array of unique colors without using spread operator on Set
     return Array.from(new Set(colors));
   }, [product]);
 
@@ -148,28 +142,22 @@ function ProductDetailScreen() {
     if (availableSizes.length > 0 && !selectedSize) missingSelection = "size";
     else if (availableColors.length > 0 && !selectedColor)
       missingSelection = "color";
-    else if (!selectedQuantity) missingSelection = "quantity";
+    else if (selectedQuantity <= 0)
+      missingSelection = "quantity (must be greater than 0)";
 
     if (missingSelection) {
-      Alert.alert(
-        "Selection Required",
-        `Please select a ${missingSelection} before adding to cart.`
-      );
+      Alert.alert(`Please select a ${missingSelection}.`);
       return;
     }
 
-    // Find the matching variant based on selected options
+    // Find the specific variant based on selections (this might need adjustment)
     const matchedVariant = product.variants.find((variant) => {
-      // Check size match if sizes are available
       const sizeMatch =
-        !availableSizes.length ||
         !selectedSize ||
         variant.selectedOptions?.some(
           (opt) => opt.name === "Size" && opt.value === selectedSize
         );
-      // Check color match if colors are available
       const colorMatch =
-        !availableColors.length ||
         !selectedColor ||
         variant.selectedOptions?.some(
           (opt) => opt.name === "Color" && opt.value === selectedColor
@@ -185,9 +173,10 @@ function ProductDetailScreen() {
     // Structure the product according to the CartItem interface
     const productToAdd: CartItem = {
       productId: product.id,
-      selectedColor: selectedColor || "",
-      selectedSize: selectedSize || "",
+      selectedColor: selectedColor || "", // Ensure it's never null
+      selectedSize: selectedSize || "", // Ensure it's never null
       selectedQuantity: selectedQuantity,
+      // Additional cart information
       title: product.title,
       image: product.images[0]?.url,
       price: {
@@ -198,6 +187,10 @@ function ProductDetailScreen() {
     };
     dispatch(addToCart(productToAdd));
     setAddToCartConfirmationVisible(true);
+    // Optionally reset selections
+    // setSelectedSize(null);
+    // setSelectedColor(null);
+    // setSelectedQuantity(0);
   };
 
   const closeAddToCartConfirmation = () => {
@@ -217,33 +210,35 @@ function ProductDetailScreen() {
             data={product.images}
             height={windowWidth * 1.1}
             currentIndex={activeIndex}
-            onSnapToItem={setActiveIndex}
+            onSnapToItem={(index) => setActiveIndex(index)}
+            showsPagination={true}
             renderItem={({ item, index }) => (
               <Image
                 source={{ uri: item.url }}
-                style={styles.productImage}
+                style={styles.images}
                 resizeMode="cover"
-                accessibilityLabel={
-                  item.altText || `Product image ${index + 1}`
-                }
+                accessibilityLabel={`Product image ${
+                  index + 1
+                } of ${totalImages}`}
               />
             )}
           />
-          <View style={styles.imageCounterContainer}>
+
+          <View style={styles.imageNavContainer}>
             <Text style={styles.imageCounterText}>
-              {activeIndex + 1} / {totalImages}
+              {`${activeIndex + 1}/${totalImages}`}
             </Text>
           </View>
         </View>
       );
     }
 
-    // Single image display is simpler
+    // For a single image, just display it without carousel functionality
     return (
       <View style={styles.swiperContainer}>
         <Image
           source={{ uri: product.images[0].url }}
-          style={styles.productImage}
+          style={styles.images}
           resizeMode="cover"
           accessibilityLabel="Product image"
         />
@@ -259,10 +254,10 @@ function ProductDetailScreen() {
     );
   }
 
-  if (error) {
+  if (productError) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorText}>{productError}</Text>
         <TouchableOpacity
           style={styles.retryButton}
           onPress={fetchProductDetails}
@@ -276,7 +271,9 @@ function ProductDetailScreen() {
   if (!product) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Product not found.</Text>
+        <Text style={styles.errorText}>
+          Product not found. Please try another product.
+        </Text>
       </View>
     );
   }
@@ -312,6 +309,7 @@ function ProductDetailScreen() {
           {product.descriptionHtml && (
             <View style={styles.sectionContainer}>
               <Text style={styles.sectionTitle}>Description</Text>
+              {/* Consider using react-native-render-html for HTML content */}
               <Text style={styles.description}>
                 {product.descriptionHtml.replace(/<[^>]+>/g, "")}
               </Text>
@@ -363,27 +361,16 @@ function ProductDetailScreen() {
           </View>
 
           <TouchableOpacity
-            style={[
-              styles.actionButton,
-              (!selectedSize && availableSizes.length > 0) ||
-              (!selectedColor && availableColors.length > 0) ||
-              !selectedQuantity
-                ? { opacity: 0.6 }
-                : null,
-            ]}
+            style={styles.actionButton}
             onPress={handleAddToCart}
-            disabled={
-              (!selectedSize && availableSizes.length > 0) ||
-              (!selectedColor && availableColors.length > 0) ||
-              !selectedQuantity
-            }
           >
-            <Text style={styles.actionButtonText}>Add to Cart</Text>
+            <Text style={styles.actionButtonText}>ADD TO CART</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Size Selection Modal */}
+      {/* Modals (Size, Color, Quantity, Confirmation) - Simplified for brevity */}
+      {/* Size Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -399,9 +386,9 @@ function ProductDetailScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalScroll}>
-              {availableSizes.map((size) => (
+              {availableSizes.map((size, index) => (
                 <TouchableOpacity
-                  key={size}
+                  key={index}
                   style={styles.modalItem}
                   onPress={() => handleSizeSelect(size)}
                 >
@@ -413,7 +400,7 @@ function ProductDetailScreen() {
         </View>
       </Modal>
 
-      {/* Color Selection Modal */}
+      {/* Color Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -429,9 +416,9 @@ function ProductDetailScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalScroll}>
-              {availableColors.map((color) => (
+              {availableColors.map((color, index) => (
                 <TouchableOpacity
-                  key={color}
+                  key={index}
                   style={styles.modalItem}
                   onPress={() => handleColorSelect(color)}
                 >
@@ -443,7 +430,7 @@ function ProductDetailScreen() {
         </View>
       </Modal>
 
-      {/* Quantity Selection Modal */}
+      {/* Quantity Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -459,15 +446,18 @@ function ProductDetailScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalScroll}>
-              {[1, 2, 3, 4, 5].map((quantity) => (
-                <TouchableOpacity
-                  key={quantity}
-                  style={styles.modalItem}
-                  onPress={() => handleQuantitySelect(quantity)}
-                >
-                  <Text style={styles.modalItemText}>{quantity}</Text>
-                </TouchableOpacity>
-              ))}
+              {/* Max quantity of 10 for example */}
+              {Array.from({ length: 10 }, (_, i) => i + 1).map(
+                (quantity, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.modalItem}
+                    onPress={() => handleQuantitySelect(quantity)}
+                  >
+                    <Text style={styles.modalItemText}>{quantity}</Text>
+                  </TouchableOpacity>
+                )
+              )}
             </ScrollView>
           </View>
         </View>
@@ -507,17 +497,17 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
-// Styles
+// Styles adapted from ProductDetailScreen.js - review and adjust as needed for dark theme and consistency
 const styles = StyleSheet.create({
   rootContainer: { flex: 1, backgroundColor: "black" },
   header: {
     position: "absolute",
-    top: Platform.OS === "ios" ? 50 : 20,
+    top: Platform.OS === "ios" ? 50 : 20, // Adjust for status bar
     left: 0,
     right: 0,
     zIndex: 10,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-between", // Aligns back button to left, counter to right
     alignItems: "center",
     paddingHorizontal: 16,
   },
@@ -525,8 +515,9 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
     backgroundColor: "rgba(0,0,0,0.5)",
-  },
+  }, // Semi-transparent background
   imageNavContainer: {
+    // For next/prev image buttons
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -540,31 +531,24 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
   },
-  imageCounterContainer: {
-    position: "absolute",
-    bottom: 15,
-    alignSelf: "center",
-  },
   imageCounterText: {
     color: "white",
+    fontFamily,
     fontSize: 12,
+    fontWeight: "600",
     backgroundColor: "rgba(0,0,0,0.5)",
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 15,
+    alignSelf: "center",
   },
   scrollView: { flex: 1, backgroundColor: "black" },
-  scrollViewContent: { paddingBottom: 40 },
+  scrollViewContent: { paddingBottom: 40 }, // Ensure space for content below fold
   swiperContainer: {
     height: windowWidth * 1.1,
     position: "relative",
     backgroundColor: "#111",
-  },
-  productImage: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#1a1a1a",
-  },
+  }, // Darker placeholder
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -578,46 +562,46 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     padding: 20,
   },
+  errorMessage: {
+    width: "100%",
+  },
   errorText: {
     color: "white",
-    fontSize: 16,
+    fontFamily,
     textAlign: "center",
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: GlobalStyles.colors.red7,
+    backgroundColor: "#333",
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 5,
+    borderRadius: 8,
   },
-  retryButtonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  productInfoContainer: {
-    padding: 16,
-  },
+  retryButtonText: { color: "white", fontFamily },
+  images: { width: "100%", height: "100%" },
+  productInfoContainer: { padding: 20, backgroundColor: "#0d0d0d" }, // Slightly off-black for info section
   titlePriceContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 10,
+    marginBottom: 15,
   },
   title: {
+    fontFamily,
     fontSize: 22,
     fontWeight: "bold",
     color: "white",
-    flex: 2,
+    flex: 3,
     marginRight: 10,
   },
   price: {
-    fontSize: 18,
+    fontFamily,
+    fontSize: 20,
     fontWeight: "600",
     color: GlobalStyles.colors.red7 || "#00C5EA",
     flex: 1,
     textAlign: "right",
-  },
+  }, // Use theme color
   sectionContainer: {
     marginBottom: 20,
     borderTopWidth: 1,
@@ -625,13 +609,14 @@ const styles = StyleSheet.create({
     paddingTop: 15,
   },
   sectionTitle: {
+    fontFamily,
     fontSize: 16,
     fontWeight: "bold",
     color: "white",
     marginBottom: 10,
   },
-  descriptionContainer: { maxHeight: 100 },
-  description: { fontSize: 14, color: "#ccc", lineHeight: 20 },
+  descriptionContainer: { maxHeight: 100 }, // Limit description height, consider a "Read More" option
+  description: { fontFamily, fontSize: 14, color: "#ccc", lineHeight: 20 },
   optionContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -641,7 +626,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#222",
   },
-  optionLabel: { fontSize: 15, color: "white" },
+  optionLabel: { fontFamily, fontSize: 15, color: "white" },
   optionSelector: {
     flexDirection: "row",
     alignItems: "center",
@@ -650,7 +635,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1a1a",
     borderRadius: 5,
   },
-  optionText: { fontSize: 15, color: "white", marginRight: 8 },
+  optionText: { fontFamily, fontSize: 15, color: "white", marginRight: 8 },
   actionButton: {
     backgroundColor: GlobalStyles.colors.red7 || "#00C5EA",
     paddingVertical: 15,
@@ -659,10 +644,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   actionButtonText: {
+    fontFamily,
     fontSize: 16,
     fontWeight: "bold",
     color: "black",
-  },
+  }, // Text color for primary button
+  // Modal Styles (keep them consistent)
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -684,7 +671,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#333",
     paddingBottom: 10,
   },
-  modalTitle: { fontSize: 18, fontWeight: "bold", color: "white" },
+  modalTitle: { fontFamily, fontSize: 18, fontWeight: "bold", color: "white" },
   modalScroll: { maxHeight: windowHeight * 0.3 },
   modalItem: {
     paddingVertical: 15,
@@ -692,6 +679,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#333",
   },
   modalItemText: {
+    fontFamily,
     fontSize: 16,
     color: "white",
     textAlign: "center",
@@ -715,6 +703,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   confirmationModalText: {
+    fontFamily,
     fontSize: 16,
     color: "white",
     textAlign: "center",
@@ -727,8 +716,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   confirmationButtonText: {
-    color: "black",
+    fontFamily,
     fontSize: 16,
     fontWeight: "bold",
+    color: "black",
   },
 });

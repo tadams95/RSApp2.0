@@ -2,6 +2,7 @@ import {
   createStorefrontApiClient,
   StorefrontApiClient,
 } from "@shopify/storefront-api-client";
+import { formatApiErrorMessage } from "../hooks/useErrorHandler";
 
 // Define the client configuration
 const clientConfig = {
@@ -86,7 +87,38 @@ const fetchProductByHandle = async (handle: string): Promise<any> => {
     };
   } catch (error: any) {
     console.error(`Error fetching product by handle ${handle}:`, error);
-    throw error;
+
+    // Handle specific error cases
+    if (error.message?.includes("timeout")) {
+      throw new Error(
+        "The request to fetch product details timed out. Please try again."
+      );
+    }
+
+    if (
+      error.message?.includes("Network request failed") ||
+      error.message?.includes("network")
+    ) {
+      throw new Error(
+        "Network error while fetching product. Please check your internet connection."
+      );
+    }
+
+    if (error.response?.status === 404 || error.message?.includes("404")) {
+      throw new Error(`Product with handle '${handle}' not found.`);
+    }
+
+    if (
+      error.response?.status === 429 ||
+      error.message?.includes("rate limit") ||
+      error.message?.includes("429")
+    ) {
+      throw new Error("Too many requests. Please try again in a moment.");
+    }
+
+    // Format error for user-friendly display
+    const userMessage = formatApiErrorMessage(error);
+    throw new Error(userMessage);
   }
 };
 

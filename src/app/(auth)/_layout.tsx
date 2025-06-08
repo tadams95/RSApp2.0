@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import ErrorBoundary from "../../components/ErrorBoundary";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import { useAuth } from "../../hooks/AuthContext";
 
@@ -19,12 +20,14 @@ export default function AuthLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: "fade",
-        contentStyle: { backgroundColor: "#000" },
-      }}
-    />
+    <ErrorBoundary>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: "fade",
+          contentStyle: { backgroundColor: "#000" },
+        }}
+      />
+    </ErrorBoundary>
   );
 }

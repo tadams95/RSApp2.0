@@ -3,7 +3,9 @@ import { StatusBar } from "expo-status-bar";
 import * as Updates from "expo-updates";
 import React, { useEffect, useState } from "react";
 import { Alert, AppState, Image, StyleSheet, View } from "react-native";
+import { PaperProvider } from "react-native-paper";
 import { Provider } from "react-redux";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { AuthProvider } from "../hooks/AuthContext";
 import { store } from "../store/redux/store";
 
@@ -94,12 +96,21 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
-      <AuthProvider>
-        <View style={{ flex: 1, backgroundColor: "#000" }}>
-          <StatusBar style="light" />
-          <Slot />
-        </View>
-      </AuthProvider>
+      <PaperProvider>
+        <ErrorBoundary
+          onError={(error, errorInfo) => {
+            // Log any errors to your monitoring service here
+            console.error("Root error boundary caught error:", error);
+          }}
+        >
+          <AuthProvider>
+            <View style={{ flex: 1, backgroundColor: "#000" }}>
+              <StatusBar style="light" />
+              <Slot />
+            </View>
+          </AuthProvider>
+        </ErrorBoundary>
+      </PaperProvider>
     </Provider>
   );
 }

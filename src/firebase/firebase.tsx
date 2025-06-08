@@ -1,10 +1,11 @@
 // src/firebase/firebase.ts
 
 import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
-import { initializeApp } from "firebase/app";
+import { FirebaseError, initializeApp } from "firebase/app";
 import { getReactNativePersistence, initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { formatApiErrorMessage } from "../hooks/useErrorHandler";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDcHCRWrYonzJa_Pyfwzbfp-r3bxz2bUX8",
@@ -17,20 +18,74 @@ const firebaseConfig = {
   measurementId: "G-5YQ5FWXH85",
 };
 
-// Initialize Firebase app
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase with error handling
+let app;
+let firebaseAuth;
+let db;
+let storage;
 
-// Initialize Firebase Auth with AsyncStorage persistence
-// Rename auth to firebaseAuth to avoid conflicting with the auth component needed by Expo Router
-const firebaseAuth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage),
-});
+try {
+  // Initialize Firebase app
+  app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Firestore
-const db = getFirestore(app);
+  // Initialize Firebase Auth with AsyncStorage persistence
+  try {
+    firebaseAuth = initializeAuth(app, {
+      persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+    });
+  } catch (authError) {
+    console.error("Error initializing Firebase Auth:", authError);
+    // Attempt to initialize without persistence as fallback
+    firebaseAuth = initializeAuth(app);
+  }
 
-// Initialize Firebase Storage
-const storage = getStorage(app);
+  // Initialize Firebase Firestore
+  try {
+    db = getFirestore(app);
+  } catch (dbError) {
+    console.error("Error initializing Firestore:", dbError);
+    throw new Error(
+      "Failed to initialize Firestore database. Please check your connection and try again."
+    );
+  }
+
+  // Initialize Firebase Storage
+  try {
+    storage = getStorage(app);
+  } catch (storageError) {
+    console.error("Error initializing Storage:", storageError);
+    throw new Error(
+      "Failed to initialize Firebase storage. Some media functionality may be limited."
+    );
+  }
+} catch (error) {
+  console.error("Fatal error initializing Firebase:", error);
+
+  // Format more user-friendly error messages
+  let errorMessage = "Failed to initialize the app. ";
+
+  if (error instanceof FirebaseError) {
+    switch (error.code) {
+      case "app/duplicate-app":
+        errorMessage += "Application already initialized.";
+        break;
+      case "app/invalid-credential":
+        errorMessage += "Invalid app credentials.";
+        break;
+      case "app/invalid-app-name":
+        errorMessage += "Invalid app configuration.";
+        break;
+      default:
+        errorMessage += formatApiErrorMessage(error);
+    }
+  } else {
+    errorMessage +=
+      "Please check your internet connection and restart the app.";
+  }
+
+  // Re-throw with better error message
+  throw new Error(errorMessage);
+}
 
 // Export the initialized app, auth (as firebaseAuth), db, and storage
 export { app, firebaseAuth as auth, db, storage };
