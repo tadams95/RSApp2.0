@@ -206,7 +206,7 @@ export default function CartScreen() {
 
       // Hide the recovery modal
       setShowRecoveryModal(false);
-      
+
       // Show order summary after cart restoration
       setCheckoutInProgress(true);
 
@@ -284,7 +284,7 @@ export default function CartScreen() {
     setShippingCost(shippingCost);
     setTaxAmount(calculatedTaxAmount);
     setTotalPrice(newTotalPrice + shippingCost + calculatedTaxAmount);
-    
+
     // Automatically show order summary when cart has items
     if (cartItems.length > 0) {
       setCheckoutInProgress(true);
@@ -361,7 +361,7 @@ export default function CartScreen() {
           error instanceof Error ? error.message : "Please try again."
         }`
       );
-      
+
       // Reset checkout progress when an error occurs
       setCheckoutInProgress(false);
       setLoading(false);
@@ -381,7 +381,7 @@ export default function CartScreen() {
         selectedSize,
       } as any)
     );
-    
+
     // Check if this was the last item in the cart
     // Need to handle this in the useEffect that monitors cartItems
   };
@@ -1052,35 +1052,43 @@ export default function CartScreen() {
                     ${totalPrice.toFixed(2)}
                   </Text>
                 </View>
-                
+
                 {/* Checkout button removed from here - using only the one at bottom of screen */}
               </View>
             )}
 
-            <View style={[
-              styles.checkoutContainer,
-              checkoutInProgress && { borderTopWidth: 0, paddingTop: 0 }
-            ]}>
+            <View
+              style={[
+                styles.checkoutContainer,
+                checkoutInProgress && { borderTopWidth: 0, paddingTop: 0 },
+              ]}
+            >
               <TouchableOpacity
                 style={[
                   styles.checkoutButton,
-                  { 
+                  {
                     backgroundColor: GlobalStyles.colors.red4,
-                    flex: 1, 
+                    flex: 1,
                     marginLeft: 0,
-                    borderWidth: 0
+                    borderWidth: 0,
                   },
                   loading && styles.disabledButton,
                 ]}
                 onPress={handleCheckout}
                 disabled={loading || cartItems.length === 0}
                 accessible={true}
-                accessibilityLabel={`Proceed to checkout. Total amount ${totalPrice.toFixed(2)} dollars`}
+                accessibilityLabel={`Proceed to checkout. Total amount ${totalPrice.toFixed(
+                  2
+                )} dollars`}
                 accessibilityRole="button"
                 accessibilityHint="Completes your purchase and proceeds to payment"
               >
-                <Text style={[styles.checkoutButtonText, { fontWeight: '600' }]}>
-                  {loading ? "Processing..." : `Check Out • $${totalPrice.toFixed(2)}`}
+                <Text
+                  style={[styles.checkoutButtonText, { fontWeight: "600" }]}
+                >
+                  {loading
+                    ? "Processing..."
+                    : `Check Out • $${totalPrice.toFixed(2)}`}
                 </Text>
               </TouchableOpacity>
             </View>
