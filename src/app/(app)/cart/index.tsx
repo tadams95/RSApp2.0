@@ -111,7 +111,8 @@ export default function CartScreen() {
   const dispatch = useDispatch();
   const cartItems = useSelector(selectCartItems) as unknown as CartItem[];
   const [totalPrice, setTotalPrice] = useState<number>(0);
-  const [checkoutInProgress, setCheckoutInProgress] = useState<boolean>(true);
+  // Only show order summary when actually checking out or when cart has items
+  const [checkoutInProgress, setCheckoutInProgress] = useState<boolean>(false);
   const [clearConfirmationModalVisible, setClearConfirmationModalVisible] =
     useState<boolean>(false);
   const userEmail = useSelector(selectUserEmail);
@@ -205,6 +206,9 @@ export default function CartScreen() {
 
       // Hide the recovery modal
       setShowRecoveryModal(false);
+      
+      // Show order summary after cart restoration
+      setCheckoutInProgress(true);
 
       // Show confirmation to user
       Alert.alert(
@@ -280,6 +284,13 @@ export default function CartScreen() {
     setShippingCost(shippingCost);
     setTaxAmount(calculatedTaxAmount);
     setTotalPrice(newTotalPrice + shippingCost + calculatedTaxAmount);
+    
+    // Automatically show order summary when cart has items
+    if (cartItems.length > 0) {
+      setCheckoutInProgress(true);
+    } else {
+      setCheckoutInProgress(false);
+    }
 
     // Update Redux store with checkout price
     dispatch(
@@ -307,6 +318,8 @@ export default function CartScreen() {
 
     try {
       setLoading(true);
+      // Show order summary when checkout starts
+      setCheckoutInProgress(true);
 
       // Save cart state before proceeding with checkout in case there's an error
       await saveCartState(cartItems as any[], totalPrice);
@@ -348,6 +361,9 @@ export default function CartScreen() {
           error instanceof Error ? error.message : "Please try again."
         }`
       );
+      
+      // Reset checkout progress when an error occurs
+      setCheckoutInProgress(false);
       setLoading(false);
     }
   };
@@ -365,6 +381,9 @@ export default function CartScreen() {
         selectedSize,
       } as any)
     );
+    
+    // Check if this was the last item in the cart
+    // Need to handle this in the useEffect that monitors cartItems
   };
 
   const handleClearCart = () => {
@@ -374,6 +393,7 @@ export default function CartScreen() {
   const confirmClearCart = () => {
     dispatch(clearCart());
     setClearConfirmationModalVisible(false);
+    setCheckoutInProgress(false); // Hide order summary when cart is cleared
   };
 
   const cancelClearCart = () => {
@@ -716,6 +736,7 @@ export default function CartScreen() {
 
           // Reset payment state
           setPaymentSheetInitialized(false);
+          setCheckoutInProgress(false);
 
           Alert.alert(
             "Payment Successful!",
@@ -1001,7 +1022,7 @@ export default function CartScreen() {
               visible={showAddressSheet}
             />
 
-            {/* Order summary section remains the same */}
+            {/* Order summary section */}
             {checkoutInProgress && (
               <View style={styles.orderSummaryContainer}>
                 <Text style={styles.orderSummaryTitle}>Order Summary</Text>
@@ -1031,40 +1052,35 @@ export default function CartScreen() {
                     ${totalPrice.toFixed(2)}
                   </Text>
                 </View>
-
-                <TouchableOpacity
-                  style={styles.checkoutButton}
-                  onPress={handleCheckout}
-                  accessible={true}
-                  accessibilityLabel="Proceed to checkout"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.checkoutButtonText}>
-                    PROCEED TO CHECKOUT
-                  </Text>
-                </TouchableOpacity>
+                
+                {/* Checkout button removed from here - using only the one at bottom of screen */}
               </View>
             )}
 
-            <View style={styles.checkoutContainer}>
-              <View style={styles.priceContainer}>
-                <Text style={styles.totalLabel}>Total:</Text>
-                <Text style={styles.totalPrice}>${totalPrice.toFixed(2)}</Text>
-              </View>
-
+            <View style={[
+              styles.checkoutContainer,
+              checkoutInProgress && { borderTopWidth: 0, paddingTop: 0 }
+            ]}>
               <TouchableOpacity
                 style={[
                   styles.checkoutButton,
+                  { 
+                    backgroundColor: GlobalStyles.colors.red4,
+                    flex: 1, 
+                    marginLeft: 0,
+                    borderWidth: 0
+                  },
                   loading && styles.disabledButton,
                 ]}
                 onPress={handleCheckout}
                 disabled={loading || cartItems.length === 0}
                 accessible={true}
-                accessibilityLabel="Proceed to checkout"
+                accessibilityLabel={`Proceed to checkout. Total amount ${totalPrice.toFixed(2)} dollars`}
                 accessibilityRole="button"
+                accessibilityHint="Completes your purchase and proceeds to payment"
               >
-                <Text style={styles.checkoutButtonText}>
-                  {loading ? "Processing..." : "Check Out"}
+                <Text style={[styles.checkoutButtonText, { fontWeight: '600' }]}>
+                  {loading ? "Processing..." : `Check Out • $${totalPrice.toFixed(2)}`}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1336,14 +1352,13 @@ const styles = StyleSheet.create({
     flexDirection: "column",
   },
   checkoutButton: {
-    backgroundColor: "#222",
-    borderWidth: 1,
-    borderColor: "white",
+    backgroundColor: GlobalStyles.colors.red4,
+    borderWidth: 0,
     borderRadius: 8,
     padding: 15,
     alignItems: "center",
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 0, // No margin needed now that it takes full width
   },
   checkoutButtonText: {
     color: "white",
