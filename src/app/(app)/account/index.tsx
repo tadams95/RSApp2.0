@@ -11,7 +11,6 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Dimensions,
-  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -20,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
+import { ImageWithFallback } from "../../../components/ui";
 import { useAuth } from "../../../hooks/AuthContext";
 import { selectUserName, setUserName } from "../../../store/redux/userSlice";
 // Import the newly migrated modals from the barrel file
@@ -195,8 +195,9 @@ export default function AccountScreen() {
             accessibilityRole="button"
             accessibilityLabel="Change profile picture"
           >
-            <Image
+            <ImageWithFallback
               source={imageSource}
+              fallbackSource={require("../../../assets/user.png")}
               style={styles.profilePicture}
               resizeMode="cover"
             />

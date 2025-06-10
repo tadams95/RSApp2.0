@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useLayoutEffect, useState } from "react";
 import {
   Dimensions,
-  Image,
   ImageStyle,
   Platform,
   Pressable,
@@ -14,6 +13,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { ImageWithFallback } from "../../../components/ui";
 import fetchShopifyProducts from "../../../services/shopifyService";
 
 // Define a type for your product data based on the Shopify API response
@@ -143,8 +143,9 @@ export default function ShopScreen() {
           >
             <View style={styles.imageContainer}>
               {firstImage && (
-                <Image
+                <ImageWithFallback
                   source={{ uri: firstImage.url || (firstImage as any).src }}
+                  fallbackSource={require("../../../assets/ShopHero_1.png")}
                   style={styles.image}
                   accessibilityLabel={`Image of ${product.title}`}
                 />

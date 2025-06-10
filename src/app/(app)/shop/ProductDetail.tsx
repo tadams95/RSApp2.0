@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  Image,
   Modal,
   Platform,
   ScrollView,
@@ -16,7 +15,7 @@ import {
   View,
 } from "react-native";
 import { useDispatch } from "react-redux";
-import { AppCarousel } from "../../../components/ui";
+import { AppCarousel, ImageWithFallback } from "../../../components/ui";
 import { GlobalStyles } from "../../../constants/styles";
 import { useErrorHandler } from "../../../hooks/useErrorHandler";
 import { fetchProductByHandle } from "../../../services/shopifyService"; // Fixed import path to use relative path
@@ -213,8 +212,9 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
             onSnapToItem={(index) => setActiveIndex(index)}
             showsPagination={true}
             renderItem={({ item, index }) => (
-              <Image
+              <ImageWithFallback
                 source={{ uri: item.url }}
+                fallbackSource={require("../../../assets/ShopHero_1.png")}
                 style={styles.images}
                 resizeMode="cover"
                 accessibilityLabel={`Product image ${
@@ -236,8 +236,9 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
     // For a single image, just display it without carousel functionality
     return (
       <View style={styles.swiperContainer}>
-        <Image
+        <ImageWithFallback
           source={{ uri: product.images[0].url }}
+          fallbackSource={require("../../../assets/ShopHero_1.png")}
           style={styles.images}
           resizeMode="cover"
           accessibilityLabel="Product image"

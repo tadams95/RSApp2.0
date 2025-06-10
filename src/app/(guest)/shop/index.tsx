@@ -1,7 +1,6 @@
 import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import {
   Dimensions,
-  Image,
   Platform,
   Pressable,
   RefreshControl,
@@ -10,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { ImageWithFallback } from "../../../components/ui";
 import fetchShopifyProducts from "../../../services/shopifyService";
 import { navigateToGuestProduct } from "../../../utils/navigation";
 
@@ -231,13 +231,14 @@ const GuestShop: React.FC = () => {
             accessibilityState={{ disabled: isOutOfStock }}
           >
             <View style={styles.imageContainer}>
-              <Image
+              <ImageWithFallback
                 source={{
                   uri:
                     product.images && product.images[0]
                       ? product.images[0].src
                       : "",
                 }}
+                fallbackSource={require("../../../assets/ShopHero_1.png")}
                 style={styles.image}
                 accessibilityLabel={`Image of ${product.title}`}
               />
