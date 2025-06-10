@@ -15,10 +15,12 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import {
   clearCart,
+  CartItem as ReduxCartItem,
   removeFromCart,
   selectCartItems,
   selectCheckoutPrice,
   setCheckoutPrice,
+  updateCartItems,
 } from "../../../store/redux/cartSlice";
 
 // Import the actual CartItem type from the redux slice if available
@@ -43,6 +45,26 @@ import {
 } from "../../../store/redux/userSlice";
 import { EventDetails } from "../../../types/cart";
 
+// Import our new utility functions and components
+import CartRecoveryModal from "./components/CartRecoveryModal";
+import CartRecoveryTester from "./components/CartRecoveryTester";
+import PaymentErrorHandler from "./components/PaymentErrorHandler";
+import {
+  clearCartState,
+  clearCheckoutError,
+  getCartState,
+  getLastCheckoutError,
+  hasRecentCheckoutError,
+  isCartRecoverable,
+  saveCartState,
+  saveCheckoutError,
+} from "./utils/cartPersistence";
+import {
+  isNetworkConnected,
+  isNetworkError,
+  retryWithBackoff,
+} from "./utils/networkErrorDetection";
+
 // Define interfaces for TypeScript
 interface CartItem {
   productId: string;
@@ -58,6 +80,22 @@ interface CartItem {
   eventDetails?: EventDetails;
   id?: string; // Making id optional since it might not exist in the redux state
 }
+
+// Type for generic cart items
+type GenericCartItem = {
+  productId: string;
+  title?: string;
+  price: {
+    amount: number;
+    currencyCode: string;
+  };
+  selectedColor?: string | null;
+  selectedSize?: string | null;
+  selectedQuantity: number;
+  image?: string;
+  eventDetails?: EventDetails;
+  [key: string]: any;
+};
 
 interface OrderDetails {
   orderId: string;
@@ -94,6 +132,118 @@ export default function CartScreen() {
   );
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [taxAmount, setTaxAmount] = useState<number>(0);
+
+  // New state for cart recovery and error handling
+  const [showRecoveryModal, setShowRecoveryModal] = useState<boolean>(false);
+  const [recoveredCartItems, setRecoveredCartItems] = useState<
+    GenericCartItem[]
+  >([]);
+  const [recoveredTimestamp, setRecoveredTimestamp] = useState<
+    number | undefined
+  >(undefined);
+  const [recoveryLoading, setRecoveryLoading] = useState<boolean>(false);
+  const [lastErrorMessage, setLastErrorMessage] = useState<string | null>(null);
+  const [showPaymentErrorHandler, setShowPaymentErrorHandler] =
+    useState<boolean>(false);
+  const [isCheckingRecovery, setIsCheckingRecovery] = useState<boolean>(true);
+
+  // Check for recoverable cart or previous payment errors on component mount
+  useEffect(() => {
+    checkForRecoverableState();
+  }, []);
+
+  // Check for recoverable cart state or previous payment errors
+  const checkForRecoverableState = async () => {
+    try {
+      setIsCheckingRecovery(true);
+
+      // First check if the user already has items in their cart
+      if (cartItems.length > 0) {
+        setIsCheckingRecovery(false);
+        return; // Don't show recovery if user already has items in cart
+      }
+
+      // Check if there was a recent payment error
+      const hasError = await hasRecentCheckoutError();
+      if (hasError) {
+        const errorInfo = await getLastCheckoutError();
+        if (errorInfo) {
+          setLastErrorMessage(errorInfo.message);
+          setShowPaymentErrorHandler(true);
+        }
+      }
+
+      // Check if there's a recoverable cart
+      const isRecoverable = await isCartRecoverable();
+      if (isRecoverable) {
+        const savedCart = await getCartState();
+        if (savedCart && savedCart.items && savedCart.items.length > 0) {
+          setRecoveredCartItems(savedCart.items as GenericCartItem[]);
+          setRecoveredTimestamp(savedCart.timestamp);
+          setShowRecoveryModal(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking for recoverable state:", error);
+    } finally {
+      setIsCheckingRecovery(false);
+    }
+  };
+
+  // Restore cart from saved state
+  const handleRestoreCart = () => {
+    setRecoveryLoading(true);
+
+    try {
+      // Update redux store with saved items - convert to the expected Redux format
+      dispatch(
+        updateCartItems(recoveredCartItems as unknown as ReduxCartItem[])
+      );
+
+      // Clear saved cart state after successful recovery
+      clearCartState();
+
+      // Hide the recovery modal
+      setShowRecoveryModal(false);
+
+      // Show confirmation to user
+      Alert.alert(
+        "Cart Restored",
+        "Your previous cart items have been restored successfully."
+      );
+    } catch (error) {
+      console.error("Error restoring cart:", error);
+      Alert.alert(
+        "Restore Failed",
+        "There was a problem restoring your cart. Please try again."
+      );
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
+
+  // Dismiss recovery modal
+  const handleDismissRecovery = () => {
+    clearCartState();
+    setShowRecoveryModal(false);
+  };
+
+  // Handle retry of failed payment
+  const handleRetryPayment = async () => {
+    setShowPaymentErrorHandler(false);
+    await clearCheckoutError();
+
+    // Small delay to ensure UI updates before retry
+    setTimeout(() => {
+      handleCheckout();
+    }, 500);
+  };
+
+  // Handle cancellation of payment retry
+  const handleCancelRetry = () => {
+    clearCheckoutError();
+    setShowPaymentErrorHandler(false);
+  };
 
   // Debugging logs to track state changes
   useEffect(() => {
@@ -144,8 +294,22 @@ export default function CartScreen() {
       return;
     }
 
+    // Check network connectivity before proceeding
+    const isConnected = await isNetworkConnected();
+    if (!isConnected) {
+      Alert.alert(
+        "Network Error",
+        "You appear to be offline. Please check your connection and try again.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
     try {
       setLoading(true);
+
+      // Save cart state before proceeding with checkout in case there's an error
+      await saveCartState(cartItems as any[], totalPrice);
 
       // Reset payment state before starting checkout
       setPaymentSheetInitialized(false);
@@ -168,6 +332,16 @@ export default function CartScreen() {
       }
     } catch (error) {
       console.error("Checkout error:", error);
+
+      // Save error information for potential recovery
+      if (error instanceof Error) {
+        const errorInfo = {
+          code: "CHECKOUT_ERROR",
+          message: error.message,
+        };
+        await saveCheckoutError(errorInfo);
+      }
+
       Alert.alert(
         "Checkout Error",
         `There was an issue with checkout: ${
@@ -244,55 +418,67 @@ export default function CartScreen() {
 
       console.log("Request payload:", JSON.stringify(requestBody));
 
-      const response = await fetch(apiEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
+      // Use retry with backoff for network resilience
+      return await retryWithBackoff(async () => {
+        const response = await fetch(apiEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        });
 
-      // First check if response is ok (status in 200-299 range)
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`API error (${response.status}):`, errorText);
-        throw new Error(
-          `API returned error ${response.status}: ${response.statusText}`
-        );
-      }
-
-      // Try to parse the JSON response
-      let responseText;
-      try {
-        responseText = await response.text();
-
-        // Debug the raw response
-        console.log(
-          "Raw API response:",
-          responseText.substring(0, 200) +
-            (responseText.length > 200 ? "..." : "")
-        );
-
-        const responseData = JSON.parse(responseText);
-        const { paymentIntent, ephemeralKey, customer } = responseData;
-
-        if (!paymentIntent || !ephemeralKey || !customer) {
-          console.error(
-            "Missing required fields in payment response:",
-            responseData
+        // First check if response is ok (status in 200-299 range)
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`API error (${response.status}):`, errorText);
+          throw new Error(
+            `API returned error ${response.status}: ${response.statusText}`
           );
-          throw new Error("Invalid payment response from server");
         }
 
-        return { paymentIntent, ephemeralKey, customer };
-      } catch (parseError) {
-        console.error("Failed to parse JSON response:", parseError);
-        console.error("Response content:", responseText);
-        throw new Error("Invalid response format from payment server");
-      }
+        // Try to parse the JSON response
+        let responseText;
+        try {
+          responseText = await response.text();
+
+          // Debug the raw response
+          console.log(
+            "Raw API response:",
+            responseText.substring(0, 200) +
+              (responseText.length > 200 ? "..." : "")
+          );
+
+          const responseData = JSON.parse(responseText);
+          const { paymentIntent, ephemeralKey, customer } = responseData;
+
+          if (!paymentIntent || !ephemeralKey || !customer) {
+            console.error(
+              "Missing required fields in payment response:",
+              responseData
+            );
+            throw new Error("Invalid payment response from server");
+          }
+
+          return { paymentIntent, ephemeralKey, customer };
+        } catch (parseError) {
+          console.error("Failed to parse JSON response:", parseError);
+          console.error("Response content:", responseText);
+          throw new Error("Invalid response format from payment server");
+        }
+      });
     } catch (error) {
       console.error("Error fetching payment sheet params:", error);
+
+      // Save the error information for recovery
+      if (error instanceof Error) {
+        await saveCheckoutError({
+          code: "API_ERROR",
+          message: error.message,
+        });
+      }
+
       Alert.alert(
         "Payment Setup Error",
         "Could not connect to payment server. Please try again later."
@@ -371,6 +557,12 @@ export default function CartScreen() {
             "Payment Setup Error",
             "Payment system is temporarily unavailable. Please try again later."
           );
+
+          // Save error information
+          await saveCheckoutError({
+            code: initResult.error.code || "INIT_ERROR",
+            message: initResult.error.message || "Failed to initialize payment",
+          });
         } else {
           Alert.alert(
             "Payment Error",
@@ -380,11 +572,29 @@ export default function CartScreen() {
               "Unknown error"
             }`
           );
+
+          // Save error information
+          await saveCheckoutError({
+            code: initResult.error.code || "INIT_ERROR",
+            message:
+              initResult.error.localizedMessage ||
+              initResult.error.message ||
+              "Unknown initialization error",
+          });
         }
         return false;
       }
     } catch (error) {
       console.error("Payment initialization error:", error);
+
+      // Save error for recovery
+      if (error instanceof Error) {
+        await saveCheckoutError({
+          code: "INIT_ERROR",
+          message: error.message,
+        });
+      }
+
       Alert.alert(
         "Payment Error",
         `Unable to initialize payment. ${
@@ -421,6 +631,13 @@ export default function CartScreen() {
       if (error) {
         console.error("Payment error:", error);
 
+        // Save error information for recovery
+        await saveCheckoutError({
+          code: error.code || "PAYMENT_ERROR",
+          message: error.message || "Payment failed",
+          paymentIntentId: stripePaymentIntent,
+        });
+
         // Handle different error types
         if (error.code === "Canceled") {
           console.log("User canceled the payment");
@@ -449,6 +666,13 @@ export default function CartScreen() {
                 },
               },
             ]
+          );
+        } else if (isNetworkError(error)) {
+          // Handle network-specific errors
+          Alert.alert(
+            "Network Error",
+            "There was a problem with the network connection. Your cart has been saved and you can try again when your connection improves.",
+            [{ text: "OK" }]
           );
         } else {
           Alert.alert("Payment Failed", error.message || "Please try again");
@@ -486,6 +710,10 @@ export default function CartScreen() {
           // Clear cart after successful purchase
           dispatch(clearCart());
 
+          // Clear any saved cart state and errors since purchase was successful
+          await clearCartState();
+          await clearCheckoutError();
+
           // Reset payment state
           setPaymentSheetInitialized(false);
 
@@ -511,6 +739,16 @@ export default function CartScreen() {
       }
     } catch (error) {
       console.error("Error in payment process:", error);
+
+      // Save error information for recovery
+      if (error instanceof Error) {
+        await saveCheckoutError({
+          code: "PAYMENT_PROCESS_ERROR",
+          message: error.message,
+          paymentIntentId: stripePaymentIntent,
+        });
+      }
+
       Alert.alert(
         "Payment Error",
         "An unexpected error occurred. Please try again later."
@@ -526,35 +764,23 @@ export default function CartScreen() {
     default: "system",
   });
 
-  const backgroundAddyStyle = Platform.select({
-    ios: "#000000",
-    android: "#F7F7F7",
-    default: "system",
-  });
-
-  const primaryText = Platform.select({
-    ios: "#FFFFFF",
-    android: "#222222",
-    default: "system",
-  });
-
-  // Define a custom appearance object for AddressSheet consistent with app styling
+  // Address sheet appearance configuration
   const addressSheetAppearance = {
     colors: {
-      primary: GlobalStyles.colors.red4, // Using app's primary red color
-      background: "#000000", // Black background consistent with app
-      componentBackground: GlobalStyles.colors.grey9, // Using app's dark gray
-      componentBorder: GlobalStyles.colors.grey8, // Subtle border matching app style
-      componentDivider: GlobalStyles.colors.grey8, // Consistent divider color
-      componentText: "#FFFFFF", // White text
-      secondaryText: GlobalStyles.colors.grey4, // Consistent secondary text
+      primary: GlobalStyles.colors.red4, // Brand color for buttons and accents
+      background: "#000000", // Match app's dark background
+      componentBackground: GlobalStyles.colors.grey9, // For input fields
+      componentBorder: GlobalStyles.colors.grey8, // Border color for inputs
+      componentDivider: GlobalStyles.colors.grey8, // For visual separators
+      primaryText: "#FFFFFF", // Main text color
+      secondaryText: GlobalStyles.colors.grey4, // Less prominent text
       placeholderText: GlobalStyles.colors.grey6, // Better placeholder contrast
       icon: GlobalStyles.colors.grey3, // Consistent icon color
       error: GlobalStyles.colors.red3, // Using app's error color
     },
     fonts: {
       scale: 1.0,
-      family: fontFamily,
+      family: "System",
     },
     shapes: {
       borderRadius: 8, // Consistent with app's rounded corners
@@ -566,6 +792,13 @@ export default function CartScreen() {
     // Only log actual errors, not cancellations
     if (error.code !== "Canceled" && error.code !== "Cancelled") {
       console.error("Address sheet error:", error);
+
+      // Save error info for potential recovery
+      saveCheckoutError({
+        code: "ADDRESS_ERROR",
+        message: error.message || "Address validation failed",
+      });
+
       Alert.alert(
         "Address Error",
         "Could not validate address. Please try again."
@@ -579,6 +812,15 @@ export default function CartScreen() {
     setShowAddressSheet(false);
     setLoading(false);
   };
+
+  // If the component is still checking for cart recovery, show a minimal loading state
+  if (isCheckingRecovery) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading cart...</Text>
+      </View>
+    );
+  }
 
   return (
     <StripeProvider
@@ -735,6 +977,15 @@ export default function CartScreen() {
                     // If initialization failed, the function already shows an error message
                   } catch (error) {
                     console.error("Error in address-to-payment flow:", error);
+
+                    // Save error information
+                    if (error instanceof Error) {
+                      await saveCheckoutError({
+                        code: "ADDRESS_PAYMENT_FLOW_ERROR",
+                        message: error.message,
+                      });
+                    }
+
                     Alert.alert(
                       "Payment Error",
                       "There was a problem proceeding to payment. Please try again."
@@ -750,6 +1001,7 @@ export default function CartScreen() {
               visible={showAddressSheet}
             />
 
+            {/* Order summary section remains the same */}
             {checkoutInProgress && (
               <View style={styles.orderSummaryContainer}>
                 <Text style={styles.orderSummaryTitle}>Order Summary</Text>
@@ -793,15 +1045,38 @@ export default function CartScreen() {
                 </TouchableOpacity>
               </View>
             )}
+
+            <View style={styles.checkoutContainer}>
+              <View style={styles.priceContainer}>
+                <Text style={styles.totalLabel}>Total:</Text>
+                <Text style={styles.totalPrice}>${totalPrice.toFixed(2)}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.checkoutButton,
+                  loading && styles.disabledButton,
+                ]}
+                onPress={handleCheckout}
+                disabled={loading || cartItems.length === 0}
+                accessible={true}
+                accessibilityLabel="Proceed to checkout"
+                accessibilityRole="button"
+              >
+                <Text style={styles.checkoutButtonText}>
+                  {loading ? "Processing..." : "Check Out"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </>
         )}
 
-        {/* Clear Confirmation Modal */}
+        {/* Clear cart confirmation modal */}
         <Modal
           animationType="fade"
           transparent={true}
           visible={clearConfirmationModalVisible}
-          onRequestClose={() => setClearConfirmationModalVisible(false)}
+          onRequestClose={cancelClearCart}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
@@ -826,6 +1101,28 @@ export default function CartScreen() {
             </View>
           </View>
         </Modal>
+
+        {/* Cart Recovery Modal */}
+        <CartRecoveryModal
+          visible={showRecoveryModal}
+          onRestore={handleRestoreCart}
+          onDismiss={handleDismissRecovery}
+          cartItems={recoveredCartItems}
+          isLoading={recoveryLoading}
+          errorMessage={lastErrorMessage}
+          timestamp={recoveredTimestamp}
+        />
+
+        {/* Payment Error Handler */}
+        {showPaymentErrorHandler && (
+          <PaymentErrorHandler
+            onRetry={handleRetryPayment}
+            onCancel={handleCancelRetry}
+          />
+        )}
+
+        {/* Development Testing Tool - only visible in development */}
+        {process.env.NODE_ENV !== "production" && <CartRecoveryTester />}
       </View>
     </StripeProvider>
   );
@@ -1020,20 +1317,39 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
   },
+  totalPrice: {
+    color: "white",
+    fontFamily,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  checkoutContainer: {
+    backgroundColor: "#111",
+    padding: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#333",
+  },
+  priceContainer: {
+    flexDirection: "column",
+  },
   checkoutButton: {
     backgroundColor: "#222",
     borderWidth: 1,
     borderColor: "white",
     borderRadius: 8,
-    marginTop: 20,
     padding: 15,
     alignItems: "center",
+    flex: 1,
+    marginLeft: 16,
   },
   checkoutButtonText: {
-    fontFamily,
     color: "white",
-    fontWeight: "600",
+    fontFamily,
     fontSize: 16,
+    fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
@@ -1091,5 +1407,19 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 16,
     fontWeight: "600",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000000",
+  },
+  loadingText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });

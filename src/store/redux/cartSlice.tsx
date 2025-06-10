@@ -84,6 +84,9 @@ const cartSlice = createSlice({
     setCheckoutPrice: (state, action: PayloadAction<number>) => {
       state.checkoutPrice = action.payload;
     },
+    updateCartItems: (state, action: PayloadAction<CartItem[]>) => {
+      state.items = action.payload;
+    },
   },
 });
 
@@ -93,6 +96,7 @@ export const {
   updateQuantity,
   clearCart,
   setCheckoutPrice,
+  updateCartItems,
 } = cartSlice.actions;
 
 // Typed selectors
