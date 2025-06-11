@@ -20,6 +20,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { useDispatch } from "react-redux";
+import EventNotFound from "../../../components/events/EventNotFound";
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
 
 // Define types for event data
@@ -48,10 +49,20 @@ export default function EventDetailScreen() {
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
   const [addToCartConfirmationVisible, setAddToCartConfirmationVisible] =
     useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dataNotFound, setDataNotFound] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchAttendingCount = async () => {
-      if (!eventData) return;
+      if (!eventData) {
+        // Check if we have a valid event ID parameter but no event data
+        if (params.id && !params.eventData) {
+          setError(`Event with ID ${params.id} could not be found`);
+          setDataNotFound(true);
+        }
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const firestore = getFirestore();
@@ -66,13 +77,14 @@ export default function EventDetailScreen() {
         setAttendingCount(count);
       } catch (error) {
         console.error("Error fetching attending count:", error);
+        setError("Failed to load event details. Please try again later.");
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAttendingCount();
-  }, [eventData]);
+  }, [eventData, params.id]);
 
   const handleAddToCart = () => {
     if (!eventData || eventData.quantity <= 0) return;
@@ -126,16 +138,65 @@ export default function EventDetailScreen() {
     router.back();
   };
 
+  const handleBrowseEvents = () => {
+    router.push("/(app)/events/");
+  };
+
   const handleImageLoad = () => {
     setImageLoaded(true);
   };
 
-  if (!eventData) {
+  const handleRetryLoad = () => {
+    setIsLoading(true);
+    setError(null);
+    // Refresh the page by forcing a re-render
+    const fetchAttendingCount = async () => {
+      try {
+        if (!eventData) {
+          setIsLoading(false);
+          return;
+        }
+        const firestore = getFirestore();
+        const ragersCollectionRef = collection(
+          firestore,
+          "events",
+          eventData.name,
+          "ragers"
+        );
+        const querySnapshot = await getDocs(ragersCollectionRef);
+        const count = querySnapshot.size;
+        setAttendingCount(count);
+      } catch (error) {
+        console.error("Error fetching attending count:", error);
+        setError("Failed to load event details. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAttendingCount();
+  };
+
+  // Show loading state
+  if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="white" />
         <Text style={styles.loaderText}>Loading event...</Text>
       </View>
+    );
+  }
+
+  // Show error state for missing event data
+  if (!eventData || dataNotFound || error) {
+    return (
+      <EventNotFound
+        onGoBack={handleBackPress}
+        onBrowseEvents={handleBrowseEvents}
+        errorMessage={
+          error || "This event couldn't be found or may no longer be available."
+        }
+      />
     );
   }
 
