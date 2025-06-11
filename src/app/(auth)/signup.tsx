@@ -16,11 +16,18 @@ import {
 } from "react-native";
 
 import { createUser, loginUser, updateUserStripeId } from "../../utils/auth";
+import {
+  extractFirebaseErrorCode,
+  getSignupErrorMessage,
+  getSignupFieldError,
+} from "../../utils/firebaseErrorHandler";
 
 // import { usePushNotifications } from "../../../../notifications/PushNotifications";
 import { useDispatch } from "react-redux";
 // Updated import path for userSlice
 import LoadingOverlay from "../../components/LoadingOverlay";
+import SignupErrorNotice from "../../components/SignupErrorNotice";
+import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { setStripeCustomerId } from "../../store/redux/userSlice";
 
 interface FormErrors {
@@ -46,6 +53,12 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [signupError, setSignupError] = useState<string | null>(null);
+  const [recoveryAction, setRecoveryAction] = useState<{
+    text: string;
+    onPress: () => void;
+  } | null>(null);
+  const { getErrorMessage } = useErrorHandler();
   const router = useRouter();
 
   const API_URL =
@@ -58,16 +71,37 @@ export default function SignupScreen() {
   const validateForm = () => {
     const errors: FormErrors = {};
 
+    // Clear signup error when form is being validated
+    setSignupError(null);
+
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
     if (email && !emailRegex.test(email)) {
       errors.email = "Please enter a valid email address";
     }
 
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (password && !passwordRegex.test(password)) {
-      errors.password =
-        "Password must have 8+ chars with uppercase, lowercase, number, and special char";
+    // Enhanced password validation with specific guidance
+    if (password) {
+      const passwordChecks = {
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[@$!%*?&#]/.test(password),
+      };
+
+      if (!Object.values(passwordChecks).every(Boolean)) {
+        let message = "Password must have:";
+        if (!passwordChecks.length) message += "\n• At least 8 characters";
+        if (!passwordChecks.uppercase)
+          message += "\n• At least 1 uppercase letter";
+        if (!passwordChecks.lowercase)
+          message += "\n• At least 1 lowercase letter";
+        if (!passwordChecks.number) message += "\n• At least 1 number";
+        if (!passwordChecks.special)
+          message += "\n• At least 1 special character (@$!%*?&#)";
+
+        errors.password = message;
+      }
     }
 
     if (confirmPassword && password !== confirmPassword) {
@@ -100,13 +134,26 @@ export default function SignupScreen() {
   }
 
   function validatePassword(passwordToValidate: string) {
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const passwordChecks = {
+      length: passwordToValidate.length >= 8,
+      uppercase: /[A-Z]/.test(passwordToValidate),
+      lowercase: /[a-z]/.test(passwordToValidate),
+      number: /[0-9]/.test(passwordToValidate),
+      special: /[@$!%*?&#]/.test(passwordToValidate),
+    };
 
-    if (!passwordRegex.test(passwordToValidate)) {
-      throw new Error(
-        "Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one digit, and one special character."
-      );
+    if (!Object.values(passwordChecks).every(Boolean)) {
+      let message = "Password requirements not met:";
+      if (!passwordChecks.length) message += "\n- At least 8 characters";
+      if (!passwordChecks.uppercase)
+        message += "\n- At least 1 uppercase letter";
+      if (!passwordChecks.lowercase)
+        message += "\n- At least 1 lowercase letter";
+      if (!passwordChecks.number) message += "\n- At least 1 number";
+      if (!passwordChecks.special)
+        message += "\n- At least 1 special character (@$!%*?&#)";
+
+      throw new Error(message);
     }
   }
 
@@ -128,12 +175,24 @@ export default function SignupScreen() {
   async function confirmCreateHandler() {
     try {
       setIsAuthenticating(true);
+      setSignupError(null);
+      setRecoveryAction(null);
 
+      // Form validation
       const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
       if (!emailRegex.test(email)) {
         throw new Error("Please enter a valid email address");
       }
-      validatePassword(password);
+
+      try {
+        validatePassword(password);
+      } catch (passwordError: any) {
+        setFormErrors((prev) => ({
+          ...prev,
+          password: passwordError.message,
+        }));
+        throw new Error("Please correct password issues before continuing");
+      }
 
       // const expoPushToken = await registerForPushNotifications(); // TODO: Re-enable
       // const expoPushToken = null; // Placeholder
@@ -147,51 +206,119 @@ export default function SignupScreen() {
         // expoPushToken
       );
 
-      const stripeCustomerResponse = await fetch(`${API_URL}/create-customer`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email,
-          name: `${firstName} ${lastName}`,
-          firebaseId: createdUser.userData.userId,
-        }),
-      });
+      // Handle Stripe customer creation
+      try {
+        const stripeCustomerResponse = await fetch(
+          `${API_URL}/create-customer`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: email,
+              name: `${firstName} ${lastName}`,
+              firebaseId: createdUser.userData.userId,
+            }),
+          }
+        );
 
-      if (!stripeCustomerResponse.ok) {
-        const errorMessage = await stripeCustomerResponse.text();
-        throw new Error(`Failed to create Stripe customer: ${errorMessage}`);
+        if (!stripeCustomerResponse.ok) {
+          const errorMessage = await stripeCustomerResponse.text();
+          console.warn(`Stripe customer creation issue: ${errorMessage}`);
+          // Continue with user creation even if Stripe has issues
+        } else {
+          const stripeCustomerData = await stripeCustomerResponse.json();
+          await updateUserStripeId(
+            createdUser.userData.userId,
+            stripeCustomerData.customerId
+          );
+          dispatch(setStripeCustomerId(stripeCustomerData.customerId));
+        }
+      } catch (stripeError) {
+        // Log the stripe error but continue with account creation
+        console.error("Stripe customer creation failed:", stripeError);
+        // We'll set up the Stripe customer later
       }
-
-      const stripeCustomerData = await stripeCustomerResponse.json();
-
-      await updateUserStripeId(
-        createdUser.userData.userId,
-        stripeCustomerData.customerId
-      );
-
-      dispatch(setStripeCustomerId(stripeCustomerData.customerId));
 
       await loginUser(email, password); // This should ideally set the auth state for the router
 
       // Navigate to app or home screen after successful signup and login
       router.replace("/(app)/home"); // Or your desired route
     } catch (error: any) {
-      if (error.response && error.response.data && error.response.data.error) {
-        const errorMessage = error.response.data.error.message;
-        if (errorMessage === "EMAIL_EXISTS") {
-          Alert.alert(
-            "Email already exists",
-            "Please log in or use a different email."
-          );
-        } else {
-          Alert.alert("Error creating user:", error.message);
-        }
-      } else {
-        Alert.alert("Error creating user:", error.message);
-      }
       setIsAuthenticating(false);
+
+      // Get user-friendly error message using our handler
+      const errorMessage = getSignupErrorMessage(error);
+      setSignupError(errorMessage);
+
+      // Update specific field errors if applicable
+      const fieldError = getSignupFieldError(error);
+      if (fieldError.field !== "general") {
+        setFormErrors((prev) => ({
+          ...prev,
+          [fieldError.field]: fieldError.message,
+        }));
+      }
+
+      // Extract and handle Firebase error code
+      const errorCode = extractFirebaseErrorCode(error);
+
+      // Set appropriate recovery action based on error code
+      if (errorCode === "auth/email-already-in-use") {
+        setRecoveryAction({
+          text: "Go to Login",
+          onPress: () => router.push("/(auth)/login"),
+        });
+      } else if (errorCode === "auth/network-request-failed") {
+        setRecoveryAction({
+          text: "Check Connection",
+          onPress: () =>
+            setSignupError(
+              "Please check your internet connection and try again"
+            ),
+        });
+      } else if (errorCode === "auth/too-many-requests") {
+        setRecoveryAction({
+          text: "Reset Password",
+          onPress: () => router.push("/(auth)/forgotPassword"),
+        });
+      } else if (errorCode === "auth/weak-password") {
+        setRecoveryAction({
+          text: "Password Tips",
+          onPress: () =>
+            Alert.alert(
+              "Creating a Strong Password",
+              "• Use at least 8 characters\n• Include uppercase and lowercase letters\n• Add numbers and special characters\n• Avoid using common words or personal info",
+              [{ text: "OK", style: "default" }]
+            ),
+        });
+      }
+
+      // Log the error for debugging
+      console.error("Signup error:", {
+        originalError: error,
+        errorCode: errorCode,
+        userMessage: errorMessage,
+      });
+
+      // For specific critical errors, show an alert
+      if (errorCode === "auth/account-exists-with-different-credential") {
+        Alert.alert(
+          "Account Already Exists",
+          "An account with this email exists using a different sign-in method. Please try signing in with another method.",
+          [
+            {
+              text: "Go to Login",
+              onPress: () => router.push("/(auth)/login"),
+            },
+            {
+              text: "OK",
+              style: "cancel",
+            },
+          ]
+        );
+      }
     }
   }
 
@@ -271,6 +398,15 @@ export default function SignupScreen() {
 
         <View style={styles.formContainer}>
           <Text style={styles.headline}>Create your account</Text>
+
+          {signupError && (
+            <SignupErrorNotice
+              message={signupError}
+              onRetry={() => setSignupError(null)}
+              secondaryAction={recoveryAction || undefined}
+              style={styles.errorContainer}
+            />
+          )}
 
           <View style={styles.nameRow}>
             {renderFormField(
@@ -392,6 +528,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+  },
+  errorContainer: {
+    marginBottom: 16,
+    width: "100%",
   },
   image: {
     width: windowWidth * 0.5,

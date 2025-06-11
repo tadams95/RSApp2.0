@@ -114,7 +114,7 @@ React Error Boundaries are components that catch JavaScript errors anywhere in t
 
 ## Firebase-Related Errors
 
-### Firestore:
+### Firestore (see `error-handling.md` for details):
 
 - [ ] Error handling for document not found
 - [ ] Error handling for permission denied
