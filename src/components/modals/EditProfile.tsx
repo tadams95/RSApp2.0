@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   KeyboardAvoidingView,
@@ -10,10 +10,12 @@ import {
   View,
 } from "react-native";
 
+import { useRouter } from "expo-router";
 import { getDatabase, ref, update } from "firebase/database";
-
 import { useSelector } from "react-redux";
+import useProfileUpdateErrorHandler from "../../hooks/useProfileUpdateErrorHandler";
 import { selectLocalId } from "../../store/redux/userSlice";
+import ProfileUpdateErrorNotice from "../ProfileUpdateErrorNotice";
 import {
   formatPhoneNumberInput,
   validateEmail,
@@ -54,12 +56,44 @@ const EditProfile: React.FC<EditProfileProps> = ({
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [formState, setFormState] = useState<UserDataUpdate>({});
+
+  // Get profile update error handler
+  const {
+    error: updateError,
+    fieldErrors: updateFieldErrors,
+    recoveryAction,
+    handleUpdateError,
+    clearErrors,
+  } = useProfileUpdateErrorHandler();
+
+  // Get router for navigation
+  const router = useRouter();
 
   // Get user ID from Redux store
   const userId = useSelector(selectLocalId);
 
   // Get Firebase Realtime Database instance
   const database = getDatabase();
+
+  /**
+   * Apply update field errors to form errors
+   */
+  useEffect(() => {
+    setFormErrors((prev) => ({ ...prev, ...updateFieldErrors }));
+  }, [updateFieldErrors]);
+
+  /**
+   * Save form state for recovery on failed update
+   */
+  useEffect(() => {
+    setFormState({
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      email: email || undefined,
+      phoneNumber: phoneNumber || undefined,
+    });
+  }, [firstName, lastName, email, phoneNumber]);
 
   /**
    * Validates form fields when they change
@@ -110,6 +144,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
     setEmail("");
     setPhoneNumber("");
     setFormErrors({});
+    clearErrors();
     onCancel();
   };
 
@@ -122,6 +157,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
     setEmail("");
     setPhoneNumber("");
     setFormErrors({});
+    clearErrors();
   };
 
   /**
@@ -169,12 +205,23 @@ const EditProfile: React.FC<EditProfileProps> = ({
   };
 
   /**
+   * Retry update after error
+   */
+  const retryUpdate = () => {
+    clearErrors();
+    confirmEditHandler();
+  };
+
+  /**
    * Handles confirming and saving profile changes
    */
   const confirmEditHandler = async (): Promise<void> => {
     // Make sure we have a user ID before attempting to update
     if (!userId) {
-      console.error("User ID not available");
+      handleUpdateError({
+        code: "not-found",
+        message: "User ID not available. Please log in again.",
+      });
       return;
     }
 
@@ -210,12 +257,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
       resetFields();
       onProfileUpdated();
     } catch (error) {
-      console.error("Error updating user details:", error);
-      // Set specific error messages based on error type
-      setFormErrors({
-        ...formErrors,
-        firstName: "Profile update failed. Please try again.",
-      });
+      handleUpdateError(error, onProfileUpdated);
     } finally {
       setIsSubmitting(false);
     }
@@ -231,6 +273,16 @@ const EditProfile: React.FC<EditProfileProps> = ({
         <Text style={styles.headline} accessibilityRole="header">
           Edit your profile details below
         </Text>
+
+        {updateError && (
+          <View style={styles.errorNoticeContainer}>
+            <ProfileUpdateErrorNotice
+              message={updateError}
+              onRetry={retryUpdate}
+              secondaryAction={recoveryAction || undefined}
+            />
+          </View>
+        )}
 
         <View style={styles.editProfileContainer}>
           <Text style={styles.subtitle}>First Name</Text>
@@ -387,6 +439,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: -8,
     fontFamily,
+  },
+  errorNoticeContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 10,
   },
   editProfileContainer: {
     paddingTop: 10,
