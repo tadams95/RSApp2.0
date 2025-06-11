@@ -72,8 +72,10 @@ React Error Boundaries are components that catch JavaScript errors anywhere in t
 
 ### Profile Management:
 
-- [ ] `/src/components/modals/EditProfile.tsx` - Validate phone number format
-- [ ] Ensure name fields have appropriate validation
+- [x] `/src/components/modals/EditProfile.tsx` - Validate phone number format
+- [x] Ensure name fields have appropriate validation
+- [x] Created reusable profile validation utilities in `/src/components/modals/EditProfileValidation.ts`
+- [x] Added custom `useProfileFormValidation` hook for profile form validation
 
 ### Payment Processing:
 

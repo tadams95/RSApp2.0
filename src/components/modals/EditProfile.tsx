@@ -14,6 +14,12 @@ import { getDatabase, ref, update } from "firebase/database";
 
 import { useSelector } from "react-redux";
 import { selectLocalId } from "../../store/redux/userSlice";
+import {
+  formatPhoneNumberInput,
+  validateEmail,
+  validateName,
+  validatePhoneNumber,
+} from "./EditProfileValidation";
 
 // Define interfaces for component props
 interface EditProfileProps {
@@ -29,6 +35,14 @@ interface UserDataUpdate {
   phoneNumber?: string;
 }
 
+// Interface for form validation errors
+interface FormErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
 const EditProfile: React.FC<EditProfileProps> = ({
   onProfileUpdated,
   onCancel,
@@ -38,12 +52,54 @@ const EditProfile: React.FC<EditProfileProps> = ({
   const [lastName, setLastName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Get user ID from Redux store
   const userId = useSelector(selectLocalId);
 
   // Get Firebase Realtime Database instance
   const database = getDatabase();
+
+  /**
+   * Validates form fields when they change
+   */
+  const validateField = (field: keyof FormErrors, value: string) => {
+    let error = "";
+
+    switch (field) {
+      case "firstName":
+      case "lastName":
+        const nameValidation = validateName(value);
+        if (!nameValidation.isValid && value.trim() !== "") {
+          error = nameValidation.errorMessage;
+        }
+        break;
+      case "email":
+        const emailValidation = validateEmail(value);
+        if (!emailValidation.isValid) {
+          error = emailValidation.errorMessage;
+        }
+        break;
+      case "phoneNumber":
+        const phoneValidation = validatePhoneNumber(value);
+        if (!phoneValidation.isValid) {
+          error = phoneValidation.errorMessage;
+        }
+        break;
+    }
+
+    setFormErrors((prev) => ({ ...prev, [field]: error }));
+  };
+
+  /**
+   * Handle input change for phone number with formatting
+   */
+  const handlePhoneChange = (text: string) => {
+    const formattedNumber = formatPhoneNumberInput(text);
+    setPhoneNumber(formattedNumber);
+    validateField("phoneNumber", formattedNumber);
+  };
 
   /**
    * Handles canceling the edit process
@@ -53,6 +109,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
     setLastName("");
     setEmail("");
     setPhoneNumber("");
+    setFormErrors({});
     onCancel();
   };
 
@@ -64,17 +121,70 @@ const EditProfile: React.FC<EditProfileProps> = ({
     setLastName("");
     setEmail("");
     setPhoneNumber("");
+    setFormErrors({});
+  };
+
+  /**
+   * Validates the entire form
+   */
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+    let isValid = true;
+
+    // Only validate fields that have values
+    if (firstName) {
+      const firstNameValidation = validateName(firstName);
+      if (!firstNameValidation.isValid) {
+        errors.firstName = firstNameValidation.errorMessage;
+        isValid = false;
+      }
+    }
+
+    if (lastName) {
+      const lastNameValidation = validateName(lastName);
+      if (!lastNameValidation.isValid) {
+        errors.lastName = lastNameValidation.errorMessage;
+        isValid = false;
+      }
+    }
+
+    if (email) {
+      const emailValidation = validateEmail(email);
+      if (!emailValidation.isValid) {
+        errors.email = emailValidation.errorMessage;
+        isValid = false;
+      }
+    }
+
+    if (phoneNumber) {
+      const phoneValidation = validatePhoneNumber(phoneNumber);
+      if (!phoneValidation.isValid) {
+        errors.phoneNumber = phoneValidation.errorMessage;
+        isValid = false;
+      }
+    }
+
+    setFormErrors(errors);
+    return isValid;
   };
 
   /**
    * Handles confirming and saving profile changes
    */
-  const confirmEditHandler = (): void => {
+  const confirmEditHandler = async (): Promise<void> => {
     // Make sure we have a user ID before attempting to update
     if (!userId) {
       console.error("User ID not available");
       return;
     }
+
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
+
+    // Set submitting state to true to show loading state if needed
+    setIsSubmitting(true);
 
     // Reference to the user node in the database
     const userRef = ref(database, `users/${userId}`);
@@ -89,20 +199,26 @@ const EditProfile: React.FC<EditProfileProps> = ({
     // Only update if there are changes to make
     if (Object.keys(updatedUserData).length === 0) {
       console.warn("No changes to update");
+      setIsSubmitting(false);
       onCancel();
       return;
     }
 
-    // Update the specific fields of the user's details in the database
-    update(userRef, updatedUserData)
-      .then(() => {
-        resetFields();
-        onProfileUpdated();
-      })
-      .catch((error) => {
-        console.error("Error updating user details:", error);
-        // Handle any errors that occur during the update process
+    try {
+      // Update the specific fields of the user's details in the database
+      await update(userRef, updatedUserData);
+      resetFields();
+      onProfileUpdated();
+    } catch (error) {
+      console.error("Error updating user details:", error);
+      // Set specific error messages based on error type
+      setFormErrors({
+        ...formErrors,
+        firstName: "Profile update failed. Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -119,54 +235,75 @@ const EditProfile: React.FC<EditProfileProps> = ({
         <View style={styles.editProfileContainer}>
           <Text style={styles.subtitle}>First Name</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, formErrors.firstName && styles.inputError]}
             placeholder="First Name Change"
             placeholderTextColor="#666"
             value={firstName}
-            onChangeText={setFirstName}
+            onChangeText={(text) => {
+              setFirstName(text);
+              validateField("firstName", text);
+            }}
             autoCapitalize="words"
             accessibilityLabel="First Name input"
             accessibilityHint="Enter your first name"
           />
+          {formErrors.firstName ? (
+            <Text style={styles.errorText}>{formErrors.firstName}</Text>
+          ) : null}
 
           <Text style={styles.subtitle}>Last Name</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, formErrors.lastName && styles.inputError]}
             placeholder="Last Name Change"
             placeholderTextColor="#666"
             value={lastName}
-            onChangeText={setLastName}
+            onChangeText={(text) => {
+              setLastName(text);
+              validateField("lastName", text);
+            }}
             accessibilityLabel="Last Name input"
             accessibilityHint="Enter your last name"
           />
+          {formErrors.lastName ? (
+            <Text style={styles.errorText}>{formErrors.lastName}</Text>
+          ) : null}
 
           <Text style={styles.subtitle}>Email</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, formErrors.email && styles.inputError]}
             placeholder="Email"
             placeholderTextColor="#666"
             autoCapitalize="none"
             secureTextEntry={false}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              validateField("email", text);
+            }}
             value={email}
             inputMode="email"
             accessibilityLabel="Email input"
             accessibilityHint="Enter your email address"
           />
+          {formErrors.email ? (
+            <Text style={styles.errorText}>{formErrors.email}</Text>
+          ) : null}
 
           <Text style={styles.subtitle}>Phone Number</Text>
           <TextInput
-            style={styles.input}
-            placeholder="Phone Number"
+            style={[styles.input, formErrors.phoneNumber && styles.inputError]}
+            placeholder="(555) 555-5555"
             placeholderTextColor="#666"
             autoCapitalize="none"
             secureTextEntry={false}
-            onChangeText={setPhoneNumber}
+            onChangeText={handlePhoneChange}
             value={phoneNumber}
-            inputMode="numeric"
+            inputMode="tel"
             accessibilityLabel="Phone Number input"
             accessibilityHint="Enter your phone number"
           />
+          {formErrors.phoneNumber ? (
+            <Text style={styles.errorText}>{formErrors.phoneNumber}</Text>
+          ) : null}
         </View>
 
         {/* Tab Container */}
@@ -176,17 +313,21 @@ const EditProfile: React.FC<EditProfileProps> = ({
             style={styles.tabButton}
             accessibilityRole="button"
             accessibilityLabel="Cancel edit"
+            disabled={isSubmitting}
           >
             <Text style={styles.buttonText}>CANCEL</Text>
           </Pressable>
 
           <Pressable
             onPress={confirmEditHandler}
-            style={styles.tabButton}
+            style={[styles.tabButton, isSubmitting && styles.disabledButton]}
             accessibilityRole="button"
             accessibilityLabel="Confirm edit"
+            disabled={isSubmitting}
           >
-            <Text style={styles.buttonText}>CONFIRM</Text>
+            <Text style={styles.buttonText}>
+              {isSubmitting ? "UPDATING..." : "CONFIRM"}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -237,6 +378,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#555",
   },
+  inputError: {
+    borderColor: "#FF6B6B", // Red border for error state
+  },
+  errorText: {
+    color: "#FF6B6B",
+    fontSize: 12,
+    marginBottom: 10,
+    marginTop: -8,
+    fontFamily,
+  },
   editProfileContainer: {
     paddingTop: 10,
     width: "100%",
@@ -257,6 +408,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#555",
     width: "48%",
+  },
+  disabledButton: {
+    backgroundColor: "#333",
+    borderColor: "#444",
+    opacity: 0.7,
   },
   buttonText: {
     fontFamily,
