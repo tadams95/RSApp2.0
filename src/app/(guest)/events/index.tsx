@@ -2,7 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack } from "expo-router";
-import { collection, getDocs, Timestamp } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  getFirestore,
+  Timestamp,
+} from "firebase/firestore";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -18,8 +23,15 @@ import {
 } from "react-native";
 import { navigateToGuestEvent } from "../../../utils/navigation";
 
-// Import Firebase
-import { getFirestore } from "firebase/firestore";
+// Import error handling utilities
+import NetInfo from "@react-native-community/netinfo"; // For network status checking
+import { extractDatabaseErrorCode } from "../../../utils/databaseErrorHandler";
+import {
+  getRetryBackoffTime,
+  handleEventFetchError,
+  sanitizeEventData,
+  shouldRetryEventFetch,
+} from "../../../utils/eventDataHandler";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -45,50 +57,125 @@ const GuestEvent: React.FC = () => {
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
+  const [retryAttempts, setRetryAttempts] = useState(0);
   const flatListRef = useRef<Animated.FlatList>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
   const [isScrollEnabled, setIsScrollEnabled] = useState<boolean>(true);
 
+  // Monitor network status
   useEffect(() => {
-    const fetchEventData = async (): Promise<void> => {
-      try {
-        const db = getFirestore();
-        const eventCollectionRef = collection(db, "events");
-        const eventSnapshot = await getDocs(eventCollectionRef);
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsOffline(!state.isConnected);
+    });
 
-        const currentDate = new Date();
+    return () => unsubscribe();
+  }, []);
 
-        // Filter out past events
-        const eventData = eventSnapshot.docs
-          .map(
-            (doc) =>
-              ({
-                id: doc.id,
-                ...doc.data(),
-              } as EventData)
-          )
-          .filter((event) => {
+  // Function to fetch event data with error handling
+  const fetchEventData = useCallback(async (): Promise<void> => {
+    try {
+      // Clear previous errors
+      setErrorMessage(null);
+
+      const db = getFirestore();
+      const eventCollectionRef = collection(db, "events");
+      const eventSnapshot = await getDocs(eventCollectionRef);
+
+      const currentDate = new Date();
+
+      // Filter out past events with added sanitization and error handling
+      const eventData = eventSnapshot.docs
+        .map((doc) => {
+          // Apply data sanitization to each event
+          const rawData = { id: doc.id, ...doc.data() };
+          return sanitizeEventData(rawData);
+        })
+        .filter((event) => {
+          try {
             if (!event.dateTime) return false;
             const eventDateTime = event.dateTime.toDate();
             return eventDateTime >= currentDate;
-          })
-          .sort((a, b) => {
-            // Sort events by date
+          } catch (error) {
+            console.warn("Date filtering error for event:", event.name, error);
+            return false; // Skip this event if date can't be processed
+          }
+        })
+        .sort((a, b) => {
+          // Sort events by date with error handling
+          try {
             return (
               a.dateTime.toDate().getTime() - b.dateTime.toDate().getTime()
             );
-          });
+          } catch (error) {
+            console.warn("Date sorting error, using current time as fallback");
+            return 0; // Default to equality if dates can't be compared
+          }
+        });
 
-        setEvents(eventData);
-      } catch (error) {
-        console.error("Error fetching event data:", error);
-      } finally {
-        setIsLoading(false);
+      // Reset retry attempts on success
+      setRetryAttempts(0);
+      setEvents(eventData);
+    } catch (error) {
+      // Get the specific error code
+      const errorCode = extractDatabaseErrorCode(error);
+
+      // Log detailed error info
+      const userMessage = handleEventFetchError(
+        error,
+        "GuestEvent.fetchEventData",
+        {
+          retryAttempt: retryAttempts,
+        }
+      );
+
+      setErrorMessage(userMessage);
+
+      // Check if retry is appropriate
+      if (shouldRetryEventFetch(errorCode, retryAttempts)) {
+        const backoffTime = getRetryBackoffTime(retryAttempts);
+
+        console.log(
+          `Retrying event fetch in ${backoffTime}ms (attempt ${
+            retryAttempts + 1
+          })`
+        );
+
+        // Schedule retry
+        setTimeout(() => {
+          setRetryAttempts((prev) => prev + 1);
+        }, backoffTime);
+      }
+
+      // Keep existing events if any, don't clear them on error
+    } finally {
+      setIsLoading(false);
+    }
+  }, [retryAttempts]);
+
+  // Trigger event fetching
+  useEffect(() => {
+    fetchEventData();
+
+    // Also fetch when coming back online
+    const handleOnlineStatus = () => {
+      if (!isOffline && events.length === 0) {
+        setIsLoading(true);
+        fetchEventData();
       }
     };
 
-    fetchEventData();
-  }, []);
+    // Listen for offline/online transitions
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected && isOffline) {
+        handleOnlineStatus();
+      }
+      setIsOffline(!state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, [fetchEventData, isOffline, events.length]);
 
   const handleEventPress = (event: EventData): void => {
     // Format date for display and navigation
@@ -113,6 +200,12 @@ const GuestEvent: React.FC = () => {
     setLoadedImages((prev) => ({ ...prev, [eventId]: true }));
   };
 
+  const handleImageError = (eventId: string): void => {
+    console.warn(`Failed to load image for event: ${eventId}`);
+    // Mark as loaded to remove spinner, will show fallback image
+    setLoadedImages((prev) => ({ ...prev, [eventId]: true }));
+  };
+
   const handlePressIn = useCallback((): void => {
     setIsScrollEnabled(false);
   }, []);
@@ -129,21 +222,46 @@ const GuestEvent: React.FC = () => {
     item: EventData;
     index: number;
   }) => {
-    const eventId = item.name + index;
+    const eventId = `${item.name || "unnamed"}-${index}`;
     const isImageLoaded = loadedImages[eventId];
-    const formattedDate = format(item.dateTime.toDate(), "MMM dd, yyyy");
+
+    // Safely format date with fallback
+    let formattedDate = "Date TBD";
+    try {
+      if (item.dateTime && item.dateTime instanceof Timestamp) {
+        formattedDate = format(item.dateTime.toDate(), "MMM dd, yyyy");
+      }
+    } catch (error) {
+      console.warn(`Error formatting date for ${item.name}:`, error);
+    }
+
+    // Format price safely
+    const priceDisplay =
+      typeof item.price === "number"
+        ? `$${item.price.toFixed(2)}`
+        : typeof item.price === "string"
+        ? `$${item.price}`
+        : "Price TBD";
 
     return (
       <View
         style={styles.eventSlide}
         accessibilityRole="button"
-        accessibilityLabel={`Event: ${item.name}, Date: ${formattedDate}, Price: $${item.price}`}
+        accessibilityLabel={`Event: ${
+          item.name || "Event"
+        }, Date: ${formattedDate}, Price: ${priceDisplay}`}
       >
         <Image
-          source={{ uri: item.imgURL }}
+          source={
+            typeof item.imgURL === "string" && item.imgURL.trim() !== ""
+              ? { uri: item.imgURL }
+              : require("../../../assets/BlurHero_2.png")
+          }
           style={styles.eventImage}
           onLoad={() => handleImageLoad(eventId)}
-          accessibilityLabel={`Image for event ${item.name}`}
+          onError={() => handleImageError(eventId)}
+          defaultSource={require("../../../assets/BlurHero_2.png")}
+          accessibilityLabel={`Image for event ${item.name || "Unnamed event"}`}
         />
 
         {!isImageLoaded && (
@@ -160,7 +278,7 @@ const GuestEvent: React.FC = () => {
 
         <View style={styles.eventContent}>
           <Text style={styles.eventName} accessibilityRole="header">
-            {item.name}
+            {item.name || "Unnamed Event"}
           </Text>
 
           <View style={styles.detailsContainer}>
@@ -171,8 +289,15 @@ const GuestEvent: React.FC = () => {
 
             <View style={styles.detailRow}>
               <Ionicons name="cash-outline" size={18} color="white" />
-              <Text style={styles.detailText}>${item.price}</Text>
+              <Text style={styles.detailText}>{priceDisplay}</Text>
             </View>
+
+            {item.location && (
+              <View style={styles.detailRow}>
+                <Ionicons name="location-outline" size={18} color="white" />
+                <Text style={styles.detailText}>{item.location}</Text>
+              </View>
+            )}
           </View>
 
           <TouchableWithoutFeedback
@@ -194,6 +319,7 @@ const GuestEvent: React.FC = () => {
     );
   };
 
+  // Show loading state
   if (isLoading) {
     return (
       <View
@@ -207,6 +333,56 @@ const GuestEvent: React.FC = () => {
     );
   }
 
+  // Show network offline state
+  if (isOffline) {
+    return (
+      <View style={styles.emptyContainer} accessibilityLabel="Network error">
+        <Ionicons name="cloud-offline" size={70} color="#ef4444" />
+        <Text style={styles.emptyTitle}>You're Offline</Text>
+        <Text style={styles.emptySubtitle}>
+          Please check your connection and try again
+        </Text>
+        {events.length > 0 && (
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() =>
+              NetInfo.fetch().then((state) => setIsOffline(!state.isConnected))
+            }
+          >
+            <Text style={styles.retryButtonText}>
+              Show Cached Events ({events.length})
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
+  // Show error state with retry option
+  if (errorMessage && events.length === 0) {
+    return (
+      <View
+        style={styles.emptyContainer}
+        accessibilityLabel="Error loading events"
+      >
+        <Ionicons name="alert-circle-outline" size={70} color="#ef4444" />
+        <Text style={styles.emptyTitle}>Couldn't Load Events</Text>
+        <Text style={styles.emptySubtitle}>{errorMessage}</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => {
+            setIsLoading(true);
+            setRetryAttempts(0);
+            fetchEventData();
+          }}
+        >
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Show empty state when no events
   if (events.length === 0) {
     return (
       <View
@@ -221,6 +397,9 @@ const GuestEvent: React.FC = () => {
       </View>
     );
   }
+
+  // If there are events but also errors, show a non-intrusive error banner
+  const showErrorBanner = errorMessage && events.length > 0;
 
   return (
     <>
@@ -311,6 +490,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "black",
+  },
+  retryButton: {
+    backgroundColor: "#222",
+    borderWidth: 1,
+    borderColor: "white",
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 20,
+  },
+  retryButtonText: {
+    fontFamily,
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  errorBanner: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 50 : 30,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(239, 68, 68, 0.9)",
+    padding: 10,
+    zIndex: 1000,
+  },
+  errorBannerText: {
+    fontFamily,
+    color: "white",
+    textAlign: "center",
+    fontSize: 14,
   },
   loaderText: {
     color: "white",

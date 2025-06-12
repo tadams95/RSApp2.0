@@ -68,8 +68,14 @@ Firestore operations can fail due to network issues, permissions, or data constr
 - [ ] **Read Operation Errors**:
 
   - [x] Handle document not found errors in `/src/app/(app)/events/[id].tsx`
-  - [ ] Create fallbacks for missing data in event listings
-  - [ ] Add error handling for collection queries in `/src/components/modals/MyEvents.tsx`
+  - [x] Create fallbacks for missing data in event listings
+    - [x] Add field-level validation and fallbacks for all event properties in the rendered UI
+    - [x] Implement robust error handling during fetch operations with error classification
+    - [x] Add retry mechanisms with exponential backoff for failed event queries
+    - [x] Implement UI indicators for network status awareness (offline mode)
+    - [x] Add fallback images and better error handling for image loading failures
+    - [x] Utilize Firebase cache strategies for showing stale data when fresh data is unavailable
+  - [x] Add error handling for collection queries in `/src/components/modals/MyEvents.tsx`
 
 - [ ] **Write Operation Errors**:
 

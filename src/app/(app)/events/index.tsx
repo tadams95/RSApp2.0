@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import NetInfo from "@react-native-community/netinfo"; // For network status checking
 import { format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import {
   collection,
   getDocs,
+  getFirestore,
   query,
   Timestamp,
   where,
@@ -12,6 +14,7 @@ import {
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -28,7 +31,15 @@ import {
 } from "react-native";
 
 // Import from firebase
-import { db } from "../../../firebase/firebase";
+
+// Import our error handling utilities
+import { extractDatabaseErrorCode } from "../../../utils/databaseErrorHandler";
+import {
+  getRetryBackoffTime,
+  handleEventFetchError,
+  sanitizeEventData,
+  shouldRetryEventFetch,
+} from "../../../utils/eventDataHandler";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -52,76 +63,191 @@ export default function EventsScreen() {
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
+  const [retryAttempts, setRetryAttempts] = useState(0);
   const flatListRef = useRef<FlatList<EventData>>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
 
+  // Monitor network status
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsOffline(!state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const fetchEventData = useCallback(async () => {
     try {
+      // Clear previous errors
+      setErrorMessage(null);
+
+      // Use getFirestore instead of imported db to avoid type issues
+      const firestore = getFirestore();
       const currentDate = new Date();
-      const eventCollectionRef = collection(db, "events");
+      const eventCollectionRef = collection(firestore, "events");
       const q = query(eventCollectionRef, where("dateTime", ">=", currentDate));
       const eventSnapshot = await getDocs(q);
 
       const eventData = eventSnapshot.docs
-        .map(
-          (doc) =>
-            ({
-              id: doc.id,
-              ...doc.data(),
-            } as EventData)
-        )
+        .map((doc) => {
+          // Apply data sanitization to each event
+          const rawData = { id: doc.id, ...doc.data() };
+          return sanitizeEventData(rawData);
+        })
         .sort((a, b) => {
-          // Sort events by date
-          return a.dateTime.toDate().getTime() - b.dateTime.toDate().getTime();
+          // Sort events by date - with fallback for invalid dates
+          try {
+            return (
+              a.dateTime.toDate().getTime() - b.dateTime.toDate().getTime()
+            );
+          } catch (error) {
+            console.warn("Date sorting error, using current time as fallback");
+            return 0; // Default to equality if dates can't be compared
+          }
         });
 
+      // Reset retry attempts on success
+      setRetryAttempts(0);
       setEvents(eventData);
     } catch (error) {
-      console.error("Error fetching event data:", error);
+      // Get the specific error code
+      const errorCode = extractDatabaseErrorCode(error);
+
+      // Log detailed error info
+      const userMessage = handleEventFetchError(
+        error,
+        "EventsScreen.fetchEventData",
+        {
+          retryAttempt: retryAttempts,
+        }
+      );
+
+      setErrorMessage(userMessage);
+
+      // Check if retry is appropriate
+      if (shouldRetryEventFetch(errorCode, retryAttempts)) {
+        const backoffTime = getRetryBackoffTime(retryAttempts);
+
+        console.log(
+          `Retrying event fetch in ${backoffTime}ms (attempt ${
+            retryAttempts + 1
+          })`
+        );
+
+        // Schedule retry
+        setTimeout(() => {
+          setRetryAttempts((prev) => prev + 1);
+        }, backoffTime);
+      }
+
+      // Keep existing events if any, don't clear them on error
+      // This allows showing stale data if available
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [retryAttempts]);
 
   useEffect(() => {
     fetchEventData();
-  }, [fetchEventData]);
+
+    // Also fetch when coming back online
+    const handleOnlineStatus = () => {
+      if (!isOffline && events.length === 0) {
+        setIsLoading(true);
+        fetchEventData();
+      }
+    };
+
+    // Listen for offline/online transitions
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected && isOffline) {
+        handleOnlineStatus();
+      }
+      setIsOffline(!state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, [fetchEventData, isOffline, events.length]);
 
   const handleEventPress = useCallback((event: EventData) => {
-    const formattedDateTime = format(
-      event.dateTime.toDate(),
-      "MMM dd, yyyy hh:mm a"
-    );
+    // Format date safely with fallback
+    let formattedDateTime = "Date TBD";
+    try {
+      if (event.dateTime && event.dateTime instanceof Timestamp) {
+        formattedDateTime = format(
+          event.dateTime.toDate(),
+          "MMM dd, yyyy hh:mm a"
+        );
+      }
+    } catch (error) {
+      console.warn(`Error formatting date for ${event.name}:`, error);
+    }
 
-    router.push({
-      pathname: `/(app)/events/${event.id || event.name}`,
-      params: {
-        id: event.id || event.name,
-        eventData: JSON.stringify({
-          ...event,
-          dateTime: formattedDateTime,
-        }),
-      },
-    });
+    // Ensure we have a valid ID for navigation
+    const eventId = event.id || event.name || `event-${Date.now()}`;
+
+    try {
+      router.push({
+        pathname: `/(app)/events/${eventId}`,
+        params: {
+          id: eventId,
+          eventData: JSON.stringify({
+            ...event,
+            dateTime: formattedDateTime,
+          }),
+        },
+      });
+    } catch (error) {
+      console.error("Navigation error:", error);
+      Alert.alert(
+        "Navigation Error",
+        "Could not open event details. Please try again."
+      );
+    }
   }, []);
 
   const handleImageLoad = (eventId: string) => {
     setLoadedImages((prev) => ({ ...prev, [eventId]: true }));
   };
 
+  const handleImageError = (eventId: string) => {
+    console.warn(`Failed to load image for event: ${eventId}`);
+    // Mark as loaded to remove spinner, will show fallback or placeholder
+    setLoadedImages((prev) => ({ ...prev, [eventId]: true }));
+  };
+
   const renderEventItem = useCallback(
     ({ item, index }: { item: EventData; index: number }) => {
-      const eventId = `${item.name}-${index}`;
+      const eventId = `${item.name || "unnamed"}-${index}`;
       const isImageLoaded = loadedImages[eventId];
-      const formattedDate = format(item.dateTime.toDate(), "MMM dd, yyyy");
-      const remainingTickets = item.quantity || 0;
+
+      // Safely format date with fallback
+      let formattedDate = "Date TBD";
+      try {
+        if (item.dateTime && item.dateTime instanceof Timestamp) {
+          formattedDate = format(item.dateTime.toDate(), "MMM dd, yyyy");
+        }
+      } catch (error) {
+        console.warn(`Error formatting date for ${item.name}:`, error);
+      }
+
+      const remainingTickets =
+        typeof item.quantity === "number" ? item.quantity : 0;
 
       return (
         <View style={styles.eventSlide}>
           <Image
-            source={{ uri: item.imgURL }}
+            source={
+              typeof item.imgURL === "string" && item.imgURL.trim() !== ""
+                ? { uri: item.imgURL }
+                : require("../../../assets/BlurHero_2.png")
+            }
             style={styles.eventImage}
             onLoad={() => handleImageLoad(eventId)}
+            onError={() => handleImageError(eventId)}
+            defaultSource={require("../../../assets/BlurHero_2.png")}
           />
 
           {!isImageLoaded && (
@@ -138,11 +264,13 @@ export default function EventsScreen() {
 
           {/* Price tag */}
           <View style={styles.priceTag}>
-            <Text style={styles.priceText}>${item.price}</Text>
+            <Text style={styles.priceText}>
+              ${typeof item.price === "number" ? item.price.toFixed(2) : "0.00"}
+            </Text>
           </View>
 
           <View style={styles.eventContent}>
-            <Text style={styles.eventName}>{item.name}</Text>
+            <Text style={styles.eventName}>{item.name || "Unnamed Event"}</Text>
 
             <View style={styles.detailsContainer}>
               <View style={styles.detailRow}>
@@ -197,6 +325,7 @@ export default function EventsScreen() {
     [handleEventPress, loadedImages]
   );
 
+  // Show loading state
   if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
@@ -206,6 +335,53 @@ export default function EventsScreen() {
     );
   }
 
+  // Show network offline state
+  if (isOffline) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="cloud-offline" size={70} color="#ef4444" />
+        <Text style={styles.emptyTitle}>You're Offline</Text>
+        <Text style={styles.emptySubtitle}>
+          Please check your connection and try again
+        </Text>
+        {events.length > 0 && (
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() =>
+              NetInfo.fetch().then((state) => setIsOffline(!state.isConnected))
+            }
+          >
+            <Text style={styles.retryButtonText}>
+              Show Cached Events ({events.length})
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
+  // Show error state with retry option
+  if (errorMessage && events.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="alert-circle-outline" size={70} color="#ef4444" />
+        <Text style={styles.emptyTitle}>Couldn't Load Events</Text>
+        <Text style={styles.emptySubtitle}>{errorMessage}</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => {
+            setIsLoading(true);
+            setRetryAttempts(0);
+            fetchEventData();
+          }}
+        >
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Show empty state when no events
   if (events.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -218,6 +394,9 @@ export default function EventsScreen() {
     );
   }
 
+  // If there are events but also errors, show a non-intrusive error banner
+  const showErrorBanner = errorMessage && events.length > 0;
+
   return (
     <View style={styles.container}>
       <StatusBar
@@ -226,11 +405,29 @@ export default function EventsScreen() {
         backgroundColor="transparent"
       />
 
+      {/* Show error banner if there are events but we also have errors */}
+      {showErrorBanner && (
+        <TouchableOpacity
+          style={styles.errorBanner}
+          onPress={() => {
+            setIsLoading(true);
+            setRetryAttempts(0);
+            fetchEventData();
+          }}
+        >
+          <Text style={styles.errorBannerText}>
+            {errorMessage} (Tap to retry)
+          </Text>
+        </TouchableOpacity>
+      )}
+
       <AnimatedFlatList
         ref={flatListRef}
         data={events}
         renderItem={renderEventItem}
-        keyExtractor={(item, index) => `${item.id || item.name}-${index}`}
+        keyExtractor={(item, index) =>
+          `${item.id || item.name || "event"}-${index}`
+        }
         showsVerticalScrollIndicator={false}
         snapToInterval={SCREEN_HEIGHT}
         snapToAlignment="start"
@@ -312,6 +509,10 @@ interface Styles {
   emptySubtitle: TextStyle;
   paginationWrapper: ViewStyle;
   paginationDot: ViewStyle;
+  retryButton: ViewStyle;
+  retryButtonText: TextStyle;
+  errorBanner: ViewStyle;
+  errorBannerText: TextStyle;
 }
 
 const styles = StyleSheet.create<Styles>({
@@ -460,5 +661,35 @@ const styles = StyleSheet.create<Styles>({
     borderRadius: 4,
     backgroundColor: "white",
     marginVertical: 3,
+  },
+  retryButton: {
+    backgroundColor: "#222",
+    borderWidth: 1,
+    borderColor: "white",
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 20,
+  },
+  retryButtonText: {
+    fontFamily,
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  errorBanner: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 50 : 30,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(239, 68, 68, 0.9)",
+    padding: 10,
+    zIndex: 1000,
+  },
+  errorBannerText: {
+    fontFamily,
+    color: "white",
+    textAlign: "center",
+    fontSize: 14,
   },
 });
