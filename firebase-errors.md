@@ -79,15 +79,30 @@ Firestore operations can fail due to network issues, permissions, or data constr
 
 - [ ] **Write Operation Errors**:
 
-  - [ ] Handle permission denied errors for document creation
-  - [ ] Add validation before write operations to prevent schema errors
-  - [ ] Implement retry mechanisms for failed writes in `/src/app/(app)/cart/index.tsx`
+  - [x] Extend `databaseErrorHandler.ts` with write operation error codes
+    - [x] Add authentication verification in cart checkout process
+    - [x] Implement user-friendly permission error messages
+  - [ ] Validate order data in checkout process
+    - [ ] Add pre-submission validation for cart data completeness
+    - [ ] Implement field-level error reporting in the checkout form
+  - [ ] Add retry mechanisms in cart operations
+    - [ ] Apply existing `retryWithBackoff` utility to order creation
+    - [ ] Implement manual recovery UI for failed write operations
 
 - [ ] **Transaction Failures**:
 
   - [ ] Add robust error handling for multi-document transactions
-  - [ ] Implement rollback mechanisms for failed order processing
+    - [ ] Create simple transaction wrapper with retry capability
+    - [ ] Implement error logging for failed transactions
+    - [ ] Add user-friendly error messages for transaction failures
+  - [ ] Implement basic recovery for failed order processing
+    - [ ] Save order state to allow resuming the process
+    - [ ] Ensure idempotent operations to prevent duplicate orders
+    - [ ] Add order reconciliation checks when recovering from failures
   - [ ] Create consistent error messages for transaction conflicts
+    - [ ] Add user guidance for resolving common conflicts
+    - [ ] Implement simple conflict detection for concurrent operations
+    - [ ] Provide clear recovery steps in the UI
 
 - [ ] **Pagination Errors**:
   - [ ] Handle cursor errors in paginated queries

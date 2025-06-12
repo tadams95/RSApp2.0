@@ -27,6 +27,14 @@ export type FirebaseDatabaseErrorCode =
   | "out-of-range"
   | "unimplemented"
   | "unknown"
+  // Write operation specific error codes
+  | "write-operation-failed"
+  | "data-validation-failed"
+  | "insufficient-permissions"
+  | "concurrent-modification"
+  | "write-conflict"
+  | "quota-exceeded"
+  | "network-error"
   | string; // For any other codes not explicitly listed
 
 // Common interface for database errors
@@ -224,5 +232,153 @@ export function getProfileUpdateRecoveryAction(error: any): {
 
     default:
       return { actionText: "Try Again", action: "retry" };
+  }
+}
+
+/**
+ * Handles errors that occur during Firebase write operations
+ * @param error Any error that might have occurred during a write operation
+ * @returns An object with user-friendly message, recovery options, and error code
+ */
+export function handleWriteOperationError(error: any): {
+  message: string;
+  recoverable: boolean;
+  code: FirebaseDatabaseErrorCode;
+  action?: "retry" | "check-auth" | "check-connection" | "contact-support";
+} {
+  const errorCode = extractDatabaseErrorCode(error);
+
+  switch (errorCode) {
+    case "permission-denied":
+    case "insufficient-permissions":
+    case "unauthenticated":
+      return {
+        message:
+          "You don't have permission to perform this action. Please log in again and retry.",
+        recoverable: true,
+        code: "insufficient-permissions",
+        action: "check-auth",
+      };
+
+    case "unavailable":
+    case "deadline-exceeded":
+    case "network-error":
+      return {
+        message:
+          "Network issue detected. Please check your connection and try again.",
+        recoverable: true,
+        code: "network-error",
+        action: "check-connection",
+      };
+
+    case "invalid-argument":
+    case "data-validation-failed":
+      return {
+        message:
+          "The data you're trying to save contains invalid values. Please check your input and try again.",
+        recoverable: true,
+        code: "data-validation-failed",
+      };
+
+    case "write-conflict":
+    case "concurrent-modification":
+      return {
+        message:
+          "This data was modified elsewhere. Please refresh and try again.",
+        recoverable: true,
+        code: "write-conflict",
+      };
+
+    case "resource-exhausted":
+    case "quota-exceeded":
+      return {
+        message:
+          "Service is currently busy. Please try again in a few moments.",
+        recoverable: true,
+        code: "quota-exceeded",
+      };
+
+    case "internal":
+    case "data-loss":
+      return {
+        message: "A server error occurred. Our team has been notified.",
+        recoverable: false,
+        code: "write-operation-failed",
+        action: "contact-support",
+      };
+
+    default:
+      return {
+        message: "An error occurred while saving data. Please try again.",
+        recoverable: true,
+        code: "write-operation-failed",
+      };
+  }
+}
+
+/**
+ * Verifies authentication state before performing cart operations
+ * Returns current user ID if authenticated or throws a standardized error
+ *
+ * @param currentUserId The current user ID from auth state
+ * @returns The verified user ID
+ * @throws Standardized error with appropriate code if not authenticated
+ */
+export function verifyAuthForCartOperation(
+  currentUserId: string | null | undefined
+): string {
+  // Check if user ID exists
+  if (!currentUserId) {
+    const error = new Error("User authentication required for this operation");
+    // Set properties to match Firebase error format for consistent handling
+    (error as any).code = "insufficient-permissions";
+    throw error;
+  }
+
+  return currentUserId;
+}
+
+/**
+ * Generates user-friendly messages for permission-related errors
+ * Contextualizes the error message based on the operation being performed
+ *
+ * @param error The original error object
+ * @param operation The specific operation being performed (e.g., 'checkout', 'order', 'profile-update')
+ * @returns User-friendly error message with guidance
+ */
+export function getUserFriendlyPermissionMessage(
+  error: any,
+  operation:
+    | "checkout"
+    | "order-creation"
+    | "profile-update"
+    | "cart-update"
+    | string
+): string {
+  const errorCode = extractDatabaseErrorCode(error);
+
+  // Base message by operation type
+  const baseMessages = {
+    checkout: "We couldn't complete your checkout",
+    "order-creation": "We couldn't create your order",
+    "profile-update": "We couldn't update your profile",
+    "cart-update": "We couldn't update your cart",
+  };
+
+  const baseMessage =
+    baseMessages[operation as keyof typeof baseMessages] ||
+    "We couldn't complete your request";
+
+  // Add specific guidance based on error code
+  switch (errorCode) {
+    case "permission-denied":
+    case "insufficient-permissions":
+      return `${baseMessage} because you don't have permission. Please sign in again to continue.`;
+
+    case "unauthenticated":
+      return `${baseMessage} because your session has expired. Please sign in again.`;
+
+    default:
+      return `${baseMessage} due to an authentication issue. Please try signing out and back in.`;
   }
 }
