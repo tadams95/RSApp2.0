@@ -19,7 +19,7 @@ This document outlines potential Firebase-related errors that can occur in the R
 Initial setup of Firebase services can fail in various ways, particularly on app startup.
 
 - [ ] **Connection Failure Handling**:
- 
+
   - [ ] Add offline detection and fallback behavior
   - [ ] Create user-friendly error messages for initialization failures
 
@@ -37,17 +37,17 @@ Initial setup of Firebase services can fail in various ways, particularly on app
 
 Authentication errors are among the most common user-facing issues in Firebase apps.
 
-- [ ] **Sign Up Errors**:
+- [x] **Sign Up Errors**:
 
   - [x] Handle "email already in use" errors in `/src/app/(auth)/signup.tsx`
-  - [ ] Add better validation for weak passwords with specific guidance
-  - [ ] Create intuitive error UIs for Firebase auth rejections
+  - [x] Add better validation for weak passwords with specific guidance
+  - [x] Create intuitive error UIs for Firebase auth rejections
 
-- [ ] **Login Errors**:
+- [x] **Login Errors**:
 
   - [x] Handle "wrong password" and "user not found" in `/src/app/(auth)/login.tsx`
-  - [ ] Add account lockout detection and guidance
-  - [ ] Implement password reset suggestions for repeated failures
+  - [x] Add account lockout detection and guidance
+  - [x] Implement password reset suggestions for repeated failures
 
 - [ ] **Session Errors**:
 
@@ -56,10 +56,10 @@ Authentication errors are among the most common user-facing issues in Firebase a
   - [ ] Handle revoked credentials and force logout scenarios
   - [ ] Create session timeout notifications
 
-- [ ] **Password Reset Errors**:
-  - [ ] Handle "user not found" for password reset attempts
-  - [ ] Add validation for reset code expiration
-  - [ ] Implement clear user guidance for recovery steps
+- [x] **Password Reset Errors**:
+  - [x] Handle "user not found" for password reset attempts
+  - [x] Add validation for reset code expiration
+  - [x] Implement clear user guidance for recovery steps
 
 ## Firestore Data Operations
 
@@ -140,7 +140,7 @@ Cloud Functions integration has its own error patterns.
 
 - [ ] **Function Call Errors**:
 
-  - [ ] Add error handling for Stripe customer creation in `/src/app/(auth)/signup.tsx`
+  - [x] Add error handling for Stripe customer creation in `/src/app/(auth)/signup.tsx`
   - [ ] Implement timeouts for long-running function calls
   - [ ] Create retry mechanisms for transient function failures
 

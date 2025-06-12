@@ -11,8 +11,9 @@ import {
 } from "react-native";
 // TODO: Update this path when auth utilities are moved to src
 import LoadingOverlay from "../../components/LoadingOverlay";
+import PasswordResetErrorNotice from "../../components/PasswordResetErrorNotice";
+import { usePasswordResetErrorHandler } from "../../hooks/usePasswordResetErrorHandler";
 import { forgotPassword } from "../../utils/auth";
-
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
@@ -20,15 +21,30 @@ export default function ForgotPasswordScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  // Use the password reset error handler
+  const {
+    error: resetError,
+    hasAttempted,
+    handleResetError,
+    handleSuccess,
+    clearError,
+  } = usePasswordResetErrorHandler();
+
   function cancelReset() {
     router.back();
   }
 
   async function confirmReset() {
+    // Clear any existing errors
+    clearError();
+    setFormError("");
+
+    // Basic form validation
     if (!email) {
       setFormError("Please enter your email address");
       return;
     }
+
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
     if (!emailRegex.test(email)) {
       setFormError("Please enter a valid email address");
@@ -36,27 +52,27 @@ export default function ForgotPasswordScreen() {
     }
 
     setIsLoading(true);
-    setFormError("");
+
     try {
-      const success = await forgotPassword(email);
-      if (success) {
+      const result = await forgotPassword(email);
+
+      if (result.success) {
+        handleSuccess();
+        // For security, we always show the same message whether the account exists or not
         Alert.alert(
           "Password Reset",
-          "If an account exists for this email, a password reset link has been sent."
+          "If an account exists for this email, you will receive reset instructions shortly."
         );
         router.back();
       } else {
-        // General message to avoid disclosing if an email exists or not
-        Alert.alert(
-          "Request Submitted",
-          "If an account exists for this email, you will receive reset instructions shortly."
+        // Handle unsuccessful attempt but don't disclose specific details
+        handleResetError(
+          new Error(result.message || "Request could not be completed")
         );
       }
     } catch (error: any) {
-      Alert.alert(
-        "Error",
-        error.message || "Failed to send reset instructions."
-      );
+      // Handle specific errors with user-friendly messages
+      handleResetError(error);
     } finally {
       setIsLoading(false);
     }
@@ -74,6 +90,14 @@ export default function ForgotPasswordScreen() {
           Enter your email address and we'll send you instructions to reset your
           password.
         </Text>
+
+        {resetError && (
+          <PasswordResetErrorNotice
+            message={resetError}
+            onRetry={clearError}
+            style={styles.errorContainer}
+          />
+        )}
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Email</Text>
@@ -127,6 +151,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.9)", // Match modal background if it's a full screen
     padding: 20,
+  },
+  errorContainer: {
+    marginBottom: 16,
+    width: "100%",
   },
   modalContent: {
     backgroundColor: "#000",

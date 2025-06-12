@@ -2,7 +2,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -16,8 +15,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import LoginErrorNotice from "../../components/LoginErrorNotice";
 import { GlobalStyles } from "../../constants/styles";
 import { useAuth } from "../../hooks/AuthContext";
+import { useLoginErrorHandler } from "../../hooks/useLoginErrorHandler";
 import { loginUser } from "../../utils/auth";
 
 export default function LoginScreen() {
@@ -29,11 +30,23 @@ export default function LoginScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
 
+  // Use the login error handler
+  const {
+    error: loginError,
+    failedAttempts,
+    recoveryAction,
+    handleLoginError,
+    clearErrors,
+    resetFailedAttempts,
+  } = useLoginErrorHandler();
+
   async function loginHandler() {
     setIsLoading(true);
+    clearErrors();
+
     try {
       if (!email || !password) {
-        Alert.alert("Invalid input", "Please provide both email and password.");
+        handleLoginError(new Error("Please provide both email and password."));
         setIsLoading(false);
         return;
       }
@@ -56,14 +69,13 @@ export default function LoginScreen() {
         ]);
       }
 
+      // Reset failed attempts counter on successful login
+      resetFailedAttempts();
+
       setAuthenticated(true);
       router.replace("/(app)/home");
     } catch (error) {
-      console.log(error);
-      Alert.alert(
-        "Authentication failed",
-        "Please check your credentials or try again later."
-      );
+      handleLoginError(error);
     } finally {
       setIsLoading(false);
     }
@@ -83,6 +95,16 @@ export default function LoginScreen() {
           <Text style={styles.title}>LOG IN</Text>
 
           <View style={styles.formContainer}>
+            {loginError && (
+              <LoginErrorNotice
+                message={loginError}
+                onRetry={clearErrors}
+                secondaryAction={recoveryAction || undefined}
+                attempts={failedAttempts}
+                style={styles.errorContainer}
+              />
+            )}
+
             <View style={styles.inputContainer}>
               <Text style={styles.label}>EMAIL</Text>
               <TextInput
@@ -226,6 +248,10 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     color: "#888",
+  },
+  errorContainer: {
+    marginBottom: 16,
+    width: "100%",
     fontSize: 16,
   },
   forgotPassword: {
