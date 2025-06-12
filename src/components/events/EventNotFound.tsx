@@ -12,6 +12,9 @@ interface EventNotFoundProps {
   onGoBack: () => void;
   onBrowseEvents: () => void;
   errorMessage?: string;
+  primaryButtonText?: string;
+  secondaryButtonText?: string;
+  errorCode?: string | null;
 }
 
 /**
@@ -21,20 +24,45 @@ export const EventNotFound: React.FC<EventNotFoundProps> = ({
   onGoBack,
   onBrowseEvents,
   errorMessage = "We couldn't find this event. It may have been removed or is no longer available.",
+  primaryButtonText = "Go Back",
+  secondaryButtonText = "Browse Events",
+  errorCode = null,
 }) => {
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <Ionicons name="calendar-outline" size={64} color="#666" />
         <Ionicons
-          name="alert-circle"
+          name={
+            errorCode === "unavailable" ||
+            errorCode === "network-request-failed"
+              ? "wifi-outline"
+              : "calendar-outline"
+          }
+          size={64}
+          color="#666"
+        />
+        <Ionicons
+          name={
+            errorCode === "permission-denied"
+              ? "lock-closed"
+              : errorCode === "unavailable" ||
+                errorCode === "network-request-failed"
+              ? "cloud-offline"
+              : "alert-circle"
+          }
           size={32}
           color="#FF6B6B"
           style={styles.alertIcon}
         />
       </View>
 
-      <Text style={styles.title}>Event Not Found</Text>
+      <Text style={styles.title}>
+        {errorCode === "unavailable" || errorCode === "network-request-failed"
+          ? "Network Error"
+          : errorCode === "permission-denied"
+          ? "Access Denied"
+          : "Event Not Found"}
+      </Text>
 
       <Text style={styles.message}>{errorMessage}</Text>
 
@@ -43,7 +71,7 @@ export const EventNotFound: React.FC<EventNotFoundProps> = ({
           style={styles.button}
           onPress={onGoBack}
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={secondaryButtonText}
         >
           <Ionicons
             name="arrow-back"
@@ -51,23 +79,28 @@ export const EventNotFound: React.FC<EventNotFoundProps> = ({
             color="white"
             style={styles.buttonIcon}
           />
-          <Text style={styles.buttonText}>Go Back</Text>
+          <Text style={styles.buttonText}>{secondaryButtonText}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.button, styles.primaryButton]}
           onPress={onBrowseEvents}
           accessibilityRole="button"
-          accessibilityLabel="Browse events"
+          accessibilityLabel={primaryButtonText}
         >
           <Ionicons
-            name="search"
+            name={
+              errorCode === "unavailable" ||
+              errorCode === "network-request-failed"
+                ? "refresh"
+                : "search"
+            }
             size={18}
             color="black"
             style={styles.buttonIcon}
           />
           <Text style={[styles.buttonText, styles.primaryButtonText]}>
-            Browse Events
+            {primaryButtonText}
           </Text>
         </TouchableOpacity>
       </View>

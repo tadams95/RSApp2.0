@@ -67,10 +67,9 @@ Firestore operations can fail due to network issues, permissions, or data constr
 
 - [ ] **Read Operation Errors**:
 
-  - [ ] Handle document not found errors in `/src/app/(app)/events/[id].tsx`
+  - [x] Handle document not found errors in `/src/app/(app)/events/[id].tsx`
   - [ ] Create fallbacks for missing data in event listings
   - [ ] Add error handling for collection queries in `/src/components/modals/MyEvents.tsx`
-  - [ ] Implement error boundaries for components dependent on Firestore data
 
 - [ ] **Write Operation Errors**:
 

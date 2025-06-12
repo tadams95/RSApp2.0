@@ -22,6 +22,8 @@ import {
 import { useDispatch } from "react-redux";
 import EventNotFound from "../../../components/events/EventNotFound";
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
+import { extractDatabaseErrorCode } from "../../../utils/databaseErrorHandler";
+import logError from "../../../utils/logError";
 
 // Define types for event data
 interface EventDetail {
@@ -51,6 +53,8 @@ export default function EventDetailScreen() {
     useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [dataNotFound, setDataNotFound] = useState<boolean>(false);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [retryAttempts, setRetryAttempts] = useState<number>(0);
 
   useEffect(() => {
     const fetchAttendingCount = async () => {
@@ -59,6 +63,7 @@ export default function EventDetailScreen() {
         if (params.id && !params.eventData) {
           setError(`Event with ID ${params.id} could not be found`);
           setDataNotFound(true);
+          setErrorCode("not-found");
         }
         setIsLoading(false);
         return;
@@ -74,17 +79,48 @@ export default function EventDetailScreen() {
         );
         const querySnapshot = await getDocs(ragersCollectionRef);
         const count = querySnapshot.size;
+
+        // Reset error states if successful
         setAttendingCount(count);
+        setError(null);
+        setErrorCode(null);
       } catch (error) {
-        console.error("Error fetching attending count:", error);
-        setError("Failed to load event details. Please try again later.");
+        // Use our enhanced logging utility
+        logError(error, "EventDetailScreen.fetchAttendingCount", {
+          eventId: params.id,
+          eventName: eventData?.name,
+          retryAttempt: retryAttempts,
+        });
+
+        // Extract the specific error code using our utility
+        const code = extractDatabaseErrorCode(error);
+        setErrorCode(code);
+
+        // Provide specific error messages based on the error type
+        if (code === "permission-denied") {
+          setError("You don't have permission to view this event's details.");
+        } else if (code === "not-found") {
+          setError(
+            `Event "${eventData.name}" could not be found or may have been removed.`
+          );
+          setDataNotFound(true);
+        } else if (
+          code === "unavailable" ||
+          code === "network-request-failed"
+        ) {
+          setError(
+            "Network error. Please check your connection and try again."
+          );
+        } else {
+          setError("Failed to load event details. Please try again later.");
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAttendingCount();
-  }, [eventData, params.id]);
+  }, [eventData, params.id, retryAttempts]);
 
   const handleAddToCart = () => {
     if (!eventData || eventData.quantity <= 0) return;
@@ -149,32 +185,17 @@ export default function EventDetailScreen() {
   const handleRetryLoad = () => {
     setIsLoading(true);
     setError(null);
-    // Refresh the page by forcing a re-render
-    const fetchAttendingCount = async () => {
-      try {
-        if (!eventData) {
-          setIsLoading(false);
-          return;
-        }
-        const firestore = getFirestore();
-        const ragersCollectionRef = collection(
-          firestore,
-          "events",
-          eventData.name,
-          "ragers"
-        );
-        const querySnapshot = await getDocs(ragersCollectionRef);
-        const count = querySnapshot.size;
-        setAttendingCount(count);
-      } catch (error) {
-        console.error("Error fetching attending count:", error);
-        setError("Failed to load event details. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    fetchAttendingCount();
+    // If we've already tried multiple times and it's a "not-found" error,
+    // don't keep retrying the same failed operation
+    if (errorCode === "not-found" && retryAttempts > 2) {
+      setError("This event doesn't exist or has been removed.");
+      setIsLoading(false);
+      return;
+    }
+
+    // Increment retry counter to trigger the useEffect
+    setRetryAttempts((prev) => prev + 1);
   };
 
   // Show loading state
@@ -189,6 +210,40 @@ export default function EventDetailScreen() {
 
   // Show error state for missing event data
   if (!eventData || dataNotFound || error) {
+    // For network errors, make primary action retry
+    if (errorCode === "unavailable" || errorCode === "network-request-failed") {
+      return (
+        <EventNotFound
+          onGoBack={handleBackPress}
+          onBrowseEvents={handleRetryLoad}
+          errorMessage={
+            error ||
+            "Connection error. Please check your network and try again."
+          }
+          primaryButtonText="Retry"
+          secondaryButtonText="Go Back"
+          errorCode={errorCode}
+        />
+      );
+    }
+
+    // For permission errors
+    if (errorCode === "permission-denied") {
+      return (
+        <EventNotFound
+          onGoBack={handleBackPress}
+          onBrowseEvents={handleBrowseEvents}
+          errorMessage={
+            error || "You don't have permission to view this event."
+          }
+          primaryButtonText="Browse Other Events"
+          secondaryButtonText="Go Back"
+          errorCode={errorCode}
+        />
+      );
+    }
+
+    // Default case for not found or other errors
     return (
       <EventNotFound
         onGoBack={handleBackPress}
@@ -196,6 +251,9 @@ export default function EventDetailScreen() {
         errorMessage={
           error || "This event couldn't be found or may no longer be available."
         }
+        primaryButtonText="Browse Events"
+        secondaryButtonText="Go Back"
+        errorCode={errorCode}
       />
     );
   }
@@ -233,7 +291,12 @@ export default function EventDetailScreen() {
             source={{ uri: eventData.imgURL }}
             style={styles.eventImage}
             onLoad={handleImageLoad}
+            onError={() => {
+              console.warn("Failed to load event image:", eventData.imgURL);
+              setImageLoaded(true); // Mark as loaded to remove spinner
+            }}
             resizeMode="cover"
+            defaultSource={require("../../../assets/BlurHero_2.png")}
           />
         </View>
 
