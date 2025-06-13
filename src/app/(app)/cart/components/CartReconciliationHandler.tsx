@@ -1,14 +1,20 @@
 /**
  * CartReconciliationHandler Component
- * 
+ *
  * This component displays a UI for order reconciliation checks,
  * giving users visibility into the recovery process.
  */
 
-import React from "react";
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from "react-native";
-import { GlobalStyles } from "../../../../constants/styles";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { GlobalStyles } from "../../../../constants/styles";
 
 interface CartReconciliationHandlerProps {
   isReconciling: boolean;
@@ -21,7 +27,7 @@ export default function CartReconciliationHandler({
   isReconciling,
   onRetry,
   onDismiss,
-  error
+  error,
 }: CartReconciliationHandlerProps) {
   if (!isReconciling && !error) {
     return null;
@@ -36,7 +42,11 @@ export default function CartReconciliationHandler({
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={20} color={GlobalStyles.colors.red5} />
+          <Ionicons
+            name="alert-circle"
+            size={20}
+            color={GlobalStyles.colors.red5}
+          />
           <Text style={styles.errorMessage}>
             {error || "An error occurred during order reconciliation"}
           </Text>
@@ -47,7 +57,10 @@ export default function CartReconciliationHandler({
               </TouchableOpacity>
             )}
             {onDismiss && (
-              <TouchableOpacity onPress={onDismiss} style={[styles.button, styles.dismissButton]}>
+              <TouchableOpacity
+                onPress={onDismiss}
+                style={[styles.button, styles.dismissButton]}
+              >
                 <Text style={styles.dismissButtonText}>Dismiss</Text>
               </TouchableOpacity>
             )}
@@ -109,5 +122,5 @@ const styles = StyleSheet.create({
   },
   dismissButtonText: {
     color: GlobalStyles.colors.grey7,
-  }
+  },
 });

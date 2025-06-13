@@ -650,19 +650,27 @@ export default function CartScreen() {
           name: userName || "",
           email: userEmail || "",
         },
-        // Add appearance option for consistent styling
+        // Add appearance option for consistent styling with address sheet
         appearance: {
           colors: {
             primary: GlobalStyles.colors.red4,
             background: "#000000",
-            componentBackground: GlobalStyles.colors.grey9,
-            componentBorder: GlobalStyles.colors.grey8,
-            componentDivider: GlobalStyles.colors.grey8,
+            componentBackground: "#222222", // Match address sheet styling
+            componentBorder: "#4a4a4c", // Match address sheet styling
+            componentDivider: GlobalStyles.colors.grey7,
             primaryText: "#FFFFFF",
-            secondaryText: GlobalStyles.colors.grey4,
-            placeholderText: GlobalStyles.colors.grey6,
-            icon: GlobalStyles.colors.grey3,
-            error: GlobalStyles.colors.red3,
+            secondaryText: "#FFFFFF", // Better visibility for all text
+            componentText: "#FFFFFF", // Explicit setting for input text
+            placeholderText: "#a0a0a8", // Lighter gray for better visibility
+            icon: "#c0c0c8", // Brighter icons
+            error: GlobalStyles.colors.redVivid4, // Brighter error color
+          },
+          font: {
+            scale: 1.1, // Increased text size for better readability
+          },
+          shapes: {
+            borderRadius: 8,
+            borderWidth: 1.5, // Thicker borders for better definition
           },
         },
       });
@@ -929,33 +937,31 @@ export default function CartScreen() {
     }
   };
 
-  const primaryAddyStyle = Platform.select({
-    ios: "#222222",
-    android: "#2e2e2e",
-    default: "system",
-  });
+  // We don't actually need a separate primaryAddyStyle variable since we're using
+  // the appearance object to configure the AddressSheet styling completely
 
-  // Address sheet appearance configuration
+  // Address sheet appearance configuration - enhanced for dark theme text readability
   const addressSheetAppearance = {
     colors: {
       primary: GlobalStyles.colors.red4, // Brand color for buttons and accents
-      background: "#000000", // Match app's dark background
-      componentBackground: GlobalStyles.colors.grey9, // For input fields
-      componentBorder: GlobalStyles.colors.grey8, // Border color for inputs
-      componentDivider: GlobalStyles.colors.grey8, // For visual separators
-      colorText: "#FFFFFF", // Main text color
-      secondaryText: GlobalStyles.colors.grey4, // Less prominent text
-      placeholderText: GlobalStyles.colors.grey6, // Better placeholder contrast
-      icon: GlobalStyles.colors.grey3, // Consistent icon color
-      error: GlobalStyles.colors.red3, // Using app's error color
+      background: "#000000", // Match app's dark background (fixed hex code)
+      componentBackground: "#222222", // Slightly lighter than before for better contrast with white text
+      componentBorder: "#4a4a4c", // More visible border for better field definition
+      componentDivider: GlobalStyles.colors.grey7, // Slightly lighter divider for better visibility
+      primaryText: "#FFFFFF", // Main text color - bright white
+      secondaryText: "#FFFFFF", // Secondary text also white for maximum visibility
+      componentText: "#FFFFFF", // User input text - white for maximum contrast
+      placeholderText: "#a0a0a8", // Lighter gray placeholder for better visibility against dark background
+      icon: "#c0c0c8", // Even brighter icon color for improved visibility
+      error: GlobalStyles.colors.redVivid4, // Brighter error color for better visibility
     },
     fonts: {
-      scale: 1.0,
+      scale: 1.1, // Increased text size for enhanced readability
       family: "System",
     },
     shapes: {
       borderRadius: 8, // Consistent with app's rounded corners
-      borderWidth: 1,
+      borderWidth: 1.5, // Thicker border for better field definition
     },
   };
 
@@ -1279,8 +1285,8 @@ export default function CartScreen() {
                 }, 500);
               }}
               onError={handleAddressSheetError}
-              sheetTitle={"Shipping Address"}
-              primaryButtonTitle={"Continue to Payment"}
+              sheetTitle={"SHIPPING ADDRESS"}
+              primaryButtonTitle={"CONTINUE TO PAYMENT"}
               presentationStyle="fullscreen"
               visible={showAddressSheet}
             />

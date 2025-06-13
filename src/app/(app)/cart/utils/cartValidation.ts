@@ -36,7 +36,7 @@ export interface CartValidationErrors {
 
 /**
  * Validates a cart item
- * 
+ *
  * @param item The cart item to validate
  * @returns Object containing validation errors or empty object if valid
  */
@@ -63,12 +63,21 @@ export function validateCartItem(item: CartItem): { [field: string]: string } {
 
   // Validate color for clothing items that require it
   // Skip validation for items that don't have color options
-  if (!item.eventDetails && item.selectedColor === undefined && typeof item.metadata?.hasColorOptions !== 'undefined' && item.metadata.hasColorOptions) {
+  if (
+    !item.eventDetails &&
+    item.selectedColor === undefined &&
+    typeof item.metadata?.hasColorOptions !== "undefined" &&
+    item.metadata.hasColorOptions
+  ) {
     errors.color = "Color selection required";
   }
 
   // Price validation
-  if (!item.price || typeof item.price.amount !== 'number' || item.price.amount <= 0) {
+  if (
+    !item.price ||
+    typeof item.price.amount !== "number" ||
+    item.price.amount <= 0
+  ) {
     errors.general = "Invalid price data";
   }
 
@@ -77,11 +86,11 @@ export function validateCartItem(item: CartItem): { [field: string]: string } {
 
 /**
  * Validates the entire cart before checkout
- * 
+ *
  * @param cartItems Array of cart items to validate
  * @returns Validation result object with errors or empty object if valid
  */
-export function validateCart(cartItems: CartItem[]): { 
+export function validateCart(cartItems: CartItem[]): {
   isValid: boolean;
   errors: CartValidationErrors;
 } {
@@ -97,10 +106,10 @@ export function validateCart(cartItems: CartItem[]): {
 
   // Check each cart item
   const itemErrors: { [productId: string]: any } = {};
-  
-  cartItems.forEach(item => {
+
+  cartItems.forEach((item) => {
     const validationResult = validateCartItem(item);
-    
+
     if (Object.keys(validationResult).length > 0) {
       itemErrors[item.productId] = validationResult;
       hasErrors = true;
@@ -119,11 +128,13 @@ export function validateCart(cartItems: CartItem[]): {
 
 /**
  * Gets a user-friendly error message for cart validation issues
- * 
+ *
  * @param errors Cart validation errors object
  * @returns A consumer-friendly error message
  */
-export function getCartValidationErrorMessage(errors: CartValidationErrors): string {
+export function getCartValidationErrorMessage(
+  errors: CartValidationErrors
+): string {
   if (errors.general) {
     return errors.general;
   }
@@ -143,19 +154,19 @@ export function getCartValidationErrorMessage(errors: CartValidationErrors): str
     if (firstError.color) return "Please select a color for all items";
     if (firstError.general) return firstError.general;
     return "Please review item details";
-  } 
-  
+  }
+
   return `Please review ${errorCount} items in your cart`;
 }
 
 /**
  * Checks if shipping information is required
  * (Required for physical items, not required for digital/event items)
- * 
+ *
  * @param cartItems Array of cart items
  * @returns Boolean indicating if shipping is required
  */
 export function isShippingRequired(cartItems: CartItem[]): boolean {
   // If any item doesn't have eventDetails, it's a physical item
-  return cartItems.some(item => !item.eventDetails);
+  return cartItems.some((item) => !item.eventDetails);
 }

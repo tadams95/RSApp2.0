@@ -7,16 +7,19 @@ This document outlines the implementation of robust error handling for the cart 
 We've implemented a comprehensive error handling system for the cart checkout process with the following features:
 
 1. **Cart Validation**
+
    - Field-level validation for cart items (size, color, quantity)
    - Visual indicators for validation errors
    - User-friendly error messages
 
 2. **Network Error Handling**
+
    - Network connectivity checks before checkout
    - Retry mechanisms with exponential backoff
    - Recovery options for failed network requests
 
 3. **Transaction Error Handling**
+
    - Transaction wrapper with retry capability
    - Logging for failed transactions
    - User-friendly error messages for transaction failures
@@ -29,26 +32,31 @@ We've implemented a comprehensive error handling system for the cart checkout pr
 ## Key Components
 
 ### Cart Validation (`cartValidation.ts`)
+
 - Validates cart items before checkout
 - Provides field-level error reporting
 - Returns user-friendly error messages
 
 ### Network Error Detection (`networkErrorDetection.ts`)
+
 - Checks network connectivity
 - Identifies network-related errors
 - Implements retry with exponential backoff
 
 ### Transaction Handling (`firestoreTransaction.ts`)
+
 - Provides a retry wrapper for Firestore transactions
 - Translates cryptic Firestore errors to user-friendly messages
 - Logs transaction errors for debugging
 
 ### Order Idempotency (`orderIdempotency.ts`)
+
 - Creates orders idempotently to prevent duplicates
 - Reconciles orders when errors occur
 - Recovers from failed order creation attempts
 
 ### Cart Persistence (`cartPersistence.ts`)
+
 - Saves cart state for potential recovery
 - Persists error information
 - Checks for recoverable carts

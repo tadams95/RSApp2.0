@@ -92,7 +92,7 @@ Firestore operations can fail due to network issues, permissions, or data constr
 - [x] **Transaction Failures**:
 
   - [x] Add robust error handling for multi-document transactions
-    - [x] Create simple transaction wrapper with retry capability 
+    - [x] Create simple transaction wrapper with retry capability
     - [x] Implement error logging for failed transactions
     - [x] Add user-friendly error messages for transaction failures
   - [x] Implement basic recovery for failed order processing
