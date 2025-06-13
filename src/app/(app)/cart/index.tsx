@@ -1,3 +1,13 @@
+/**
+ * CartScreen Component
+ *
+ * Recent Enhancements:
+ * - Added comprehensive cart validation before checkout
+ * - Implemented field-level error reporting for validation issues
+ * - Applied retryWithBackoff utility for order creation for better resilience
+ * - Added visual indicators for validation errors in cart items
+ */
+
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -33,7 +43,7 @@ import {
 } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
-import { addDoc, collection, getFirestore } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { GlobalStyles } from "../../../constants/styles";
 import {
@@ -43,9 +53,10 @@ import {
   selectUserEmail,
   selectUserName,
 } from "../../../store/redux/userSlice";
-import { EventDetails } from "../../../types/cart";
+import { CartItemMetadata, EventDetails } from "../../../types/cart";
 
 // Import our new utility functions and components
+import CartReconciliationHandler from "./components/CartReconciliationHandler";
 import CartRecoveryModal from "./components/CartRecoveryModal";
 import CartRecoveryTester from "./components/CartRecoveryTester";
 import PaymentErrorHandler from "./components/PaymentErrorHandler";
@@ -60,10 +71,21 @@ import {
   saveCheckoutError,
 } from "./utils/cartPersistence";
 import {
+  CartValidationErrors,
+  getCartValidationErrorMessage,
+  validateCart,
+} from "./utils/cartValidation";
+import {
   isNetworkConnected,
   isNetworkError,
   retryWithBackoff,
 } from "./utils/networkErrorDetection";
+import {
+  attemptOrderRecovery,
+  createOrderIdempotent,
+  OrderData,
+  reconcileOrder,
+} from "./utils/orderIdempotency";
 
 // Define interfaces for TypeScript
 interface CartItem {
@@ -73,12 +95,13 @@ interface CartItem {
     amount: number;
     currencyCode: string;
   };
-  selectedColor?: string | null;
-  selectedSize?: string | null;
+  selectedColor: string; // Match Redux type requirements
+  selectedSize: string; // Match Redux type requirements
   selectedQuantity: number;
   image?: string;
   eventDetails?: EventDetails;
   id?: string; // Making id optional since it might not exist in the redux state
+  metadata?: CartItemMetadata;
 }
 
 // Type for generic cart items
@@ -134,7 +157,7 @@ export default function CartScreen() {
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [taxAmount, setTaxAmount] = useState<number>(0);
 
-  // New state for cart recovery and error handling
+  // New state for cart recovery, error handling, and validation
   const [showRecoveryModal, setShowRecoveryModal] = useState<boolean>(false);
   const [recoveredCartItems, setRecoveredCartItems] = useState<
     GenericCartItem[]
@@ -144,9 +167,17 @@ export default function CartScreen() {
   >(undefined);
   const [recoveryLoading, setRecoveryLoading] = useState<boolean>(false);
   const [lastErrorMessage, setLastErrorMessage] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] =
+    useState<CartValidationErrors | null>(null);
   const [showPaymentErrorHandler, setShowPaymentErrorHandler] =
     useState<boolean>(false);
   const [isCheckingRecovery, setIsCheckingRecovery] = useState<boolean>(true);
+
+  // New state for order reconciliation
+  const [isReconcilingOrder, setIsReconcilingOrder] = useState<boolean>(false);
+  const [reconciliationError, setReconciliationError] = useState<string | null>(
+    null
+  );
 
   // Check for recoverable cart or previous payment errors on component mount
   useEffect(() => {
@@ -170,6 +201,46 @@ export default function CartScreen() {
         const errorInfo = await getLastCheckoutError();
         if (errorInfo) {
           setLastErrorMessage(errorInfo.message);
+
+          // Try to check if order was actually created despite the error
+          if (firebaseId && errorInfo.paymentIntentId) {
+            try {
+              console.log(
+                "Checking for completed order after previous error..."
+              );
+              const orderRecoveryResult = await attemptOrderRecovery(
+                firestore,
+                firebaseId,
+                errorInfo.paymentIntentId
+              );
+
+              if (
+                orderRecoveryResult.recovered &&
+                orderRecoveryResult.orders.length > 0
+              ) {
+                // Order was actually created, clear error and cart state
+                await clearCheckoutError();
+                await clearCartState();
+
+                Alert.alert(
+                  "Order Found",
+                  "We found that your previous order was actually processed successfully despite the error. Your order is confirmed!",
+                  [
+                    {
+                      text: "View Orders",
+                      onPress: () => router.navigate("/account"),
+                    },
+                  ]
+                );
+                return; // Exit early since order was found
+              }
+            } catch (reconcileError) {
+              console.error("Error during order recovery:", reconcileError);
+              // Continue with normal error handling
+            }
+          }
+
+          // If no order found, show payment error handler
           setShowPaymentErrorHandler(true);
         }
       }
@@ -305,6 +376,23 @@ export default function CartScreen() {
       return;
     }
 
+    // Validate cart before proceeding
+    const validationResult = validateCart(cartItems);
+    if (!validationResult.isValid) {
+      // Set validation errors to display in the UI
+      setValidationErrors(validationResult.errors);
+
+      // Show validation error message
+      Alert.alert(
+        "Cart Validation Error",
+        getCartValidationErrorMessage(validationResult.errors)
+      );
+      return;
+    }
+
+    // Clear any previous validation errors
+    setValidationErrors(null);
+
     // Check network connectivity before proceeding
     const isConnected = await isNetworkConnected();
     if (!isConnected) {
@@ -373,6 +461,21 @@ export default function CartScreen() {
     selectedColor?: string | null,
     selectedSize?: string | null
   ) => {
+    // Clear validation errors for this product when removing it
+    if (validationErrors?.items && validationErrors.items[productId]) {
+      const updatedErrors = { ...validationErrors };
+      if (updatedErrors.items) {
+        delete updatedErrors.items[productId];
+
+        // If no more item errors, clear all validation errors
+        if (Object.keys(updatedErrors.items).length === 0) {
+          setValidationErrors(null);
+        } else {
+          setValidationErrors(updatedErrors);
+        }
+      }
+    }
+
     // Use type assertion to tell TypeScript we know what we're doing
     dispatch(
       removeFromCart({
@@ -711,18 +814,23 @@ export default function CartScreen() {
             status: "processing",
           };
 
-          // Save to user's orders collection in Firestore
+          // Save to user's orders collection in Firestore using idempotent order creation
           if (!firebaseId) {
             throw new Error("User ID is required to save order");
           }
-          const ordersRef = collection(
-            firestore,
-            "users",
-            firebaseId,
-            "orders"
-          );
-          await addDoc(ordersRef, orderDetails);
-          console.log("Order saved to Firestore");
+
+          // Use idempotent order creation to prevent duplicates
+          console.log("Creating order in Firestore with idempotency...");
+          await createOrderIdempotent(firestore, firebaseId, {
+            ...orderDetails,
+            userId: firebaseId,
+            items: cartItems,
+            totalPrice: totalPrice,
+            paymentIntentId: stripePaymentIntent,
+            createdAt: new Date(),
+            status: "processing",
+          } as OrderData);
+          console.log("Order creation complete");
 
           // Send notification
           await sendPurchaseNotification();
@@ -761,6 +869,48 @@ export default function CartScreen() {
     } catch (error) {
       console.error("Error in payment process:", error);
 
+      // Check if the order was actually created despite the error
+      if (firebaseId && stripePaymentIntent) {
+        try {
+          console.log("Attempting order reconciliation check...");
+          const reconciliationResult = await reconcileOrder(
+            firestore,
+            firebaseId,
+            stripePaymentIntent
+          );
+
+          if (reconciliationResult.length > 0) {
+            // Order was actually created successfully
+            console.log(
+              "Order was created despite payment error - reconciliation successful"
+            );
+
+            // Clear cart since order was actually created
+            dispatch(clearCart());
+            await clearCartState();
+
+            Alert.alert(
+              "Order Confirmed",
+              "Despite the error message, your order was processed successfully.",
+              [
+                {
+                  text: "OK",
+                  onPress: () => {
+                    router.navigate("/home");
+                  },
+                },
+              ]
+            );
+            return; // Exit early since we've handled the reconciliation
+          } else {
+            console.log("No existing order found during reconciliation check");
+          }
+        } catch (reconcileError) {
+          console.error("Error during order reconciliation:", reconcileError);
+          // Continue with normal error handling
+        }
+      }
+
       // Save error information for recovery
       if (error instanceof Error) {
         await saveCheckoutError({
@@ -793,7 +943,7 @@ export default function CartScreen() {
       componentBackground: GlobalStyles.colors.grey9, // For input fields
       componentBorder: GlobalStyles.colors.grey8, // Border color for inputs
       componentDivider: GlobalStyles.colors.grey8, // For visual separators
-      primaryText: "#FFFFFF", // Main text color
+      colorText: "#FFFFFF", // Main text color
       secondaryText: GlobalStyles.colors.grey4, // Less prominent text
       placeholderText: GlobalStyles.colors.grey6, // Better placeholder contrast
       icon: GlobalStyles.colors.grey3, // Consistent icon color
@@ -866,6 +1016,52 @@ export default function CartScreen() {
           )}
         </View>
 
+        {/* General validation error message */}
+        {validationErrors?.general && (
+          <View style={styles.generalErrorContainer}>
+            <Text style={styles.errorText}>{validationErrors.general}</Text>
+          </View>
+        )}
+
+        {/* Order reconciliation handler */}
+        <CartReconciliationHandler
+          isReconciling={isReconcilingOrder}
+          error={reconciliationError}
+          onRetry={() => {
+            if (firebaseId && stripePaymentIntent) {
+              setReconciliationError(null);
+              setIsReconcilingOrder(true);
+              reconcileOrder(firestore, firebaseId, stripePaymentIntent)
+                .then((results) => {
+                  if (results.length > 0) {
+                    Alert.alert(
+                      "Order Found",
+                      "Your order was processed successfully!"
+                    );
+                    // Clear cart and error states
+                    dispatch(clearCart());
+                    clearCartState();
+                    clearCheckoutError();
+                  } else {
+                    setReconciliationError("No existing order was found.");
+                  }
+                })
+                .catch((error) => {
+                  setReconciliationError(
+                    "Failed to check order status: " +
+                      (error.message || String(error))
+                  );
+                })
+                .finally(() => {
+                  setIsReconcilingOrder(false);
+                });
+            }
+          }}
+          onDismiss={() => {
+            setReconciliationError(null);
+          }}
+        />
+
         {cartItems.length === 0 ? (
           <View style={styles.emptyCartContainer}>
             <Ionicons name="cart-outline" size={80} color="white" />
@@ -887,7 +1083,16 @@ export default function CartScreen() {
               showsVerticalScrollIndicator={false}
             >
               {cartItems.map((item, index) => (
-                <View key={index} style={styles.cartItemCard}>
+                <View
+                  key={index}
+                  style={[
+                    styles.cartItemCard,
+                    validationErrors?.items &&
+                    validationErrors.items[item.productId]
+                      ? styles.cartItemWithError
+                      : {},
+                  ]}
+                >
                   {item.image && (
                     <Image
                       source={{ uri: item.image }}
@@ -898,6 +1103,12 @@ export default function CartScreen() {
                   <View style={styles.itemDetailsContainer}>
                     <View>
                       <Text style={styles.itemTitle}>{item.title}</Text>
+                      {validationErrors?.items &&
+                        validationErrors.items[item.productId]?.general && (
+                          <Text style={styles.errorText}>
+                            {validationErrors.items[item.productId].general}
+                          </Text>
+                        )}
                       <View style={styles.itemMetaContainer}>
                         <Text style={styles.itemType}>
                           {item.eventDetails ? "Event Ticket" : "Apparel"}
@@ -919,27 +1130,79 @@ export default function CartScreen() {
                           </>
                         )}
                         {item.selectedColor && (
-                          <Text style={styles.itemMeta}>
-                            Color:{" "}
-                            <Text style={styles.itemMetaValue}>
-                              {item.selectedColor}
+                          <View>
+                            <Text
+                              style={[
+                                styles.itemMeta,
+                                validationErrors?.items &&
+                                validationErrors.items[item.productId]?.color
+                                  ? styles.errorText
+                                  : {},
+                              ]}
+                            >
+                              Color:{" "}
+                              <Text style={styles.itemMetaValue}>
+                                {item.selectedColor}
+                              </Text>
                             </Text>
-                          </Text>
+                            {validationErrors?.items &&
+                              validationErrors.items[item.productId]?.color && (
+                                <Text style={styles.errorText}>
+                                  {validationErrors.items[item.productId].color}
+                                </Text>
+                              )}
+                          </View>
                         )}
                         {item.selectedSize && (
-                          <Text style={styles.itemMeta}>
-                            Size:{" "}
+                          <View>
+                            <Text
+                              style={[
+                                styles.itemMeta,
+                                validationErrors?.items &&
+                                validationErrors.items[item.productId]?.size
+                                  ? styles.errorText
+                                  : {},
+                              ]}
+                            >
+                              Size:{" "}
+                              <Text style={styles.itemMetaValue}>
+                                {item.selectedSize}
+                              </Text>
+                            </Text>
+                            {validationErrors?.items &&
+                              validationErrors.items[item.productId]?.size && (
+                                <Text style={styles.errorText}>
+                                  {validationErrors.items[item.productId].size}
+                                </Text>
+                              )}
+                          </View>
+                        )}
+                        <View>
+                          <Text
+                            style={[
+                              styles.itemMeta,
+                              validationErrors?.items &&
+                              validationErrors.items[item.productId]?.quantity
+                                ? styles.errorText
+                                : {},
+                            ]}
+                          >
+                            Quantity:{" "}
                             <Text style={styles.itemMetaValue}>
-                              {item.selectedSize}
+                              {item.selectedQuantity}
                             </Text>
                           </Text>
-                        )}
-                        <Text style={styles.itemMeta}>
-                          Quantity:{" "}
-                          <Text style={styles.itemMetaValue}>
-                            {item.selectedQuantity}
-                          </Text>
-                        </Text>
+                          {validationErrors?.items &&
+                            validationErrors.items[item.productId]
+                              ?.quantity && (
+                              <Text style={styles.errorText}>
+                                {
+                                  validationErrors.items[item.productId]
+                                    .quantity
+                                }
+                              </Text>
+                            )}
+                        </View>
                       </View>
                     </View>
                     <View style={styles.itemBottomRow}>
@@ -1386,6 +1649,25 @@ const styles = StyleSheet.create({
     padding: 20,
     width: "80%",
     alignItems: "center",
+  },
+  cartItemWithError: {
+    borderColor: GlobalStyles.colors.red4,
+    borderWidth: 1,
+  },
+  errorText: {
+    color: GlobalStyles.colors.red4,
+    fontFamily,
+    fontSize: 14,
+    marginVertical: 4,
+  },
+  generalErrorContainer: {
+    backgroundColor: "rgba(255, 0, 0, 0.1)",
+    padding: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: GlobalStyles.colors.red4,
   },
   modalTitle: {
     color: "white",
