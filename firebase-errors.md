@@ -99,10 +99,10 @@ Firestore operations can fail due to network issues, permissions, or data constr
     - [x] Save order state to allow resuming the process
     - [x] Ensure idempotent operations to prevent duplicate orders
     - [x] Add order reconciliation checks when recovering from failures
-  - [ ] Create consistent error messages for transaction conflicts
-    - [ ] Add user guidance for resolving common conflicts
-    - [ ] Implement simple conflict detection for concurrent operations
-    - [ ] Provide clear recovery steps in the UI
+  - [x] Create consistent error messages for transaction conflicts
+    - [x] Add user guidance for resolving common conflicts
+    - [x] Implement simple conflict detection for concurrent operations
+    - [x] Provide clear recovery steps in the UI
 
 - [ ] **Pagination Errors**:
   - [ ] Handle cursor errors in paginated queries
