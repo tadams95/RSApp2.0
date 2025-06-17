@@ -5,11 +5,14 @@ import { doc, getDoc, getFirestore, updateDoc } from "firebase/firestore";
 import {
   getDownloadURL,
   getStorage,
+  StorageError,
   ref as storageRef,
   uploadBytes,
 } from "firebase/storage";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Dimensions,
   Platform,
   ScrollView,
@@ -22,6 +25,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { ImageWithFallback } from "../../../components/ui";
 import { useAuth } from "../../../hooks/AuthContext";
 import { selectUserName, setUserName } from "../../../store/redux/userSlice";
+import { logError } from "../../../utils/logError";
 // Import the newly migrated modals from the barrel file
 import {
   EditProfile,
@@ -40,6 +44,14 @@ interface ModalProps {
   setAuthenticated?: (auth: boolean) => void;
 }
 
+// Upload state enum for handling different upload states
+enum UploadState {
+  IDLE,
+  UPLOADING,
+  SUCCESS,
+  ERROR,
+}
+
 // Convert to default export
 export default function AccountScreen() {
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
@@ -48,6 +60,10 @@ export default function AccountScreen() {
     useState<boolean>(false);
   const [showQRModal, setShowQRModal] = useState<boolean>(true);
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+  const [uploadState, setUploadState] = useState<UploadState>(UploadState.IDLE);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [lastUploadUri, setLastUploadUri] = useState<string | null>(null);
   const userName = useSelector(selectUserName);
   const { signOut } = useAuth();
   const router = useRouter();
@@ -94,8 +110,148 @@ export default function AccountScreen() {
     fetchUserData();
   }, [fetchUserData]);
 
+  // Classify storage errors into user-friendly messages
+  const getStorageErrorMessage = (error: StorageError | any): string => {
+    if (!error) return "Unknown error occurred";
+
+    // Extract error code if available
+    const errorCode = error.code || "";
+    const errorMessage = error.message?.toLowerCase() || "";
+
+    // Handle specific storage error codes with friendly messages
+    if (
+      errorCode === "storage/quota-exceeded" ||
+      errorMessage.includes("quota")
+    ) {
+      return "Storage quota exceeded. Please try a smaller image or contact support.";
+    } else if (
+      errorCode === "storage/unauthorized" ||
+      errorMessage.includes("permission") ||
+      errorMessage.includes("unauthorized")
+    ) {
+      return "You don't have permission to upload files. Please log in again.";
+    } else if (
+      errorCode === "storage/canceled" ||
+      errorMessage.includes("canceled") ||
+      errorMessage.includes("cancelled")
+    ) {
+      return "Upload was canceled.";
+    } else if (
+      errorCode === "storage/retry-limit-exceeded" ||
+      errorMessage.includes("retry")
+    ) {
+      return "Upload failed due to network issues. Please try again.";
+    } else if (
+      errorCode === "storage/invalid-format" ||
+      errorMessage.includes("format")
+    ) {
+      return "The file format is not supported. Please use a common image format.";
+    } else if (
+      errorMessage.includes("network") ||
+      errorMessage.includes("connection")
+    ) {
+      return "Network connection issue. Please check your internet connection.";
+    }
+
+    // Default error message
+    return "Error uploading image. Please try again.";
+  };
+
+  // Retry the last failed upload
+  const retryUpload = useCallback(async () => {
+    if (!lastUploadUri) {
+      Alert.alert("Error", "No previous upload to retry");
+      return;
+    }
+
+    try {
+      // Clear previous error
+      setUploadError(null);
+      // Start new upload with the last selected image
+      await handleImageUpload(lastUploadUri);
+    } catch (error) {
+      console.error("Error retrying upload:", error);
+      setUploadError(getStorageErrorMessage(error));
+      setUploadState(UploadState.ERROR);
+    }
+  }, [lastUploadUri]);
+
+  // Handle the image upload process
+  const handleImageUpload = async (imageUri: string): Promise<void> => {
+    if (!localId) {
+      const error = "User ID not available for uploading profile picture";
+      console.error(error);
+      setUploadError(error);
+      setUploadState(UploadState.ERROR);
+      return;
+    }
+
+    // Get reference to Firebase Storage
+    const storage = getStorage();
+
+    // Create a reference to the profile picture in Firebase Storage
+    const profilePictureRef = storageRef(
+      storage,
+      `profilePictures/${localId}/profile_${Date.now()}.jpeg`
+    );
+
+    try {
+      setUploadState(UploadState.UPLOADING);
+      setUploadProgress(0);
+
+      // Convert imageUri to blob
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+
+      // Check file size - limit to 5MB
+      if (blob.size > 5 * 1024 * 1024) {
+        throw new Error("File size exceeds 5MB limit");
+      }
+
+      // Upload the image to Firebase Storage
+      await uploadBytes(profilePictureRef, blob);
+      setUploadProgress(75); // Set to 75% after upload
+
+      // Get the download URL of the uploaded image
+      const downloadURL = await getDownloadURL(profilePictureRef);
+      setUploadProgress(90); // Set to 90% after getting URL
+
+      // Update the user's document in Firestore with the download URL
+      const userDocRef = doc(db, `customers/${localId}`);
+      await updateDoc(userDocRef, {
+        profilePicture: downloadURL,
+        lastUpdated: new Date().toISOString(),
+      });
+
+      // Once uploaded, set the profile picture URI in your component state
+      setProfilePicture(downloadURL);
+      setUploadState(UploadState.SUCCESS);
+      setUploadProgress(100);
+
+      // Reset upload state after 2 seconds
+      setTimeout(() => {
+        setUploadState(UploadState.IDLE);
+        setUploadProgress(0);
+      }, 2000);
+    } catch (error: any) {
+      // Log error for analysis
+      logError(error, "ProfilePictureUpload", { userId: localId });
+
+      // Set user-friendly error message
+      setUploadError(getStorageErrorMessage(error));
+      setUploadState(UploadState.ERROR);
+
+      // Re-throw to be handled by caller
+      throw error;
+    }
+  };
+
   const pickImage = useCallback(async () => {
     try {
+      // Reset upload state
+      setUploadState(UploadState.IDLE);
+      setUploadError(null);
+
       // Request permission if needed (this is handled by the library in newer versions)
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -107,44 +263,24 @@ export default function AccountScreen() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const imageUri = result.assets[0].uri;
 
-        if (!localId) {
-          console.error("User ID not available for uploading profile picture");
-          return;
-        }
+        // Store the URI for potential retry
+        setLastUploadUri(imageUri);
 
-        // Get reference to Firebase Storage
-        const storage = getStorage();
-
-        // Create a reference to the profile picture in Firebase Storage
-        const profilePictureRef = storageRef(
-          storage,
-          `profilePictures/${localId}/profile_${Date.now()}.jpeg`
-        );
-
-        // Convert imageUri to blob
-        const response = await fetch(imageUri);
-        const blob = await response.blob();
-
-        // Upload the image to Firebase Storage
-        await uploadBytes(profilePictureRef, blob);
-
-        // Get the download URL of the uploaded image
-        const downloadURL = await getDownloadURL(profilePictureRef);
-
-        // Update the user's document in Firestore with the download URL
-        const userDocRef = doc(db, `customers/${localId}`);
-        await updateDoc(userDocRef, {
-          profilePicture: downloadURL,
-          lastUpdated: new Date().toISOString(),
-        });
-
-        // Once uploaded, set the profile picture URI in your component state
-        setProfilePicture(downloadURL);
+        // Start upload process
+        await handleImageUpload(imageUri);
       }
     } catch (error) {
       console.error("Error uploading profile picture:", error);
+      setUploadError(getStorageErrorMessage(error));
+      setUploadState(UploadState.ERROR);
+
+      // Show error alert
+      Alert.alert("Upload Failed", getStorageErrorMessage(error), [
+        { text: "OK" },
+        { text: "Retry", onPress: retryUpload },
+      ]);
     }
-  }, [localId, db]);
+  }, [localId, db, retryUpload]);
 
   const imageSource = useMemo(() => {
     return profilePicture
@@ -180,6 +316,47 @@ export default function AccountScreen() {
     router.replace("/(auth)/");
   };
 
+  // Render upload state overlay
+  const renderUploadOverlay = () => {
+    if (uploadState === UploadState.IDLE) {
+      return null;
+    }
+
+    return (
+      <View style={styles.uploadOverlay}>
+        {uploadState === UploadState.UPLOADING && (
+          <>
+            <ActivityIndicator size="large" color="#ffffff" />
+            <Text style={styles.uploadStatusText}>
+              Uploading... {uploadProgress.toFixed(0)}%
+            </Text>
+          </>
+        )}
+
+        {uploadState === UploadState.SUCCESS && (
+          <>
+            <View style={styles.uploadSuccessIcon}>
+              <Text style={styles.uploadSuccessIconText}>✓</Text>
+            </View>
+            <Text style={styles.uploadStatusText}>Upload Complete</Text>
+          </>
+        )}
+
+        {uploadState === UploadState.ERROR && (
+          <>
+            <View style={styles.uploadErrorIcon}>
+              <Text style={styles.uploadErrorIconText}>!</Text>
+            </View>
+            <Text style={styles.uploadStatusText}>{uploadError}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={retryUpload}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -188,12 +365,15 @@ export default function AccountScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.container}>
-          {/* Profile Picture */}
+          {/* Profile Picture with Upload State */}
           <TouchableOpacity
-            onPress={pickImage}
+            onPress={
+              uploadState === UploadState.UPLOADING ? undefined : pickImage
+            }
             style={styles.profilePictureContainer}
             accessibilityRole="button"
             accessibilityLabel="Change profile picture"
+            disabled={uploadState === UploadState.UPLOADING}
           >
             <ImageWithFallback
               source={imageSource}
@@ -201,6 +381,7 @@ export default function AccountScreen() {
               style={styles.profilePicture}
               resizeMode="cover"
             />
+            {renderUploadOverlay()}
           </TouchableOpacity>
 
           {/* Profile Name */}
@@ -338,10 +519,71 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#333",
     marginTop: 20,
+    position: "relative",
   },
   profilePicture: {
     width: Dimensions.get("window").width * 0.45,
     height: Dimensions.get("window").width * 0.45,
+  },
+  uploadOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  uploadStatusText: {
+    color: "white",
+    marginTop: 10,
+    fontSize: 14,
+    fontFamily,
+    textAlign: "center",
+    paddingHorizontal: 10,
+  },
+  uploadSuccessIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#4CAF50",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  uploadSuccessIconText: {
+    color: "white",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  uploadErrorIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#FF5252",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  uploadErrorIconText: {
+    color: "white",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  retryButton: {
+    marginTop: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: "#333",
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#555",
+  },
+  retryButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontFamily,
+    fontWeight: "600",
   },
   footerText: {
     textAlign: "center",
