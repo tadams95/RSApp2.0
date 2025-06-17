@@ -11,10 +11,14 @@ import {
 /**
  * Custom hook for handling Firebase database errors specifically for profile updates
  * Provides consistent error handling across the profile update flow
+ * Enhanced to handle validation errors in a more user-friendly way
  */
 export function useProfileUpdateErrorHandler() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string> | undefined
+  >(undefined);
   const [recoveryAction, setRecoveryAction] = useState<{
     text: string;
     onPress: () => void;
@@ -28,17 +32,49 @@ export function useProfileUpdateErrorHandler() {
   const clearErrors = useCallback(() => {
     setError(null);
     setFieldErrors({});
+    setValidationErrors(undefined);
     setRecoveryAction(null);
   }, []);
 
   /**
    * Handles Firebase database errors with consistent UI responses
+   * Enhanced to handle validation errors
    */
   const handleUpdateError = useCallback(
     (error: any, onReload?: () => void) => {
       // Get user-friendly error message
       const errorMessage = getProfileUpdateErrorMessage(error);
       setError(errorMessage);
+
+      // Check for validation errors
+      if (
+        error?.validationErrors ||
+        error?.originalError?.validationErrors ||
+        (error.code === "data-validation-failed" && error.fieldErrors)
+      ) {
+        // Extract validation errors from various possible locations
+        const validationErrs =
+          error?.validationErrors ||
+          error?.originalError?.validationErrors ||
+          error?.fieldErrors ||
+          {};
+
+        setValidationErrors(validationErrs);
+
+        // Also set field errors for form validation
+        setFieldErrors((prev) => ({
+          ...prev,
+          ...validationErrs,
+        }));
+
+        // For validation errors, set a simple retry action
+        setRecoveryAction({
+          text: "Review Fields",
+          onPress: clearErrors,
+        });
+
+        return "data-validation-failed";
+      }
 
       // Update specific field errors if applicable
       const fieldError = getProfileUpdateFieldError(error);
@@ -154,6 +190,7 @@ export function useProfileUpdateErrorHandler() {
   return {
     error,
     fieldErrors,
+    validationErrors, // Added to return value
     recoveryAction,
     handleUpdateError,
     clearErrors,

@@ -35,6 +35,12 @@ export type FirebaseDatabaseErrorCode =
   | "write-conflict"
   | "quota-exceeded"
   | "network-error"
+  // Validation specific error codes
+  | "validation-email-format"
+  | "validation-name-format"
+  | "validation-phone-format"
+  | "validation-required-field"
+  | "validation-field-length"
   | string; // For any other codes not explicitly listed
 
 // Common interface for database errors
@@ -78,10 +84,22 @@ export function extractDatabaseErrorCode(
     );
     if (networkMatch) return "unavailable";
 
+    // Added validation-specific patterns
     const invalidDataMatch = error.message.match(
-      /invalid data|validation failed/i
+      /invalid data|validation failed|validate/i
     );
-    if (invalidDataMatch) return "invalid-argument";
+    if (invalidDataMatch) return "data-validation-failed";
+
+    const emailFormatMatch = error.message.match(/email format|invalid email/i);
+    if (emailFormatMatch) return "validation-email-format";
+
+    const nameFormatMatch = error.message.match(/name format|invalid name/i);
+    if (nameFormatMatch) return "validation-name-format";
+
+    const phoneFormatMatch = error.message.match(
+      /phone format|invalid phone|phone number/i
+    );
+    if (phoneFormatMatch) return "validation-phone-format";
   }
 
   return "unknown";
@@ -141,6 +159,7 @@ export function getProfileUpdateErrorMessage(error: any): string {
 
 /**
  * Get field-specific error message for database operations
+ * Enhanced to better handle validation-specific errors
  */
 export function getProfileUpdateFieldError(error: any): {
   field: "firstName" | "lastName" | "email" | "phoneNumber" | "general";
@@ -158,6 +177,74 @@ export function getProfileUpdateFieldError(error: any): {
   // Check if the error message contains specific field references
   const errorMessage = error.message?.toLowerCase() || "";
 
+  // First try to match based on specific validation error codes
+  switch (errorCode) {
+    case "validation-email-format":
+      return {
+        field: "email",
+        message: "Please enter a valid email address (e.g., name@example.com)",
+      };
+
+    case "validation-name-format":
+      if (errorMessage.includes("first")) {
+        return {
+          field: "firstName",
+          message: "First name contains invalid characters",
+        };
+      }
+      if (errorMessage.includes("last")) {
+        return {
+          field: "lastName",
+          message: "Last name contains invalid characters",
+        };
+      }
+      // If we can't determine which name field, make a guess based on error message
+      return {
+        field: errorMessage.includes("first") ? "firstName" : "lastName",
+        message: "Name contains invalid characters",
+      };
+
+    case "validation-phone-format":
+      return {
+        field: "phoneNumber",
+        message: "Please enter a valid phone number format",
+      };
+
+    case "validation-required-field":
+      if (errorMessage.includes("email")) {
+        return { field: "email", message: "Email is required" };
+      }
+      if (errorMessage.includes("phone")) {
+        return { field: "phoneNumber", message: "Phone number is required" };
+      }
+      if (errorMessage.includes("first name")) {
+        return { field: "firstName", message: "First name is required" };
+      }
+      if (errorMessage.includes("last name")) {
+        return { field: "lastName", message: "Last name is required" };
+      }
+      break;
+
+    case "data-validation-failed":
+      // Try to determine which field failed validation from the error message
+      if (errorMessage.includes("email")) {
+        return { field: "email", message: "Invalid email format" };
+      }
+      if (errorMessage.includes("phone")) {
+        return { field: "phoneNumber", message: "Invalid phone number format" };
+      }
+      if (errorMessage.includes("name")) {
+        if (errorMessage.includes("first")) {
+          return { field: "firstName", message: "Invalid first name format" };
+        }
+        if (errorMessage.includes("last")) {
+          return { field: "lastName", message: "Invalid last name format" };
+        }
+      }
+      break;
+  }
+
+  // If no specific validation error code, try to determine from the message
   if (errorMessage.includes("email")) {
     return {
       field: "email",
@@ -237,6 +324,8 @@ export function getProfileUpdateRecoveryAction(error: any): {
 
 /**
  * Handles errors that occur during Firebase write operations
+ * Enhanced to handle validation failures more robustly
+ *
  * @param error Any error that might have occurred during a write operation
  * @returns An object with user-friendly message, recovery options, and error code
  */
@@ -244,10 +333,59 @@ export function handleWriteOperationError(error: any): {
   message: string;
   recoverable: boolean;
   code: FirebaseDatabaseErrorCode;
-  action?: "retry" | "check-auth" | "check-connection" | "contact-support";
+  action?:
+    | "retry"
+    | "check-auth"
+    | "check-connection"
+    | "contact-support"
+    | "review-input";
+  fieldErrors?: Record<string, string>; // Added for field-specific validation errors
 } {
-  const errorCode = extractDatabaseErrorCode(error);
+  const errorCode = extractDatabaseErrorCode(error) || "unknown";
+  const errorMessage = error?.message?.toLowerCase() || "";
 
+  // Enhanced validation error handling
+  if (
+    errorCode === "data-validation-failed" ||
+    errorCode === "invalid-argument" ||
+    errorCode.startsWith("validation-") ||
+    errorMessage.includes("validation") ||
+    errorMessage.includes("schema") ||
+    errorMessage.includes("invalid") ||
+    errorMessage.includes("required field")
+  ) {
+    // Extract field-specific errors with enhanced precision
+    const fieldErrors = extractFieldValidationErrors(error);
+    const hasSpecificErrors = Object.keys(fieldErrors).length > 0;
+
+    // Construct appropriate message based on field errors
+    let validationMessage =
+      "The information you entered doesn't meet our requirements.";
+
+    if (hasSpecificErrors) {
+      // Mention affected fields in the message
+      const affectedFields = Object.keys(fieldErrors)
+        .map((field) => {
+          // Format field name for display (e.g., firstName -> First Name)
+          return field
+            .replace(/([A-Z])/g, " $1")
+            .replace(/^./, (str) => str.toUpperCase());
+        })
+        .join(", ");
+
+      validationMessage = `Validation failed for: ${affectedFields}. Please review your input and try again.`;
+    }
+
+    return {
+      message: validationMessage,
+      recoverable: true,
+      code: "data-validation-failed",
+      action: "review-input",
+      fieldErrors: hasSpecificErrors ? fieldErrors : undefined,
+    };
+  }
+
+  // Rest of error handling for non-validation errors
   switch (errorCode) {
     case "permission-denied":
     case "insufficient-permissions":
@@ -269,15 +407,6 @@ export function handleWriteOperationError(error: any): {
         recoverable: true,
         code: "network-error",
         action: "check-connection",
-      };
-
-    case "invalid-argument":
-    case "data-validation-failed":
-      return {
-        message:
-          "The data you're trying to save contains invalid values. Please check your input and try again.",
-        recoverable: true,
-        code: "data-validation-failed",
       };
 
     case "write-conflict":
@@ -381,4 +510,97 @@ export function getUserFriendlyPermissionMessage(
     default:
       return `${baseMessage} due to an authentication issue. Please try signing out and back in.`;
   }
+}
+
+/**
+ * Extract field-specific validation errors from general error message and code
+ * Provides structured field errors for form validation
+ *
+ * @param error Any error object that might contain validation error information
+ * @returns Record of field name to error message or empty object if no field errors detected
+ */
+export function extractFieldValidationErrors(
+  error: any
+): Record<string, string> {
+  const fieldErrors: Record<string, string> = {};
+
+  // First check if the error already has field errors attached
+  if (error?.validationErrors && typeof error.validationErrors === "object") {
+    return { ...error.validationErrors };
+  }
+
+  if (error?.fieldErrors && typeof error.fieldErrors === "object") {
+    return { ...error.fieldErrors };
+  }
+
+  const errorMessage = error?.message?.toLowerCase() || "";
+  const errorCode = extractDatabaseErrorCode(error) || "unknown";
+
+  // Extract from email-related errors
+  if (
+    errorCode === "validation-email-format" ||
+    (errorMessage.includes("email") &&
+      (errorMessage.includes("format") ||
+        errorMessage.includes("invalid") ||
+        errorMessage.includes("pattern") ||
+        errorMessage.includes("match")))
+  ) {
+    fieldErrors.email =
+      "Please enter a valid email address (e.g., name@example.com)";
+  }
+
+  // Extract from name-related errors
+  if (
+    errorMessage.includes("first name") ||
+    errorMessage.includes("firstname")
+  ) {
+    if (errorMessage.includes("string")) {
+      fieldErrors.firstName = "First name must be text";
+    } else if (errorMessage.includes("invalid")) {
+      fieldErrors.firstName = "First name contains invalid characters";
+    } else {
+      fieldErrors.firstName = "Invalid first name";
+    }
+  }
+
+  if (errorMessage.includes("last name") || errorMessage.includes("lastname")) {
+    if (errorMessage.includes("string")) {
+      fieldErrors.lastName = "Last name must be text";
+    } else if (errorMessage.includes("invalid")) {
+      fieldErrors.lastName = "Last name contains invalid characters";
+    } else {
+      fieldErrors.lastName = "Invalid last name";
+    }
+  }
+
+  // Just "name" without specifying first/last is trickier
+  if (
+    errorMessage.includes("name") &&
+    !errorMessage.includes("first") &&
+    !errorMessage.includes("last")
+  ) {
+    // Make a best guess based on context
+    if (errorMessage.includes("string")) {
+      fieldErrors.firstName = "Name must be text";
+    } else if (errorMessage.includes("invalid")) {
+      fieldErrors.firstName = "Name contains invalid characters";
+    }
+  }
+
+  // Extract from phone-related errors
+  if (
+    errorCode === "validation-phone-format" ||
+    (errorMessage.includes("phone") &&
+      (errorMessage.includes("format") ||
+        errorMessage.includes("invalid") ||
+        errorMessage.includes("string")))
+  ) {
+    if (errorMessage.includes("string")) {
+      fieldErrors.phoneNumber = "Phone number must be text";
+    } else {
+      fieldErrors.phoneNumber = "Please enter a valid phone number";
+    }
+  }
+
+  return fieldErrors;
 }

@@ -19,6 +19,9 @@ export interface UserProfileData {
   displayName?: string;
   email?: string;
   photoURL?: string;
+  phoneNumber?: string;
+  firstName?: string;
+  lastName?: string;
   preferences?: Record<string, any>;
   lastUpdated?: number;
   // Add additional profile fields as needed
@@ -49,7 +52,7 @@ const DEFAULT_OPTIONS: ProfileSyncOptions = {
 
 /**
  * Custom hook for syncing user profile data with Firebase Realtime Database
- * Includes error handling, retry mechanisms, and conflict resolution
+ * Includes error handling, retry mechanisms, conflict resolution, and validation
  */
 export function useProfileSync(options: ProfileSyncOptions = {}) {
   const { maxRetries, initialBackoffDelay, maxBackoffDelay, autoRetry } = {
@@ -202,7 +205,97 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
   );
 
   /**
-   * Updates the user profile with conflict resolution
+   * Validates profile data against server rules before sending
+   * Helps prevent unnecessary server validation rejections
+   * Enhanced to exactly match server-side validation rules
+   *
+   * @param updates Profile data to validate
+   * @returns Object with validation result and errors
+   */
+  const validateProfileData = useCallback(
+    (
+      updates: Partial<UserProfileData>
+    ): {
+      isValid: boolean;
+      errors: Record<string, string>;
+    } => {
+      const errors: Record<string, string> = {};
+
+      // Validate email if present - exact match with server regex pattern
+      if (updates.email !== undefined) {
+        if (typeof updates.email !== "string") {
+          errors.email = "Email must be a text value";
+        } else if (updates.email.trim() === "") {
+          errors.email = "Email is required";
+        } else {
+          // Use the exact same regex pattern as in Firebase rules
+          const emailPattern = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+          if (!emailPattern.test(updates.email)) {
+            errors.email = "Invalid email format. Please check your email.";
+          }
+        }
+      }
+
+      // Extract first and last name from displayName if present
+      if (updates.displayName !== undefined) {
+        // First validate that it's a string (server requirement)
+        if (typeof updates.displayName !== "string") {
+          errors.displayName = "Name must be text";
+        } else {
+          // Then perform additional client-side validations
+          const nameParts = updates.displayName.split(" ");
+          const firstName = nameParts[0] || "";
+          const lastName = nameParts.slice(1).join(" ");
+
+          // Validate first name
+          if (firstName.trim() === "") {
+            errors.firstName = "First name is required";
+          } else if (firstName.length > 50) {
+            errors.firstName = "First name is too long (maximum 50 characters)";
+          }
+
+          // Additional character validation (client-side only)
+          const namePattern = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']+$/;
+          if (!namePattern.test(updates.displayName)) {
+            errors.displayName = "Name contains invalid characters";
+          }
+        }
+      }
+
+      // Validate phone number if present
+      if (updates.phoneNumber !== undefined) {
+        // First validate that it's a string (server requirement)
+        if (typeof updates.phoneNumber !== "string") {
+          errors.phoneNumber = "Phone number must be text";
+        } else {
+          // Additional client-side format validation
+          const phonePattern = /^[\d\s\+\-\(\)]+$/;
+          if (!phonePattern.test(updates.phoneNumber)) {
+            errors.phoneNumber = "Invalid phone number format";
+          }
+
+          // Check length - client side validation
+          if (updates.phoneNumber.replace(/\D/g, "").length < 7) {
+            errors.phoneNumber = "Phone number is too short";
+          }
+        }
+      }
+
+      // Handle preferences if present
+      if (updates.preferences && typeof updates.preferences === "object") {
+        // Validate any specific preference fields if needed
+      }
+
+      return {
+        isValid: Object.keys(errors).length === 0,
+        errors,
+      };
+    },
+    []
+  );
+
+  /**
+   * Updates the user profile with conflict resolution and validation
    * Uses a version tracking approach to detect conflicts
    */
   const updateProfile = useCallback(
@@ -213,6 +306,26 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
 
       if (!isConnected) {
         throw new Error("Cannot update profile while offline");
+      }
+
+      // Validate the updates before sending to server
+      const validation = validateProfileData(updates);
+      if (!validation.isValid) {
+        // Create an error that mimics Firebase validation errors
+        const validationError = new Error("Client validation failed");
+        (validationError as any).code = "data-validation-failed";
+        (validationError as any).validationErrors = validation.errors;
+
+        // Add detailed context to the error message
+        const fieldErrors = Object.keys(validation.errors);
+        if (fieldErrors.length > 0) {
+          (
+            validationError as any
+          ).message = `Validation failed for fields: ${fieldErrors.join(", ")}`;
+        }
+
+        handleSyncError(validationError);
+        return false;
       }
 
       try {
@@ -276,7 +389,14 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
         return false;
       }
     },
-    [auth, profile, isConnected, getUserProfileRef, handleSyncError]
+    [
+      auth,
+      profile,
+      isConnected,
+      getUserProfileRef,
+      handleSyncError,
+      validateProfileData,
+    ]
   );
 
   /**

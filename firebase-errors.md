@@ -117,7 +117,7 @@ Realtime Database operations have distinct error patterns from Firestore.
 
   - [x] Monitor and react to Realtime Database connection state changes
   - [x] Add reconnection logic after connection drops
-  - [ ] Implement offline capabilities where appropriate
+  - [x] Implement offline capabilities where appropriate
 
 - [x] **Data Synchronization Errors**:
 
@@ -125,11 +125,23 @@ Realtime Database operations have distinct error patterns from Firestore.
   - [x] Add conflict resolution strategies for concurrent updates
   - [x] Create retry mechanisms for failed synchronization
 
-- [ ] **Validation Failures**:
-  - [ ] Handle server-side validation rejections
-  - [ ] Add client-side validation to match server rules
-  - [ ] Provide user feedback for validation failures
-  - [ ] Update client data models to prevent invalid operations
+- [x] **Validation Failures**:
+  - [x] Handle server-side validation rejections
+    - [x] Add error handling in `src/components/modals/EditProfile.tsx` to catch and process server-side validation errors
+    - [x] Enhance `databaseErrorHandler.ts` to properly map validation errors to specific form fields
+    - [x] Display field-specific error messages for server rule rejections
+  - [x] Add client-side validation to match server rules
+    - [x] Update `EditProfileValidation.ts` to match the patterns in realtime.rules
+    - [x] Ensure email validation regex matches server-side rules
+    - [x] Add character limit validation for profile fields
+  - [x] Provide user feedback for validation failures
+    - [x] Enhance `ProfileUpdateErrorNotice` component to show specific validation errors
+    - [x] Add detailed guidance for users on how to correct validation issues
+    - [x] Implement real-time validation during typing where appropriate
+  - [x] Update client data models to prevent invalid operations
+    - [x] Add preventive validation in `useProfileSync.tsx` before sync attempts
+    - [x] Implement validation in `realtimeDbSync.ts` before update operations
+    - [x] Create type guards to ensure data conforms to expected structure
 
 ## Firebase Storage
 

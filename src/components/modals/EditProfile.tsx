@@ -62,6 +62,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
   const {
     error: updateError,
     fieldErrors: updateFieldErrors,
+    validationErrors, // Added new validationErrors from the hook
     recoveryAction,
     handleUpdateError,
     clearErrors,
@@ -274,12 +275,14 @@ const EditProfile: React.FC<EditProfileProps> = ({
           Edit your profile details below
         </Text>
 
+        {/* Enhanced to pass validation errors to the component */}
         {updateError && (
           <View style={styles.errorNoticeContainer}>
             <ProfileUpdateErrorNotice
               message={updateError}
               onRetry={retryUpdate}
               secondaryAction={recoveryAction || undefined}
+              validationErrors={validationErrors}
             />
           </View>
         )}
