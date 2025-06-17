@@ -1,10 +1,18 @@
-
 /**
  * Utilities for handling data synchronization with Firebase Realtime Database
  * Includes conflict resolution, retry mechanisms, and error handling
  */
 
-import { DataSnapshot, Database, DatabaseReference, get, onValue, ref, set, update } from "firebase/database";
+import {
+  DataSnapshot,
+  Database,
+  DatabaseReference,
+  get,
+  onValue,
+  ref,
+  set,
+  update,
+} from "firebase/database";
 import { extractDatabaseErrorCode } from "./databaseErrorHandler";
 
 // Type for sync operation configuration
@@ -15,7 +23,7 @@ export interface SyncOperationOptions {
   onError?: (error: SyncError) => void;
   onRetry?: (attempt: number, delay: number) => void;
   onSuccess?: () => void;
-  conflictStrategy?: 'server-wins' | 'client-wins' | 'merge';
+  conflictStrategy?: "server-wins" | "client-wins" | "merge";
 }
 
 // Default options for sync operations
@@ -23,7 +31,7 @@ export const DEFAULT_SYNC_OPTIONS: SyncOperationOptions = {
   maxRetries: 3,
   initialBackoffDelay: 1000, // 1 second
   maxBackoffDelay: 30000, // 30 seconds
-  conflictStrategy: 'merge',
+  conflictStrategy: "merge",
 };
 
 // Type for sync errors
@@ -44,16 +52,18 @@ export interface SyncError {
  */
 export function calculateBackoffDelay(
   attempt: number,
-  options: Pick<SyncOperationOptions, 'initialBackoffDelay' | 'maxBackoffDelay'> = {}
+  options: Pick<
+    SyncOperationOptions,
+    "initialBackoffDelay" | "maxBackoffDelay"
+  > = {}
 ): number {
-  const initialDelay = options.initialBackoffDelay || DEFAULT_SYNC_OPTIONS.initialBackoffDelay!;
-  const maxDelay = options.maxBackoffDelay || DEFAULT_SYNC_OPTIONS.maxBackoffDelay!;
-  
-  const delay = Math.min(
-    initialDelay * Math.pow(2, attempt),
-    maxDelay
-  );
-  
+  const initialDelay =
+    options.initialBackoffDelay || DEFAULT_SYNC_OPTIONS.initialBackoffDelay!;
+  const maxDelay =
+    options.maxBackoffDelay || DEFAULT_SYNC_OPTIONS.maxBackoffDelay!;
+
+  const delay = Math.min(initialDelay * Math.pow(2, attempt), maxDelay);
+
   // Add some randomness (jitter) to prevent synchronized retries
   return delay + Math.random() * (delay * 0.1);
 }
@@ -74,21 +84,22 @@ export function handleSyncError(
 ): SyncError {
   const errorCode = extractDatabaseErrorCode(error);
   const syncError: SyncError = {
-    code: errorCode || 'unknown-error',
-    message: error.message || 'Unknown error occurred during data synchronization',
+    code: errorCode || "unknown-error",
+    message:
+      error.message || "Unknown error occurred during data synchronization",
     timestamp: Date.now(),
     path,
     retryCount,
     originalError: error,
   };
-  
+
   // Call error handler if provided
   if (options.onError) {
     options.onError(syncError);
   } else {
     console.error(`Sync error at ${path}:`, syncError);
   }
-  
+
   return syncError;
 }
 
@@ -111,14 +122,14 @@ export async function executeWithRetry<T>(
     onRetry,
     onSuccess,
   } = options;
-  
+
   let lastError: any;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       // Execute the operation
       const result = await operation();
-      
+
       // Success - call handler and return result
       if (onSuccess) {
         onSuccess();
@@ -126,30 +137,34 @@ export async function executeWithRetry<T>(
       return result;
     } catch (error: any) {
       lastError = error;
-      
+
       // Last attempt failed
       if (attempt >= maxRetries) {
         break;
       }
-      
+
       // Calculate delay for next retry
       const delay = calculateBackoffDelay(attempt, {
         initialBackoffDelay,
         maxBackoffDelay,
       });
-      
+
       // Notify about retry if handler provided
       if (onRetry) {
         onRetry(attempt + 1, delay);
       } else {
-        console.log(`Retrying operation at ${path} in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+        console.log(
+          `Retrying operation at ${path} in ${delay}ms (attempt ${
+            attempt + 1
+          }/${maxRetries})`
+        );
       }
-      
+
       // Wait before next attempt
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  
+
   // All retries failed
   const syncError = handleSyncError(lastError, path, maxRetries, options);
   throw syncError;
@@ -166,12 +181,8 @@ export async function fetchDataWithRetry(
   options: SyncOperationOptions = {}
 ): Promise<DataSnapshot> {
   const path = dbRef.toString();
-  
-  return executeWithRetry(
-    () => get(dbRef),
-    path,
-    options
-  );
+
+  return executeWithRetry(() => get(dbRef), path, options);
 }
 
 /**
@@ -187,51 +198,80 @@ export async function updateDataWithRetry(
   options: SyncOperationOptions = {}
 ): Promise<boolean> {
   const path = dbRef.toString();
-  const conflictStrategy = options.conflictStrategy || DEFAULT_SYNC_OPTIONS.conflictStrategy;
-  
-  if (conflictStrategy === 'server-wins' || conflictStrategy === 'merge') {
+  const conflictStrategy =
+    options.conflictStrategy || DEFAULT_SYNC_OPTIONS.conflictStrategy;
+
+  if (conflictStrategy === "server-wins" || conflictStrategy === "merge") {
     // Fetch current data to check for conflicts
     try {
       const snapshot = await fetchDataWithRetry(dbRef, options);
       const currentData = snapshot.exists() ? snapshot.val() : null;
-      
+
       // Data not changed on server, just apply our update
       if (!currentData) {
-        return executeWithRetry(() => update(dbRef, updates).then(() => true), path, options);
+        return executeWithRetry(
+          () => update(dbRef, updates).then(() => true),
+          path,
+          options
+        );
       }
-      
+
       // Check for modification timestamp if available
-      if (currentData._lastUpdated && updates._lastUpdated &&
-          currentData._lastUpdated > updates._lastUpdated) {
+      if (
+        currentData._lastUpdated &&
+        updates._lastUpdated &&
+        currentData._lastUpdated > updates._lastUpdated
+      ) {
         // Server data is newer than our base data
-        
-        if (conflictStrategy === 'merge') {
+
+        if (conflictStrategy === "merge") {
           // Merge strategy: combine server and client changes
-          const merged = { ...currentData, ...updates, _lastUpdated: Date.now() };
-          return executeWithRetry(() => update(dbRef, merged).then(() => true), path, options);
-        } else { // server-wins
+          const merged = {
+            ...currentData,
+            ...updates,
+            _lastUpdated: Date.now(),
+          };
+          return executeWithRetry(
+            () => update(dbRef, merged).then(() => true),
+            path,
+            options
+          );
+        } else {
+          // server-wins
           // Server wins: only apply updates that don't overwrite newer server changes
           console.warn(`Conflict detected at ${path}: Server has newer data`);
-          
+
           // We could implement more complex field-by-field merging here
           // For now we just update with our changes assuming they're still relevant
-          return executeWithRetry(() => update(dbRef, {
-            ...updates,
-            _lastUpdated: Date.now()
-          }).then(() => true), path, options);
+          return executeWithRetry(
+            () =>
+              update(dbRef, {
+                ...updates,
+                _lastUpdated: Date.now(),
+              }).then(() => true),
+            path,
+            options
+          );
         }
       }
     } catch (error) {
       // If checking for conflicts fails, proceed with the update as a fallback
-      console.warn(`Failed to check for conflicts at ${path}, proceeding with update`);
+      console.warn(
+        `Failed to check for conflicts at ${path}, proceeding with update`
+      );
     }
   }
-  
+
   // For client-wins strategy or if conflict checks failed, just apply the update
-  return executeWithRetry(() => update(dbRef, {
-    ...updates,
-    _lastUpdated: Date.now()
-  }).then(() => true), path, options);
+  return executeWithRetry(
+    () =>
+      update(dbRef, {
+        ...updates,
+        _lastUpdated: Date.now(),
+      }).then(() => true),
+    path,
+    options
+  );
 }
 
 /**
@@ -245,11 +285,16 @@ export async function setDataWithRetry(
   options: SyncOperationOptions = {}
 ): Promise<boolean> {
   const path = dbRef.toString();
-  
-  return executeWithRetry(() => set(dbRef, {
-    ...data,
-    _lastUpdated: Date.now()
-  }).then(() => true), path, options);
+
+  return executeWithRetry(
+    () =>
+      set(dbRef, {
+        ...data,
+        _lastUpdated: Date.now(),
+      }).then(() => true),
+    path,
+    options
+  );
 }
 
 /**
@@ -265,11 +310,11 @@ export function createDataSubscription(
   options: SyncOperationOptions = {}
 ): () => void {
   const path = dbRef.toString();
-  
+
   const handleError = (error: any) => {
     handleSyncError(error, path, 0, options);
   };
-  
+
   try {
     return onValue(dbRef, onDataUpdate, handleError);
   } catch (error) {
@@ -285,6 +330,9 @@ export function createDataSubscription(
  * @param path Path to the data
  * @returns Database reference
  */
-export function getDataRef(database: Database, path: string): DatabaseReference {
+export function getDataRef(
+  database: Database,
+  path: string
+): DatabaseReference {
   return ref(database, path);
 }

@@ -1,11 +1,17 @@
-
-import { useState, useEffect, useCallback } from 'react';
-import { getDatabase, ref, onValue, update, get, DataSnapshot } from 'firebase/database';
-import { getAuth } from 'firebase/auth';
-import { useRealtimeDBConnection } from './useRealtimeDBConnection';
+import { getAuth } from "firebase/auth";
+import {
+  DataSnapshot,
+  get,
+  getDatabase,
+  onValue,
+  ref,
+  update,
+} from "firebase/database";
+import { useCallback, useEffect, useState } from "react";
+import { useRealtimeDBConnection } from "./useRealtimeDBConnection";
 
 // Import utilities for error handling and retry mechanisms
-import { extractDatabaseErrorCode } from '../utils/databaseErrorHandler';
+import { extractDatabaseErrorCode } from "../utils/databaseErrorHandler";
 
 // Define types for profile data
 export interface UserProfileData {
@@ -56,21 +62,24 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
   const [error, setError] = useState<SyncError | null>(null);
   const [retryCount, setRetryCount] = useState<number>(0);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
-  
+
   const { isConnected } = useRealtimeDBConnection();
   const auth = getAuth();
 
   /**
    * Calculate backoff delay for retries using exponential backoff
    */
-  const getBackoffDelay = useCallback((attempt: number): number => {
-    const delay = Math.min(
-      initialBackoffDelay! * Math.pow(2, attempt),
-      maxBackoffDelay!
-    );
-    // Add some randomness to prevent synchronized retries
-    return delay + Math.random() * 1000;
-  }, [initialBackoffDelay, maxBackoffDelay]);
+  const getBackoffDelay = useCallback(
+    (attempt: number): number => {
+      const delay = Math.min(
+        initialBackoffDelay! * Math.pow(2, attempt),
+        maxBackoffDelay!
+      );
+      // Add some randomness to prevent synchronized retries
+      return delay + Math.random() * 1000;
+    },
+    [initialBackoffDelay, maxBackoffDelay]
+  );
 
   /**
    * Get a reference to the user's profile data
@@ -78,7 +87,7 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
   const getUserProfileRef = useCallback(() => {
     const userId = auth.currentUser?.uid;
     if (!userId) {
-      throw new Error('User not authenticated');
+      throw new Error("User not authenticated");
     }
     const db = getDatabase();
     return ref(db, `users/${userId}/profile`);
@@ -90,39 +99,43 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
   const handleSyncError = useCallback(
     (error: any) => {
       const errorCode = extractDatabaseErrorCode(error);
-      
+
       // Get the current retry count inside the callback to avoid stale closure issues
-      setRetryCount(currentRetryCount => {
+      setRetryCount((currentRetryCount) => {
         const nextRetryCount = currentRetryCount + 1;
-        
+
         const syncError: SyncError = {
-          code: errorCode || 'unknown-error',
-          message: error.message || 'Unknown error occurred during profile synchronization',
+          code: errorCode || "unknown-error",
+          message:
+            error.message ||
+            "Unknown error occurred during profile synchronization",
           timestamp: Date.now(),
           retryCount: currentRetryCount,
         };
-        
+
         setError(syncError);
-        console.error('Profile sync error:', syncError);
+        console.error("Profile sync error:", syncError);
 
         // Auto-retry if enabled and under max retries
         if (autoRetry && currentRetryCount < maxRetries!) {
           const delay = getBackoffDelay(currentRetryCount);
-          console.log(`Retrying profile sync in ${delay}ms (attempt ${nextRetryCount})`);
-          
+          console.log(
+            `Retrying profile sync in ${delay}ms (attempt ${nextRetryCount})`
+          );
+
           // Schedule retry
           setTimeout(() => {
             if (isConnected) {
-              fetchProfile().catch(e => 
+              fetchProfile().catch((e) =>
                 console.error(`Retry ${nextRetryCount} failed:`, e)
               );
             }
           }, delay);
-          
+
           // Return incremented count
           return nextRetryCount;
         }
-        
+
         // If not retrying, keep the current count
         return currentRetryCount;
       });
@@ -135,15 +148,15 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
    */
   const fetchProfile = useCallback(async () => {
     setIsLoading(true);
-    
+
     try {
       if (!auth.currentUser) {
-        throw new Error('User not authenticated');
+        throw new Error("User not authenticated");
       }
-      
+
       const profileRef = getUserProfileRef();
       const snapshot = await get(profileRef);
-      
+
       processProfileData(snapshot);
       setRetryCount(0); // Reset retry count on successful fetch
       setError(null); // Clear any previous errors
@@ -158,32 +171,35 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
   /**
    * Process the profile data from a snapshot
    */
-  const processProfileData = useCallback((snapshot: DataSnapshot) => {
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      setProfile({
-        uid: auth.currentUser!.uid,
-        ...data,
-      });
-    } else {
-      // Create initial profile if none exists
-      const initialProfile: UserProfileData = {
-        uid: auth.currentUser!.uid,
-        displayName: auth.currentUser!.displayName || undefined,
-        email: auth.currentUser!.email || undefined,
-        photoURL: auth.currentUser!.photoURL || undefined,
-        lastUpdated: Date.now(),
-      };
-      setProfile(initialProfile);
-      
-      // Save the initial profile to the database
-      // This is done silently without throwing errors if it fails
-      const profileRef = getUserProfileRef();
-      update(profileRef, initialProfile).catch(err => {
-        console.warn('Failed to initialize profile:', err);
-      });
-    }
-  }, [auth, getUserProfileRef]);
+  const processProfileData = useCallback(
+    (snapshot: DataSnapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        setProfile({
+          uid: auth.currentUser!.uid,
+          ...data,
+        });
+      } else {
+        // Create initial profile if none exists
+        const initialProfile: UserProfileData = {
+          uid: auth.currentUser!.uid,
+          displayName: auth.currentUser!.displayName || undefined,
+          email: auth.currentUser!.email || undefined,
+          photoURL: auth.currentUser!.photoURL || undefined,
+          lastUpdated: Date.now(),
+        };
+        setProfile(initialProfile);
+
+        // Save the initial profile to the database
+        // This is done silently without throwing errors if it fails
+        const profileRef = getUserProfileRef();
+        update(profileRef, initialProfile).catch((err) => {
+          console.warn("Failed to initialize profile:", err);
+        });
+      }
+    },
+    [auth, getUserProfileRef]
+  );
 
   /**
    * Updates the user profile with conflict resolution
@@ -192,11 +208,11 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
   const updateProfile = useCallback(
     async (updates: Partial<UserProfileData>): Promise<boolean> => {
       if (!auth.currentUser) {
-        throw new Error('User not authenticated');
+        throw new Error("User not authenticated");
       }
 
       if (!isConnected) {
-        throw new Error('Cannot update profile while offline');
+        throw new Error("Cannot update profile while offline");
       }
 
       try {
@@ -205,7 +221,7 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
         // Get the latest profile data to check for conflicts
         const snapshot = await get(profileRef);
         const currentData = snapshot.exists() ? snapshot.val() : null;
-        
+
         // Simple conflict detection based on lastUpdated timestamp
         if (
           currentData?.lastUpdated &&
@@ -213,21 +229,21 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
           currentData.lastUpdated > profile.lastUpdated
         ) {
           // Conflict detected - the server has a newer version than what we have locally
-          console.warn('Conflict detected: Server has newer data');
-          
+          console.warn("Conflict detected: Server has newer data");
+
           // Merge strategy: Keep server values for fields not being updated
           const merged = {
             ...currentData,
             ...updates,
             lastUpdated: Date.now(),
           };
-          
+
           // Ensure merged data has the required uid field
           const completeProfile = {
-            uid: auth.currentUser!.uid, 
-            ...merged
+            uid: auth.currentUser!.uid,
+            ...merged,
           };
-          
+
           await update(profileRef, completeProfile);
           setProfile(completeProfile as UserProfileData);
           setLastSyncTime(Date.now());
@@ -239,18 +255,18 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
             ...updates,
             lastUpdated: Date.now(),
           };
-          
+
           // Make sure we update the full object in the database to maintain consistency
           // Ensure updatedProfile has the required uid field
           const completeProfile = {
             uid: auth.currentUser!.uid,
             ...(profile || {}),
             ...updates,
-            lastUpdated: Date.now()
+            lastUpdated: Date.now(),
           };
-          
+
           await update(profileRef, completeProfile);
-          
+
           setProfile(completeProfile as UserProfileData);
           setLastSyncTime(Date.now());
           return true;
@@ -268,10 +284,10 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
    */
   const retry = useCallback(() => {
     if (!isConnected) {
-      console.warn('Cannot retry while offline');
+      console.warn("Cannot retry while offline");
       return;
     }
-    
+
     setError(null);
     fetchProfile();
   }, [fetchProfile, isConnected]);
@@ -293,7 +309,7 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
 
     try {
       const profileRef = getUserProfileRef();
-      
+
       // Subscribe to realtime updates
       unsubscribe = onValue(
         profileRef,
@@ -319,7 +335,13 @@ export function useProfileSync(options: ProfileSyncOptions = {}) {
         unsubscribe();
       }
     };
-  }, [auth, isConnected, getUserProfileRef, processProfileData, handleSyncError]);
+  }, [
+    auth,
+    isConnected,
+    getUserProfileRef,
+    processProfileData,
+    handleSyncError,
+  ]);
 
   // Attempt to reconnect when connection status changes from offline to online
   useEffect(() => {
