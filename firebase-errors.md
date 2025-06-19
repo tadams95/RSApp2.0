@@ -157,14 +157,35 @@ Image and file operations have specific error patterns that need handling.
 - [ ] **Download Errors**:
 
   - [ ] Enhance profile picture loading with error handling
+    - [ ] Complete the implementation of `ImageWithFallback` component in profile views at `/src/app/(app)/account/index.tsx`
+    - [ ] Add Firebase Storage-specific error handling in empty `src/utils/storageErrorHandler.ts` file
+    - [ ] Implement error tracking and reporting for profile picture failures
   - [ ] Add fallbacks for failed image loads in event displays
+    - [ ] Enhance error handling in `/src/app/(app)/events/[id].tsx` and `/src/app/(guest)/events/[id].tsx` for event image loading failures
+    - [ ] Add proper retry mechanism with exponential backoff for failed event image loads
+    - [ ] Implement user-friendly error messages for image loading failures in event list view
   - [ ] Implement proper caching and expiration handling for storage URLs
+    - [ ] Complete the implementation of empty `src/hooks/useFirebaseImage.ts` hook to manage Firebase Storage URLs with proper caching
+    - [ ] Add cache expiration mechanism for Firebase Storage URLs to prevent stale image URLs
+    - [ ] Implement cache invalidation when images are updated or replaced
   - [ ] Create user feedback for download failures
+    - [ ] Add visual indicators for image loading states in `/src/components/modals/MyEvents.tsx`
+    - [ ] Implement error handling for image loads in `/src/components/modals/HistoryModal.tsx`
+    - [ ] Create standardized image error UI for consistent user experience across the app
 
 - [ ] **File Access Errors**:
   - [ ] Handle "not found" errors for deleted resources
+    - [ ] Implement error handling in `/src/app/(app)/account/index.tsx` for deleted profile pictures
+    - [ ] Add handling for "object-not-found" errors in other components using Firebase Storage
+    - [ ] Create a central mechanism to detect and handle references to deleted resources
   - [ ] Add permission denied handling for protected resources
+    - [ ] Enhance permissions checking in Firebase Storage access from `/src/app/(app)/events/[id].tsx`
+    - [ ] Implement proper error messages for unauthorized access to storage resources
+    - [ ] Create security rule validation before attempting resource access
   - [ ] Implement graceful UI fallbacks for missing assets
+    - [ ] Extend the `ImageWithFallback` component with better storage-specific error detection
+    - [ ] Add asset availability checks before attempting to display images from Firebase Storage
+    - [ ] Create standardized fallback assets for different content types across the application
 
 ## Data Synchronization Error Handling Implementation
 
