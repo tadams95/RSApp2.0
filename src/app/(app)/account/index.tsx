@@ -5,11 +5,10 @@ import { doc, getDoc, getFirestore, updateDoc } from "firebase/firestore";
 import {
   getDownloadURL,
   getStorage,
-  StorageError,
   ref as storageRef,
   uploadBytes,
 } from "firebase/storage";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -24,8 +23,10 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { ImageWithFallback } from "../../../components/ui";
 import { useAuth } from "../../../hooks/AuthContext";
+import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
 import { selectUserName, setUserName } from "../../../store/redux/userSlice";
 import { logError } from "../../../utils/logError";
+import { getStorageErrorMessage } from "../../../utils/storageErrorHandler";
 // Import the newly migrated modals from the barrel file
 import {
   EditProfile,
@@ -109,53 +110,6 @@ export default function AccountScreen() {
   const handleProfileUpdated = useCallback(() => {
     fetchUserData();
   }, [fetchUserData]);
-
-  // Classify storage errors into user-friendly messages
-  const getStorageErrorMessage = (error: StorageError | any): string => {
-    if (!error) return "Unknown error occurred";
-
-    // Extract error code if available
-    const errorCode = error.code || "";
-    const errorMessage = error.message?.toLowerCase() || "";
-
-    // Handle specific storage error codes with friendly messages
-    if (
-      errorCode === "storage/quota-exceeded" ||
-      errorMessage.includes("quota")
-    ) {
-      return "Storage quota exceeded. Please try a smaller image or contact support.";
-    } else if (
-      errorCode === "storage/unauthorized" ||
-      errorMessage.includes("permission") ||
-      errorMessage.includes("unauthorized")
-    ) {
-      return "You don't have permission to upload files. Please log in again.";
-    } else if (
-      errorCode === "storage/canceled" ||
-      errorMessage.includes("canceled") ||
-      errorMessage.includes("cancelled")
-    ) {
-      return "Upload was canceled.";
-    } else if (
-      errorCode === "storage/retry-limit-exceeded" ||
-      errorMessage.includes("retry")
-    ) {
-      return "Upload failed due to network issues. Please try again.";
-    } else if (
-      errorCode === "storage/invalid-format" ||
-      errorMessage.includes("format")
-    ) {
-      return "The file format is not supported. Please use a common image format.";
-    } else if (
-      errorMessage.includes("network") ||
-      errorMessage.includes("connection")
-    ) {
-      return "Network connection issue. Please check your internet connection.";
-    }
-
-    // Default error message
-    return "Error uploading image. Please try again.";
-  };
 
   // Retry the last failed upload
   const retryUpload = useCallback(async () => {
@@ -282,11 +236,16 @@ export default function AccountScreen() {
     }
   }, [localId, db, retryUpload]);
 
-  const imageSource = useMemo(() => {
-    return profilePicture
-      ? { uri: profilePicture }
-      : require("../../../assets/user.png"); // Update path to asset
-  }, [profilePicture]);
+  // Use our new hook to handle Firebase Storage image loading with error handling
+  const {
+    imageSource,
+    isLoading: isImageLoading,
+    error: imageError,
+    reload: reloadImage,
+  } = useFirebaseImage(profilePicture, {
+    fallbackImage: require("../../../assets/user.png"),
+    cacheExpiry: 3600000, // 1 hour cache
+  });
 
   const handleEditProfile = () => {
     setShowEditProfileModal(!showEditProfileModal);
@@ -380,6 +339,33 @@ export default function AccountScreen() {
               fallbackSource={require("../../../assets/user.png")}
               style={styles.profilePicture}
               resizeMode="cover"
+              showLoadingIndicator={true}
+              loadingIndicatorColor="#ff3c00"
+              loadingIndicatorSize="large"
+              maxRetries={3}
+              showRetryButton={imageError !== null}
+              errorContext="ProfilePicture"
+              onLoadError={(error) => {
+                logError(error, "ProfilePicture", { userId: localId });
+                // Show error alert for serious errors only if not already in error state
+                if (uploadState !== UploadState.ERROR && imageError) {
+                  Alert.alert(
+                    "Image Load Error",
+                    "Failed to load profile picture. Would you like to retry?",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Retry", onPress: reloadImage },
+                    ]
+                  );
+                }
+              }}
+              onLoadSuccess={() => {
+                // Clear any upload errors when image loads successfully
+                if (uploadState === UploadState.ERROR) {
+                  setUploadState(UploadState.IDLE);
+                  setUploadError(null);
+                }
+              }}
             />
             {renderUploadOverlay()}
           </TouchableOpacity>
