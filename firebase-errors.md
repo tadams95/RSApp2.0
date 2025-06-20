@@ -154,24 +154,24 @@ Image and file operations have specific error patterns that need handling.
   - [x] Implement upload progress and error feedback
   - [x] Add retry mechanisms for failed uploads
 
-- [ ] **Download Errors**:
+- [x] **Download Errors**:
 
   - [x] Enhance profile picture loading with error handling
     - [x] Complete the implementation of `ImageWithFallback` component in profile views at `/src/app/(app)/account/index.tsx`
     - [x] Add Firebase Storage-specific error handling in empty `src/utils/storageErrorHandler.ts` file
     - [x] Implement error tracking and reporting for profile picture failures
-  - [ ] Add fallbacks for failed image loads in event displays
-    - [ ] Enhance error handling in `/src/app/(app)/events/[id].tsx` and `/src/app/(guest)/events/[id].tsx` for event image loading failures
-    - [ ] Add proper retry mechanism with exponential backoff for failed event image loads
-    - [ ] Implement user-friendly error messages for image loading failures in event list view
+  - [x] Add fallbacks for failed image loads in event displays
+    - [x] Enhance error handling in `/src/app/(app)/events/[id].tsx` and `/src/app/(guest)/events/[id].tsx` for event image loading failures
+    - [x] Add proper retry mechanism with exponential backoff for failed event image loads
+    - [x] Implement user-friendly error messages for image loading failures in event list view
   - [x] Implement proper caching and expiration handling for storage URLs
     - [x] Complete the implementation of empty `src/hooks/useFirebaseImage.ts` hook to manage Firebase Storage URLs with proper caching
     - [x] Add cache expiration mechanism for Firebase Storage URLs to prevent stale image URLs
     - [x] Implement cache invalidation when images are updated or replaced
-  - [ ] Create user feedback for download failures
-    - [ ] Add visual indicators for image loading states in `/src/components/modals/MyEvents.tsx`
-    - [ ] Implement error handling for image loads in `/src/components/modals/HistoryModal.tsx`
-    - [ ] Create standardized image error UI for consistent user experience across the app
+  - [x] Create user feedback for download failures
+    - [x] Add visual indicators for image loading states in `/src/components/modals/MyEvents.tsx`
+    - [x] Implement error handling for image loads in `/src/components/modals/HistoryModal.tsx`
+    - [x] Create standardized image error UI for consistent user experience across the app
 
 - [ ] **File Access Errors**:
   - [ ] Handle "not found" errors for deleted resources

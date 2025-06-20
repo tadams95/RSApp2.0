@@ -5,7 +5,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
-  Image,
   ImageStyle,
   Linking,
   Modal,
@@ -21,9 +20,46 @@ import {
 } from "react-native";
 import { useDispatch } from "react-redux";
 import EventNotFound from "../../../components/events/EventNotFound";
+import ImageWithFallback from "../../../components/ui/ImageWithFallback";
+import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
 import { extractDatabaseErrorCode } from "../../../utils/databaseErrorHandler";
 import logError from "../../../utils/logError";
+
+// Define the styles interface to resolve TypeScript errors
+type Styles = {
+  rootContainer: ViewStyle;
+  loaderContainer: ViewStyle;
+  loaderText: TextStyle;
+  header: ViewStyle;
+  backButton: ViewStyle;
+  scrollView: ViewStyle;
+  scrollViewContent: ViewStyle;
+  imageContainer: ViewStyle;
+  loadingOverlay: ViewStyle;
+  eventImage: ImageStyle;
+  eventInfoContainer: ViewStyle;
+  titlePriceContainer: ViewStyle;
+  title: TextStyle;
+  price: TextStyle;
+  sectionContainer: ViewStyle;
+  sectionTitle: TextStyle;
+  detailsContainer: ViewStyle;
+  detailRow: ViewStyle;
+  icon: ViewStyle;
+  detailText: TextStyle;
+  locationText: TextStyle;
+  actionButton: ViewStyle;
+  disabledButton: ViewStyle;
+  actionButtonText: TextStyle;
+  modalContainer: ViewStyle;
+  modalContent: ViewStyle;
+  modalText: TextStyle;
+  modalButton: ViewStyle;
+  modalButtonText: TextStyle;
+  imageRetryButton: ViewStyle;
+  imageRetryText: TextStyle;
+};
 
 // Define types for event data
 interface EventDetail {
@@ -48,13 +84,23 @@ export default function EventDetailScreen() {
 
   const [attendingCount, setAttendingCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
   const [addToCartConfirmationVisible, setAddToCartConfirmationVisible] =
     useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [dataNotFound, setDataNotFound] = useState<boolean>(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [retryAttempts, setRetryAttempts] = useState<number>(0);
+
+  // Use the Firebase image hook for improved error handling and caching
+  const {
+    imageSource,
+    isLoading: imageIsLoading,
+    error: imageError,
+    reload: reloadImage,
+  } = useFirebaseImage(eventData?.imgURL || null, {
+    fallbackImage: require("../../../assets/BlurHero_2.png"),
+    cacheExpiry: 3600000, // 1 hour cache
+  });
 
   useEffect(() => {
     const fetchAttendingCount = async () => {
@@ -178,8 +224,16 @@ export default function EventDetailScreen() {
     router.push("/(app)/events/");
   };
 
-  const handleImageLoad = () => {
-    setImageLoaded(true);
+  const handleImageLoadSuccess = () => {
+    // Image loaded successfully
+  };
+
+  const handleImageLoadError = (error: Error) => {
+    // Log image loading error
+    logError(error, "EventDetailScreen.imageLoading", {
+      eventId: params.id,
+      eventName: eventData?.name,
+    });
   };
 
   const handleRetryLoad = () => {
@@ -192,6 +246,11 @@ export default function EventDetailScreen() {
       setError("This event doesn't exist or has been removed.");
       setIsLoading(false);
       return;
+    }
+
+    // Reload the image if there was an image error
+    if (imageError) {
+      reloadImage();
     }
 
     // Increment retry counter to trigger the useEffect
@@ -282,22 +341,36 @@ export default function EventDetailScreen() {
       >
         {/* Image Section */}
         <View style={styles.imageContainer}>
-          {!imageLoaded && (
+          {imageIsLoading && (
             <View style={styles.loadingOverlay}>
               <ActivityIndicator size="large" color="white" />
             </View>
           )}
-          <Image
-            source={{ uri: eventData.imgURL }}
+          <ImageWithFallback
+            source={imageSource}
             style={styles.eventImage}
-            onLoad={handleImageLoad}
-            onError={() => {
-              console.warn("Failed to load event image:", eventData.imgURL);
-              setImageLoaded(true); // Mark as loaded to remove spinner
-            }}
+            onLoadSuccess={handleImageLoadSuccess}
+            onLoadError={handleImageLoadError}
+            showLoadingIndicator={false} // We're using our own loading indicator
+            fallbackSource={require("../../../assets/BlurHero_2.png")}
+            maxRetries={3}
+            showErrorMessage={!!imageError}
+            showRetryButton={!!imageError}
+            errorContext="EventDetail"
             resizeMode="cover"
-            defaultSource={require("../../../assets/BlurHero_2.png")}
+            accessibilityLabel={`Image for ${eventData.name} event`}
           />
+
+          {imageError && (
+            <TouchableOpacity
+              style={styles.imageRetryButton}
+              onPress={reloadImage}
+              accessibilityLabel="Retry loading image"
+              accessibilityRole="button"
+            >
+              <Text style={styles.imageRetryText}>Retry</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Event Info Section */}
@@ -403,39 +476,7 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
-interface Styles {
-  rootContainer: ViewStyle;
-  loaderContainer: ViewStyle;
-  loaderText: TextStyle;
-  header: ViewStyle;
-  backButton: ViewStyle;
-  scrollView: ViewStyle;
-  scrollViewContent: ViewStyle;
-  imageContainer: ViewStyle;
-  loadingOverlay: ViewStyle;
-  eventImage: ImageStyle;
-  eventInfoContainer: ViewStyle;
-  titlePriceContainer: ViewStyle;
-  title: TextStyle;
-  price: TextStyle;
-  sectionContainer: ViewStyle;
-  sectionTitle: TextStyle;
-  detailsContainer: ViewStyle;
-  detailRow: ViewStyle;
-  icon: TextStyle;
-  detailText: TextStyle;
-  locationText: TextStyle;
-  actionButton: ViewStyle;
-  disabledButton: ViewStyle;
-  actionButtonText: TextStyle;
-  modalContainer: ViewStyle;
-  modalContent: ViewStyle;
-  modalText: TextStyle;
-  modalButton: ViewStyle;
-  modalButtonText: TextStyle;
-}
-
-const styles = StyleSheet.create<Styles>({
+const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -605,6 +646,23 @@ const styles = StyleSheet.create<Styles>({
     fontFamily,
     color: "white",
     fontSize: 16,
+    fontWeight: "600",
+  },
+  imageRetryButton: {
+    position: "absolute",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#444",
+    bottom: 20,
+    alignSelf: "center",
+  },
+  imageRetryText: {
+    fontFamily,
+    color: "white",
+    fontSize: 14,
     fontWeight: "600",
   },
 });

@@ -5,7 +5,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
-  Image,
   Linking,
   Platform,
   ScrollView,
@@ -15,6 +14,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import ImageWithFallback from "../../../components/ui/ImageWithFallback";
+import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
+import { logError } from "../../../utils/logError";
 import { goBack, navigateToAuth } from "../../../utils/navigation";
 
 // Define interfaces for the component props and parameters
@@ -41,7 +43,17 @@ const GuestEventView: React.FC = () => {
 
   const [attendingCount, setAttendingCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
+
+  // Use the Firebase image hook for improved error handling and caching
+  const {
+    imageSource,
+    isLoading: imageIsLoading,
+    error: imageError,
+    reload: reloadImage,
+  } = useFirebaseImage(eventImgURL || null, {
+    fallbackImage: require("../../../assets/BlurHero_2.png"),
+    cacheExpiry: 3600000, // 1 hour cache
+  });
 
   useEffect(() => {
     const fetchAttendingCount = async (): Promise<void> => {
@@ -90,8 +102,16 @@ const GuestEventView: React.FC = () => {
     Linking.openURL(url);
   };
 
-  const handleImageLoad = (): void => {
-    setImageLoaded(true);
+  const handleImageLoadSuccess = (): void => {
+    // Image loaded successfully
+  };
+
+  const handleImageLoadError = (error: Error): void => {
+    // Log image loading error
+    logError(error, "GuestEventView.imageLoading", {
+      eventId: params.id,
+      eventName: eventName,
+    });
   };
 
   return (
@@ -124,18 +144,36 @@ const GuestEventView: React.FC = () => {
       >
         {/* Image Section */}
         <View style={styles.imageContainer}>
-          {!imageLoaded && (
+          {imageIsLoading && (
             <View style={styles.loadingOverlay}>
               <ActivityIndicator size="large" color="white" />
             </View>
           )}
-          <Image
-            source={{ uri: eventImgURL }}
+          <ImageWithFallback
+            source={imageSource}
             style={styles.eventImage}
-            onLoad={handleImageLoad}
+            onLoadSuccess={handleImageLoadSuccess}
+            onLoadError={handleImageLoadError}
+            showLoadingIndicator={false} // We're using our own loading indicator
+            fallbackSource={require("../../../assets/BlurHero_2.png")}
+            maxRetries={3}
+            showErrorMessage={!!imageError}
+            showRetryButton={!!imageError}
+            errorContext="GuestEventView"
             resizeMode="cover"
             accessibilityLabel={`Image for ${eventName} event`}
           />
+
+          {imageError && (
+            <TouchableOpacity
+              style={styles.imageRetryButton}
+              onPress={reloadImage}
+              accessibilityLabel="Retry loading image"
+              accessibilityRole="button"
+            >
+              <Text style={styles.imageRetryText}>Retry</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Event Info Section */}
@@ -367,6 +405,23 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
     fontSize: 16,
+  },
+  imageRetryButton: {
+    position: "absolute",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#444",
+    bottom: 20,
+    alignSelf: "center",
+  },
+  imageRetryText: {
+    fontFamily,
+    color: "white",
+    fontSize: 14,
+    fontWeight: "600",
   },
   disclaimerText: {
     fontFamily,

@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
-  Image,
   Platform,
   StyleSheet,
   Text,
@@ -23,8 +22,9 @@ import {
 } from "react-native";
 import { navigateToGuestEvent } from "../../../utils/navigation";
 
-// Import error handling utilities
+// Import our enhanced components and hooks
 import NetInfo from "@react-native-community/netinfo"; // For network status checking
+import ImageWithFallback from "../../../components/ui/ImageWithFallback";
 import { extractDatabaseErrorCode } from "../../../utils/databaseErrorHandler";
 import {
   getRetryBackoffTime,
@@ -32,6 +32,7 @@ import {
   sanitizeEventData,
   shouldRetryEventFetch,
 } from "../../../utils/eventDataHandler";
+import { logError } from "../../../utils/logError";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -56,7 +57,6 @@ const AnimatedFlatList = Animated.createAnimatedComponent(
 const GuestEvent: React.FC = () => {
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
   const [retryAttempts, setRetryAttempts] = useState(0);
@@ -196,15 +196,8 @@ const GuestEvent: React.FC = () => {
     });
   };
 
-  const handleImageLoad = (eventId: string): void => {
-    setLoadedImages((prev) => ({ ...prev, [eventId]: true }));
-  };
-
-  const handleImageError = (eventId: string): void => {
-    console.warn(`Failed to load image for event: ${eventId}`);
-    // Mark as loaded to remove spinner, will show fallback image
-    setLoadedImages((prev) => ({ ...prev, [eventId]: true }));
-  };
+  // Removed handleImageLoad and handleImageError as we now handle image loading
+  // with individual state in each renderEventItem render function
 
   const handlePressIn = useCallback((): void => {
     setIsScrollEnabled(false);
@@ -223,7 +216,8 @@ const GuestEvent: React.FC = () => {
     index: number;
   }) => {
     const eventId = `${item.name || "unnamed"}-${index}`;
-    const isImageLoaded = loadedImages[eventId];
+    const [localImageError, setLocalImageError] = useState<boolean>(false);
+    const [isImageLoading, setIsImageLoading] = useState<boolean>(true);
 
     // Safely format date with fallback
     let formattedDate = "Date TBD";
@@ -243,6 +237,19 @@ const GuestEvent: React.FC = () => {
         ? `$${item.price}`
         : "Price TBD";
 
+    const handleImageLoadSuccess = () => {
+      setIsImageLoading(false);
+    };
+
+    const handleImageLoadError = (error: Error) => {
+      logError(error, "EventListItem.imageLoading", {
+        eventId: item.id || eventId,
+        eventName: item.name,
+      });
+      setLocalImageError(true);
+      setIsImageLoading(false);
+    };
+
     return (
       <View
         style={styles.eventSlide}
@@ -251,20 +258,23 @@ const GuestEvent: React.FC = () => {
           item.name || "Event"
         }, Date: ${formattedDate}, Price: ${priceDisplay}`}
       >
-        <Image
+        <ImageWithFallback
           source={
             typeof item.imgURL === "string" && item.imgURL.trim() !== ""
               ? { uri: item.imgURL }
               : require("../../../assets/BlurHero_2.png")
           }
+          fallbackSource={require("../../../assets/BlurHero_2.png")}
           style={styles.eventImage}
-          onLoad={() => handleImageLoad(eventId)}
-          onError={() => handleImageError(eventId)}
-          defaultSource={require("../../../assets/BlurHero_2.png")}
+          onLoadSuccess={handleImageLoadSuccess}
+          onLoadError={handleImageLoadError}
+          maxRetries={2}
+          errorContext={`EventList-${item.name}`}
+          showLoadingIndicator={false}
           accessibilityLabel={`Image for event ${item.name || "Unnamed event"}`}
         />
 
-        {!isImageLoaded && (
+        {isImageLoading && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color="white" />
           </View>
