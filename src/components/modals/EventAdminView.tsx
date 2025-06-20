@@ -1,7 +1,6 @@
 import {
   Alert,
   Dimensions,
-  Image,
   ImageStyle,
   Modal,
   Platform,
@@ -13,6 +12,9 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+
+import { validateAndCleanupStorageReferences } from "../../utils/storageErrorHandler";
+import ImageWithFallback from "../ui/ImageWithFallback";
 
 import React, { useEffect, useState } from "react";
 
@@ -86,6 +88,23 @@ const EventAdminView: React.FC<EventAdminViewProps> = ({
   useEffect(() => {
     if (visible && event) {
       requestPermissions();
+
+      // Validate and cleanup storage references for this event
+      const validateEventImage = async () => {
+        if (event?.id && event?.imgURL) {
+          try {
+            await validateAndCleanupStorageReferences(
+              "events",
+              event.id,
+              { imgURL: "" } // Use empty string as fallback for missing event images
+            );
+          } catch (error) {
+            console.error("Error validating event image:", error);
+          }
+        }
+      };
+
+      validateEventImage();
     }
   }, [visible, event]);
 
@@ -186,7 +205,17 @@ const EventAdminView: React.FC<EventAdminViewProps> = ({
             <Text style={styles.headline}>EVENT ADMIN VIEW</Text>
 
             <View style={styles.eventInfoCard}>
-              <Image source={{ uri: event.imgURL }} style={styles.eventImage} />
+              <ImageWithFallback
+                source={{ uri: event.imgURL }}
+                style={styles.eventImage}
+                fallbackSource={require("../../assets/BlurHero_2.png")}
+                showLoadingIndicator={true}
+                showRetryButton={true}
+                showErrorMessage={false}
+                maxRetries={2}
+                errorContext="EventAdminView"
+                resizeMode="cover"
+              />
 
               <View style={styles.infoSection}>
                 <Text style={styles.label}>Event</Text>

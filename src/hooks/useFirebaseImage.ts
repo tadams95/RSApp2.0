@@ -86,8 +86,13 @@ export function useFirebaseImage(
         errorCode,
       });
 
-      // Set user-friendly error message
-      setError(errorMessage);
+      // For object-not-found errors, we can be more specific
+      if (errorCode === "storage/object-not-found") {
+        setError("Image not found - it may have been deleted");
+      } else {
+        // Set user-friendly error message
+        setError(errorMessage);
+      }
 
       // Use fallback image
       setImageSource(defaultFallback);

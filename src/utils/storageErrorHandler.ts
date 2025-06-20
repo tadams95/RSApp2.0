@@ -1,4 +1,16 @@
-import { StorageError } from "firebase/storage";
+import {
+  deleteField,
+  doc,
+  getDoc,
+  getFirestore,
+  updateDoc,
+} from "firebase/firestore";
+import {
+  getDownloadURL,
+  getStorage,
+  ref,
+  StorageError,
+} from "firebase/storage";
 import { logError } from "./logError";
 
 // Error codes from Firebase Storage
@@ -155,4 +167,134 @@ export function shouldRetryStorageOperation(
   }
 
   return retryableErrors.includes(errorCode);
+}
+
+/**
+ * Checks if a Firebase Storage URL is still valid
+ * @param url The Firebase Storage download URL to check
+ * @returns Promise<boolean> True if the object exists, false if deleted/not found
+ */
+export async function isStorageObjectValid(url: string): Promise<boolean> {
+  try {
+    if (!url || !url.includes("firebasestorage.googleapis.com")) {
+      return false;
+    }
+
+    // Extract the storage path from the URL
+    const urlObj = new URL(url);
+    const pathMatch = urlObj.pathname.match(/\/o\/(.+?)\?/);
+    if (!pathMatch) return false;
+
+    const decodedPath = decodeURIComponent(pathMatch[1]);
+    const storage = getStorage();
+    const storageRef = ref(storage, decodedPath);
+
+    // Try to get a fresh download URL - this will fail if object doesn't exist
+    await getDownloadURL(storageRef);
+    return true;
+  } catch (error: any) {
+    const errorCode = extractStorageErrorCode(error);
+    if (errorCode === "storage/object-not-found") {
+      return false;
+    }
+    // For other errors (network, permissions), assume object exists but is temporarily inaccessible
+    return true;
+  }
+}
+
+/**
+ * Cleans up a Firestore document field that references a deleted storage object
+ * @param collectionPath The Firestore collection path (e.g., "customers")
+ * @param documentId The document ID
+ * @param fieldName The field name containing the storage URL
+ * @param fallbackValue Optional fallback value to set instead of deleting the field
+ */
+export async function cleanupOrphanedStorageReference(
+  collectionPath: string,
+  documentId: string,
+  fieldName: string,
+  fallbackValue?: string
+): Promise<void> {
+  try {
+    const firestore = getFirestore();
+    const docRef = doc(firestore, collectionPath, documentId);
+
+    const updateData: Record<string, any> = {};
+
+    if (fallbackValue !== undefined) {
+      updateData[fieldName] = fallbackValue;
+    } else {
+      updateData[fieldName] = deleteField();
+    }
+
+    await updateDoc(docRef, updateData);
+
+    logError(
+      new Error("Cleaned up orphaned storage reference"),
+      "StorageCleanup",
+      {
+        collectionPath,
+        documentId,
+        fieldName,
+        action: fallbackValue ? "set_fallback" : "delete_field",
+      }
+    );
+  } catch (error: any) {
+    logError(error, "StorageCleanupError", {
+      collectionPath,
+      documentId,
+      fieldName,
+    });
+    throw error;
+  }
+}
+
+/**
+ * Validates and cleans up storage references in a Firestore document
+ * @param collectionPath The Firestore collection path
+ * @param documentId The document ID
+ * @param storageFields Map of field names to fallback values for storage URL fields
+ * @returns Promise<boolean> True if any cleanup was performed
+ */
+export async function validateAndCleanupStorageReferences(
+  collectionPath: string,
+  documentId: string,
+  storageFields: Record<string, string | null>
+): Promise<boolean> {
+  let cleanupPerformed = false;
+
+  for (const [fieldName, fallbackValue] of Object.entries(storageFields)) {
+    try {
+      // Get the current field value to check
+      const firestore = getFirestore();
+      const docRef = doc(firestore, collectionPath, documentId);
+      const docSnapshot = await getDoc(docRef);
+
+      if (!docSnapshot.exists()) continue;
+
+      const fieldValue = docSnapshot.data()?.[fieldName];
+      if (!fieldValue || typeof fieldValue !== "string") continue;
+
+      // Check if the storage object is valid
+      const isValid = await isStorageObjectValid(fieldValue);
+
+      if (!isValid) {
+        await cleanupOrphanedStorageReference(
+          collectionPath,
+          documentId,
+          fieldName,
+          fallbackValue || undefined
+        );
+        cleanupPerformed = true;
+      }
+    } catch (error: any) {
+      logError(error, "StorageValidationError", {
+        collectionPath,
+        documentId,
+        fieldName,
+      });
+    }
+  }
+
+  return cleanupPerformed;
 }

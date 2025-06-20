@@ -173,13 +173,13 @@ Image and file operations have specific error patterns that need handling.
     - [x] Implement error handling for image loads in `/src/components/modals/HistoryModal.tsx`
     - [x] Create standardized image error UI for consistent user experience across the app
 
-- [ ] **File Access Errors**:
-  - [ ] Handle "not found" errors for deleted resources
-    - [ ] Replace direct `<Image source={{ uri: event.imgURL }} />` usage in `/src/components/modals/EventAdminView.tsx` with `ImageWithFallback` component
-    - [ ] Replace direct image URI usage in `/src/components/modals/AdminModal.tsx` with proper error handling for event images
-    - [ ] Fix multiple instances of direct image usage in `/src/components/modals/MyEvents.tsx` ticket transfer modal
-    - [ ] Add systematic cleanup of Firestore references when storage objects are deleted
-    - [ ] Implement object-not-found error handling for event images in admin and user-facing components
+- [x] **File Access Errors**:
+  - [x] Handle "not found" errors for deleted resources
+    - [x] Replace direct `<Image source={{ uri: event.imgURL }} />` usage in `/src/components/modals/EventAdminView.tsx` with `ImageWithFallback` component
+    - [x] Replace direct image URI usage in `/src/components/modals/AdminModal.tsx` with proper error handling for event images
+    - [x] Fix multiple instances of direct image usage in `/src/components/modals/MyEvents.tsx` ticket transfer modal
+    - [x] Add systematic cleanup of Firestore references when storage objects are deleted
+    - [x] Implement object-not-found error handling for event images in admin and user-facing components
   - [ ] Add permission denied handling for protected resources
     - [ ] Add `storage/unauthorized` error handling in all components that access Firebase Storage URLs
     - [ ] Implement permission validation before attempting to load protected event images

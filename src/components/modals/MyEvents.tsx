@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  Image,
   Linking,
   Modal,
   Platform,
@@ -14,6 +13,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
+import ImageWithFallback from "../ui/ImageWithFallback";
 
 import {
   collection,
@@ -97,7 +98,17 @@ const EventTicketCard: React.FC<EventTicketCardProps> = ({
   >
     <View style={styles.cardContent}>
       <View style={styles.imageSection}>
-        <Image style={styles.cardImage} source={{ uri: imageUrl }} />
+        <ImageWithFallback
+          style={styles.cardImage}
+          source={{ uri: imageUrl }}
+          fallbackSource={require("../../assets/BlurHero_2.png")}
+          showLoadingIndicator={true}
+          showRetryButton={false}
+          showErrorMessage={false}
+          maxRetries={2}
+          errorContext="MyEventsCard"
+          resizeMode="cover"
+        />
         {eventDate && (
           <View style={styles.dateContainer}>
             <Text style={styles.dateText}>{eventDate}</Text>
@@ -630,9 +641,16 @@ const MyEvents: React.FC = () => {
             <Text style={styles.modalText}>Transfer Ticket</Text>
             <View style={styles.ticketInfoContainer}>
               <Text style={styles.ticketName}>{eventData.name}</Text>
-              <Image
+              <ImageWithFallback
                 style={styles.ticketImage}
                 source={{ uri: eventData.imgURL }}
+                fallbackSource={require("../../assets/BlurHero_2.png")}
+                showLoadingIndicator={true}
+                showRetryButton={false}
+                showErrorMessage={false}
+                maxRetries={2}
+                errorContext="TicketTransfer"
+                resizeMode="cover"
               />
               <Text style={styles.ticketQuantity}>Quantity: 1</Text>
             </View>

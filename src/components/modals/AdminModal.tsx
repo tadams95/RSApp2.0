@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   Alert,
   Dimensions,
-  Image,
   ImageStyle,
   Linking,
   Modal,
@@ -15,6 +14,9 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+
+import { validateAndCleanupStorageReferences } from "../../utils/storageErrorHandler";
+import ImageWithFallback from "../ui/ImageWithFallback";
 
 import { Camera } from "expo-camera";
 import {
@@ -79,6 +81,27 @@ const AdminModal: React.FC<AdminModalProps> = ({
             const eventDateTime = event.dateTime.toDate();
             return eventDateTime >= currentDate;
           });
+
+        // Validate storage references for all events
+        const validateEventImages = async () => {
+          for (const event of eventData) {
+            if (event.id && event.imgURL) {
+              try {
+                await validateAndCleanupStorageReferences("events", event.id, {
+                  imgURL: "",
+                });
+              } catch (error) {
+                console.error(
+                  `Error validating image for event ${event.id}:`,
+                  error
+                );
+              }
+            }
+          }
+        };
+
+        // Run validation in background, don't block UI
+        validateEventImages();
 
         setEvents(eventData);
       } catch (error) {
@@ -203,9 +226,16 @@ const AdminModal: React.FC<AdminModalProps> = ({
                       pressed ? styles.pressed : undefined
                     }
                   >
-                    <Image
+                    <ImageWithFallback
                       source={{ uri: event.imgURL }}
                       style={styles.eventImage}
+                      fallbackSource={require("../../assets/BlurHero_2.png")}
+                      showLoadingIndicator={true}
+                      showRetryButton={false}
+                      showErrorMessage={false}
+                      maxRetries={2}
+                      errorContext="AdminModal"
+                      resizeMode="cover"
                     />
                     <Text style={styles.title}>{event.name}</Text>
                     <Text style={styles.subtitle}>
