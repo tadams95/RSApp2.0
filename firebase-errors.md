@@ -175,17 +175,21 @@ Image and file operations have specific error patterns that need handling.
 
 - [ ] **File Access Errors**:
   - [ ] Handle "not found" errors for deleted resources
-    - [ ] Implement error handling in `/src/app/(app)/account/index.tsx` for deleted profile pictures
-    - [ ] Add handling for "object-not-found" errors in other components using Firebase Storage
-    - [ ] Create a central mechanism to detect and handle references to deleted resources
+    - [ ] Replace direct `<Image source={{ uri: event.imgURL }} />` usage in `/src/components/modals/EventAdminView.tsx` with `ImageWithFallback` component
+    - [ ] Replace direct image URI usage in `/src/components/modals/AdminModal.tsx` with proper error handling for event images
+    - [ ] Fix multiple instances of direct image usage in `/src/components/modals/MyEvents.tsx` ticket transfer modal
+    - [ ] Add systematic cleanup of Firestore references when storage objects are deleted
+    - [ ] Implement object-not-found error handling for event images in admin and user-facing components
   - [ ] Add permission denied handling for protected resources
-    - [ ] Enhance permissions checking in Firebase Storage access from `/src/app/(app)/events/[id].tsx`
-    - [ ] Implement proper error messages for unauthorized access to storage resources
-    - [ ] Create security rule validation before attempting resource access
+    - [ ] Add `storage/unauthorized` error handling in all components that access Firebase Storage URLs
+    - [ ] Implement permission validation before attempting to load protected event images
+    - [ ] Add user-friendly permission error messages when storage access is denied
+    - [ ] Create fallback mechanisms when users lose access to previously accessible images
   - [ ] Implement graceful UI fallbacks for missing assets
-    - [ ] Extend the `ImageWithFallback` component with better storage-specific error detection
-    - [ ] Add asset availability checks before attempting to display images from Firebase Storage
-    - [ ] Create standardized fallback assets for different content types across the application
+    - [ ] Migrate all direct `Image` components with Firebase Storage URLs to use `ImageWithFallback` or `useFirebaseImage` hook
+    - [ ] Add error state handling for batch image loading failures in event lists
+    - [ ] Implement stale URL detection and refresh mechanism for expired Firebase Storage download URLs
+    - [ ] Add loading and error states for image-heavy components like admin event lists
 
 ## Data Synchronization Error Handling Implementation
 
