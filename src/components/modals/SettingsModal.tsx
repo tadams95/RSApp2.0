@@ -24,6 +24,8 @@ import {
   View,
 } from "react-native";
 import { auth } from "../../firebase/firebase";
+import { logError } from "../../utils/logError";
+import { extractStorageErrorCode } from "../../utils/storageErrorHandler";
 
 // Define interface for AdminModal props
 interface AdminModalProps {
@@ -145,10 +147,28 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 // Delete the user's profile picture in Firebase Storage if it exists
                 try {
                   await deleteObject(profilePictureRef);
-                } catch (error: any) {
-                  // Ignore the error if the profile picture doesn't exist
-                  if (error.code !== "storage/object-not-found") {
-                    throw error; // Re-throw the error if it's not related to the profile picture not found
+                } catch (deleteError: any) {
+                  const errorCode = extractStorageErrorCode(deleteError);
+
+                  if (errorCode === "storage/unauthorized") {
+                    // Handle permission denied errors specifically
+                    logError(deleteError, "ProfilePictureDeletion", {
+                      userId: currentUser.uid,
+                      errorType: "storage/unauthorized",
+                      action: "deleteObject",
+                    });
+
+                    // Show warning but continue with account deletion
+                    Alert.alert(
+                      "Profile Picture Delete Warning",
+                      "Your profile picture couldn't be deleted due to permissions, but your account will still be deleted. The picture may remain in storage.",
+                      [{ text: "Continue", style: "default" }]
+                    );
+                  } else if (deleteError.code === "storage/object-not-found") {
+                    // Ignore the error if the profile picture doesn't exist (original behavior)
+                  } else {
+                    // Re-throw other errors
+                    throw deleteError;
                   }
                 }
 

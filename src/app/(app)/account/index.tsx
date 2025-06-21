@@ -26,7 +26,10 @@ import { useAuth } from "../../../hooks/AuthContext";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
 import { selectUserName, setUserName } from "../../../store/redux/userSlice";
 import { logError } from "../../../utils/logError";
-import { getStorageErrorMessage } from "../../../utils/storageErrorHandler";
+import {
+  extractStorageErrorCode,
+  getStorageErrorMessage,
+} from "../../../utils/storageErrorHandler";
 // Import the newly migrated modals from the barrel file
 import {
   EditProfile,
@@ -162,20 +165,94 @@ export default function AccountScreen() {
         throw new Error("File size exceeds 5MB limit");
       }
 
-      // Upload the image to Firebase Storage
-      await uploadBytes(profilePictureRef, blob);
-      setUploadProgress(75); // Set to 75% after upload
+      // Upload the image to Firebase Storage with permission error handling
+      try {
+        await uploadBytes(profilePictureRef, blob);
+        setUploadProgress(75); // Set to 75% after upload
+      } catch (uploadError: any) {
+        const errorCode = extractStorageErrorCode(uploadError);
+
+        if (errorCode === "storage/unauthorized") {
+          // Handle permission denied errors specifically
+          const message =
+            "You don't have permission to upload images. Please log in again and try once more.";
+          setUploadError(message);
+          setUploadState(UploadState.ERROR);
+
+          // Show permission-specific alert with re-authentication option
+          Alert.alert("Upload Permission Required", message, [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Log In Again",
+              onPress: async () => {
+                try {
+                  await signOut();
+                  router.replace("/(auth)/");
+                } catch (signOutError) {
+                  console.error("Error signing out:", signOutError);
+                }
+              },
+            },
+          ]);
+
+          logError(uploadError, "ProfilePictureUpload", {
+            userId: localId,
+            errorType: "storage/unauthorized",
+            action: "uploadBytes",
+          });
+          return;
+        }
+
+        // Re-throw other errors to be handled by the outer catch block
+        throw uploadError;
+      }
 
       // Get the download URL of the uploaded image
       const downloadURL = await getDownloadURL(profilePictureRef);
       setUploadProgress(90); // Set to 90% after getting URL
 
-      // Update the user's document in Firestore with the download URL
-      const userDocRef = doc(db, `customers/${localId}`);
-      await updateDoc(userDocRef, {
-        profilePicture: downloadURL,
-        lastUpdated: new Date().toISOString(),
-      });
+      // Update the user's document in Firestore with permission error handling
+      try {
+        const userDocRef = doc(db, `customers/${localId}`);
+        await updateDoc(userDocRef, {
+          profilePicture: downloadURL,
+          lastUpdated: new Date().toISOString(),
+        });
+      } catch (firestoreError: any) {
+        // Check if this is a permission error for Firestore
+        if (firestoreError.code === "permission-denied") {
+          const message =
+            "Unable to update your profile. Please log in again and try once more.";
+          setUploadError(message);
+          setUploadState(UploadState.ERROR);
+
+          // Show permission-specific alert
+          Alert.alert("Profile Update Permission Required", message, [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Log In Again",
+              onPress: async () => {
+                try {
+                  await signOut();
+                  router.replace("/(auth)/");
+                } catch (signOutError) {
+                  console.error("Error signing out:", signOutError);
+                }
+              },
+            },
+          ]);
+
+          logError(firestoreError, "ProfilePictureUpload", {
+            userId: localId,
+            errorType: "firestore/permission-denied",
+            action: "updateDoc",
+          });
+          return;
+        }
+
+        // Re-throw other Firestore errors
+        throw firestoreError;
+      }
 
       // Once uploaded, set the profile picture URI in your component state
       setProfilePicture(downloadURL);

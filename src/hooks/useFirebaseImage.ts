@@ -86,9 +86,11 @@ export function useFirebaseImage(
         errorCode,
       });
 
-      // For object-not-found errors, we can be more specific
+      // Handle specific error cases with user-friendly messages
       if (errorCode === "storage/object-not-found") {
         setError("Image not found - it may have been deleted");
+      } else if (errorCode === "storage/unauthorized") {
+        setError("Access denied - please log in again to view this image");
       } else {
         // Set user-friendly error message
         setError(errorMessage);

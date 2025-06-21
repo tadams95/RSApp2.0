@@ -185,11 +185,46 @@ Image and file operations have specific error patterns that need handling.
     - [ ] Implement permission validation before attempting to load protected event images
     - [ ] Add user-friendly permission error messages when storage access is denied
     - [ ] Create fallback mechanisms when users lose access to previously accessible images
-  - [ ] Implement graceful UI fallbacks for missing assets
-    - [ ] Migrate all direct `Image` components with Firebase Storage URLs to use `ImageWithFallback` or `useFirebaseImage` hook
-    - [ ] Add error state handling for batch image loading failures in event lists
-    - [ ] Implement stale URL detection and refresh mechanism for expired Firebase Storage download URLs
-    - [ ] Add loading and error states for image-heavy components like admin event lists
+
+## Specific Areas Needing Storage Permission Error Handling
+
+Based on code analysis, the following specific components and operations need `storage/unauthorized` error handling:
+
+### Profile Picture Operations
+
+- [x] **Upload Operations in `/src/app/(app)/account/index.tsx`**:
+
+  - [x] Add `storage/unauthorized` error handling in `handleImageUpload()` function around `uploadBytes()` call
+  - [x] Handle permission denied errors when updating profile pictures in Firestore after upload
+  - [x] Add user feedback for storage permission issues during profile picture uploads
+  - [x] Implement retry with re-authentication when storage permissions are revoked
+
+- [x] **Delete Operations in `/src/components/modals/SettingsModal.tsx`**:
+  - [x] Add `storage/unauthorized` error handling around `deleteObject(profilePictureRef)` call
+  - [x] Handle cases where user loses delete permissions during account deletion process
+  - [x] Add graceful fallback when profile picture deletion fails due to permissions
+
+### Firebase Storage URL Access
+
+- [x] **Image Loading Components**:
+  - [x] Add `storage/unauthorized` handling in `useFirebaseImage` hook when calling `getDownloadURL()`
+  - [x] Update `ImageWithFallback` component to properly handle permission denied errors for Firebase Storage URLs
+  - [x] Add permission-specific error messages in `getStorageErrorMessage()` function
+  - [x] Implement automatic fallback to placeholder images when storage access is denied
+
+### Event Image Access
+
+- [ ] **Admin Event Management**:
+  - [ ] Add `storage/unauthorized` error handling in `/src/components/modals/AdminModal.tsx` for event image access
+  - [ ] Handle permission changes during admin sessions when accessing event images
+  - [ ] Add error handling in `/src/components/modals/EventAdminView.tsx` for protected event image access
+
+### Storage URL Validation
+
+- [ ] **Storage Reference Validation**:
+  - [ ] Add `storage/unauthorized` handling in `isStorageObjectValid()` function in `storageErrorHandler.ts`
+  - [ ] Handle permission errors during storage reference cleanup operations
+  - [ ] Add permission validation before attempting to access Firebase Storage URLs in `validateAndCleanupStorageReferences()`
 
 ## Data Synchronization Error Handling Implementation
 
@@ -299,34 +334,34 @@ A systematic approach to implementing these error handling improvements:
 ### Phase 1: Foundation (High Priority)
 
 - [ ] Enhance Firebase initialization error handling in `/src/firebase/firebase.tsx`
-- [ ] Complete authentication error handling in existing auth flows
+- [x] Complete authentication error handling in existing auth flows
 - [ ] Implement basic offline detection and user feedback
-- [ ] Add critical data operation error handling in cart checkout and payment flows
+- [x] Add critical data operation error handling in cart checkout and payment flows
 
 ### Phase 2: Core Functionality (Medium Priority)
 
-- [ ] Add comprehensive error handling for Firestore operations in events and shop
-- [ ] Implement Storage error handling for profile pictures and event images
-- [ ] Enhance Functions error handling for payment and user management
-- [ ] Create consistent error reporting and logging system
+- [x] Add comprehensive error handling for Firestore operations in events and shop
+- [x] Implement Storage error handling for profile pictures and event images
+- [x] Enhance Functions error handling for payment and user management
+- [x] Create consistent error reporting and logging system
 
 ### Phase 3: Advanced Features (Lower Priority)
 
 - [ ] Implement sophisticated offline mode capabilities
-- [ ] Add conflict resolution for concurrent edits
-- [ ] Create advanced retry strategies with exponential backoff
+- [x] Add conflict resolution for concurrent edits
+- [x] Create advanced retry strategies with exponential backoff
 - [ ] Implement analytics for error frequency and patterns
 
 ### Reusable Components
 
 - [ ] Create a `FirebaseErrorBoundary` component specialized for Firebase operations
 - [ ] Develop a `useFirebaseError` custom hook for standardized error handling
-- [ ] Implement reusable error UI components specific to common Firebase error patterns
-- [ ] Create a Firebase error code to user message mapping utility
+- [x] Implement reusable error UI components specific to common Firebase error patterns
+- [x] Create a Firebase error code to user message mapping utility
 
 ### Testing Strategy
 
-- [ ] Create automated tests for error scenarios
+- [x] Create automated tests for error scenarios
 - [ ] Implement network condition simulation for testing offline behavior
 - [ ] Add permission testing for security rules validation
 - [ ] Create a comprehensive error catalog for QA reference
