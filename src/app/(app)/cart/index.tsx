@@ -69,23 +69,23 @@ import {
   isCartRecoverable,
   saveCartState,
   saveCheckoutError,
-} from "./utils/cartPersistence";
+} from "../../../utils/cart/cartPersistence";
 import {
   CartValidationErrors,
   getCartValidationErrorMessage,
   validateCart,
-} from "./utils/cartValidation";
+} from "../../../utils/cart/cartValidation";
 import {
   isNetworkConnected,
   isNetworkError,
   retryWithBackoff,
-} from "./utils/networkErrorDetection";
+} from "../../../utils/cart/networkErrorDetection";
 import {
   attemptOrderRecovery,
   createOrderIdempotent,
   OrderData,
   reconcileOrder,
-} from "./utils/orderIdempotency";
+} from "../../../utils/cart/orderIdempotency";
 
 // Define interfaces for TypeScript
 interface CartItem {

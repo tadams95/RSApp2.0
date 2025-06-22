@@ -5,8 +5,8 @@ import { GlobalStyles } from "../../../../constants/styles";
 import {
   clearCheckoutError,
   getLastCheckoutError,
-} from "../utils/cartPersistence";
-import { isNetworkConnected } from "../utils/networkErrorDetection";
+} from "../../../../utils/cart/cartPersistence";
+import { isNetworkConnected } from "../../../../utils/cart/networkErrorDetection";
 
 type PaymentErrorProps = {
   onRetry: () => Promise<void>;

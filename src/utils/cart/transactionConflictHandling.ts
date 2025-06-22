@@ -9,23 +9,23 @@ export { default as CheckoutTransactionHandler } from "./components/CheckoutTran
 export { default as TransactionConflictHandler } from "./components/TransactionConflictHandler";
 
 // Hooks
-export { useTransactionConflict } from "./hooks/useTransactionConflict";
+export { useTransactionConflict } from "../../hooks/cart/useTransactionConflict";
 
 // Utilities
-export { runTransactionWithRetry } from "./utils/firestoreTransaction";
+export { runTransactionWithRetry } from "./firestoreTransaction";
 export {
   checkForConcurrentOperations,
   cleanupOperations,
   completeOperation,
   registerOperation,
   trackSession,
-} from "./utils/sessionTracking";
+} from "./sessionTracking";
 export {
   createFieldConflictInfo,
   detectConcurrentModification,
   hasFieldChanged,
-} from "./utils/transactionConflictDetection";
-export { processOrderWithConflictHandling } from "./utils/transactionConflictExample";
+} from "./transactionConflictDetection";
+export { processOrderWithConflictHandling } from "./transactionConflictExample";
 
 // Types
-export type { TransactionConflictInfo } from "./components/TransactionConflictHandler";
+export type { TransactionConflictInfo } from "../../app/(app)/cart/components/TransactionConflictHandler";

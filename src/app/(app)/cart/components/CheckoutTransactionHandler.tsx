@@ -8,8 +8,8 @@
 import { Firestore, Transaction } from "firebase/firestore";
 import React, { ReactNode, useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { useTransactionConflict } from "../hooks/useTransactionConflict";
-import { runTransactionWithRetry } from "../utils/firestoreTransaction";
+import { useTransactionConflict } from "../../../../hooks/cart/useTransactionConflict";
+import { runTransactionWithRetry } from "../../../../utils/cart/firestoreTransaction";
 import TransactionConflictHandler from "./TransactionConflictHandler";
 
 interface CheckoutTransactionHandlerProps {

@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { GlobalStyles } from "../../../../constants/styles";
-import { runCartRecoveryTests } from "../utils/testCartRecovery";
+import { runCartRecoveryTests } from "../../../../utils/cart/testCartRecovery";
 
 /**
  * Development test component to trigger cart recovery test scenarios
