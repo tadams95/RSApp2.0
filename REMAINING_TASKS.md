@@ -1,6 +1,6 @@
 # RAGE STATE APP - REMAINING CRITICAL TASKS
 
-*Engineering Manager's Consolidated Working Document*
+_Engineering Manager's Consolidated Working Document_
 
 ## Overview
 
@@ -13,6 +13,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 **Issue**: Package.json contained legacy React Navigation packages that conflict with Expo Router
 
 **Actions**:
+
 - [x] Remove these packages: `npm uninstall @react-navigation/bottom-tabs @react-navigation/native @react-navigation/stack @react-native-masked-view/masked-view`
 - [x] Search codebase for any remaining React Navigation imports (none found)
 - [x] Test app functionality after removal (TypeScript compilation successful)
@@ -33,13 +34,15 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 ### 2.1 Firebase Storage Error Handling
 
 **Missing implementations**:
-- [ ] Add `storage/unauthorized` error handling in `SettingsModal.tsx` for profile picture deletion
+
+- [x] Add `storage/unauthorized` error handling in `SettingsModal.tsx` for profile picture deletion
 - [ ] Implement storage permission error recovery in event image access components
 - [ ] Add storage URL validation error handling
 
 ### 2.2 API Error Boundaries
 
 **Missing implementations**:
+
 - [ ] Add error boundaries to cart checkout flow components
 - [ ] Implement error boundaries for account management screens
 - [ ] Add fallback UI for Shopify API failures
@@ -47,6 +50,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 ### 2.3 Network Error Recovery
 
 **Missing implementations**:
+
 - [ ] Add offline support for critical user actions
 - [ ] Implement retry mechanisms for failed network requests
 - [ ] Add network status indicators in UI
@@ -58,7 +62,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 **Current Issue**: Large product/event lists cause performance issues
 
 - [ ] Implement FlashList for shop product listings
-- [ ] Implement FlashList for events listings  
+- [ ] Implement FlashList for events listings
 - [ ] Add lazy loading for product images
 - [ ] Implement pagination for large datasets
 
@@ -84,6 +88,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 ### 4.2 Zustand Migration (OPTIONAL - Future)
 
 **Note**: Consider for future simplification, not critical now
+
 - [ ] Evaluate Zustand for simpler client state management
 - [ ] Create migration plan if Redux becomes too complex
 
@@ -149,6 +154,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 ## COMPLETED ITEMS (Do Not Work On)
 
 **✅ Migration Complete:**
+
 - Expo Router file-based routing
 - TypeScript conversion
 - Authentication flow
@@ -161,7 +167,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 ## TIMELINE ESTIMATE
 
 - **Priority 1 (Tech Debt)**: 2-3 days
-- **Priority 2 (Error Handling)**: 1 week  
+- **Priority 2 (Error Handling)**: 1 week
 - **Priority 3 (Performance)**: 1-2 weeks
 - **Priority 4 (State Management)**: 1 week
 - **Priority 5 (Testing)**: 1-2 weeks
@@ -183,5 +189,5 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
 ---
 
-*Last Updated: January 2025*
-*This document should be the single source of truth for remaining work*
+_Last Updated: January 2025_
+_This document should be the single source of truth for remaining work_
