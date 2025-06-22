@@ -7,6 +7,7 @@ import {
   getLastCheckoutError,
 } from "../../../../utils/cart/cartPersistence";
 import { isNetworkConnected } from "../../../../utils/cart/networkErrorDetection";
+import CheckoutErrorBoundary from "./CheckoutErrorBoundary";
 
 type PaymentErrorProps = {
   onRetry: () => Promise<void>;
@@ -86,71 +87,79 @@ const PaymentErrorHandler: React.FC<PaymentErrorProps> = ({
     : "Unknown time";
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <View style={styles.iconContainer}>
-          <Ionicons
-            name="warning-outline"
-            size={32}
-            color={GlobalStyles.colors.red3}
-          />
-        </View>
-
-        <Text style={styles.title}>Payment Problem Detected</Text>
-
-        <Text style={styles.message}>
-          We found an issue with your previous payment attempt.
-        </Text>
-
-        <TouchableOpacity
-          style={styles.detailsToggle}
-          onPress={() => setShowErrorDetails(!showErrorDetails)}
-        >
-          <Text style={styles.detailsText}>
-            {showErrorDetails ? "Hide error details" : "Show error details"}
-          </Text>
-          <Ionicons
-            name={showErrorDetails ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={GlobalStyles.colors.grey4}
-          />
-        </TouchableOpacity>
-
-        {showErrorDetails && (
-          <View style={styles.errorDetails}>
-            <Text style={styles.errorCode}>
-              Error code: {errorInfo.code || "Unknown"}
-            </Text>
-            <Text style={styles.errorDescription}>{errorMessage}</Text>
-            <Text style={styles.errorTime}>Occurred at: {errorTime}</Text>
+    <CheckoutErrorBoundary
+      operationContext="payment"
+      onRetry={handleRetry}
+      onCancel={handleCancel}
+      fallbackActionText="Back to Cart"
+      onFallbackAction={handleCancel}
+    >
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <View style={styles.iconContainer}>
+            <Ionicons
+              name="warning-outline"
+              size={32}
+              color={GlobalStyles.colors.red3}
+            />
           </View>
-        )}
 
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.cancelButton]}
-            onPress={handleCancel}
-            disabled={loading}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
+          <Text style={styles.title}>Payment Problem Detected</Text>
+
+          <Text style={styles.message}>
+            We found an issue with your previous payment attempt.
+          </Text>
 
           <TouchableOpacity
-            style={[
-              styles.button,
-              styles.retryButton,
-              loading && styles.disabledButton,
-            ]}
-            onPress={handleRetry}
-            disabled={loading}
+            style={styles.detailsToggle}
+            onPress={() => setShowErrorDetails(!showErrorDetails)}
           >
-            <Text style={styles.retryButtonText}>
-              {loading ? "Retrying..." : "Retry Payment"}
+            <Text style={styles.detailsText}>
+              {showErrorDetails ? "Hide error details" : "Show error details"}
             </Text>
+            <Ionicons
+              name={showErrorDetails ? "chevron-up" : "chevron-down"}
+              size={16}
+              color={GlobalStyles.colors.grey4}
+            />
           </TouchableOpacity>
+
+          {showErrorDetails && (
+            <View style={styles.errorDetails}>
+              <Text style={styles.errorCode}>
+                Error code: {errorInfo.code || "Unknown"}
+              </Text>
+              <Text style={styles.errorDescription}>{errorMessage}</Text>
+              <Text style={styles.errorTime}>Occurred at: {errorTime}</Text>
+            </View>
+          )}
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton]}
+              onPress={handleCancel}
+              disabled={loading}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.retryButton,
+                loading && styles.disabledButton,
+              ]}
+              onPress={handleRetry}
+              disabled={loading}
+            >
+              <Text style={styles.retryButtonText}>
+                {loading ? "Retrying..." : "Retry Payment"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
+    </CheckoutErrorBoundary>
   );
 };
 

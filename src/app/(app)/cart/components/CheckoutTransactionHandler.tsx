@@ -3,6 +3,7 @@
  *
  * Provides a wrapper to handle transaction conflicts during checkout
  * with appropriate UI feedback and recovery options.
+ * Enhanced with error boundary protection for robust error handling.
  */
 
 import { Firestore, Transaction } from "firebase/firestore";
@@ -10,6 +11,7 @@ import React, { ReactNode, useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useTransactionConflict } from "../../../../hooks/cart/useTransactionConflict";
 import { runTransactionWithRetry } from "../../../../utils/cart/firestoreTransaction";
+import CheckoutErrorBoundary from "./CheckoutErrorBoundary";
 import TransactionConflictHandler from "./TransactionConflictHandler";
 
 interface CheckoutTransactionHandlerProps {
@@ -82,32 +84,44 @@ export default function CheckoutTransactionHandler({
   );
 
   return (
-    <View style={styles.container}>
-      {/* Main content */}
-      <View
-        style={[
-          styles.contentContainer,
-          (isProcessing || isResolving) && styles.dimmedContent,
-        ]}
-      >
-        {children}
-      </View>
-
-      {/* Loading overlay when processing */}
-      {isProcessing && !conflictInfo && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#FFFFFF" />
+    <CheckoutErrorBoundary
+      operationContext="transaction"
+      onRetry={() => {
+        if (transactionFn) {
+          executeTransaction(transactionFn);
+        }
+      }}
+      onCancel={onCancel}
+      fallbackActionText="Back to Cart"
+      onFallbackAction={onCancel}
+    >
+      <View style={styles.container}>
+        {/* Main content */}
+        <View
+          style={[
+            styles.contentContainer,
+            (isProcessing || isResolving) && styles.dimmedContent,
+          ]}
+        >
+          {children}
         </View>
-      )}
 
-      {/* Transaction conflict handler */}
-      <TransactionConflictHandler
-        conflictInfo={conflictInfo}
-        isResolving={isResolving}
-        onRetry={handleRetry}
-        onCancel={handleCancel}
-      />
-    </View>
+        {/* Loading overlay when processing */}
+        {isProcessing && !conflictInfo && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#FFFFFF" />
+          </View>
+        )}
+
+        {/* Transaction conflict handler */}
+        <TransactionConflictHandler
+          conflictInfo={conflictInfo}
+          isResolving={isResolving}
+          onRetry={handleRetry}
+          onCancel={handleCancel}
+        />
+      </View>
+    </CheckoutErrorBoundary>
   );
 }
 

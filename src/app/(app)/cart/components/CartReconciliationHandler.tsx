@@ -3,6 +3,7 @@
  *
  * This component displays a UI for order reconciliation checks,
  * giving users visibility into the recovery process.
+ * Enhanced with error boundary protection for robust error handling.
  */
 
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { GlobalStyles } from "../../../../constants/styles";
+import CheckoutErrorBoundary from "./CheckoutErrorBoundary";
 
 interface CartReconciliationHandlerProps {
   isReconciling: boolean;
@@ -34,40 +36,48 @@ export default function CartReconciliationHandler({
   }
 
   return (
-    <View style={styles.container}>
-      {isReconciling ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={GlobalStyles.colors.red4} />
-          <Text style={styles.message}>Checking order status...</Text>
-        </View>
-      ) : error ? (
-        <View style={styles.errorContainer}>
-          <Ionicons
-            name="alert-circle"
-            size={20}
-            color={GlobalStyles.colors.red5}
-          />
-          <Text style={styles.errorMessage}>
-            {error || "An error occurred during order reconciliation"}
-          </Text>
-          <View style={styles.buttonContainer}>
-            {onRetry && (
-              <TouchableOpacity onPress={onRetry} style={styles.button}>
-                <Text style={styles.buttonText}>Retry</Text>
-              </TouchableOpacity>
-            )}
-            {onDismiss && (
-              <TouchableOpacity
-                onPress={onDismiss}
-                style={[styles.button, styles.dismissButton]}
-              >
-                <Text style={styles.dismissButtonText}>Dismiss</Text>
-              </TouchableOpacity>
-            )}
+    <CheckoutErrorBoundary
+      operationContext="checkout"
+      onRetry={onRetry}
+      onCancel={onDismiss}
+      fallbackActionText="Dismiss"
+      onFallbackAction={onDismiss}
+    >
+      <View style={styles.container}>
+        {isReconciling ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={GlobalStyles.colors.red4} />
+            <Text style={styles.message}>Checking order status...</Text>
           </View>
-        </View>
-      ) : null}
-    </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons
+              name="alert-circle"
+              size={20}
+              color={GlobalStyles.colors.red5}
+            />
+            <Text style={styles.errorMessage}>
+              {error || "An error occurred during order reconciliation"}
+            </Text>
+            <View style={styles.buttonContainer}>
+              {onRetry && (
+                <TouchableOpacity onPress={onRetry} style={styles.button}>
+                  <Text style={styles.buttonText}>Retry</Text>
+                </TouchableOpacity>
+              )}
+              {onDismiss && (
+                <TouchableOpacity
+                  onPress={onDismiss}
+                  style={[styles.button, styles.dismissButton]}
+                >
+                  <Text style={styles.dismissButtonText}>Dismiss</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        ) : null}
+      </View>
+    </CheckoutErrorBoundary>
   );
 }
 

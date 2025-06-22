@@ -3,6 +3,7 @@
  *
  * This component displays a UI for handling transaction conflicts,
  * providing clear guidance to users on how to recover from common issues.
+ * Enhanced with error boundary protection for robust error handling.
  */
 
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { GlobalStyles } from "../../../../constants/styles";
+import CheckoutErrorBoundary from "./CheckoutErrorBoundary";
 
 export interface TransactionConflictInfo {
   code: string;
@@ -41,54 +43,62 @@ export default function TransactionConflictHandler({
   }
 
   return (
-    <View style={styles.container}>
-      {isResolving ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={GlobalStyles.colors.red4} />
-          <Text style={styles.message}>Resolving conflict...</Text>
-        </View>
-      ) : conflictInfo ? (
-        <View style={styles.conflictContainer}>
-          <View style={styles.header}>
-            <Ionicons
-              name="warning"
-              size={20}
-              color={GlobalStyles.colors.yellow}
-            />
-            <Text style={styles.title}>Transaction Conflict</Text>
+    <CheckoutErrorBoundary
+      operationContext="transaction"
+      onRetry={onRetry}
+      onCancel={onCancel}
+      fallbackActionText="Cancel Transaction"
+      onFallbackAction={onCancel}
+    >
+      <View style={styles.container}>
+        {isResolving ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={GlobalStyles.colors.red4} />
+            <Text style={styles.message}>Resolving conflict...</Text>
           </View>
+        ) : conflictInfo ? (
+          <View style={styles.conflictContainer}>
+            <View style={styles.header}>
+              <Ionicons
+                name="warning"
+                size={20}
+                color={GlobalStyles.colors.yellow}
+              />
+              <Text style={styles.title}>Transaction Conflict</Text>
+            </View>
 
-          <Text style={styles.message}>{conflictInfo.message}</Text>
+            <Text style={styles.message}>{conflictInfo.message}</Text>
 
-          {conflictInfo.detail && (
-            <Text style={styles.detail}>{conflictInfo.detail}</Text>
-          )}
-
-          <View style={styles.resolutionContainer}>
-            <Text style={styles.resolutionTitle}>Suggested action:</Text>
-            <Text style={styles.resolution}>{conflictInfo.resolution}</Text>
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              onPress={onRetry}
-              style={[styles.button, styles.retryButton]}
-            >
-              <Text style={styles.buttonText}>Retry</Text>
-            </TouchableOpacity>
-
-            {onCancel && (
-              <TouchableOpacity
-                onPress={onCancel}
-                style={[styles.button, styles.cancelButton]}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
+            {conflictInfo.detail && (
+              <Text style={styles.detail}>{conflictInfo.detail}</Text>
             )}
+
+            <View style={styles.resolutionContainer}>
+              <Text style={styles.resolutionTitle}>Suggested action:</Text>
+              <Text style={styles.resolution}>{conflictInfo.resolution}</Text>
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                onPress={onRetry}
+                style={[styles.button, styles.retryButton]}
+              >
+                <Text style={styles.buttonText}>Retry</Text>
+              </TouchableOpacity>
+
+              {onCancel && (
+                <TouchableOpacity
+                  onPress={onCancel}
+                  style={[styles.button, styles.cancelButton]}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-        </View>
-      ) : null}
-    </View>
+        ) : null}
+      </View>
+    </CheckoutErrorBoundary>
   );
 }
 
