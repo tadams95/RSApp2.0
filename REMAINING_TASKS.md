@@ -1,0 +1,195 @@
+# RAGE STATE APP - REMAINING CRITICAL TASKS
+
+*Engineering Manager's Consolidated Working Document*
+
+## Overview
+
+The Rage State app has successfully migrated to Expo Router with TypeScript. This document contains only the **critical remaining tasks** to complete the modernization and remove technical debt.
+
+## PRIORITY 1: Remove Technical Debt (URGENT)
+
+### 1.1 Remove Legacy React Navigation Dependencies ⚠️
+
+**Issue**: Package.json contains legacy React Navigation packages that conflict with Expo Router:
+
+```json
+// TO REMOVE:
+"@react-navigation/bottom-tabs": "^7.3.10",
+"@react-navigation/native": "^7.1.6", 
+"@react-navigation/stack": "^7.3.2",
+"@react-native-masked-view/masked-view": "^0.3.2"
+```
+
+**Actions**:
+- [ ] Remove these packages: `npm uninstall @react-navigation/bottom-tabs @react-navigation/native @react-navigation/stack @react-native-masked-view/masked-view`
+- [ ] Search codebase for any remaining React Navigation imports
+- [ ] Test app functionality after removal
+- [ ] Run `npx expo-doctor` to verify no conflicts
+
+### 1.2 Clean Up Redundant Documentation Files ✅
+
+**Issue**: Multiple overlapping documentation files causing confusion:
+
+- [x] Remove `implementation-guide.md` (migration complete)
+- [x] Remove `implementation-plan.md` (superseded by current state)
+- [x] Remove `dependency-update.md` (actions completed)
+- [x] Archive `migration-checklist.md` to `docs/` folder (reference only)
+- [x] Move other reference docs to `docs/` folder
+
+## PRIORITY 2: Complete Error Handling Implementation
+
+### 2.1 Firebase Storage Error Handling
+
+**Missing implementations**:
+- [ ] Add `storage/unauthorized` error handling in `SettingsModal.tsx` for profile picture deletion
+- [ ] Implement storage permission error recovery in event image access components
+- [ ] Add storage URL validation error handling
+
+### 2.2 API Error Boundaries
+
+**Missing implementations**:
+- [ ] Add error boundaries to cart checkout flow components
+- [ ] Implement error boundaries for account management screens
+- [ ] Add fallback UI for Shopify API failures
+
+### 2.3 Network Error Recovery
+
+**Missing implementations**:
+- [ ] Add offline support for critical user actions
+- [ ] Implement retry mechanisms for failed network requests
+- [ ] Add network status indicators in UI
+
+## PRIORITY 3: Performance Optimizations
+
+### 3.1 Virtualized Lists
+
+**Current Issue**: Large product/event lists cause performance issues
+
+- [ ] Implement FlashList for shop product listings
+- [ ] Implement FlashList for events listings  
+- [ ] Add lazy loading for product images
+- [ ] Implement pagination for large datasets
+
+### 3.2 Image Optimization
+
+- [ ] Replace Image components with expo-image
+- [ ] Add proper image caching strategy
+- [ ] Implement progressive image loading
+- [ ] Add image compression for uploads
+
+## PRIORITY 4: State Management Optimization
+
+### 4.1 React Query Implementation
+
+**Current Issue**: All server state mixed with client state in Redux
+
+- [ ] Install and configure React Query: `npm install @tanstack/react-query`
+- [ ] Create React Query provider in root layout
+- [ ] Migrate product fetching to React Query
+- [ ] Migrate event fetching to React Query
+- [ ] Keep only UI state in Redux (auth, cart, user preferences)
+
+### 4.2 Zustand Migration (OPTIONAL - Future)
+
+**Note**: Consider for future simplification, not critical now
+- [ ] Evaluate Zustand for simpler client state management
+- [ ] Create migration plan if Redux becomes too complex
+
+## PRIORITY 5: Testing Infrastructure
+
+### 5.1 Basic Testing Setup
+
+**Current Issue**: No testing infrastructure
+
+- [ ] Install testing dependencies: `npm install --save-dev @testing-library/react-native jest-expo`
+- [ ] Configure Jest for React Native
+- [ ] Add basic tests for utility functions
+- [ ] Add component tests for critical UI components
+- [ ] Add integration tests for auth flow
+
+### 5.2 E2E Testing (OPTIONAL)
+
+- [ ] Consider Detox for E2E testing of critical user flows
+
+## PRIORITY 6: Analytics Implementation
+
+### 6.1 Firebase Analytics Setup
+
+**Current Issue**: No user behavior tracking
+
+- [ ] Install Firebase Analytics: `npm install @react-native-firebase/analytics`
+- [ ] Create analytics provider component
+- [ ] Add screen tracking hook
+- [ ] Implement event tracking for:
+  - Product views
+  - Add to cart actions
+  - Purchase completions
+  - Event ticket purchases
+
+## PRIORITY 7: Styling System (NativeWind)
+
+### 7.1 NativeWind Implementation
+
+**Current Issue**: Inconsistent styling patterns across app
+
+- [ ] Install NativeWind: `npm install nativewind tailwindcss`
+- [ ] Configure Tailwind config file
+- [ ] Update Babel config for NativeWind
+- [ ] Create design system with consistent spacing/colors
+- [ ] Migrate core components to NativeWind classes
+- [ ] Update theme provider for dark/light mode
+
+## PRIORITY 8: Final Optimizations
+
+### 8.1 Build Optimization
+
+- [ ] Optimize bundle size with Metro config
+- [ ] Add code splitting for route-based chunks
+- [ ] Optimize asset loading
+
+### 8.2 Security Review
+
+- [ ] Audit Firebase security rules
+- [ ] Review sensitive data storage practices
+- [ ] Add input validation for all forms
+- [ ] Implement rate limiting where needed
+
+## COMPLETED ITEMS (Do Not Work On)
+
+**✅ Migration Complete:**
+- Expo Router file-based routing
+- TypeScript conversion
+- Authentication flow
+- Route group layouts
+- Package dependency updates (React Native Paper, etc.)
+- Basic error handling
+- Firebase integration
+- Redux state management
+
+## TIMELINE ESTIMATE
+
+- **Priority 1 (Tech Debt)**: 2-3 days
+- **Priority 2 (Error Handling)**: 1 week  
+- **Priority 3 (Performance)**: 1-2 weeks
+- **Priority 4 (State Management)**: 1 week
+- **Priority 5 (Testing)**: 1-2 weeks
+- **Priority 6 (Analytics)**: 3-5 days
+- **Priority 7 (Styling)**: 1-2 weeks
+- **Priority 8 (Final)**: 3-5 days
+
+**Total Estimated Timeline**: 6-8 weeks
+
+## SUCCESS CRITERIA
+
+- [ ] App builds without warnings or errors
+- [ ] No legacy dependencies remain
+- [ ] All critical error scenarios handled gracefully
+- [ ] Performance meets acceptable standards (< 3s initial load)
+- [ ] Basic test coverage > 60%
+- [ ] Analytics tracking implemented
+- [ ] Consistent styling system in place
+
+---
+
+*Last Updated: January 2025*
+*This document should be the single source of truth for remaining work*
