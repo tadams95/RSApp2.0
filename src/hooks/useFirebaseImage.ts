@@ -90,7 +90,9 @@ export function useFirebaseImage(
       if (errorCode === "storage/object-not-found") {
         setError("Image not found - it may have been deleted");
       } else if (errorCode === "storage/unauthorized") {
-        setError("Access denied - please log out and log back in to view this image");
+        setError(
+          "Access denied - please log out and log back in to view this image"
+        );
       } else {
         // Set user-friendly error message
         setError(errorMessage);

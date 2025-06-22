@@ -238,7 +238,10 @@ const AdminModal: React.FC<AdminModalProps> = ({
                       resizeMode="cover"
                       onLoadError={(error) => {
                         // Enhanced error logging for admin event images
-                        console.warn(`AdminModal: Failed to load image for event "${event.name}":`, error);
+                        console.warn(
+                          `AdminModal: Failed to load image for event "${event.name}":`,
+                          error
+                        );
                       }}
                     />
                     <Text style={styles.title}>{event.name}</Text>

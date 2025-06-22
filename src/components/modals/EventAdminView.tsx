@@ -217,7 +217,10 @@ const EventAdminView: React.FC<EventAdminViewProps> = ({
                 resizeMode="cover"
                 onLoadError={(error) => {
                   // Enhanced error logging for admin event detail images
-                  console.warn(`EventAdminView: Failed to load image for event "${event.name}":`, error);
+                  console.warn(
+                    `EventAdminView: Failed to load image for event "${event.name}":`,
+                    error
+                  );
                 }}
               />
 
