@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { AppCarousel } from "../../../components/ui";
 import { GlobalStyles } from "../../../constants/styles";
 import { goBack, navigateToAuth } from "../../../utils/navigation";
@@ -191,98 +192,100 @@ export default function GuestProductDetail() {
   };
 
   return (
-    <View style={styles.rootContainer}>
-      <StatusBar barStyle="light-content" />
+    <ProductFetchErrorBoundary>
+      <View style={styles.rootContainer}>
+        <StatusBar barStyle="light-content" />
 
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+        <Stack.Screen
+          options={{
+            headerShown: false,
+          }}
+        />
 
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={goBack}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Ionicons name="arrow-back" size={22} color="white" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollViewContent}
-        accessibilityLabel="Product details page"
-      >
-        {renderImageCarousel()}
-
-        <View style={styles.productInfoContainer}>
-          <View style={styles.titlePriceContainer}>
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.price}>{formattedPrice}</Text>
-          </View>
-
-          {descriptionHtml && (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Description</Text>
-              <Text style={styles.description}>
-                {descriptionHtml.replace(/<[^>]+>/g, "")}
-              </Text>
-            </View>
-          )}
-
-          {variants && variants.length > 0 && (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Available Options</Text>
-              <View style={styles.variantsList}>
-                {variants
-                  .filter((variant) => variant.available)
-                  .map((variant, index) => (
-                    <View key={index} style={styles.optionContainer}>
-                      <Text style={styles.optionText}>
-                        {variant.size && `Size: ${variant.size}`}
-                        {variant.size && variant.color && " | "}
-                        {variant.color &&
-                          variant.color !== "Default" &&
-                          `Color: ${variant.color}`}
-                      </Text>
-                    </View>
-                  ))}
-
-                {variants.filter((variant) => variant.available).length ===
-                  0 && (
-                  <Text style={styles.soldOutText}>
-                    All options are currently sold out
-                  </Text>
-                )}
-              </View>
-            </View>
-          )}
-
+        <View style={styles.header}>
           <TouchableOpacity
-            style={[styles.actionButton, isSoldOut && styles.disabledButton]}
-            onPress={handleGuestCheckout}
-            disabled={isSoldOut}
+            style={styles.backButton}
+            onPress={goBack}
+            accessibilityLabel="Go back"
             accessibilityRole="button"
-            accessibilityLabel={
-              isSoldOut ? "Product sold out" : "Sign in to purchase"
-            }
-            accessibilityHint="Redirects to login screen"
           >
-            <Text style={styles.actionButtonText}>
-              {isSoldOut ? "SOLD OUT" : "SIGN IN TO PURCHASE"}
-            </Text>
+            <Ionicons name="arrow-back" size={22} color="white" />
           </TouchableOpacity>
-
-          <Text style={styles.reminderText}>
-            Sign in or create an account to purchase this item
-          </Text>
         </View>
-      </ScrollView>
-    </View>
+
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollViewContent}
+          accessibilityLabel="Product details page"
+        >
+          {renderImageCarousel()}
+
+          <View style={styles.productInfoContainer}>
+            <View style={styles.titlePriceContainer}>
+              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.price}>{formattedPrice}</Text>
+            </View>
+
+            {descriptionHtml && (
+              <View style={styles.sectionContainer}>
+                <Text style={styles.sectionTitle}>Description</Text>
+                <Text style={styles.description}>
+                  {descriptionHtml.replace(/<[^>]+>/g, "")}
+                </Text>
+              </View>
+            )}
+
+            {variants && variants.length > 0 && (
+              <View style={styles.sectionContainer}>
+                <Text style={styles.sectionTitle}>Available Options</Text>
+                <View style={styles.variantsList}>
+                  {variants
+                    .filter((variant) => variant.available)
+                    .map((variant, index) => (
+                      <View key={index} style={styles.optionContainer}>
+                        <Text style={styles.optionText}>
+                          {variant.size && `Size: ${variant.size}`}
+                          {variant.size && variant.color && " | "}
+                          {variant.color &&
+                            variant.color !== "Default" &&
+                            `Color: ${variant.color}`}
+                        </Text>
+                      </View>
+                    ))}
+
+                  {variants.filter((variant) => variant.available).length ===
+                    0 && (
+                    <Text style={styles.soldOutText}>
+                      All options are currently sold out
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.actionButton, isSoldOut && styles.disabledButton]}
+              onPress={handleGuestCheckout}
+              disabled={isSoldOut}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isSoldOut ? "Product sold out" : "Sign in to purchase"
+              }
+              accessibilityHint="Redirects to login screen"
+            >
+              <Text style={styles.actionButtonText}>
+                {isSoldOut ? "SOLD OUT" : "SIGN IN TO PURCHASE"}
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={styles.reminderText}>
+              Sign in or create an account to purchase this item
+            </Text>
+          </View>
+        </ScrollView>
+      </View>
+    </ProductFetchErrorBoundary>
   );
 }
 

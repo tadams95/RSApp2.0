@@ -13,6 +13,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { ImageWithFallback } from "../../../components/ui";
 import fetchShopifyProducts from "../../../services/shopifyService";
 
@@ -215,27 +216,29 @@ export default function ShopScreen() {
   }
 
   return (
-    <ScrollView
-      style={{ backgroundColor: "#000" }}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor="white"
-          colors={["white"]}
-        />
-      }
-    >
-      <View style={styles.container}>
-        {
-          products.length > 0
-            ? products.map((product) => renderItem(product))
-            : !isLoading && (
-                <Text style={styles.emptyText}>No products found.</Text>
-              ) // Show if no products and not loading
+    <ProductFetchErrorBoundary>
+      <ScrollView
+        style={{ backgroundColor: "#000" }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="white"
+            colors={["white"]}
+          />
         }
-      </View>
-    </ScrollView>
+      >
+        <View style={styles.container}>
+          {
+            products.length > 0
+              ? products.map((product) => renderItem(product))
+              : !isLoading && (
+                  <Text style={styles.emptyText}>No products found.</Text>
+                ) // Show if no products and not loading
+          }
+        </View>
+      </ScrollView>
+    </ProductFetchErrorBoundary>
   );
 }
 

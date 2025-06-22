@@ -59,11 +59,11 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
   - [x] Create error boundary for user data fetch operations in account screen
   - [x] Add error boundary for profile sync operations using `useProfileSync` hook
 
-- [ ] **Shopify API Error Boundaries**:
-  - [ ] Add error boundary for product fetching failures in shop screens
-  - [ ] Implement error boundary for cart operations (add/remove/update)
-  - [ ] Add error boundary for checkout API calls and payment processing
-  - [ ] Create fallback UI for Shopify service unavailability
+- [x] **Shopify API Error Boundaries**:
+  - [x] Add error boundary for product fetching failures in shop screens
+  - [x] Implement error boundary for cart operations (add/remove/update)
+  - [x] Add error boundary for checkout API calls and payment processing
+  - [x] Create fallback UI for Shopify service unavailability
 
 ### 2.3 Network Error Recovery
 

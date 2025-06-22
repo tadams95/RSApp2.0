@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { ImageWithFallback } from "../../../components/ui";
 import fetchShopifyProducts from "../../../services/shopifyService";
 import { navigateToGuestProduct } from "../../../utils/navigation";
@@ -21,9 +22,10 @@ interface ShopifyPrice {
 
 interface ShopifyVariant {
   id: string;
-  title: string;
+  title?: string; // Make optional to match ShopifyProductVariant
   price: ShopifyPrice;
-  available: boolean;
+  available?: boolean; // Make optional
+  availableForSale?: boolean; // Add alternative property name
   selectedOptions?: Array<{
     name: string;
     value: string;
@@ -32,7 +34,8 @@ interface ShopifyVariant {
 
 interface ShopifyImage {
   id?: string;
-  src: string;
+  src?: string; // Make src optional to match ShopifyProductImage
+  url?: string; // Add url as alternative property name
   altText?: string;
 }
 
@@ -49,7 +52,7 @@ interface ShopifyProduct {
 interface SerializedProduct {
   id: string;
   title: string;
-  images: { src: string }[];
+  images: { src?: string; url?: string }[]; // Make src optional and add url
   variants: Array<{
     size: string | null;
     color: string;
@@ -57,7 +60,7 @@ interface SerializedProduct {
       amount: string;
       currencyCode: string;
     };
-    available: boolean;
+    available?: boolean; // Make optional
   }>;
   price: {
     amount: string;
@@ -126,12 +129,16 @@ const GuestShop: React.FC = () => {
         title: product.title,
         images:
           product.images && Array.isArray(product.images)
-            ? product.images.map((image) => ({ src: image.src }))
+            ? product.images.map((image) => ({
+                src: image.src || image.url || "",
+                url: image.url || image.src || "",
+              }))
             : [],
         variants:
           product.variants && Array.isArray(product.variants)
             ? product.variants.map((variant) => {
-                const [size, color] = (variant.title.split(" / ") || []).map(
+                const variantTitle = variant.title || "";
+                const [size, color] = (variantTitle.split(" / ") || []).map(
                   (str) => str.trim()
                 );
 
@@ -149,7 +156,8 @@ const GuestShop: React.FC = () => {
                     amount: variant.price.amount,
                     currencyCode: variant.price.currencyCode,
                   },
-                  available: variant.available,
+                  available:
+                    variant.available ?? variant.availableForSale ?? true,
                 };
               })
             : [],
@@ -301,24 +309,26 @@ const GuestShop: React.FC = () => {
 
   // Main render
   return (
-    <ScrollView
-      style={{ backgroundColor: "#000" }}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor="white"
-          colors={["white"]}
-        />
-      }
-      accessibilityLabel="Shop products list"
-    >
-      <View style={styles.container}>
-        {isLoading
-          ? renderSkeletonItems()
-          : products.map((product) => renderItem({ item: product }))}
-      </View>
-    </ScrollView>
+    <ProductFetchErrorBoundary>
+      <ScrollView
+        style={{ backgroundColor: "#000" }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="white"
+            colors={["white"]}
+          />
+        }
+        accessibilityLabel="Shop products list"
+      >
+        <View style={styles.container}>
+          {isLoading
+            ? renderSkeletonItems()
+            : products.map((product) => renderItem({ item: product }))}
+        </View>
+      </ScrollView>
+    </ProductFetchErrorBoundary>
   );
 };
 

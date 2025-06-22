@@ -45,6 +45,10 @@ import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { getFirestore } from "firebase/firestore";
 import { useEffect, useState } from "react";
+import {
+  CartOperationErrorBoundary,
+  CheckoutPaymentErrorBoundary,
+} from "../../../components/shopify";
 import { GlobalStyles } from "../../../constants/styles";
 import {
   selectExpoPushToken,
@@ -1010,15 +1014,17 @@ export default function CartScreen() {
         <View style={styles.header}>
           {/* <Text style={styles.headerTitle}>Cart</Text> */}
           {cartItems.length > 0 && (
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={handleClearCart}
-              accessible={true}
-              accessibilityLabel="Clear cart"
-              accessibilityRole="button"
-            >
-              <Text style={styles.clearButtonText}>Clear Cart</Text>
-            </TouchableOpacity>
+            <CartOperationErrorBoundary>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={handleClearCart}
+                accessible={true}
+                accessibilityLabel="Clear cart"
+                accessibilityRole="button"
+              >
+                <Text style={styles.clearButtonText}>Clear Cart</Text>
+              </TouchableOpacity>
+            </CartOperationErrorBoundary>
           )}
         </View>
 
@@ -1216,21 +1222,23 @@ export default function CartScreen() {
                         $
                         {(item.price.amount * item.selectedQuantity).toFixed(2)}
                       </Text>
-                      <TouchableOpacity
-                        style={styles.removeButton}
-                        onPress={() =>
-                          handleRemoveFromCart(
-                            item.productId,
-                            item.selectedColor,
-                            item.selectedSize
-                          )
-                        }
-                        accessible={true}
-                        accessibilityLabel="Remove from cart"
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.removeButtonText}>REMOVE</Text>
-                      </TouchableOpacity>
+                      <CartOperationErrorBoundary>
+                        <TouchableOpacity
+                          style={styles.removeButton}
+                          onPress={() =>
+                            handleRemoveFromCart(
+                              item.productId,
+                              item.selectedColor,
+                              item.selectedSize
+                            )
+                          }
+                          accessible={true}
+                          accessibilityLabel="Remove from cart"
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.removeButtonText}>REMOVE</Text>
+                        </TouchableOpacity>
+                      </CartOperationErrorBoundary>
                     </View>
                   </View>
                 </View>
@@ -1332,34 +1340,36 @@ export default function CartScreen() {
                 checkoutInProgress && { borderTopWidth: 0, paddingTop: 0 },
               ]}
             >
-              <TouchableOpacity
-                style={[
-                  styles.checkoutButton,
-                  {
-                    backgroundColor: GlobalStyles.colors.red4,
-                    flex: 1,
-                    marginLeft: 0,
-                    borderWidth: 0,
-                  },
-                  loading && styles.disabledButton,
-                ]}
-                onPress={handleCheckout}
-                disabled={loading || cartItems.length === 0}
-                accessible={true}
-                accessibilityLabel={`Proceed to checkout. Total amount ${totalPrice.toFixed(
-                  2
-                )} dollars`}
-                accessibilityRole="button"
-                accessibilityHint="Completes your purchase and proceeds to payment"
-              >
-                <Text
-                  style={[styles.checkoutButtonText, { fontWeight: "600" }]}
+              <CheckoutPaymentErrorBoundary>
+                <TouchableOpacity
+                  style={[
+                    styles.checkoutButton,
+                    {
+                      backgroundColor: GlobalStyles.colors.red4,
+                      flex: 1,
+                      marginLeft: 0,
+                      borderWidth: 0,
+                    },
+                    loading && styles.disabledButton,
+                  ]}
+                  onPress={handleCheckout}
+                  disabled={loading || cartItems.length === 0}
+                  accessible={true}
+                  accessibilityLabel={`Proceed to checkout. Total amount ${totalPrice.toFixed(
+                    2
+                  )} dollars`}
+                  accessibilityRole="button"
+                  accessibilityHint="Completes your purchase and proceeds to payment"
                 >
-                  {loading
-                    ? "Processing..."
-                    : `Check Out • $${totalPrice.toFixed(2)}`}
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[styles.checkoutButtonText, { fontWeight: "600" }]}
+                  >
+                    {loading
+                      ? "Processing..."
+                      : `Check Out • $${totalPrice.toFixed(2)}`}
+                  </Text>
+                </TouchableOpacity>
+              </CheckoutPaymentErrorBoundary>
             </View>
           </>
         )}

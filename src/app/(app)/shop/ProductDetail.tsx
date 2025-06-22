@@ -15,6 +15,10 @@ import {
   View,
 } from "react-native";
 import { useDispatch } from "react-redux";
+import {
+  CartOperationErrorBoundary,
+  ProductFetchErrorBoundary,
+} from "../../../components/shopify";
 import { AppCarousel, ImageWithFallback } from "../../../components/ui";
 import { GlobalStyles } from "../../../constants/styles";
 import { useErrorHandler } from "../../../hooks/useErrorHandler";
@@ -286,206 +290,220 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
     : "Price unavailable";
 
   return (
-    <View style={styles.rootContainer}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-          <Ionicons name="arrow-back" size={22} color="white" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollViewContent}
-      >
-        {renderImageCarousel()}
-
-        <View style={styles.productInfoContainer}>
-          <View style={styles.titlePriceContainer}>
-            <Text style={styles.title}>{product.title}</Text>
-            <Text style={styles.price}>{formattedPrice}</Text>
-          </View>
-
-          {product.descriptionHtml && (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Description</Text>
-              {/* Consider using react-native-render-html for HTML content */}
-              <Text style={styles.description}>
-                {product.descriptionHtml.replace(/<[^>]+>/g, "")}
-              </Text>
-            </View>
-          )}
-
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Product Options</Text>
-            {availableSizes.length > 0 && (
-              <View style={styles.optionContainer}>
-                <Text style={styles.optionLabel}>Size:</Text>
-                <TouchableOpacity
-                  style={styles.optionSelector}
-                  onPress={() => setSizeModalVisible(true)}
-                >
-                  <Text style={styles.optionText}>
-                    {selectedSize || "Select Size"}
-                  </Text>
-                  <Ionicons name="chevron-down" size={16} color="white" />
-                </TouchableOpacity>
-              </View>
-            )}
-            {availableColors.length > 0 && (
-              <View style={styles.optionContainer}>
-                <Text style={styles.optionLabel}>Color:</Text>
-                <TouchableOpacity
-                  style={styles.optionSelector}
-                  onPress={() => setColorModalVisible(true)}
-                >
-                  <Text style={styles.optionText}>
-                    {selectedColor || "Select Color"}
-                  </Text>
-                  <Ionicons name="chevron-down" size={16} color="white" />
-                </TouchableOpacity>
-              </View>
-            )}
-            <View style={styles.optionContainer}>
-              <Text style={styles.optionLabel}>Quantity:</Text>
-              <TouchableOpacity
-                style={styles.optionSelector}
-                onPress={() => setQuantityModalVisible(true)}
-              >
-                <Text style={styles.optionText}>
-                  {selectedQuantity || "Select Quantity"}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color="white" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleAddToCart}
-          >
-            <Text style={styles.actionButtonText}>ADD TO CART</Text>
+    <ProductFetchErrorBoundary
+      onProductNotFound={() => {
+        Alert.alert(
+          "Product Not Found",
+          "This product is no longer available. Returning to shop.",
+          [{ text: "OK", onPress: () => router.back() }]
+        );
+      }}
+    >
+      <View style={styles.rootContainer}>
+        <StatusBar barStyle="light-content" />
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+            <Ionicons name="arrow-back" size={22} color="white" />
           </TouchableOpacity>
         </View>
-      </ScrollView>
 
-      {/* Modals (Size, Color, Quantity, Confirmation) - Simplified for brevity */}
-      {/* Size Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={sizeModalVisible}
-        onRequestClose={() => setSizeModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Size</Text>
-              <TouchableOpacity onPress={() => setSizeModalVisible(false)}>
-                <Ionicons name="close" size={24} color="white" />
-              </TouchableOpacity>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollViewContent}
+        >
+          {renderImageCarousel()}
+
+          <View style={styles.productInfoContainer}>
+            <View style={styles.titlePriceContainer}>
+              <Text style={styles.title}>{product.title}</Text>
+              <Text style={styles.price}>{formattedPrice}</Text>
             </View>
-            <ScrollView style={styles.modalScroll}>
-              {availableSizes.map((size, index) => (
+
+            {product.descriptionHtml && (
+              <View style={styles.sectionContainer}>
+                <Text style={styles.sectionTitle}>Description</Text>
+                {/* Consider using react-native-render-html for HTML content */}
+                <Text style={styles.description}>
+                  {product.descriptionHtml.replace(/<[^>]+>/g, "")}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Product Options</Text>
+              {availableSizes.length > 0 && (
+                <View style={styles.optionContainer}>
+                  <Text style={styles.optionLabel}>Size:</Text>
+                  <TouchableOpacity
+                    style={styles.optionSelector}
+                    onPress={() => setSizeModalVisible(true)}
+                  >
+                    <Text style={styles.optionText}>
+                      {selectedSize || "Select Size"}
+                    </Text>
+                    <Ionicons name="chevron-down" size={16} color="white" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              {availableColors.length > 0 && (
+                <View style={styles.optionContainer}>
+                  <Text style={styles.optionLabel}>Color:</Text>
+                  <TouchableOpacity
+                    style={styles.optionSelector}
+                    onPress={() => setColorModalVisible(true)}
+                  >
+                    <Text style={styles.optionText}>
+                      {selectedColor || "Select Color"}
+                    </Text>
+                    <Ionicons name="chevron-down" size={16} color="white" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              <View style={styles.optionContainer}>
+                <Text style={styles.optionLabel}>Quantity:</Text>
                 <TouchableOpacity
-                  key={index}
-                  style={styles.modalItem}
-                  onPress={() => handleSizeSelect(size)}
+                  style={styles.optionSelector}
+                  onPress={() => setQuantityModalVisible(true)}
                 >
-                  <Text style={styles.modalItemText}>{size}</Text>
+                  <Text style={styles.optionText}>
+                    {selectedQuantity || "Select Quantity"}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="white" />
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Color Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={colorModalVisible}
-        onRequestClose={() => setColorModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Color</Text>
-              <TouchableOpacity onPress={() => setColorModalVisible(false)}>
-                <Ionicons name="close" size={24} color="white" />
-              </TouchableOpacity>
+              </View>
             </View>
-            <ScrollView style={styles.modalScroll}>
-              {availableColors.map((color, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.modalItem}
-                  onPress={() => handleColorSelect(color)}
-                >
-                  <Text style={styles.modalItemText}>{color}</Text>
+
+            <CartOperationErrorBoundary>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleAddToCart}
+              >
+                <Text style={styles.actionButtonText}>ADD TO CART</Text>
+              </TouchableOpacity>
+            </CartOperationErrorBoundary>
+          </View>
+        </ScrollView>
+
+        {/* Modals (Size, Color, Quantity, Confirmation) - Simplified for brevity */}
+        {/* Size Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={sizeModalVisible}
+          onRequestClose={() => setSizeModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Size</Text>
+                <TouchableOpacity onPress={() => setSizeModalVisible(false)}>
+                  <Ionicons name="close" size={24} color="white" />
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Quantity Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={quantityModalVisible}
-        onRequestClose={() => setQuantityModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Quantity</Text>
-              <TouchableOpacity onPress={() => setQuantityModalVisible(false)}>
-                <Ionicons name="close" size={24} color="white" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalScroll}>
-              {/* Max quantity of 10 for example */}
-              {Array.from({ length: 10 }, (_, i) => i + 1).map(
-                (quantity, index) => (
+              </View>
+              <ScrollView style={styles.modalScroll}>
+                {availableSizes.map((size, index) => (
                   <TouchableOpacity
                     key={index}
                     style={styles.modalItem}
-                    onPress={() => handleQuantitySelect(quantity)}
+                    onPress={() => handleSizeSelect(size)}
                   >
-                    <Text style={styles.modalItemText}>{quantity}</Text>
+                    <Text style={styles.modalItemText}>{size}</Text>
                   </TouchableOpacity>
-                )
-              )}
-            </ScrollView>
+                ))}
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Add to Cart Confirmation Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={addToCartConfirmationVisible}
-        onRequestClose={closeAddToCartConfirmation}
-      >
-        <View style={styles.confirmationModalOverlay}>
-          <View style={styles.confirmationModalContent}>
-            <Text style={styles.confirmationModalText}>
-              Item(s) successfully added to cart!
-            </Text>
-            <TouchableOpacity
-              style={styles.confirmationButton}
-              onPress={closeAddToCartConfirmation}
-            >
-              <Text style={styles.confirmationButtonText}>OK</Text>
-            </TouchableOpacity>
+        {/* Color Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={colorModalVisible}
+          onRequestClose={() => setColorModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Color</Text>
+                <TouchableOpacity onPress={() => setColorModalVisible(false)}>
+                  <Ionicons name="close" size={24} color="white" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.modalScroll}>
+                {availableColors.map((color, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.modalItem}
+                    onPress={() => handleColorSelect(color)}
+                  >
+                    <Text style={styles.modalItemText}>{color}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+
+        {/* Quantity Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={quantityModalVisible}
+          onRequestClose={() => setQuantityModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Quantity</Text>
+                <TouchableOpacity
+                  onPress={() => setQuantityModalVisible(false)}
+                >
+                  <Ionicons name="close" size={24} color="white" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.modalScroll}>
+                {/* Max quantity of 10 for example */}
+                {Array.from({ length: 10 }, (_, i) => i + 1).map(
+                  (quantity, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.modalItem}
+                      onPress={() => handleQuantitySelect(quantity)}
+                    >
+                      <Text style={styles.modalItemText}>{quantity}</Text>
+                    </TouchableOpacity>
+                  )
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Add to Cart Confirmation Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={addToCartConfirmationVisible}
+          onRequestClose={closeAddToCartConfirmation}
+        >
+          <View style={styles.confirmationModalOverlay}>
+            <View style={styles.confirmationModalContent}>
+              <Text style={styles.confirmationModalText}>
+                Item(s) successfully added to cart!
+              </Text>
+              <TouchableOpacity
+                style={styles.confirmationButton}
+                onPress={closeAddToCartConfirmation}
+              >
+                <Text style={styles.confirmationButtonText}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </ProductFetchErrorBoundary>
   );
 }
 
