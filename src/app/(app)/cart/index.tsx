@@ -56,10 +56,6 @@ import {
 import { CartItemMetadata, EventDetails } from "../../../types/cart";
 
 // Import our new utility functions and components
-import CartReconciliationHandler from "./components/CartReconciliationHandler";
-import CartRecoveryModal from "./components/CartRecoveryModal";
-import CartRecoveryTester from "./components/CartRecoveryTester";
-import PaymentErrorHandler from "./components/PaymentErrorHandler";
 import {
   clearCartState,
   clearCheckoutError,
@@ -86,6 +82,10 @@ import {
   OrderData,
   reconcileOrder,
 } from "../../../utils/cart/orderIdempotency";
+import CartReconciliationHandler from "./components/CartReconciliationHandler";
+import CartRecoveryModal from "./components/CartRecoveryModal";
+import CartRecoveryTester from "./components/CartRecoveryTester";
+import PaymentErrorHandler from "./components/PaymentErrorHandler";
 
 // Define interfaces for TypeScript
 interface CartItem {
