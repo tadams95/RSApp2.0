@@ -51,13 +51,13 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
   - [x] Create error boundary for `TransactionConflictHandler.tsx` to handle checkout conflicts
   - [x] Add fallback UI for complete checkout flow failure with retry mechanism
 
-- [ ] **Account Management Error Boundaries**:
+- [x] **Account Management Error Boundaries**:
 
-  - [ ] Add error boundary around `EditProfile.tsx` modal for profile update API failures
-  - [ ] Implement error boundary for `SettingsModal.tsx` account deletion and admin operations
-  - [ ] Add error boundary for profile picture upload/delete operations in account screen
-  - [ ] Create error boundary for user data fetch operations in account screen
-  - [ ] Add error boundary for profile sync operations using `useProfileSync` hook
+  - [x] Add error boundary around `EditProfile.tsx` modal for profile update API failures
+  - [x] Implement error boundary for `SettingsModal.tsx` account deletion and admin operations
+  - [x] Add error boundary for profile picture upload/delete operations in account screen
+  - [x] Create error boundary for user data fetch operations in account screen
+  - [x] Add error boundary for profile sync operations using `useProfileSync` hook
 
 - [ ] **Shopify API Error Boundaries**:
   - [ ] Add error boundary for product fetching failures in shop screens

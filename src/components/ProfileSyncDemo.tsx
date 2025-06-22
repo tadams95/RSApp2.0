@@ -8,12 +8,13 @@ import {
   View,
 } from "react-native";
 import { useProfileSync } from "../hooks/useProfileSync";
+import { ProfileSyncErrorBoundary } from "./account/ProfileSyncErrorBoundary";
 
 /**
  * Demo component showcasing the useProfileSync hook functionality
  * Demonstrates error handling and conflict resolution for user profiles
  */
-export default function ProfileSyncDemo() {
+const ProfileSyncDemoContent = () => {
   const {
     profile,
     isLoading,
@@ -148,7 +149,7 @@ export default function ProfileSyncDemo() {
       </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -255,3 +256,24 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 });
+
+// Wrap the component with ProfileSyncErrorBoundary
+export default function ProfileSyncDemo() {
+  return (
+    <ProfileSyncErrorBoundary
+      onError={(error, errorInfo) => {
+        console.error("ProfileSync Error:", error, errorInfo);
+      }}
+      onSyncFailure={(error) => {
+        console.error("Profile Sync Failure:", error);
+      }}
+      onAuthError={() => {
+        console.error(
+          "Profile Sync Auth Error - user needs to re-authenticate"
+        );
+      }}
+    >
+      <ProfileSyncDemoContent />
+    </ProfileSyncErrorBoundary>
+  );
+}

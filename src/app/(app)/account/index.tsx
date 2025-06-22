@@ -38,6 +38,14 @@ import {
   SettingsModal,
 } from "../../../components/modals";
 
+// Import account error boundaries
+import {
+  EditProfileErrorBoundary,
+  ProfilePictureErrorBoundary,
+  SettingsErrorBoundary,
+  UserDataErrorBoundary,
+} from "../../../components/account";
+
 // Define the types for modals
 // These are kept here for future extensions
 interface ModalProps {
@@ -394,147 +402,193 @@ export default function AccountScreen() {
   };
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.container}>
-          {/* Profile Picture with Upload State */}
-          <TouchableOpacity
-            onPress={
-              uploadState === UploadState.UPLOADING ? undefined : pickImage
-            }
-            style={styles.profilePictureContainer}
-            accessibilityRole="button"
-            accessibilityLabel="Change profile picture"
-            disabled={uploadState === UploadState.UPLOADING}
-          >
-            <ImageWithFallback
-              source={imageSource}
-              fallbackSource={require("../../../assets/user.png")}
-              style={styles.profilePicture}
-              resizeMode="cover"
-              showLoadingIndicator={true}
-              loadingIndicatorColor="#ff3c00"
-              loadingIndicatorSize="large"
-              maxRetries={3}
-              showRetryButton={imageError !== null}
-              errorContext="ProfilePicture"
-              onLoadError={(error) => {
-                logError(error, "ProfilePicture", { userId: localId });
-                // Show error alert for serious errors only if not already in error state
-                if (uploadState !== UploadState.ERROR && imageError) {
-                  Alert.alert(
-                    "Image Load Error",
-                    "Failed to load profile picture. Would you like to retry?",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Retry", onPress: reloadImage },
-                    ]
-                  );
-                }
+    <UserDataErrorBoundary
+      onError={(error, errorInfo) => {
+        console.error("User Data Error:", error, errorInfo);
+      }}
+      onAuthError={() => {
+        // Handle auth errors by signing out and redirecting to login
+        handleLogout();
+      }}
+    >
+      <View style={styles.root}>
+        <StatusBar style="light" />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.container}>
+            {/* Profile Picture with Upload State */}
+            <ProfilePictureErrorBoundary
+              onError={(error, errorInfo) => {
+                console.error("Profile Picture Error:", error, errorInfo);
+                // Reset upload state on error
+                setUploadState(UploadState.ERROR);
+                setUploadError(error.message);
               }}
-              onLoadSuccess={() => {
-                // Clear any upload errors when image loads successfully
-                if (uploadState === UploadState.ERROR) {
-                  setUploadState(UploadState.IDLE);
-                  setUploadError(null);
+              onAuthError={() => {
+                // Handle auth errors by signing out and redirecting to login
+                handleLogout();
+              }}
+            >
+              <TouchableOpacity
+                onPress={
+                  uploadState === UploadState.UPLOADING ? undefined : pickImage
                 }
+                style={styles.profilePictureContainer}
+                accessibilityRole="button"
+                accessibilityLabel="Change profile picture"
+                disabled={uploadState === UploadState.UPLOADING}
+              >
+                <ImageWithFallback
+                  source={imageSource}
+                  fallbackSource={require("../../../assets/user.png")}
+                  style={styles.profilePicture}
+                  resizeMode="cover"
+                  showLoadingIndicator={true}
+                  loadingIndicatorColor="#ff3c00"
+                  loadingIndicatorSize="large"
+                  maxRetries={3}
+                  showRetryButton={imageError !== null}
+                  errorContext="ProfilePicture"
+                  onLoadError={(error) => {
+                    logError(error, "ProfilePicture", { userId: localId });
+                    // Show error alert for serious errors only if not already in error state
+                    if (uploadState !== UploadState.ERROR && imageError) {
+                      Alert.alert(
+                        "Image Load Error",
+                        "Failed to load profile picture. Would you like to retry?",
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          { text: "Retry", onPress: reloadImage },
+                        ]
+                      );
+                    }
+                  }}
+                  onLoadSuccess={() => {
+                    // Clear any upload errors when image loads successfully
+                    if (uploadState === UploadState.ERROR) {
+                      setUploadState(UploadState.IDLE);
+                      setUploadError(null);
+                    }
+                  }}
+                />
+                {renderUploadOverlay()}
+              </TouchableOpacity>
+            </ProfilePictureErrorBoundary>
+
+            {/* Profile Name */}
+            <Text style={styles.nameTag}>{userName}</Text>
+
+            {/* Edit Profile Button */}
+            <TouchableOpacity
+              onPress={handleEditProfile}
+              style={styles.actionButton}
+              accessibilityRole="button"
+              accessibilityLabel="Edit profile"
+            >
+              <Text style={styles.buttonText}>EDIT PROFILE</Text>
+            </TouchableOpacity>
+
+            {/* Tab Container */}
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
+                onPress={showAccountHistory}
+                style={[
+                  styles.tabButton,
+                  showHistoryModal && styles.activeTabButton,
+                ]}
+                accessibilityRole="tab"
+                accessibilityLabel="History"
+                accessibilityState={{ selected: showHistoryModal }}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    showHistoryModal && styles.activeButtonText,
+                  ]}
+                >
+                  HISTORY
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={eventQRHandler}
+                style={[
+                  styles.tabButton,
+                  showQRModal && styles.activeTabButton,
+                ]}
+                accessibilityRole="tab"
+                accessibilityLabel="QR Code"
+                accessibilityState={{ selected: showQRModal }}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    showQRModal && styles.activeButtonText,
+                  ]}
+                >
+                  QR
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={showSettingsHandler}
+                style={styles.tabButton}
+                accessibilityRole="button"
+                accessibilityLabel="Settings"
+              >
+                <Text style={styles.buttonText}>SETTINGS</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Container */}
+            <View style={styles.modalContainer}>
+              {showEditProfileModal && (
+                <EditProfileErrorBoundary
+                  onError={(error, errorInfo) => {
+                    console.error("EditProfile Error:", error, errorInfo);
+                    // Optionally close modal on error
+                    setShowEditProfileModal(false);
+                  }}
+                >
+                  <EditProfile
+                    onProfileUpdated={handleProfileUpdated}
+                    onCancel={() => setShowEditProfileModal(false)}
+                  />
+                </EditProfileErrorBoundary>
+              )}
+              {showQRModal && <QRModal />}
+              {showHistoryModal && <HistoryModal />}
+            </View>
+          </View>
+        </ScrollView>
+
+        {showSettingsModal && (
+          <SettingsErrorBoundary
+            onError={(error, errorInfo) => {
+              console.error("SettingsModal Error:", error, errorInfo);
+              // Optionally close modal on error
+              setShowSettingsModal(false);
+            }}
+            onAuthError={() => {
+              // Handle auth errors by signing out and redirecting to login
+              handleLogout();
+            }}
+          >
+            <SettingsModal
+              visible={showSettingsModal}
+              handleClose={() => setShowSettingsModal(false)}
+              setAuthenticated={(auth: boolean) => {
+                if (!auth) handleLogout();
               }}
             />
-            {renderUploadOverlay()}
-          </TouchableOpacity>
+          </SettingsErrorBoundary>
+        )}
 
-          {/* Profile Name */}
-          <Text style={styles.nameTag}>{userName}</Text>
-
-          {/* Edit Profile Button */}
-          <TouchableOpacity
-            onPress={handleEditProfile}
-            style={styles.actionButton}
-            accessibilityRole="button"
-            accessibilityLabel="Edit profile"
-          >
-            <Text style={styles.buttonText}>EDIT PROFILE</Text>
-          </TouchableOpacity>
-
-          {/* Tab Container */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              onPress={showAccountHistory}
-              style={[
-                styles.tabButton,
-                showHistoryModal && styles.activeTabButton,
-              ]}
-              accessibilityRole="tab"
-              accessibilityLabel="History"
-              accessibilityState={{ selected: showHistoryModal }}
-            >
-              <Text
-                style={[
-                  styles.buttonText,
-                  showHistoryModal && styles.activeButtonText,
-                ]}
-              >
-                HISTORY
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={eventQRHandler}
-              style={[styles.tabButton, showQRModal && styles.activeTabButton]}
-              accessibilityRole="tab"
-              accessibilityLabel="QR Code"
-              accessibilityState={{ selected: showQRModal }}
-            >
-              <Text
-                style={[
-                  styles.buttonText,
-                  showQRModal && styles.activeButtonText,
-                ]}
-              >
-                QR
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={showSettingsHandler}
-              style={styles.tabButton}
-              accessibilityRole="button"
-              accessibilityLabel="Settings"
-            >
-              <Text style={styles.buttonText}>SETTINGS</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Modal Container */}
-          <View style={styles.modalContainer}>
-            {showEditProfileModal && (
-              <EditProfile
-                onProfileUpdated={handleProfileUpdated}
-                onCancel={() => setShowEditProfileModal(false)}
-              />
-            )}
-            {showQRModal && <QRModal />}
-            {showHistoryModal && <HistoryModal />}
-          </View>
-        </View>
-      </ScrollView>
-
-      {showSettingsModal && (
-        <SettingsModal
-          visible={showSettingsModal}
-          handleClose={() => setShowSettingsModal(false)}
-          setAuthenticated={(auth: boolean) => {
-            if (!auth) handleLogout();
-          }}
-        />
-      )}
-
-      <Text style={styles.footerText}>THANKS FOR RAGING WITH US</Text>
-    </View>
+        <Text style={styles.footerText}>THANKS FOR RAGING WITH US</Text>
+      </View>
+    </UserDataErrorBoundary>
   );
 }
 
