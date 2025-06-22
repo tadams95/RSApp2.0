@@ -1,10 +1,15 @@
 // src/firebase/firebase.ts
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FirebaseError, initializeApp } from "firebase/app";
 import { initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { formatApiErrorMessage } from "../hooks/useErrorHandler";
+
+// Import getReactNativePersistence dynamically to avoid TypeScript errors
+// @ts-ignore - Firebase getReactNativePersistence is available but not in types
+import { getReactNativePersistence } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDcHCRWrYonzJa_Pyfwzbfp-r3bxz2bUX8",
@@ -29,11 +34,13 @@ try {
 
   // Initialize Firebase Auth with AsyncStorage persistence
   try {
-    // Note: Using default persistence for React Native
-    firebaseAuth = initializeAuth(app);
+    // Initialize with React Native AsyncStorage persistence
+    firebaseAuth = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
   } catch (authError) {
     console.error("Error initializing Firebase Auth:", authError);
-    // Fallback initialization (same as above)
+    // Fallback initialization without persistence (same as before)
     firebaseAuth = initializeAuth(app);
   }
 
