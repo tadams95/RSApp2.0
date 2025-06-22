@@ -180,11 +180,11 @@ Image and file operations have specific error patterns that need handling.
     - [x] Fix multiple instances of direct image usage in `/src/components/modals/MyEvents.tsx` ticket transfer modal
     - [x] Add systematic cleanup of Firestore references when storage objects are deleted
     - [x] Implement object-not-found error handling for event images in admin and user-facing components
-  - [ ] Add permission denied handling for protected resources
-    - [ ] Add `storage/unauthorized` error handling in all components that access Firebase Storage URLs
-    - [ ] Implement permission validation before attempting to load protected event images
-    - [ ] Add user-friendly permission error messages when storage access is denied
-    - [ ] Create fallback mechanisms when users lose access to previously accessible images
+  - [x] Add permission denied handling for protected resources
+    - [x] Add `storage/unauthorized` error handling in all components that access Firebase Storage URLs
+    - [x] Implement permission validation before attempting to load protected event images
+    - [x] Add user-friendly permission error messages when storage access is denied
+    - [x] Create fallback mechanisms when users lose access to previously accessible images
 
 ## Specific Areas Needing Storage Permission Error Handling
 
@@ -214,17 +214,17 @@ Based on code analysis, the following specific components and operations need `s
 
 ### Event Image Access
 
-- [ ] **Admin Event Management**:
-  - [ ] Add `storage/unauthorized` error handling in `/src/components/modals/AdminModal.tsx` for event image access
-  - [ ] Handle permission changes during admin sessions when accessing event images
-  - [ ] Add error handling in `/src/components/modals/EventAdminView.tsx` for protected event image access
+- [x] **Admin Event Management**:
+  - [x] Add `storage/unauthorized` error handling in `/src/components/modals/AdminModal.tsx` for event image access
+  - [x] Handle permission changes during admin sessions when accessing event images
+  - [x] Add error handling in `/src/components/modals/EventAdminView.tsx` for protected event image access
 
 ### Storage URL Validation
 
-- [ ] **Storage Reference Validation**:
-  - [ ] Add `storage/unauthorized` handling in `isStorageObjectValid()` function in `storageErrorHandler.ts`
-  - [ ] Handle permission errors during storage reference cleanup operations
-  - [ ] Add permission validation before attempting to access Firebase Storage URLs in `validateAndCleanupStorageReferences()`
+- [x] **Storage Reference Validation**:
+  - [x] Add `storage/unauthorized` handling in `isStorageObjectValid()` function in `storageErrorHandler.ts`
+  - [x] Handle permission errors during storage reference cleanup operations
+  - [x] Add permission validation before attempting to access Firebase Storage URLs in `validateAndCleanupStorageReferences()`
 
 ## Data Synchronization Error Handling Implementation
 

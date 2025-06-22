@@ -197,7 +197,15 @@ export async function isStorageObjectValid(url: string): Promise<boolean> {
     if (errorCode === "storage/object-not-found") {
       return false;
     }
-    // For other errors (network, permissions), assume object exists but is temporarily inaccessible
+    if (errorCode === "storage/unauthorized") {
+      // Permission denied - object may exist but user can't access it
+      logError(error, "StorageObjectValidation", {
+        url,
+        errorType: "storage/unauthorized",
+      });
+      return false;
+    }
+    // For other errors (network, etc.), assume object exists but is temporarily inaccessible
     return true;
   }
 }
