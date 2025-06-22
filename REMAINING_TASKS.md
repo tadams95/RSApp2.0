@@ -43,9 +43,27 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
 **Missing implementations**:
 
-- [ ] Add error boundaries to cart checkout flow components
-- [ ] Implement error boundaries for account management screens
-- [ ] Add fallback UI for Shopify API failures
+- [ ] **Cart Checkout Flow Error Boundaries**:
+
+  - [ ] Add error boundary around `CheckoutTransactionHandler.tsx` component
+  - [ ] Implement error boundary for `PaymentErrorHandler.tsx` to catch unhandled payment API failures
+  - [ ] Add error boundary for `CartReconciliationHandler.tsx` inventory sync failures
+  - [ ] Create error boundary for `TransactionConflictHandler.tsx` to handle checkout conflicts
+  - [ ] Add fallback UI for complete checkout flow failure with retry mechanism
+
+- [ ] **Account Management Error Boundaries**:
+
+  - [ ] Add error boundary around `EditProfile.tsx` modal for profile update API failures
+  - [ ] Implement error boundary for `SettingsModal.tsx` account deletion and admin operations
+  - [ ] Add error boundary for profile picture upload/delete operations in account screen
+  - [ ] Create error boundary for user data fetch operations in account screen
+  - [ ] Add error boundary for profile sync operations using `useProfileSync` hook
+
+- [ ] **Shopify API Error Boundaries**:
+  - [ ] Add error boundary for product fetching failures in shop screens
+  - [ ] Implement error boundary for cart operations (add/remove/update)
+  - [ ] Add error boundary for checkout API calls and payment processing
+  - [ ] Create fallback UI for Shopify service unavailability
 
 ### 2.3 Network Error Recovery
 
