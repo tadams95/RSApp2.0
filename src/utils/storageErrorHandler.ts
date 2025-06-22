@@ -114,7 +114,7 @@ export function getStorageErrorMessage(error: StorageError | any): string {
       return "You need to be logged in to access this image.";
 
     case "storage/unauthorized":
-      return "You don't have permission to access this image.";
+      return "You don't have permission to access this image. If this continues, please log out and log back in.";
 
     case "storage/retry-limit-exceeded":
       return "Network issues prevented loading the image. Please try again.";

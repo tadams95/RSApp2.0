@@ -231,11 +231,15 @@ const AdminModal: React.FC<AdminModalProps> = ({
                       style={styles.eventImage}
                       fallbackSource={require("../../assets/BlurHero_2.png")}
                       showLoadingIndicator={true}
-                      showRetryButton={false}
-                      showErrorMessage={false}
-                      maxRetries={2}
+                      showRetryButton={true}
+                      showErrorMessage={true}
+                      maxRetries={3}
                       errorContext="AdminModal"
                       resizeMode="cover"
+                      onLoadError={(error) => {
+                        // Enhanced error logging for admin event images
+                        console.warn(`AdminModal: Failed to load image for event "${event.name}":`, error);
+                      }}
                     />
                     <Text style={styles.title}>{event.name}</Text>
                     <Text style={styles.subtitle}>

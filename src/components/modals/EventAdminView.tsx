@@ -211,10 +211,14 @@ const EventAdminView: React.FC<EventAdminViewProps> = ({
                 fallbackSource={require("../../assets/BlurHero_2.png")}
                 showLoadingIndicator={true}
                 showRetryButton={true}
-                showErrorMessage={false}
-                maxRetries={2}
+                showErrorMessage={true}
+                maxRetries={3}
                 errorContext="EventAdminView"
                 resizeMode="cover"
+                onLoadError={(error) => {
+                  // Enhanced error logging for admin event detail images
+                  console.warn(`EventAdminView: Failed to load image for event "${event.name}":`, error);
+                }}
               />
 
               <View style={styles.infoSection}>
