@@ -8,6 +8,7 @@ import { Provider } from "react-redux";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { AuthProvider } from "../hooks/AuthContext";
 import { store } from "../store/redux/store";
+import { initializeOfflineCartSync } from "../utils/offlineCartSync";
 
 // Prevent auto-hide of splash screen
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -81,6 +82,11 @@ export default function RootLayout() {
       console.log("Error checking for updates:", error);
     }
   }
+
+  useEffect(() => {
+    // Initialize offline cart sync when app starts
+    initializeOfflineCartSync();
+  }, []);
 
   if (showSplash) {
     return (

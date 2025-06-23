@@ -69,9 +69,25 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
 **Missing implementations**:
 
-- [ ] Add offline support for critical user actions
-- [ ] Implement retry mechanisms for failed network requests
-- [ ] Add network status indicators in UI
+- [x] **Offline Support for Critical User Actions**:
+
+  - [x] Add local storage cache for cart items (persist cart offline, sync when online)
+  - [x] Cache user profile data for offline viewing in account screen
+  - [x] Cache recently viewed products for offline shop browsing
+  - [x] Implement offline queue for failed cart operations with background sync
+
+- [ ] **Retry Mechanisms for Failed Network Requests**:
+
+  - [ ] Extend existing `retryWithBackoff` utility to authentication operations in `auth.ts`
+  - [ ] Add retry logic to Shopify product fetching in `shopifyService.tsx`
+  - [ ] Implement automatic retry for profile picture uploads/updates
+  - [ ] Add retry mechanisms to Firebase Firestore write operations (orders, profile updates)
+
+- [x] **Network Status Indicators in UI**:
+  - [x] Create global network status banner component (show when offline)
+  - [x] Add sync status indicators to cart (show when items are syncing)
+  - [x] Display offline mode indicators in product listings
+  - [x] Add connection quality warnings for slow networks
 
 ## PRIORITY 3: Performance Optimizations
 

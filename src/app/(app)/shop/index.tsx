@@ -16,6 +16,8 @@ import {
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { ImageWithFallback } from "../../../components/ui";
 import fetchShopifyProducts from "../../../services/shopifyService";
+// Import offline product management
+import { useOfflineProducts } from "../../../utils/offlineProducts";
 
 // Define a type for your product data based on the Shopify API response
 interface ShopifyProductImage {
@@ -29,8 +31,12 @@ interface ShopifyProductVariant {
     currencyCode: string;
   };
   // Add other variant properties you need, e.g., availableForSale, title (for size/color)
-  availableForSale?: boolean;
+  availableForSale: boolean;
   title?: string;
+  selectedOptions?: Array<{
+    name: string;
+    value: string;
+  }>;
 }
 
 interface ShopifyProduct {
@@ -48,6 +54,14 @@ export default function ShopScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+
+  // Initialize offline product management
+  const {
+    products: offlineProducts,
+    isOffline,
+    hasOfflineData,
+    cacheProduct,
+  } = useOfflineProducts(products.length > 0 ? products : null);
 
   const handleProductPress = useCallback(
     (product: ShopifyProduct) => {

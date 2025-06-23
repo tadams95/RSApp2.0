@@ -8,7 +8,7 @@ import {
   ref as storageRef,
   uploadBytes,
 } from "firebase/storage";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -30,6 +30,8 @@ import {
   extractStorageErrorCode,
   getStorageErrorMessage,
 } from "../../../utils/storageErrorHandler";
+// Import offline profile management
+import { ProfileData, useOfflineProfile } from "../../../utils/offlineProfile";
 // Import the newly migrated modals from the barrel file
 import {
   EditProfile,
@@ -84,9 +86,29 @@ export default function AccountScreen() {
 
   // Access the localId from the Redux store
   const localId = useSelector((state: any) => state.user.localId);
+  const userEmail = useSelector((state: any) => state.user.userEmail);
 
-  // Get a reference to the Firestore database
-  const db = getFirestore();
+  // Memoize the database instance to prevent infinite re-renders
+  const db = useMemo(() => getFirestore(), []);
+
+  // Memoize the current profile object to prevent unnecessary re-renders
+  const currentProfile: ProfileData | null = useMemo(() => {
+    return localId
+      ? {
+          localId,
+          userEmail,
+          userName: (userName as string) || undefined,
+          profilePicture: profilePicture || undefined,
+        }
+      : null;
+  }, [localId, userEmail, userName, profilePicture]);
+
+  const {
+    profile: offlineProfile,
+    isOffline,
+    hasOfflineChanges,
+    updateCachedProfile,
+  } = useOfflineProfile(currentProfile);
 
   const fetchUserData = useCallback(() => {
     if (!localId) {

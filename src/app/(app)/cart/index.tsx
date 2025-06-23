@@ -33,6 +33,9 @@ import {
   updateCartItems,
 } from "../../../store/redux/cartSlice";
 
+// Import our new offline cart sync utilities
+import { useOfflineCartSync } from "../../../utils/offlineCartSync";
+
 // Import the actual CartItem type from the redux slice if available
 // Or define a type that matches the structure in the Redux store
 import {
@@ -182,6 +185,9 @@ export default function CartScreen() {
   const [reconciliationError, setReconciliationError] = useState<string | null>(
     null
   );
+
+  // Initialize offline cart sync utilities
+  const offlineCartSync = useOfflineCartSync();
 
   // Check for recoverable cart or previous payment errors on component mount
   useEffect(() => {
