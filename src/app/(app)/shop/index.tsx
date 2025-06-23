@@ -13,7 +13,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
-import { ImageWithFallback } from "../../../components/ui";
+import { LazyImage } from "../../../components/ui";
 import fetchShopifyProducts from "../../../services/shopifyService";
 // Import offline product management
 import { useOfflineProducts } from "../../../utils/offlineProducts";
@@ -157,7 +157,7 @@ export default function ShopScreen() {
           >
             <View style={styles.imageContainer}>
               {firstImage && (
-                <ImageWithFallback
+                <LazyImage
                   source={{ uri: firstImage.url || (firstImage as any).src }}
                   fallbackSource={require("../../../assets/ShopHero_1.png")}
                   style={styles.image}

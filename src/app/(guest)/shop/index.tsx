@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
-import { ImageWithFallback } from "../../../components/ui";
+import { LazyImage } from "../../../components/ui";
 import fetchShopifyProducts from "../../../services/shopifyService";
 import { navigateToGuestProduct } from "../../../utils/navigation";
 
@@ -238,7 +238,7 @@ const GuestShop: React.FC = () => {
             accessibilityState={{ disabled: isOutOfStock }}
           >
             <View style={styles.imageContainer}>
-              <ImageWithFallback
+              <LazyImage
                 source={{
                   uri:
                     product.images && product.images[0]

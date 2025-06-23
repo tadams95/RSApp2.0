@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 
-import { ImageWithFallback } from "../../../components/ui";
+import { LazyImage } from "../../../components/ui";
 import { useShopifyPagination } from "../../../hooks/useShopifyPagination";
 import { ShopifyProduct } from "../../../services/shopifyService";
 
@@ -100,7 +100,7 @@ export default function PaginatedShopScreen() {
       >
         <View style={styles.imageContainer}>
           {firstImage && (
-            <ImageWithFallback
+            <LazyImage
               source={{ uri: firstImage.url || (firstImage as any).src }}
               fallbackSource={require("../../../assets/ShopHero_1.png")}
               style={styles.image}
