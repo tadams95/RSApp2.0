@@ -6,11 +6,12 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import {
+  ref as createRef,
   getDownloadURL,
   getStorage,
-  ref,
   StorageError,
 } from "firebase/storage";
+import { retryWithBackoff } from "./cart/networkErrorDetection";
 import { logError } from "./logError";
 
 // Error codes from Firebase Storage
@@ -187,7 +188,7 @@ export async function isStorageObjectValid(url: string): Promise<boolean> {
 
     const decodedPath = decodeURIComponent(pathMatch[1]);
     const storage = getStorage();
-    const storageRef = ref(storage, decodedPath);
+    const storageRef = createRef(storage, decodedPath);
 
     // Try to get a fresh download URL - this will fail if object doesn't exist
     await getDownloadURL(storageRef);
@@ -235,7 +236,10 @@ export async function cleanupOrphanedStorageReference(
       updateData[fieldName] = deleteField();
     }
 
-    await updateDoc(docRef, updateData);
+    // Update the document with retry logic
+    await retryWithBackoff(async () => {
+      await updateDoc(docRef, updateData);
+    });
 
     logError(
       new Error("Cleaned up orphaned storage reference"),

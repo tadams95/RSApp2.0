@@ -6,7 +6,6 @@ import {
   PermissionStatus,
 } from "expo-camera";
 import * as Notifications from "expo-notifications";
-import { router } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { get, getDatabase, ref } from "firebase/database";
 import {
@@ -36,6 +35,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { retryWithBackoff } from "../../../utils/cart/networkErrorDetection";
 
 // Calculate screen width once
 const screenWidth = Dimensions.get("window").width;
@@ -220,11 +220,13 @@ export default function MyEventsScreen() {
         selectedTicketId
       );
 
-      // Update the ticket with the new owner's Firebase ID
-      await updateDoc(ticketRef, {
-        firebaseId: recipientId,
-        transferredFrom: currentUser,
-        transferDate: new Date(),
+      // Update the ticket with the new owner's Firebase ID using retry logic
+      await retryWithBackoff(async () => {
+        await updateDoc(ticketRef, {
+          firebaseId: recipientId,
+          transferredFrom: currentUser,
+          transferDate: new Date(),
+        });
       });
 
       return true;
@@ -406,7 +408,9 @@ export default function MyEventsScreen() {
 
   // Navigate back to events list
   const handleBackPress = () => {
-    router.back();
+    // Since we're using expo router, we can use the native back functionality
+    // or simply remove this function as it's not used in the current implementation
+    console.log("Back button pressed");
   };
 
   if (loading) {

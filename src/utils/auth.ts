@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import { Dispatch } from "redux";
 import { auth as firebaseAuth } from "../firebase/firebase";
+import { retryWithBackoff } from "./cart/networkErrorDetection";
 
 import { setLocalId, setUserEmail } from "../store/redux/userSlice";
 
@@ -64,61 +65,61 @@ export async function createUser(
   expoPushToken?: string,
   dispatch?: Dispatch
 ): Promise<CreateUserResult> {
-  try {
-    const userCredential: UserCredential = await createUserWithEmailAndPassword(
-      firebaseAuth,
-      email,
-      password
-    );
+  return await retryWithBackoff(async () => {
+    try {
+      const userCredential: UserCredential =
+        await createUserWithEmailAndPassword(firebaseAuth, email, password);
 
-    const userId = userCredential.user.uid;
-    const timestamp = new Date().toISOString();
-    const displayName = `${firstName} ${lastName}`;
+      const userId = userCredential.user.uid;
+      const timestamp = new Date().toISOString();
+      const displayName = `${firstName} ${lastName}`;
 
-    const userData: UserData = {
-      email,
-      firstName,
-      lastName,
-      displayName,
-      phoneNumber,
-      expoPushToken: expoPushToken || "",
-      qrCode: userId,
-      userId,
-      createdAt: timestamp,
-      lastLogin: timestamp,
-      lastUpdated: timestamp,
-      profilePicture: "",
-      stripeCustomerId: "",
-      isAdmin: false,
-      migratedFromRTDB: false,
-    };
+      const userData: UserData = {
+        email,
+        firstName,
+        lastName,
+        displayName,
+        phoneNumber,
+        expoPushToken: expoPushToken || "",
+        qrCode: userId,
+        userId,
+        createdAt: timestamp,
+        lastLogin: timestamp,
+        lastUpdated: timestamp,
+        profilePicture: "",
+        stripeCustomerId: "",
+        isAdmin: false,
+        migratedFromRTDB: false,
+      };
 
-    // Save to both databases in parallel using Firebase SDK
-    await Promise.all([
-      // Save to Realtime Database
-      set(ref(rtdb, `users/${userId}`), userData),
+      // Save to both databases in parallel using Firebase SDK with retry logic
+      await retryWithBackoff(async () => {
+        await Promise.all([
+          // Save to Realtime Database
+          set(ref(rtdb, `users/${userId}`), userData),
+          // Save to Firestore
+          setDoc(doc(db, "customers", userId), {
+            ...userData,
+            migrationDate: "",
+          }),
+        ]);
+      });
 
-      // Save to Firestore
-      setDoc(doc(db, "customers", userId), {
-        ...userData,
-        migrationDate: "",
-      }),
-    ]);
+      // Only dispatch if the function is provided
+      if (typeof dispatch === "function") {
+        dispatch(setLocalId(userId));
+        dispatch(setUserEmail(email));
+      }
 
-    // Only dispatch if the function is provided
-    if (typeof dispatch === "function") {
-      dispatch(setLocalId(userId));
-      dispatch(setUserEmail(email));
+      return {
+        user: userCredential.user,
+        userData,
+      };
+    } catch (error: any) {
+      const errorMessage = handleAuthError(error);
+      throw new Error(errorMessage);
     }
-
-    return {
-      user: userCredential.user,
-      userData,
-    };
-  } catch (error: any) {
-    const errorMessage = handleAuthError(error);
-    throw new Error(errorMessage);
-  }
+  });
 }
 
 export async function loginUser(
@@ -126,41 +127,48 @@ export async function loginUser(
   password: string,
   dispatch?: Dispatch
 ): Promise<User> {
-  try {
-    const userCredential: UserCredential = await signInWithEmailAndPassword(
-      firebaseAuth,
-      email,
-      password
-    );
-    const user = userCredential.user;
-    const userId = user.uid;
-    const timestamp = new Date().toISOString();
+  return await retryWithBackoff(async () => {
+    try {
+      const userCredential: UserCredential = await signInWithEmailAndPassword(
+        firebaseAuth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+      const userId = user.uid;
+      const timestamp = new Date().toISOString();
 
-    await Promise.all([
-      update(ref(rtdb, `users/${userId}`), { lastLogin: timestamp }),
-      updateDoc(doc(db, "customers", userId), {
-        lastLogin: timestamp,
-        lastUpdated: timestamp,
-      }),
-    ]);
+      // Update login timestamps with retry logic
+      await retryWithBackoff(async () => {
+        await Promise.all([
+          update(ref(rtdb, `users/${userId}`), { lastLogin: timestamp }),
+          updateDoc(doc(db, "customers", userId), {
+            lastLogin: timestamp,
+            lastUpdated: timestamp,
+          }),
+        ]);
+      });
 
-    // Only dispatch if the function is provided
-    if (typeof dispatch === "function") {
-      dispatch(setLocalId(userId));
-      dispatch(setUserEmail(email));
+      // Only dispatch if the function is provided
+      if (typeof dispatch === "function") {
+        dispatch(setLocalId(userId));
+        dispatch(setUserEmail(email));
+      }
+
+      return user;
+    } catch (error: any) {
+      const errorMessage = handleAuthError(error);
+      throw new Error(errorMessage);
     }
-
-    return user;
-  } catch (error: any) {
-    const errorMessage = handleAuthError(error);
-    throw new Error(errorMessage);
-  }
+  });
 }
 
 export async function forgotPassword(email: string): Promise<AuthResult> {
   try {
-    // Using Firebase's built-in password reset functionality
-    await sendPasswordResetEmail(firebaseAuth, email);
+    // Using Firebase's built-in password reset functionality with retry logic
+    await retryWithBackoff(async () => {
+      await sendPasswordResetEmail(firebaseAuth, email);
+    });
     return { success: true, message: "Password reset email sent successfully" };
   } catch (error: any) {
     const errorMessage = handleAuthError(error);
@@ -181,54 +189,58 @@ export async function logoutUser(dispatch: Dispatch): Promise<AuthResult> {
 }
 
 export async function getUserData(userId: string): Promise<UserData | null> {
-  try {
-    // Try Firestore first
-    const firestoreDoc = await getDoc(doc(db, "customers", userId));
+  return await retryWithBackoff(async () => {
+    try {
+      // Try Firestore first
+      const firestoreDoc = await getDoc(doc(db, "customers", userId));
 
-    if (firestoreDoc.exists()) {
-      return firestoreDoc.data() as UserData;
+      if (firestoreDoc.exists()) {
+        return firestoreDoc.data() as UserData;
+      }
+
+      // Get current user's token for RTDB
+      const currentUser = firebaseAuth.currentUser;
+      if (!currentUser) {
+        throw new Error("No authenticated user");
+      }
+      const idToken = await getIdToken(currentUser);
+
+      // Fall back to RTDB
+      const rtdbSnapshot = await get(ref(rtdb, `users/${userId}`));
+
+      if (rtdbSnapshot.exists()) {
+        const rtdbData = rtdbSnapshot.val();
+        const timestamp = new Date().toISOString();
+
+        // Prepare and migrate data to Firestore
+        const firestoreData: UserData = {
+          ...rtdbData,
+          displayName:
+            rtdbData.firstName && rtdbData.lastName
+              ? `${rtdbData.firstName} ${rtdbData.lastName}`
+              : "",
+          lastUpdated: timestamp,
+          migratedFromRTDB: true,
+          migrationDate: timestamp,
+          isAdmin: rtdbData.isAdmin || false,
+          profilePicture: rtdbData.profilePicture || "",
+          stripeCustomerId: rtdbData.stripeCustomerId || "",
+        };
+
+        // Migrate to Firestore with retry logic
+        await retryWithBackoff(async () => {
+          await setDoc(doc(db, "customers", userId), firestoreData);
+        });
+
+        return firestoreData;
+      }
+
+      return null;
+    } catch (error: any) {
+      console.error("Error fetching user data:", error);
+      throw new Error("Failed to retrieve user data");
     }
-
-    // Get current user's token for RTDB
-    const currentUser = firebaseAuth.currentUser;
-    if (!currentUser) {
-      throw new Error("No authenticated user");
-    }
-    const idToken = await getIdToken(currentUser);
-
-    // Fall back to RTDB
-    const rtdbSnapshot = await get(ref(rtdb, `users/${userId}`));
-
-    if (rtdbSnapshot.exists()) {
-      const rtdbData = rtdbSnapshot.val();
-      const timestamp = new Date().toISOString();
-
-      // Prepare and migrate data to Firestore
-      const firestoreData: UserData = {
-        ...rtdbData,
-        displayName:
-          rtdbData.firstName && rtdbData.lastName
-            ? `${rtdbData.firstName} ${rtdbData.lastName}`
-            : "",
-        lastUpdated: timestamp,
-        migratedFromRTDB: true,
-        migrationDate: timestamp,
-        isAdmin: rtdbData.isAdmin || false,
-        profilePicture: rtdbData.profilePicture || "",
-        stripeCustomerId: rtdbData.stripeCustomerId || "",
-      };
-
-      // Migrate to Firestore
-      await setDoc(doc(db, "customers", userId), firestoreData);
-
-      return firestoreData;
-    }
-
-    return null;
-  } catch (error: any) {
-    console.error("Error fetching user data:", error);
-    throw new Error("Failed to retrieve user data");
-  }
+  });
 }
 
 export async function updateUserData(
@@ -247,14 +259,15 @@ export async function updateUserData(
       lastUpdated: timestamp,
     };
 
-    // Update both databases using Firebase SDK
-    await Promise.all([
-      // Update RTDB
-      update(ref(rtdb, `users/${userId}`), updatedData),
-
-      // Update Firestore
-      updateDoc(doc(db, "customers", userId), updatedData),
-    ]);
+    // Update both databases using Firebase SDK with retry logic
+    await retryWithBackoff(async () => {
+      await Promise.all([
+        // Update RTDB
+        update(ref(rtdb, `users/${userId}`), updatedData),
+        // Update Firestore
+        updateDoc(doc(db, "customers", userId), updatedData),
+      ]);
+    });
 
     return { success: true };
   } catch (error: any) {
@@ -268,19 +281,20 @@ export async function updateUserStripeId(
   stripeCustomerId: string
 ): Promise<AuthResult> {
   try {
-    // Update both databases using Firebase SDK
-    await Promise.all([
-      // Update RTDB
-      update(ref(rtdb, `users/${userId}`), {
-        stripeCustomerId,
-      }),
-
-      // Update Firestore
-      updateDoc(doc(db, "customers", userId), {
-        stripeCustomerId,
-        lastUpdated: new Date().toISOString(),
-      }),
-    ]);
+    // Update both databases using Firebase SDK with retry logic
+    await retryWithBackoff(async () => {
+      await Promise.all([
+        // Update RTDB
+        update(ref(rtdb, `users/${userId}`), {
+          stripeCustomerId,
+        }),
+        // Update Firestore
+        updateDoc(doc(db, "customers", userId), {
+          stripeCustomerId,
+          lastUpdated: new Date().toISOString(),
+        }),
+      ]);
+    });
 
     return { success: true };
   } catch (error: any) {

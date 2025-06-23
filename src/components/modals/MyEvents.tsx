@@ -34,6 +34,7 @@ import { getAuth } from "firebase/auth";
 import { get, getDatabase, ref } from "firebase/database";
 
 // Import the event data handler functions
+import { retryWithBackoff } from "../../utils/cart/networkErrorDetection";
 import { extractDatabaseErrorCode } from "../../utils/databaseErrorHandler";
 import {
   getRetryBackoffTime,
@@ -362,13 +363,15 @@ const MyEvents: React.FC = () => {
         throw new Error("You don't have permission to transfer this ticket");
       }
 
-      // Now attempt to update the ticket
-      await updateDoc(ticketRef, {
-        active: true,
-        email: recipientData.email,
-        expoPushToken: recipientData.expoPushToken,
-        firebaseId: recipientData.id,
-        owner: recipientData.id,
+      // Now attempt to update the ticket with retry logic
+      await retryWithBackoff(async () => {
+        await updateDoc(ticketRef, {
+          active: true,
+          email: recipientData.email,
+          expoPushToken: recipientData.expoPushToken,
+          firebaseId: recipientData.id,
+          owner: recipientData.id,
+        });
       });
 
       console.log("Ticket transferred successfully");
