@@ -107,24 +107,38 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - [ ] Implement progressive image loading
 - [ ] Add image compression for uploads
 
-## PRIORITY 4: State Management Optimization
+## PRIORITY 4: State Management Optimization (Hybrid Approach)
 
 ### 4.1 React Query Implementation
 
-**Current Issue**: All server state mixed with client state in Redux
+**Strategic Decision**: Hybrid approach using React Query for server state + Redux for client state
+
+**Current Issue**: All server state mixed with client state in Redux, causing performance bottlenecks
+
+**Phase 1: React Query for Server State (High Priority)**
 
 - [ ] Install and configure React Query: `npm install @tanstack/react-query`
 - [ ] Create React Query provider in root layout
-- [ ] Migrate product fetching to React Query
-- [ ] Migrate event fetching to React Query
-- [ ] Keep only UI state in Redux (auth, cart, user preferences)
+- [ ] Configure query client with optimal caching and retry settings
+- [ ] Migrate product fetching to React Query (shop screens)
+- [ ] Migrate event fetching to React Query (events screens)
+- [ ] Migrate user profile data fetching to React Query
+- [ ] Add React Query DevTools for development
 
-### 4.2 Zustand Migration (OPTIONAL - Future)
+**Phase 2: Redux Optimization (Parallel)**
 
-**Note**: Consider for future simplification, not critical now
+- [ ] Clean up Redux store - remove server state (products, events, user data)
+- [ ] Keep only client state in Redux: authentication, cart, UI preferences
+- [ ] Optimize Redux selectors for remaining client state
+- [ ] Remove unused Redux actions/reducers for migrated server state
 
-- [ ] Evaluate Zustand for simpler client state management
-- [ ] Create migration plan if Redux becomes too complex
+**Expected Performance Gains:**
+
+- 80% fewer API calls due to intelligent caching
+- Background refetching for always-fresh data
+- Automatic loading/error states
+- Request deduplication and cancellation
+- Better offline experience (builds on existing network error recovery)
 
 ## PRIORITY 5: Testing Infrastructure
 
@@ -200,26 +214,42 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
 ## TIMELINE ESTIMATE
 
-- **Priority 1 (Tech Debt)**: 2-3 days
-- **Priority 2 (Error Handling)**: 1 week
+- **Priority 1 (Tech Debt)**: ✅ Complete
+- **Priority 2 (Error Handling)**: ✅ Complete
 - **Priority 3 (Performance)**: 1-2 weeks
-- **Priority 4 (State Management)**: 1 week
+- **Priority 4 (State Management - Hybrid)**: 1-2 weeks
 - **Priority 5 (Testing)**: 1-2 weeks
 - **Priority 6 (Analytics)**: 3-5 days
 - **Priority 7 (Styling)**: 1-2 weeks
 - **Priority 8 (Final)**: 3-5 days
 
-**Total Estimated Timeline**: 6-8 weeks
+**Remaining Timeline**: 4-6 weeks
+
+**Recommended Implementation Order:**
+
+1. **Week 1-2**: React Query migration (Priority 4.1) + FlashList implementation (Priority 3.1)
+2. **Week 3**: Image optimization (Priority 3.2) + Redux cleanup (Priority 4.2)
+3. **Week 4**: Testing infrastructure (Priority 5)
+4. **Week 5-6**: Analytics, styling, and final optimizations
 
 ## SUCCESS CRITERIA
 
 - [ ] App builds without warnings or errors
 - [ ] No legacy dependencies remain
 - [ ] All critical error scenarios handled gracefully
-- [ ] Performance meets acceptable standards (< 3s initial load)
+- [ ] Performance meets acceptable standards (< 2s initial load, 60fps scrolling)
+- [ ] Hybrid state management: React Query for server state, Redux for client state
+- [ ] 80% reduction in redundant API calls through intelligent caching
 - [ ] Basic test coverage > 60%
 - [ ] Analytics tracking implemented
 - [ ] Consistent styling system in place
+
+**Performance Benchmarks:**
+
+- [ ] Product list scrolling: Smooth 60fps with 100+ items
+- [ ] Image loading: Progressive with proper caching
+- [ ] Background data refresh: Automatic without user intervention
+- [ ] Offline resilience: Graceful degradation and recovery
 
 ---
 
