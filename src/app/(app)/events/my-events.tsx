@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { FlashList } from "@shopify/flash-list";
 import {
   BarcodeScanningResult,
   Camera,
@@ -27,7 +28,6 @@ import {
   Linking,
   Modal,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextStyle,
@@ -413,6 +413,37 @@ export default function MyEventsScreen() {
     console.log("Back button pressed");
   };
 
+  // Render function for FlashList
+  const renderEventItem = useCallback(
+    ({ item: event }: { item: EventWithTickets }) => {
+      return (
+        <View style={styles.cardWrapper}>
+          {event.ragersData.map((ticket) => (
+            <EventTicketCard
+              key={ticket.id}
+              eventName={event.eventData.name}
+              imageUrl={event.eventData.imgURL}
+              eventDate={event.eventData.date}
+              toggleTransferModal={() =>
+                toggleTransferModal(
+                  event.eventData,
+                  ticket.id,
+                  event.eventData.name
+                )
+              }
+            />
+          ))}
+        </View>
+      );
+    },
+    [toggleTransferModal]
+  );
+
+  // Filter events that have tickets
+  const eventsWithTickets = eventsData.filter(
+    (event) => event.ragersData.length > 0
+  );
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -436,31 +467,16 @@ export default function MyEventsScreen() {
 
       {eventsData.length === 0 ? (
         <Text style={styles.noTicketsText}>No tickets found</Text>
-      ) : eventsData.some((event) => event.ragersData.length > 0) ? (
-        <ScrollView
-          contentContainerStyle={styles.cardsContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {eventsData.map((event) => (
-            <View key={event.id} style={styles.cardWrapper}>
-              {event.ragersData.map((ticket) => (
-                <EventTicketCard
-                  key={ticket.id}
-                  eventName={event.eventData.name}
-                  imageUrl={event.eventData.imgURL}
-                  eventDate={event.eventData.date}
-                  toggleTransferModal={() =>
-                    toggleTransferModal(
-                      event.eventData,
-                      ticket.id,
-                      event.eventData.name
-                    )
-                  }
-                />
-              ))}
-            </View>
-          ))}
-        </ScrollView>
+      ) : eventsWithTickets.length > 0 ? (
+        <View style={styles.cardsContainer}>
+          <FlashList
+            data={eventsWithTickets}
+            renderItem={renderEventItem}
+            keyExtractor={(event) => event.id}
+            estimatedItemSize={200}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
       ) : (
         <Text style={styles.noTicketsText}>No active tickets</Text>
       )}

@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { FlashList } from "@shopify/flash-list";
 import React from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Platform,
   StyleSheet,
   Text,
@@ -210,31 +210,29 @@ function PaginatedList<T extends { id: string }>({
   // Render the entire component
   return (
     <View style={[styles.container, containerStyle]}>
-      <FlatList
-        data={data}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        contentContainerStyle={[
-          styles.listContent,
-          data.length === 0 ? styles.emptyListContent : {},
-          listStyle,
-        ]}
-        ListEmptyComponent={renderEmptyComponent}
-        ListHeaderComponent={headerComponent}
-        ListFooterComponent={
-          <>
-            {renderFooter()}
-            {footerComponent}
-            {renderPaginationControls()}
-          </>
-        }
-        onRefresh={refreshable ? refreshData : undefined}
-        refreshing={refreshable ? loading && currentPage === 1 : false}
-        onEndReached={hasNextPage && !loading ? fetchNextPage : undefined}
-        onEndReachedThreshold={0.2}
-        ItemSeparatorComponent={itemSeparatorComponent}
-        showsVerticalScrollIndicator={false}
-      />
+      <View style={[styles.listContent, listStyle]}>
+        <FlashList
+          data={data}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          estimatedItemSize={120}
+          ListEmptyComponent={renderEmptyComponent}
+          ListHeaderComponent={headerComponent}
+          ListFooterComponent={
+            <>
+              {renderFooter()}
+              {footerComponent}
+              {renderPaginationControls()}
+            </>
+          }
+          onRefresh={refreshable ? refreshData : undefined}
+          refreshing={refreshable ? loading && currentPage === 1 : false}
+          onEndReached={hasNextPage && !loading ? fetchNextPage : undefined}
+          onEndReachedThreshold={0.2}
+          ItemSeparatorComponent={itemSeparatorComponent}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
     </View>
   );
 }
