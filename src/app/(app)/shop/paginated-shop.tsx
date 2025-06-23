@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
   Dimensions,
-  FlatList,
   Platform,
   Pressable,
   StyleSheet,
@@ -245,14 +245,18 @@ export default function PaginatedShopScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={products}
-        renderItem={({ item, index }) => renderProductCard({ item, index })}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.listContent,
-          products.length === 0 ? styles.emptyListContent : {},
-        ]}
+        renderItem={({
+          item,
+          index,
+        }: {
+          item: ShopifyProduct;
+          index: number;
+        }) => renderProductCard({ item, index })}
+        keyExtractor={(item: ShopifyProduct) => item.id}
+        estimatedItemSize={200}
+        contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmptyComponent}
         ListHeaderComponent={
           <View style={styles.header}>

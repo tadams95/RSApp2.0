@@ -1,3 +1,4 @@
+import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import React, { useCallback, useLayoutEffect, useState } from "react";
 import {
@@ -5,8 +6,6 @@ import {
   ImageStyle,
   Platform,
   Pressable,
-  RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextStyle,
@@ -113,7 +112,7 @@ export default function ShopScreen() {
   }, [fetchProducts]);
 
   const renderItem = useCallback(
-    (product: ShopifyProduct) => {
+    ({ item: product }: { item: ShopifyProduct }) => {
       // Safe check for variants and availability
       const isOutOfStock =
         product.variants &&
@@ -140,7 +139,7 @@ export default function ShopScreen() {
       if (!firstVariant) return null; // Or some placeholder if a variant is essential
 
       return (
-        <View key={product.id} style={styles.itemsContainer}>
+        <View style={styles.itemsContainer}>
           <Pressable
             onPress={() => handleProductPress(product)}
             style={({ pressed }) => [
@@ -189,26 +188,43 @@ export default function ShopScreen() {
     const numberOfSkeletons = 6;
     return Array(numberOfSkeletons)
       .fill(0)
-      .map((_, index) => (
-        <View key={`skeleton-${index}`} style={styles.itemsContainer}>
-          <View style={styles.skeletonContainer}>
-            <View style={styles.skeletonImage} />
-            <View style={styles.skeletonText} />
-            <View style={styles.skeletonPrice} />
-          </View>
+      .map((_, index) => ({
+        id: `skeleton-${index}`,
+        title: "",
+        images: [],
+        variants: [],
+        handle: "",
+        isSkeleton: true,
+      }));
+  }, []);
+
+  const renderSkeletonItem = useCallback(() => {
+    return (
+      <View style={styles.itemsContainer}>
+        <View style={styles.skeletonContainer}>
+          <View style={styles.skeletonImage} />
+          <View style={styles.skeletonText} />
+          <View style={styles.skeletonPrice} />
         </View>
-      ));
+      </View>
+    );
   }, []);
 
   if (isLoading && !refreshing && products.length === 0) {
-    // Show skeleton only on initial load
+    // Show skeleton loading with FlashList
     return (
-      <ScrollView
-        style={{ backgroundColor: "#000" }}
-        contentContainerStyle={styles.container} // Ensure skeleton items are also wrapped
-      >
-        {renderSkeletonItems()}
-      </ScrollView>
+      <ProductFetchErrorBoundary>
+        <View style={styles.container}>
+          <FlashList
+            data={renderSkeletonItems()}
+            renderItem={renderSkeletonItem}
+            keyExtractor={(item) => item.id}
+            numColumns={windowWidth > 600 ? 3 : 2}
+            estimatedItemSize={windowWidth > 600 ? 415 : 250}
+            contentContainerStyle={styles.flashListContent}
+          />
+        </View>
+      </ProductFetchErrorBoundary>
     );
   }
 
@@ -231,27 +247,25 @@ export default function ShopScreen() {
 
   return (
     <ProductFetchErrorBoundary>
-      <ScrollView
-        style={{ backgroundColor: "#000" }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="white"
-            colors={["white"]}
-          />
-        }
-      >
-        <View style={styles.container}>
-          {
-            products.length > 0
-              ? products.map((product) => renderItem(product))
-              : !isLoading && (
-                  <Text style={styles.emptyText}>No products found.</Text>
-                ) // Show if no products and not loading
+      <View style={styles.container}>
+        <FlashList
+          data={products}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          numColumns={windowWidth > 600 ? 3 : 2}
+          estimatedItemSize={windowWidth > 600 ? 415 : 250}
+          contentContainerStyle={styles.flashListContent}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+          ListEmptyComponent={
+            !isLoading ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No products found.</Text>
+              </View>
+            ) : null
           }
-        </View>
-      </ScrollView>
+        />
+      </View>
     </ProductFetchErrorBoundary>
   );
 }
@@ -268,6 +282,8 @@ const fontFamily = Platform.select({
 // Define types for StyleSheet to ensure proper typing
 interface Styles {
   container: ViewStyle;
+  flashListContent: ViewStyle;
+  emptyContainer: ViewStyle;
   title: TextStyle;
   price: TextStyle;
   image: ImageStyle;
@@ -291,11 +307,16 @@ interface Styles {
 const styles = StyleSheet.create<Styles>({
   container: {
     flex: 1,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    padding: 10,
     backgroundColor: "#000",
+  },
+  flashListContent: {
+    padding: 10,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
   },
   title: {
     fontFamily,
@@ -319,16 +340,11 @@ const styles = StyleSheet.create<Styles>({
     overflow: "hidden",
   },
   itemsContainer: {
-    width: windowWidth > 600 ? "32%" : "48%",
+    flex: 1,
     marginBottom: 16,
+    marginHorizontal: 5,
     borderRadius: 8,
     backgroundColor: "black", // Card background
-    // elevation: 3, // Elevation is Android-specific
-    // shadowColor: GlobalStyles.colors.neutral6, // Ensure GlobalStyles is correctly imported or replace
-    // shadowRadius: 3,
-    // shadowOffset: { width: 1, height: 1 },
-    // shadowOpacity: 0.25,
-    // For iOS shadow, you might need to wrap in a View and apply shadow to that
     borderWidth: 1,
     borderColor: "#222", // Subtle border for dark theme
   },

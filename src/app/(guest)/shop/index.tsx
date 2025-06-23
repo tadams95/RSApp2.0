@@ -1,10 +1,9 @@
+import { FlashList } from "@shopify/flash-list";
 import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import {
   Dimensions,
   Platform,
   Pressable,
-  RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -278,15 +277,26 @@ const GuestShop: React.FC = () => {
     const numberOfSkeletons = 6;
     return Array(numberOfSkeletons)
       .fill(0)
-      .map((_, index) => (
-        <View key={`skeleton-${index}`} style={styles.itemsContainer}>
-          <View style={styles.skeletonContainer}>
-            <View style={styles.skeletonImage} />
-            <View style={styles.skeletonText} />
-            <View style={styles.skeletonPrice} />
-          </View>
+      .map((_, index) => ({
+        id: `skeleton-${index}`,
+        title: "",
+        images: [],
+        variants: [],
+        handle: "",
+        isSkeleton: true,
+      }));
+  }, []);
+
+  const renderSkeletonItem = useCallback(() => {
+    return (
+      <View style={styles.itemsContainer}>
+        <View style={styles.skeletonContainer}>
+          <View style={styles.skeletonImage} />
+          <View style={styles.skeletonText} />
+          <View style={styles.skeletonPrice} />
         </View>
-      ));
+      </View>
+    );
   }, []);
 
   // Error state
@@ -307,27 +317,45 @@ const GuestShop: React.FC = () => {
     );
   }
 
-  // Main render
+  // Main render - Loading state with skeleton
+  if (isLoading && !refreshing && products.length === 0) {
+    return (
+      <ProductFetchErrorBoundary>
+        <View style={styles.container}>
+          <FlashList
+            data={renderSkeletonItems()}
+            renderItem={renderSkeletonItem}
+            keyExtractor={(item) => item.id}
+            numColumns={windowWidth > 600 ? 3 : 2}
+            estimatedItemSize={windowWidth > 600 ? 415 : 250}
+            contentContainerStyle={styles.flashListContent}
+          />
+        </View>
+      </ProductFetchErrorBoundary>
+    );
+  }
+
   return (
     <ProductFetchErrorBoundary>
-      <ScrollView
-        style={{ backgroundColor: "#000" }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="white"
-            colors={["white"]}
-          />
-        }
-        accessibilityLabel="Shop products list"
-      >
-        <View style={styles.container}>
-          {isLoading
-            ? renderSkeletonItems()
-            : products.map((product) => renderItem({ item: product }))}
-        </View>
-      </ScrollView>
+      <View style={styles.container}>
+        <FlashList
+          data={products}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          numColumns={windowWidth > 600 ? 3 : 2}
+          estimatedItemSize={windowWidth > 600 ? 415 : 250}
+          contentContainerStyle={styles.flashListContent}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+          ListEmptyComponent={
+            !isLoading ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No products found.</Text>
+              </View>
+            ) : null
+          }
+        />
+      </View>
     </ProductFetchErrorBoundary>
   );
 };
@@ -335,11 +363,22 @@ const GuestShop: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    padding: 10,
     backgroundColor: "#000",
+  },
+  flashListContent: {
+    padding: 10,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  emptyText: {
+    color: "#777",
+    textAlign: "center",
+    fontFamily,
+    marginTop: 50,
   },
   title: {
     fontFamily,
@@ -361,8 +400,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   itemsContainer: {
-    width: windowWidth > 600 ? "32%" : "48%", // More responsive grid
+    flex: 1,
     marginBottom: 16,
+    marginHorizontal: 5,
     borderRadius: 8,
     backgroundColor: "black",
     elevation: 3,

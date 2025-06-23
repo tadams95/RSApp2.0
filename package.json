@@ -15,6 +15,7 @@
     "@react-native-community/hooks": "^100.1.0",
     "@react-native-community/netinfo": "^11.4.1",
     "@reduxjs/toolkit": "^2.2.3",
+    "@shopify/flash-list": "^1.7.6",
     "@shopify/storefront-api-client": "^1.0.7",
     "@stripe/stripe-react-native": "0.45.0",
     "@types/react": "~19.0.10",
