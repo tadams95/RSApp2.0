@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { collection, getDocs, getFirestore } from "firebase/firestore";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -15,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { ProgressiveImage } from "../../../components/ui";
+import { useEventAttendingCountWithHelpers } from "../../../hooks/useEvents";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
 import { PROGRESSIVE_PLACEHOLDERS } from "../../../utils/imageCacheConfig";
 import { logError } from "../../../utils/logError";
@@ -42,8 +42,9 @@ const GuestEventView: React.FC = () => {
   const eventDateTime = params.dateTime as string;
   const eventDescription = params.description as string;
 
-  const [attendingCount, setAttendingCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // Use React Query for attending count
+  const { attendingCount, isLoading, error, refetch } =
+    useEventAttendingCountWithHelpers(eventName);
 
   // Use the Firebase image hook for improved error handling and caching
   const {
@@ -55,29 +56,6 @@ const GuestEventView: React.FC = () => {
     fallbackImage: require("../../../assets/BlurHero_2.png"),
     cacheExpiry: 3600000, // 1 hour cache
   });
-
-  useEffect(() => {
-    const fetchAttendingCount = async (): Promise<void> => {
-      try {
-        const firestore = getFirestore();
-        const ragersCollectionRef = collection(
-          firestore,
-          "events",
-          eventName, // Use the event name from params
-          "ragers"
-        );
-        const querySnapshot = await getDocs(ragersCollectionRef);
-        const count = querySnapshot.size;
-        setAttendingCount(count);
-      } catch (error) {
-        console.error("Error fetching attending count:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAttendingCount();
-  }, [eventName]);
 
   const handleGuestCheckout = (): void => {
     navigateToAuth();

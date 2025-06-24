@@ -3,14 +3,7 @@ import NetInfo from "@react-native-community/netinfo"; // For network status che
 import { format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import {
-  collection,
-  getDocs,
-  getFirestore,
-  query,
-  Timestamp,
-  where,
-} from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -30,42 +23,24 @@ import {
   ViewStyle,
 } from "react-native";
 
-// Import from firebase
+// Import React Query hooks
+import { useEventsWithHelpers } from "../../../hooks/useEvents";
 
-// Import our error handling utilities
-import { extractDatabaseErrorCode } from "../../../utils/databaseErrorHandler";
-import {
-  getRetryBackoffTime,
-  handleEventFetchError,
-  sanitizeEventData,
-  shouldRetryEventFetch,
-} from "../../../utils/eventDataHandler";
+// Import our event data type
+import { EventData } from "../../../utils/eventDataHandler";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-
-// Define our types
-interface EventData {
-  id?: string;
-  name: string;
-  dateTime: Timestamp;
-  location: string;
-  price: number;
-  imgURL: string;
-  quantity: number;
-  description?: string;
-  attendingCount?: number;
-}
 
 // Create animated FlatList component
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<EventData>);
 
 export default function EventsScreen() {
-  const [events, setEvents] = useState<EventData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Use React Query for events data
+  const { events, isLoading, error, refetch, hasEvents, isEmpty, hasError } =
+    useEventsWithHelpers();
+
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
-  const [retryAttempts, setRetryAttempts] = useState(0);
   const flatListRef = useRef<FlatList<EventData>>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -77,99 +52,6 @@ export default function EventsScreen() {
 
     return () => unsubscribe();
   }, []);
-
-  const fetchEventData = useCallback(async () => {
-    try {
-      // Clear previous errors
-      setErrorMessage(null);
-
-      // Use getFirestore instead of imported db to avoid type issues
-      const firestore = getFirestore();
-      const currentDate = new Date();
-      const eventCollectionRef = collection(firestore, "events");
-      const q = query(eventCollectionRef, where("dateTime", ">=", currentDate));
-      const eventSnapshot = await getDocs(q);
-
-      const eventData = eventSnapshot.docs
-        .map((doc) => {
-          // Apply data sanitization to each event
-          const rawData = { id: doc.id, ...doc.data() };
-          return sanitizeEventData(rawData);
-        })
-        .sort((a, b) => {
-          // Sort events by date - with fallback for invalid dates
-          try {
-            return (
-              a.dateTime.toDate().getTime() - b.dateTime.toDate().getTime()
-            );
-          } catch (error) {
-            console.warn("Date sorting error, using current time as fallback");
-            return 0; // Default to equality if dates can't be compared
-          }
-        });
-
-      // Reset retry attempts on success
-      setRetryAttempts(0);
-      setEvents(eventData);
-    } catch (error) {
-      // Get the specific error code
-      const errorCode = extractDatabaseErrorCode(error);
-
-      // Log detailed error info
-      const userMessage = handleEventFetchError(
-        error,
-        "EventsScreen.fetchEventData",
-        {
-          retryAttempt: retryAttempts,
-        }
-      );
-
-      setErrorMessage(userMessage);
-
-      // Check if retry is appropriate
-      if (shouldRetryEventFetch(errorCode, retryAttempts)) {
-        const backoffTime = getRetryBackoffTime(retryAttempts);
-
-        console.log(
-          `Retrying event fetch in ${backoffTime}ms (attempt ${
-            retryAttempts + 1
-          })`
-        );
-
-        // Schedule retry
-        setTimeout(() => {
-          setRetryAttempts((prev) => prev + 1);
-        }, backoffTime);
-      }
-
-      // Keep existing events if any, don't clear them on error
-      // This allows showing stale data if available
-    } finally {
-      setIsLoading(false);
-    }
-  }, [retryAttempts]);
-
-  useEffect(() => {
-    fetchEventData();
-
-    // Also fetch when coming back online
-    const handleOnlineStatus = () => {
-      if (!isOffline && events.length === 0) {
-        setIsLoading(true);
-        fetchEventData();
-      }
-    };
-
-    // Listen for offline/online transitions
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      if (state.isConnected && isOffline) {
-        handleOnlineStatus();
-      }
-      setIsOffline(!state.isConnected);
-    });
-
-    return () => unsubscribe();
-  }, [fetchEventData, isOffline, events.length]);
 
   const handleEventPress = useCallback((event: EventData) => {
     // Format date safely with fallback
@@ -361,20 +243,15 @@ export default function EventsScreen() {
   }
 
   // Show error state with retry option
-  if (errorMessage && events.length === 0) {
+  if (hasError && isEmpty) {
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="alert-circle-outline" size={70} color="#ef4444" />
         <Text style={styles.emptyTitle}>Couldn't Load Events</Text>
-        <Text style={styles.emptySubtitle}>{errorMessage}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={() => {
-            setIsLoading(true);
-            setRetryAttempts(0);
-            fetchEventData();
-          }}
-        >
+        <Text style={styles.emptySubtitle}>
+          {error?.message || "Please try again"}
+        </Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
           <Text style={styles.retryButtonText}>Try Again</Text>
         </TouchableOpacity>
       </View>
@@ -382,7 +259,7 @@ export default function EventsScreen() {
   }
 
   // Show empty state when no events
-  if (events.length === 0) {
+  if (isEmpty) {
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="calendar-outline" size={70} color="#555" />
@@ -395,7 +272,7 @@ export default function EventsScreen() {
   }
 
   // If there are events but also errors, show a non-intrusive error banner
-  const showErrorBanner = errorMessage && events.length > 0;
+  const showErrorBanner = hasError && hasEvents;
 
   return (
     <View style={styles.container}>
@@ -407,16 +284,9 @@ export default function EventsScreen() {
 
       {/* Show error banner if there are events but we also have errors */}
       {showErrorBanner && (
-        <TouchableOpacity
-          style={styles.errorBanner}
-          onPress={() => {
-            setIsLoading(true);
-            setRetryAttempts(0);
-            fetchEventData();
-          }}
-        >
+        <TouchableOpacity style={styles.errorBanner} onPress={() => refetch()}>
           <Text style={styles.errorBannerText}>
-            {errorMessage} (Tap to retry)
+            {error?.message || "Error loading events"} (Tap to retry)
           </Text>
         </TouchableOpacity>
       )}
