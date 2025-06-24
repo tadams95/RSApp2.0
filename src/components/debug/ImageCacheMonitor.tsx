@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { ImageCacheManager } from "../../utils/imageCacheConfig";
 import { imagePreloader } from "../../utils/imagePreloader";
 
@@ -35,7 +35,7 @@ const ImageCacheMonitor: React.FC<ImageCacheMonitorProps> = ({
       try {
         const info = await ImageCacheManager.getCacheInfo();
         const status = imagePreloader.getPreloadStatus();
-        
+
         setCacheInfo(info);
         setPreloadStatus(status);
       } catch (error) {
@@ -98,24 +98,18 @@ const ImageCacheMonitor: React.FC<ImageCacheMonitorProps> = ({
         style={styles.header}
         onPress={() => setExpanded(!expanded)}
       >
-        <Text style={styles.headerText}>
-          📷 {expanded ? "▼" : "▶"}
-        </Text>
+        <Text style={styles.headerText}>📷 {expanded ? "▼" : "▶"}</Text>
       </TouchableOpacity>
 
       {expanded && (
         <View style={styles.content}>
           <Text style={styles.title}>Image Cache Status</Text>
-          
+
           {cacheInfo && (
             <View style={styles.section}>
               <Text style={styles.label}>Cache Status:</Text>
-              <Text style={styles.value}>
-                Memory: {cacheInfo.memoryCache}
-              </Text>
-              <Text style={styles.value}>
-                Disk: {cacheInfo.diskCache}
-              </Text>
+              <Text style={styles.value}>Memory: {cacheInfo.memoryCache}</Text>
+              <Text style={styles.value}>Disk: {cacheInfo.diskCache}</Text>
             </View>
           )}
 
@@ -135,7 +129,7 @@ const ImageCacheMonitor: React.FC<ImageCacheMonitorProps> = ({
             >
               <Text style={styles.actionText}>Clear Cache</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.actionButton}
               onPress={handleClearPreloadCache}

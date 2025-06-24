@@ -23,7 +23,7 @@ export const CACHE_POLICIES = {
     priority: "high" as const,
     transition: 200,
   },
-  
+
   // Product images - balanced caching with transition
   PRODUCT: {
     cachePolicy: "memory-disk" as const,
@@ -31,7 +31,7 @@ export const CACHE_POLICIES = {
     transition: 150,
     recyclingKey: "product-images",
   },
-  
+
   // Event images - balanced caching
   EVENT: {
     cachePolicy: "memory-disk" as const,
@@ -39,7 +39,7 @@ export const CACHE_POLICIES = {
     transition: 150,
     recyclingKey: "event-images",
   },
-  
+
   // Profile images - memory priority for recent users
   PROFILE: {
     cachePolicy: "memory-disk" as const,
@@ -47,7 +47,7 @@ export const CACHE_POLICIES = {
     transition: 100,
     recyclingKey: "profile-images",
   },
-  
+
   // Lazy loaded images in lists - disk cache to save memory
   LAZY_LIST: {
     cachePolicy: "disk" as const,
@@ -55,7 +55,7 @@ export const CACHE_POLICIES = {
     transition: 200,
     recyclingKey: "list-images",
   },
-  
+
   // Temporary/one-time images - memory only
   TEMPORARY: {
     cachePolicy: "memory" as const,
@@ -80,7 +80,7 @@ export const PLACEHOLDERS = {
 export const initializeImageCache = () => {
   // Configure expo-image global settings
   Image.clearMemoryCache();
-  
+
   // Set memory cache size (in MB) - adjust based on device capabilities
   // This is platform-specific configuration
   if (__DEV__) {
@@ -128,15 +128,15 @@ export const ImageCacheManager = {
    */
   preloadImages: async (imageUris: string[]) => {
     try {
-      const preloadPromises = imageUris.map((uri) => 
+      const preloadPromises = imageUris.map((uri) =>
         Image.prefetch(uri, {
           cachePolicy: "memory-disk",
           headers: {},
         })
       );
-      
+
       await Promise.all(preloadPromises);
-      
+
       if (__DEV__) {
         console.log(`Preloaded ${imageUris.length} images`);
       }

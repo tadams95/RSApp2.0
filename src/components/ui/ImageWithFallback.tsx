@@ -9,11 +9,21 @@ import {
   View,
 } from "react-native";
 import { GlobalStyles } from "../../constants/styles";
+import {
+  CACHE_POLICIES,
+  ImageCacheOptions,
+  generateCacheKey,
+} from "../../utils/imageCacheConfig";
 import { logError } from "../../utils/logError";
 import { getStorageErrorMessage } from "../../utils/storageErrorHandler";
-import { CACHE_POLICIES, ImageCacheOptions, generateCacheKey } from "../../utils/imageCacheConfig";
 
-type ImageCacheType = "STATIC" | "PRODUCT" | "EVENT" | "PROFILE" | "LAZY_LIST" | "TEMPORARY";
+type ImageCacheType =
+  | "STATIC"
+  | "PRODUCT"
+  | "EVENT"
+  | "PROFILE"
+  | "LAZY_LIST"
+  | "TEMPORARY";
 
 interface ImageWithFallbackProps extends Omit<ExpoImageProps, "source"> {
   source: ImageSourcePropType;
@@ -162,16 +172,20 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   // Generate cache configuration based on type
   const getCacheConfig = useCallback((): ImageCacheOptions => {
     const baseConfig = CACHE_POLICIES[cacheType];
-    
+
     // Generate recycling key for dynamic content
     let recyclingKey: string | undefined;
-    if ('recyclingKey' in baseConfig) {
+    if ("recyclingKey" in baseConfig) {
       recyclingKey = baseConfig.recyclingKey;
       if (cacheId) {
-        recyclingKey = generateCacheKey(cacheType.toLowerCase(), cacheId, cacheVersion);
+        recyclingKey = generateCacheKey(
+          cacheType.toLowerCase(),
+          cacheId,
+          cacheVersion
+        );
       }
     }
-    
+
     return {
       ...baseConfig,
       recyclingKey,

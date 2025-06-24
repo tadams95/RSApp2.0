@@ -3,15 +3,24 @@ import { Slot, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as Updates from "expo-updates";
 import React, { useEffect, useState } from "react";
-import { Alert, AppState, StyleSheet, View, AppStateStatus } from "react-native";
+import {
+  Alert,
+  AppState,
+  AppStateStatus,
+  StyleSheet,
+  View,
+} from "react-native";
 import { PaperProvider } from "react-native-paper";
 import { Provider } from "react-redux";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { AuthProvider } from "../hooks/AuthContext";
 import { store } from "../store/redux/store";
-import { initializeOfflineCartSync } from "../utils/offlineCartSync";
-import { initializeImageCache, handleMemoryPressure } from "../utils/imageCacheConfig";
+import {
+  handleMemoryPressure,
+  initializeImageCache,
+} from "../utils/imageCacheConfig";
 import { imagePreloader } from "../utils/imagePreloader";
+import { initializeOfflineCartSync } from "../utils/offlineCartSync";
 
 // Prevent auto-hide of splash screen
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -33,13 +42,15 @@ export default function RootLayout() {
       try {
         // Initialize image cache configuration
         initializeImageCache();
-        
+
         // Preload critical images for better UX
         await imagePreloader.preloadCriticalImages();
-        
+
         if (__DEV__) {
           const status = imagePreloader.getPreloadStatus();
-          console.log(`Image preloading complete: ${status.loaded}/${status.total} images cached`);
+          console.log(
+            `Image preloading complete: ${status.loaded}/${status.total} images cached`
+          );
         }
       } catch (error) {
         console.error("Failed to initialize image system:", error);
@@ -52,13 +63,16 @@ export default function RootLayout() {
   // Handle memory pressure events
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'background') {
+      if (nextAppState === "background") {
         // Clear memory cache when app goes to background to free up memory
         handleMemoryPressure();
       }
     };
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
     return () => subscription.remove();
   }, []);
 

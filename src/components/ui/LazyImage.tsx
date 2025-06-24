@@ -38,7 +38,13 @@ interface LazyImageProps extends Omit<ImageWithFallbackProps, "placeholder"> {
    * Cache type for lazy loaded images
    * @default "LAZY_LIST"
    */
-  cacheType?: "STATIC" | "PRODUCT" | "EVENT" | "PROFILE" | "LAZY_LIST" | "TEMPORARY";
+  cacheType?:
+    | "STATIC"
+    | "PRODUCT"
+    | "EVENT"
+    | "PROFILE"
+    | "LAZY_LIST"
+    | "TEMPORARY";
 }
 
 /**
@@ -70,7 +76,9 @@ const LazyImage: React.FC<LazyImageProps> = ({
 
   // If lazy loading is disabled, render the image immediately
   if (!lazy || shouldLoad) {
-    return <ImageWithFallback style={style} cacheType={cacheType} {...imageProps} />;
+    return (
+      <ImageWithFallback style={style} cacheType={cacheType} {...imageProps} />
+    );
   }
 
   // Show placeholder while waiting to load

@@ -9,11 +9,13 @@ The Rage State app now implements a comprehensive image caching strategy using `
 ### Core Components
 
 1. **Image Cache Configuration** (`src/utils/imageCacheConfig.ts`)
+
    - Centralized cache policies for different image types
    - Cache management utilities
    - Memory pressure handling
 
 2. **Image Preloader** (`src/utils/imagePreloader.ts`)
+
    - Critical image preloading on app startup
    - Dynamic image prefetching utilities
    - Preload status tracking
@@ -28,12 +30,14 @@ The Rage State app now implements a comprehensive image caching strategy using `
 The system uses different cache policies optimized for various image types:
 
 ### Static Assets (STATIC)
+
 - **Policy**: `memory-disk` (aggressive caching)
 - **Priority**: `high`
 - **Use Cases**: App logos, hero images, static assets
 - **Benefits**: Instant loading for branding elements
 
 ### Product Images (PRODUCT)
+
 - **Policy**: `memory-disk` (balanced caching)
 - **Priority**: `normal`
 - **Recycling**: Grouped by product context
@@ -41,6 +45,7 @@ The system uses different cache policies optimized for various image types:
 - **Benefits**: Smooth shopping experience
 
 ### Event Images (EVENT)
+
 - **Policy**: `memory-disk` (balanced caching)
 - **Priority**: `normal`
 - **Recycling**: Grouped by event context
@@ -48,6 +53,7 @@ The system uses different cache policies optimized for various image types:
 - **Benefits**: Fast event browsing
 
 ### Profile Images (PROFILE)
+
 - **Policy**: `memory-disk` (recent user priority)
 - **Priority**: `normal`
 - **Recycling**: User-specific grouping
@@ -55,6 +61,7 @@ The system uses different cache policies optimized for various image types:
 - **Benefits**: Quick profile access
 
 ### List Images (LAZY_LIST)
+
 - **Policy**: `disk` (memory-efficient)
 - **Priority**: `low`
 - **Recycling**: List-specific grouping
@@ -62,6 +69,7 @@ The system uses different cache policies optimized for various image types:
 - **Benefits**: Prevents memory bloat in long lists
 
 ### Temporary Images (TEMPORARY)
+
 - **Policy**: `memory` (no disk persistence)
 - **Priority**: `low`
 - **Use Cases**: One-time display images
@@ -90,6 +98,7 @@ await imagePreloader.preloadCriticalImages();
 ### Critical Image Preloading
 
 On app startup, the system preloads:
+
 - Remote images with URLs (product images, event images, etc.)
 - **Note**: Static assets (logos, placeholders) loaded via `require()` are automatically optimized by the Metro bundler and don't need explicit prefetching
 
@@ -101,13 +110,13 @@ This ensures instant display of critical UI elements while avoiding unnecessary 
 
 ```typescript
 <ImageWithFallback
-  source={{ uri: 'https://example.com/product.jpg' }}
+  source={{ uri: "https://example.com/product.jpg" }}
   cacheType="PRODUCT"
   cacheId="product-123"
   cacheVersion="v1"
   style={{ width: 200, height: 200 }}
   showLoadingIndicator={true}
-  fallbackSource={require('../assets/placeholder.png')}
+  fallbackSource={require("../assets/placeholder.png")}
 />
 ```
 
@@ -126,7 +135,7 @@ This ensures instant display of critical UI elements while avoiding unnecessary 
 ### Cache Management
 
 ```typescript
-import { ImageCacheManager } from '../utils/imageCacheConfig';
+import { ImageCacheManager } from "../utils/imageCacheConfig";
 
 // Clear memory cache (for memory pressure)
 ImageCacheManager.clearMemoryCache();
@@ -135,13 +144,13 @@ ImageCacheManager.clearMemoryCache();
 ImageCacheManager.clearDiskCache();
 
 // Preload specific images
-await ImageCacheManager.preloadImages(['url1', 'url2']);
+await ImageCacheManager.preloadImages(["url1", "url2"]);
 ```
 
 ### Preloading Dynamic Content
 
 ```typescript
-import { imagePreloader } from '../utils/imagePreloader';
+import { imagePreloader } from "../utils/imagePreloader";
 
 // Preload product images
 await imagePreloader.preloadProductImages(products);
@@ -150,7 +159,7 @@ await imagePreloader.preloadProductImages(products);
 await imagePreloader.preloadEventImages(events);
 
 // Custom URL preloading
-await imagePreloader.preloadImageUrls(urls, 'PRODUCT');
+await imagePreloader.preloadImageUrls(urls, "PRODUCT");
 ```
 
 ## Development Tools
@@ -160,13 +169,14 @@ await imagePreloader.preloadImageUrls(urls, 'PRODUCT');
 For development and debugging, use the `ImageCacheMonitor` component:
 
 ```typescript
-import ImageCacheMonitor from '../components/debug/ImageCacheMonitor';
+import ImageCacheMonitor from "../components/debug/ImageCacheMonitor";
 
 // Add to your development screens
-<ImageCacheMonitor visible={__DEV__} position="top-right" />
+<ImageCacheMonitor visible={__DEV__} position="top-right" />;
 ```
 
 Features:
+
 - Real-time cache status
 - Preload progress tracking
 - Manual cache clearing
@@ -230,7 +240,7 @@ console.log(`${status.loaded}/${status.total} preloaded`);
 
 // Cache info
 const info = await ImageCacheManager.getCacheInfo();
-console.log('Cache status:', info);
+console.log("Cache status:", info);
 
 // Clear all caches
 ImageCacheManager.clearAllCaches();
@@ -246,4 +256,4 @@ ImageCacheManager.clearAllCaches();
 
 ---
 
-*This implementation provides a production-ready image caching strategy that significantly improves app performance and user experience while maintaining efficient resource usage.*
+_This implementation provides a production-ready image caching strategy that significantly improves app performance and user experience while maintaining efficient resource usage._
