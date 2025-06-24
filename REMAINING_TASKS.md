@@ -151,7 +151,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - [x] Migrate product fetching to React Query (shop screens)
 - [x] Migrate event fetching to React Query (events screens)
 - [x] Migrate user profile data fetching to React Query (✅ Completed: Created `useUserProfile` hooks, integrated into account screen with loading/error states)
-- [ ] Add React Query DevTools for development
+- [x] Add React Query DevTools for development (✅ Completed: DevTools are web-only and incompatible with React Native. React Native has built-in debugging tools like Flipper and React Native Debugger for development)
 
 **Phase 2: Redux Optimization (Parallel)**
 
@@ -168,9 +168,104 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - Request deduplication and cancellation
 - Better offline experience (builds on existing network error recovery)
 
-## PRIORITY 5: Testing Infrastructure
+## PRIORITY 5: UI/UX Design Consistency (CRITICAL)
 
-### 5.1 Basic Testing Setup
+### 5.1 Vertical Spacing and Layout Inconsistencies
+
+**Current Issue**: Significant design inconsistencies between guest views and authenticated views, with authenticated screens having excessive vertical margins/padding that waste screen real estate.
+
+**Root Cause Analysis:**
+
+- Guest views utilize full screen height effectively (full-screen image layouts in events, efficient FlashList grids in shop)
+- Authenticated views add excessive padding/margins through SafeAreaView, ScrollView contentContainerStyle, and container styles
+- Navigation header heights differ between guest and authenticated layouts
+- Content positioning inconsistencies between similar screens (guest events vs authenticated events)
+
+**Critical Design Issues to Fix:**
+
+- [ ] **Shop Screen Consistency**:
+
+  - [ ] Guest shop (`/app/(guest)/shop/index.tsx`): Uses minimal padding (10px) in FlashList contentContainerStyle
+  - [ ] Auth shop (`/app/(app)/shop/index.tsx`): Uses identical padding (10px) - **NO CHANGES NEEDED**
+  - [ ] Verify FlashList grid layout consistency between both screens
+
+- [ ] **Events Screen Layout Disparity**:
+
+  - [ ] Guest events (`/app/(guest)/events/index.tsx`): Full-screen image layout with content positioned at `bottom: 165px (iOS) / 95px (Android)`
+  - [ ] Auth events (`/app/(app)/events/index.tsx`): Similar positioning but at `bottom: 150px (iOS) / 80px (Android)` - slight inconsistency
+  - [ ] Standardize event content positioning to match guest layout for optimal screen utilization
+
+- [ ] **Account Screen Excessive Padding**:
+
+  - [ ] Auth account (`/app/(app)/account/index.tsx`): Uses ScrollView with `paddingVertical: 20px, paddingHorizontal: 20px` in scrollContent
+  - [ ] Guest account (`/app/(guest)/index.tsx`): Uses minimal container padding: 20px overall but efficient center layout
+  - [ ] Reduce account screen padding to maximize content area, especially for profile picture and buttons
+
+- [ ] **Home Screen Spacing Issues**:
+
+  - [ ] Auth home (`/app/(app)/home/index.tsx`): Excessive top padding (`paddingTop: 40px`) in header, large gaps in welcomeSection (`paddingVertical: 30px`)
+  - [ ] Optimize vertical spacing to be more compact and content-focused
+
+- [ ] **SafeAreaView Impact on Layout**:
+
+  - [ ] Auth layouts wrap content in SafeAreaView which adds additional top spacing
+  - [ ] Guest layouts rely on Stack.Screen headers without SafeAreaView wrapper
+  - [ ] Review if SafeAreaView is necessary for all authenticated screens or if it can be applied more selectively
+
+- [ ] **Navigation Header Consistency**:
+  - [ ] Guest layouts: Headers shown with black background, white text
+  - [ ] Auth layouts: Similar styling but wrapped in SafeAreaView container
+  - [ ] Ensure header heights and content positioning are identical between guest/auth views
+
+### 5.2 Component-Level Spacing Optimization
+
+- [ ] **FlashList Content Optimization**:
+
+  - [ ] Review `contentContainerStyle` padding across all FlashList implementations
+  - [ ] Ensure consistent item spacing between guest and authenticated product/event grids
+  - [ ] Verify responsive layout behavior on different screen sizes
+
+- [ ] **Modal and Overlay Consistency**:
+
+  - [ ] Review modal positioning and backdrop spacing
+  - [ ] Ensure EditProfile and Settings modals don't have excessive margins
+  - [ ] Standardize modal animation and layout patterns
+
+- [ ] **Button and Interactive Element Spacing**:
+  - [ ] Review button margins and padding across guest vs authenticated screens
+  - [ ] Ensure touch targets meet accessibility guidelines while maximizing content space
+  - [ ] Standardize button positioning (bottom margins, centering, etc.)
+
+### 5.3 Design System Implementation
+
+- [ ] **Create Consistent Spacing Constants**:
+
+  - [ ] Define standard spacing values in `constants/styles.ts`
+  - [ ] Create spacing utilities for consistent padding/margin application
+  - [ ] Implement responsive spacing that adapts to screen sizes
+
+- [ ] **Layout Component Standardization**:
+
+  - [ ] Create reusable layout components that ensure consistent spacing
+  - [ ] Implement `ScreenWrapper` component to replace inconsistent SafeAreaView usage
+  - [ ] Create `ContentContainer` component with standardized padding
+
+- [ ] **Visual Regression Testing**:
+  - [ ] Document current layouts with screenshots before changes
+  - [ ] Create layout comparison tests between guest and authenticated screens
+  - [ ] Implement design system compliance checks
+
+**Expected Improvements:**
+
+- 15-20% more vertical content space in authenticated screens
+- Consistent visual hierarchy between guest and authenticated experiences
+- Improved content density without sacrificing readability
+- Better responsive behavior across device sizes
+- Enhanced user experience with more efficient screen utilization
+
+## PRIORITY 6: Testing Infrastructure
+
+### 6.1 Basic Testing Setup
 
 **Current Issue**: No testing infrastructure
 
@@ -180,13 +275,13 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - [ ] Add component tests for critical UI components
 - [ ] Add integration tests for auth flow
 
-### 5.2 E2E Testing (OPTIONAL)
+### 6.2 E2E Testing (OPTIONAL)
 
 - [ ] Consider Detox for E2E testing of critical user flows
 
-## PRIORITY 6: Analytics Implementation
+## PRIORITY 7: Analytics Implementation
 
-### 6.1 Firebase Analytics Setup
+### 7.1 Firebase Analytics Setup
 
 **Current Issue**: No user behavior tracking
 
@@ -199,7 +294,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
   - Purchase completions
   - Event ticket purchases
 
-### 6.2 Push Notifications Implementation
+### 7.2 Push Notifications Implementation
 
 **Current Issue**: No push notification system for user engagement and critical updates
 
@@ -263,9 +358,9 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - Reduced customer service inquiries through proactive updates
 - Enhanced user engagement and retention
 
-## PRIORITY 7: Styling System (NativeWind)
+## PRIORITY 8: Styling System (NativeWind)
 
-### 7.1 NativeWind Implementation
+### 8.1 NativeWind Implementation
 
 **Current Issue**: Inconsistent styling patterns across app
 
@@ -276,15 +371,15 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - [ ] Migrate core components to NativeWind classes
 - [ ] Update theme provider for dark/light mode
 
-## PRIORITY 8: Final Optimizations
+## PRIORITY 9: Final Optimizations
 
-### 8.1 Build Optimization
+### 9.1 Build Optimization
 
 - [ ] Optimize bundle size with Metro config
 - [ ] Add code splitting for route-based chunks
 - [ ] Optimize asset loading
 
-### 8.2 Security Review
+### 9.2 Security Review
 
 - [ ] Audit Firebase security rules
 - [ ] Review sensitive data storage practices
@@ -310,25 +405,29 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - **Priority 2 (Error Handling)**: ✅ Complete
 - **Priority 3 (Performance)**: 1-2 weeks
 - **Priority 4 (State Management - Hybrid)**: 1-2 weeks
-- **Priority 5 (Testing)**: 1-2 weeks
-- **Priority 6 (Analytics)**: 3-5 days
-- **Priority 7 (Styling)**: 1-2 weeks
-- **Priority 8 (Final)**: 3-5 days
+- **Priority 5 (UI/UX Design Consistency)**: 1-2 weeks ⚠️ **CRITICAL - IMPACTS USER EXPERIENCE**
+- **Priority 6 (Testing)**: 1-2 weeks
+- **Priority 7 (Analytics)**: 3-5 days
+- **Priority 8 (Styling)**: 1-2 weeks
+- **Priority 9 (Final)**: 3-5 days
 
-**Remaining Timeline**: 4-6 weeks
+**Remaining Timeline**: 5-7 weeks (updated for design consistency work)
 
 **Recommended Implementation Order:**
 
-1. **Week 1-2**: React Query migration (Priority 4.1) + FlashList implementation (Priority 3.1)
-2. **Week 3**: Image optimization (Priority 3.2) + Redux cleanup (Priority 4.2)
-3. **Week 4**: Testing infrastructure (Priority 5)
-4. **Week 5-6**: Analytics, styling, and final optimizations
+1. **Week 1**: UI/UX Design Consistency fixes (Priority 5) - **URGENT for better user experience**
+2. **Week 2-3**: React Query migration (Priority 4.1) + FlashList implementation (Priority 3.1)
+3. **Week 4**: Image optimization (Priority 3.2) + Redux cleanup (Priority 4.2)
+4. **Week 5**: Testing infrastructure (Priority 6)
+5. **Week 6-7**: Analytics, styling, and final optimizations
 
 ## SUCCESS CRITERIA
 
 - [ ] App builds without warnings or errors
 - [ ] No legacy dependencies remain
 - [ ] All critical error scenarios handled gracefully
+- [ ] **Design consistency between guest and authenticated views achieved**
+- [ ] **Vertical spacing optimized for maximum content utilization**
 - [ ] Performance meets acceptable standards (< 2s initial load, 60fps scrolling)
 - [ ] Hybrid state management: React Query for server state, Redux for client state
 - [ ] 80% reduction in redundant API calls through intelligent caching
@@ -342,6 +441,13 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - [ ] Image loading: Progressive with proper caching
 - [ ] Background data refresh: Automatic without user intervention
 - [ ] Offline resilience: Graceful degradation and recovery
+
+**Design Consistency Benchmarks:**
+
+- [ ] **Guest vs Authenticated layout parity: <5% difference in content area utilization**
+- [ ] **Consistent navigation header heights and spacing across all screens**
+- [ ] **Standardized component spacing and button positioning**
+- [ ] **Responsive design that adapts consistently across device sizes**
 
 ---
 

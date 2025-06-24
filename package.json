@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@tanstack/react-query-devtools": "^5.81.2",
     "@types/shopify-buy": "^3.0.0",
     "babel-plugin-module-resolver": "^5.0.2",
     "typescript": "~5.8.3"
