@@ -1,3 +1,4 @@
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { Slot, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -13,6 +14,7 @@ import {
 import { PaperProvider } from "react-native-paper";
 import { Provider } from "react-redux";
 import ErrorBoundary from "../components/ErrorBoundary";
+import { queryClient } from "../config/reactQuery";
 import { AuthProvider } from "../hooks/AuthContext";
 import { store } from "../store/redux/store";
 import {
@@ -154,21 +156,23 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
-      <PaperProvider>
-        <ErrorBoundary
-          onError={(error, errorInfo) => {
-            // Log any errors to your monitoring service here
-            console.error("Root error boundary caught error:", error);
-          }}
-        >
-          <AuthProvider>
-            <View style={{ flex: 1, backgroundColor: "#000" }}>
-              <StatusBar style="light" />
-              <Slot />
-            </View>
-          </AuthProvider>
-        </ErrorBoundary>
-      </PaperProvider>
+      <QueryClientProvider client={queryClient}>
+        <PaperProvider>
+          <ErrorBoundary
+            onError={(error, errorInfo) => {
+              // Log any errors to your monitoring service here
+              console.error("Root error boundary caught error:", error);
+            }}
+          >
+            <AuthProvider>
+              <View style={{ flex: 1, backgroundColor: "#000" }}>
+                <StatusBar style="light" />
+                <Slot />
+              </View>
+            </AuthProvider>
+          </ErrorBoundary>
+        </PaperProvider>
+      </QueryClientProvider>
     </Provider>
   );
 }
