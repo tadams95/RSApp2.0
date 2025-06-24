@@ -148,7 +148,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - [x] Install and configure React Query: `npm install @tanstack/react-query`
 - [x] Create React Query provider in root layout
 - [x] Configure query client with optimal caching and retry settings
-- [ ] Migrate product fetching to React Query (shop screens)
+- [x] Migrate product fetching to React Query (shop screens)
 - [ ] Migrate event fetching to React Query (events screens)
 - [ ] Migrate user profile data fetching to React Query
 - [ ] Add React Query DevTools for development

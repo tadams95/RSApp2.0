@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,7 +19,7 @@ import { useDispatch } from "react-redux";
 import ErrorBoundary from "../../../components/ErrorBoundary";
 import { AppCarousel } from "../../../components/ui";
 import { GlobalStyles } from "../../../constants/styles";
-import { fetchProductByHandle } from "../../../services/shopifyService";
+import { getProductLoadingState, useProduct } from "../../../hooks/useProducts";
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
 
 // Importing the ProductDetail component
@@ -66,9 +66,10 @@ function ProductDetailScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
 
-  const [product, setProduct] = useState<ShopifyProduct | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use React Query for product fetching
+  const productQuery = useProduct(handle);
+  const { isLoading, isError, error } = getProductLoadingState(productQuery);
+  const product = productQuery.data;
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -80,29 +81,6 @@ function ProductDetailScreen() {
   const [addToCartConfirmationVisible, setAddToCartConfirmationVisible] =
     useState(false);
   const [activeIndex, setActiveIndex] = useState(0); // For image swiping
-
-  const fetchProductDetails = useCallback(async () => {
-    if (!handle) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const foundProduct = await fetchProductByHandle(handle);
-      if (foundProduct) {
-        setProduct(foundProduct as ShopifyProduct);
-      } else {
-        setError("Product not found.");
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to load product details.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [handle]);
-
-  useEffect(() => {
-    fetchProductDetails();
-  }, [fetchProductDetails]);
 
   const availableSizes = useMemo(() => {
     if (!product) return [];
@@ -265,7 +243,7 @@ function ProductDetailScreen() {
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity
           style={styles.retryButton}
-          onPress={fetchProductDetails}
+          onPress={() => productQuery.refetch()}
         >
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react"; // Ensured useMemo is imported
+import React, { useMemo, useState } from "react"; // Ensured useMemo is imported
 import {
   ActivityIndicator,
   Alert,
@@ -22,7 +22,7 @@ import {
 import { AppCarousel, ImageWithFallback } from "../../../components/ui";
 import { GlobalStyles } from "../../../constants/styles";
 import { useErrorHandler } from "../../../hooks/useErrorHandler";
-import { fetchProductByHandle } from "../../../services/shopifyService"; // Fixed import path to use relative path
+import { getProductLoadingState, useProduct } from "../../../hooks/useProducts"; // Use React Query hook
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
 
 // Define types based on your Shopify product structure (similar to ShopScreen)
@@ -60,9 +60,14 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
   const dispatch = useDispatch();
   const { error, setError, clearError } = useErrorHandler();
 
-  const [product, setProduct] = useState<ShopifyProduct | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [productError, setProductError] = useState<string | null>(null);
+  // Use React Query for product fetching
+  const productQuery = useProduct(handle);
+  const {
+    isLoading,
+    isError,
+    error: productError,
+  } = getProductLoadingState(productQuery);
+  const product = productQuery.data;
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -74,29 +79,6 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
   const [addToCartConfirmationVisible, setAddToCartConfirmationVisible] =
     useState(false);
   const [activeIndex, setActiveIndex] = useState(0); // For image swiping
-
-  const fetchProductDetails = useCallback(async () => {
-    if (!handle) return;
-    setIsLoading(true);
-    setProductError(null);
-    try {
-      const foundProduct = await fetchProductByHandle(handle); // Using new function
-      if (foundProduct) {
-        setProduct(foundProduct as ShopifyProduct);
-      } else {
-        setProductError("Product not found.");
-      }
-    } catch (err: any) {
-      console.error(err);
-      setProductError(err.message || "Failed to load product details.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [handle]);
-
-  useEffect(() => {
-    fetchProductDetails();
-  }, [fetchProductDetails]);
 
   const availableSizes = useMemo(() => {
     if (!product) return [];
@@ -269,7 +251,7 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
         <Text style={styles.errorText}>{productError}</Text>
         <TouchableOpacity
           style={styles.retryButton}
-          onPress={fetchProductDetails}
+          onPress={() => productQuery.refetch()}
         >
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>

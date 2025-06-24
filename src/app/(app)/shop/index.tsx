@@ -1,6 +1,6 @@
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
-import React, { useCallback, useLayoutEffect, useState } from "react";
+import React, { useCallback } from "react";
 import {
   Dimensions,
   ImageStyle,
@@ -14,7 +14,10 @@ import {
 } from "react-native";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { LazyImage } from "../../../components/ui";
-import fetchShopifyProducts from "../../../services/shopifyService";
+import {
+  getProductLoadingState,
+  useProducts,
+} from "../../../hooks/useProducts";
 // Import offline product management
 import { useOfflineProducts } from "../../../utils/offlineProducts";
 
@@ -48,11 +51,13 @@ interface ShopifyProduct {
 }
 
 export default function ShopScreen() {
-  const [products, setProducts] = useState<ShopifyProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+
+  // Use React Query for product fetching
+  const productsQuery = useProducts();
+  const { isLoading, isError, isFetching, isRefreshing, error } =
+    getProductLoadingState(productsQuery);
+  const products = productsQuery.data || [];
 
   // Initialize offline product management
   const {
@@ -86,30 +91,9 @@ export default function ShopScreen() {
     [router]
   );
 
-  const fetchProducts = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const fetchedProducts = await fetchShopifyProducts();
-      // Ensure fetchedProducts conforms to ShopifyProduct[] or transform it
-      setProducts(fetchedProducts as ShopifyProduct[]);
-    } catch (err: any) {
-      console.error(err);
-      setError("Failed to load products. Please try again.");
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchProducts();
-  }, [fetchProducts]);
-
-  useLayoutEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    productsQuery.refetch();
+  }, [productsQuery]);
 
   const renderItem = useCallback(
     ({ item: product }: { item: ShopifyProduct }) => {
@@ -210,7 +194,7 @@ export default function ShopScreen() {
     );
   }, []);
 
-  if (isLoading && !refreshing && products.length === 0) {
+  if (isLoading && !isRefreshing && products.length === 0) {
     // Show skeleton loading with FlashList
     return (
       <ProductFetchErrorBoundary>
@@ -234,7 +218,7 @@ export default function ShopScreen() {
         <Text style={styles.errorText}>{error}</Text>
         <Pressable
           style={styles.retryButton}
-          onPress={fetchProducts}
+          onPress={() => productsQuery.refetch()}
           accessible={true}
           accessibilityLabel="Retry loading products"
           accessibilityRole="button"
@@ -256,7 +240,7 @@ export default function ShopScreen() {
           estimatedItemSize={windowWidth > 600 ? 415 : 250}
           contentContainerStyle={styles.flashListContent}
           onRefresh={onRefresh}
-          refreshing={refreshing}
+          refreshing={isRefreshing}
           ListEmptyComponent={
             !isLoading ? (
               <View style={styles.emptyContainer}>

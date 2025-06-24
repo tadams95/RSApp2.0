@@ -1,5 +1,5 @@
 import { FlashList } from "@shopify/flash-list";
-import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   Dimensions,
   Platform,
@@ -10,7 +10,10 @@ import {
 } from "react-native";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { LazyImage } from "../../../components/ui";
-import fetchShopifyProducts from "../../../services/shopifyService";
+import {
+  getProductLoadingState,
+  useProducts,
+} from "../../../hooks/useProducts";
 import { navigateToGuestProduct } from "../../../utils/navigation";
 
 // Define interfaces for Shopify products
@@ -80,10 +83,11 @@ const fontFamily: string =
   }) || "system"; // Provide fallback for null/undefined cases
 
 const GuestShop: React.FC = () => {
-  const [products, setProducts] = useState<ShopifyProduct[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+  // Use React Query for product fetching
+  const productsQuery = useProducts();
+  const { isLoading, isError, isFetching, isRefreshing, error } =
+    getProductLoadingState(productsQuery);
+  const products = productsQuery.data || [];
 
   // Memoized serializer function to prepare product data for navigation
   const serializeObject = useMemo(() => {
@@ -180,32 +184,10 @@ const GuestShop: React.FC = () => {
     [serializeObject]
   );
 
-  // Fetch products from Shopify
-  const fetchProducts = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const fetchedProducts = await fetchShopifyProducts();
-      setProducts(fetchedProducts);
-    } catch (error) {
-      console.error(error);
-      setError("Failed to load products. Please try again.");
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
   // Handle pull-to-refresh
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchProducts();
-  }, [fetchProducts]);
-
-  // Load products when component mounts
-  useLayoutEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    productsQuery.refetch();
+  }, [productsQuery]);
 
   // Render a product item
   const renderItem = useCallback(
@@ -306,7 +288,7 @@ const GuestShop: React.FC = () => {
         <Text style={styles.errorText}>{error}</Text>
         <Pressable
           style={styles.retryButton}
-          onPress={fetchProducts}
+          onPress={() => productsQuery.refetch()}
           accessible={true}
           accessibilityLabel="Retry loading products"
           accessibilityRole="button"
@@ -318,7 +300,7 @@ const GuestShop: React.FC = () => {
   }
 
   // Main render - Loading state with skeleton
-  if (isLoading && !refreshing && products.length === 0) {
+  if (isLoading && !isRefreshing && products.length === 0) {
     return (
       <ProductFetchErrorBoundary>
         <View style={styles.container}>
@@ -346,7 +328,7 @@ const GuestShop: React.FC = () => {
           estimatedItemSize={windowWidth > 600 ? 415 : 250}
           contentContainerStyle={styles.flashListContent}
           onRefresh={onRefresh}
-          refreshing={refreshing}
+          refreshing={isRefreshing}
           ListEmptyComponent={
             !isLoading ? (
               <View style={styles.emptyContainer}>
