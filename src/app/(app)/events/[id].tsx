@@ -20,10 +20,11 @@ import {
 } from "react-native";
 import { useDispatch } from "react-redux";
 import EventNotFound from "../../../components/events/EventNotFound";
-import ImageWithFallback from "../../../components/ui/ImageWithFallback";
+import { ProgressiveImage } from "../../../components/ui";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
 import { extractDatabaseErrorCode } from "../../../utils/databaseErrorHandler";
+import { PROGRESSIVE_PLACEHOLDERS } from "../../../utils/imageCacheConfig";
 import logError from "../../../utils/logError";
 
 // Define the styles interface to resolve TypeScript errors
@@ -346,17 +347,15 @@ export default function EventDetailScreen() {
               <ActivityIndicator size="large" color="white" />
             </View>
           )}
-          <ImageWithFallback
+          <ProgressiveImage
             source={imageSource}
+            lowResSource={PROGRESSIVE_PLACEHOLDERS.EVENT}
             style={styles.eventImage}
-            onLoadSuccess={handleImageLoadSuccess}
+            onHighResLoad={handleImageLoadSuccess}
             onLoadError={handleImageLoadError}
-            showLoadingIndicator={false} // We're using our own loading indicator
             fallbackSource={require("../../../assets/BlurHero_2.png")}
-            maxRetries={3}
-            showErrorMessage={!!imageError}
-            showRetryButton={!!imageError}
-            errorContext="EventDetail"
+            cacheType="EVENT"
+            cacheId={`event-${params.id}`}
             resizeMode="cover"
             accessibilityLabel={`Image for ${eventData.name} event`}
           />

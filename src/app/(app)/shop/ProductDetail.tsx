@@ -221,6 +221,8 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
                 fallbackSource={require("../../../assets/ShopHero_1.png")}
                 style={styles.images}
                 resizeMode="cover"
+                cacheType="PRODUCT"
+                cacheId={`product-${product.id}-${index}`}
                 accessibilityLabel={`Product image ${
                   index + 1
                 } of ${totalImages}`}
@@ -245,6 +247,8 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
           fallbackSource={require("../../../assets/ShopHero_1.png")}
           style={styles.images}
           resizeMode="cover"
+          cacheType="PRODUCT"
+          cacheId={`product-${product.id}-single`}
           accessibilityLabel="Product image"
         />
       </View>

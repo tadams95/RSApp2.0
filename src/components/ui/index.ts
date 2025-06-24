@@ -7,3 +7,4 @@ export {
   useNetworkStatusBanner,
 } from "./NetworkStatusBanner";
 export { default as ProfileFormInput } from "./ProfileFormInput";
+export { default as ProgressiveImage } from "./ProgressiveImage";

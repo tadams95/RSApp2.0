@@ -106,8 +106,17 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
 - [x] Replace Image components with expo-image (ImageWithFallback, LazyImage, and all static images migrated)
 - [x] Add proper image caching strategy (comprehensive caching system implemented with expo-image)
-- [ ] Implement progressive image loading
+- [x] Implement progressive image loading (ProgressiveImage component created and applied strategically to event hero images where blur placeholders make sense)
 - [ ] Add image compression for uploads
+
+**Progressive Loading Implementation Details:**
+
+- Created `ProgressiveImage` component with low-res placeholder + high-res background loading
+- **Strategically applied only to event hero images** where blur placeholders enhance UX
+- **Product images continue using ImageWithFallback** - no blur placeholders for product photos (maintains clean, professional appearance)
+- Uses relevant blur assets (`BlurHero_1.3.png`) for event images where blur aesthetic fits
+- Maintains expo-image caching benefits while improving perceived performance for large hero images
+- Smooth fade transitions when high-res images load
 
 ## PRIORITY 4: State Management Optimization (Hybrid Approach)
 
@@ -172,6 +181,70 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
   - Add to cart actions
   - Purchase completions
   - Event ticket purchases
+
+### 6.2 Push Notifications Implementation
+
+**Current Issue**: No push notification system for user engagement and critical updates
+
+**Phase 1: Core Notification Setup**
+
+- [ ] Install expo-notifications: `expo install expo-notifications`
+- [ ] Configure notification permissions and handlers
+- [ ] Set up push notification token registration
+- [ ] Create notification service utilities
+- [ ] Integrate with existing Firebase user data
+
+**Phase 2: Critical Notification Types**
+
+- [ ] **Order Status Notifications**:
+
+  - Order confirmation after successful payment
+  - Shipping updates for physical items
+  - Payment failure recovery prompts
+  - Cart abandonment reminders
+
+- [ ] **Event Management Notifications**:
+
+  - Event ticket purchase confirmation
+  - Event date/time reminders (24hr, 1hr before)
+  - Event location/detail updates
+  - Ticket transfer confirmations
+  - Event check-in notifications
+
+- [ ] **Cart & Commerce Notifications**:
+
+  - Cart abandonment recovery (items left in cart)
+  - Price drop alerts for wishlisted items
+  - Limited inventory alerts (low stock)
+  - New product launch notifications
+
+- [ ] **Account & Security Notifications**:
+  - Login from new device alerts
+  - Password reset confirmations
+  - Profile update confirmations
+  - Two-factor authentication codes
+
+**Phase 3: Advanced Features**
+
+- [ ] Personalized recommendations based on purchase history
+- [ ] Location-based notifications for nearby events
+- [ ] Social features (friend requests, event invites)
+- [ ] Admin announcements and app updates
+
+**Integration Points Identified**:
+
+- Cart checkout flow already has notification scaffolding (`sendPurchaseNotification`)
+- Event ticket system ready for transfer/scan notifications
+- User profile system has `expoPushToken` field implemented
+- Error recovery system can benefit from retry prompts
+- Analytics system can track notification engagement
+
+**Expected Benefits**:
+
+- 40-60% increase in cart conversion rates
+- 25-35% improvement in event attendance
+- Reduced customer service inquiries through proactive updates
+- Enhanced user engagement and retention
 
 ## PRIORITY 7: Styling System (NativeWind)
 

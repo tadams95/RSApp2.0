@@ -75,6 +75,18 @@ export const PLACEHOLDERS = {
 } as const;
 
 /**
+ * Low-resolution placeholder images for progressive loading
+ * Only use when you have a relevant low-res version of the actual content
+ */
+export const PROGRESSIVE_PLACEHOLDERS = {
+  // Only use progressive loading for hero images and events where blur makes sense
+  EVENT: require("../assets/BlurHero_1.3.png"),
+  HERO: require("../assets/BlurHero_2.png"),
+  // For products, use a minimal product placeholder instead of blur
+  PRODUCT_PLACEHOLDER: require("../assets/ShopHero_1.png"),
+} as const;
+
+/**
  * Initialize global image cache settings
  */
 export const initializeImageCache = () => {

@@ -24,7 +24,7 @@ import { navigateToGuestEvent } from "../../../utils/navigation";
 
 // Import our enhanced components and hooks
 import NetInfo from "@react-native-community/netinfo"; // For network status checking
-import ImageWithFallback from "../../../components/ui/ImageWithFallback";
+import { ProgressiveImage } from "../../../components/ui";
 import { extractDatabaseErrorCode } from "../../../utils/databaseErrorHandler";
 import {
   getRetryBackoffTime,
@@ -32,6 +32,7 @@ import {
   sanitizeEventData,
   shouldRetryEventFetch,
 } from "../../../utils/eventDataHandler";
+import { PROGRESSIVE_PLACEHOLDERS } from "../../../utils/imageCacheConfig";
 import { logError } from "../../../utils/logError";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -258,19 +259,19 @@ const GuestEvent: React.FC = () => {
           item.name || "Event"
         }, Date: ${formattedDate}, Price: ${priceDisplay}`}
       >
-        <ImageWithFallback
+        <ProgressiveImage
           source={
             typeof item.imgURL === "string" && item.imgURL.trim() !== ""
               ? { uri: item.imgURL }
               : require("../../../assets/BlurHero_2.png")
           }
+          lowResSource={PROGRESSIVE_PLACEHOLDERS.EVENT}
           fallbackSource={require("../../../assets/BlurHero_2.png")}
           style={styles.eventImage}
-          onLoadSuccess={handleImageLoadSuccess}
+          onHighResLoad={handleImageLoadSuccess}
           onLoadError={handleImageLoadError}
-          maxRetries={2}
-          errorContext={`EventList-${item.name}`}
-          showLoadingIndicator={false}
+          cacheType="EVENT"
+          cacheId={`guest-event-list-${item.id || index}`}
           accessibilityLabel={`Image for event ${item.name || "Unnamed event"}`}
         />
 
