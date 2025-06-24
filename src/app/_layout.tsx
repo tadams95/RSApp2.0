@@ -1,8 +1,9 @@
+import { Image } from "expo-image";
 import { Slot, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as Updates from "expo-updates";
 import React, { useEffect, useState } from "react";
-import { Alert, AppState, Image, StyleSheet, View } from "react-native";
+import { Alert, AppState, StyleSheet, View } from "react-native";
 import { PaperProvider } from "react-native-paper";
 import { Provider } from "react-redux";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -94,7 +95,7 @@ export default function RootLayout() {
         <Image
           source={require("../assets/RSLogo2025.png")}
           style={styles.logo}
-          resizeMode="contain"
+          contentFit="contain"
         />
       </View>
     );

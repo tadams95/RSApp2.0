@@ -1,6 +1,7 @@
+import { Image } from "expo-image";
 import { Link } from "expo-router";
 import React from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GlobalStyles } from "../../constants/styles";
 
 export default function EntryScreen() {
@@ -13,7 +14,7 @@ export default function EntryScreen() {
           <Image
             source={require("../../assets/RSLogo2025.png")}
             style={styles.logo}
-            resizeMode="contain"
+            contentFit="contain"
           />
         </View>
 

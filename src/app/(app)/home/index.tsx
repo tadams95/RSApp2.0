@@ -1,5 +1,6 @@
+import { Image } from "expo-image";
 import React from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSelector } from "react-redux";
 import { useAuth } from "../../../hooks/AuthContext";
 import {
@@ -18,7 +19,7 @@ export default function HomeScreen() {
         <Image
           source={require("../../../assets/RSLogo2025.png")}
           style={styles.logo}
-          resizeMode="contain"
+          contentFit="contain"
         />
       </View>
 

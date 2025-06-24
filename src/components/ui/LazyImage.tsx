@@ -1,9 +1,10 @@
+import { ImageProps as ExpoImageProps } from "expo-image";
 import React, { useCallback, useRef, useState } from "react";
-import { ImageProps, ImageSourcePropType, View, ViewStyle } from "react-native";
+import { ImageSourcePropType, View, ViewStyle } from "react-native";
 import ImageWithFallback from "./ImageWithFallback";
 
-// Define the props interface locally since it's not exported
-interface ImageWithFallbackProps extends Omit<ImageProps, "source"> {
+// Define the props interface locally since it's not exported from ImageWithFallback
+interface ImageWithFallbackProps extends Omit<ExpoImageProps, "source"> {
   source: ImageSourcePropType;
   fallbackSource?: ImageSourcePropType;
   renderFallback?: () => React.ReactNode;
@@ -18,7 +19,7 @@ interface ImageWithFallbackProps extends Omit<ImageProps, "source"> {
   errorContext?: string;
 }
 
-interface LazyImageProps extends ImageWithFallbackProps {
+interface LazyImageProps extends Omit<ImageWithFallbackProps, "placeholder"> {
   /**
    * Threshold for when to start loading the image (in pixels before it's visible)
    * @default 100

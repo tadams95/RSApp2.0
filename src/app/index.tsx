@@ -1,10 +1,9 @@
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import {
   Dimensions,
-  Image,
-  ImageBackground,
   StatusBar,
   StyleSheet,
   Text,
@@ -33,47 +32,47 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <ImageBackground
+      <Image
         source={require("../assets/BlurHero_2.png")}
         style={styles.backgroundImage}
+        contentFit="cover"
+      />
+      <LinearGradient
+        colors={["rgba(0,0,0,0.4)", "rgba(0,0,0,0.85)", "#000"]}
+        style={styles.gradient}
       >
-        <LinearGradient
-          colors={["rgba(0,0,0,0.4)", "rgba(0,0,0,0.85)", "#000"]}
-          style={styles.gradient}
-        >
-          <View style={styles.logoContainer}>
-            <Image
-              source={require("../assets/RSLogo2025.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Text style={styles.title}>RAGE STATE</Text>
-            <Text style={styles.subtitle}>Live in your world, Rage in ours.</Text>
-          </View>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require("../assets/RSLogo2025.png")}
+            style={styles.logo}
+            contentFit="contain"
+          />
+          <Text style={styles.title}>RAGE STATE</Text>
+          <Text style={styles.subtitle}>Live in your world, Rage in ours.</Text>
+        </View>
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.primaryButton]}
-              onPress={() => router.push("/(auth)/")}
-            >
-              <Text style={styles.buttonText}>GET STARTED</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={() => router.push("/(guest)/shop")}
-            >
-              <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-                BROWSE AS GUEST
-              </Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.button, styles.primaryButton]}
+            onPress={() => router.push("/(auth)/")}
+          >
+            <Text style={styles.buttonText}>GET STARTED</Text>
+          </TouchableOpacity>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>© 2025 RAGESTATE</Text>
-          </View>
-        </LinearGradient>
-      </ImageBackground>
+          <TouchableOpacity
+            style={[styles.button, styles.secondaryButton]}
+            onPress={() => router.push("/(guest)/shop")}
+          >
+            <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+              BROWSE AS GUEST
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>© 2025 RAGESTATE</Text>
+        </View>
+      </LinearGradient>
     </View>
   );
 }
@@ -90,7 +89,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
   },
   backgroundImage: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
     width: "100%",
     height: "100%",
   },

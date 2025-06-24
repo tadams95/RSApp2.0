@@ -1,8 +1,7 @@
+import { ImageProps as ExpoImageProps, Image } from "expo-image";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
-  ImageProps,
   ImageSourcePropType,
   StyleSheet,
   Text,
@@ -13,7 +12,7 @@ import { GlobalStyles } from "../../constants/styles";
 import { logError } from "../../utils/logError";
 import { getStorageErrorMessage } from "../../utils/storageErrorHandler";
 
-interface ImageWithFallbackProps extends Omit<ImageProps, "source"> {
+interface ImageWithFallbackProps extends Omit<ExpoImageProps, "source"> {
   source: ImageSourcePropType;
   fallbackSource?: ImageSourcePropType;
   renderFallback?: () => React.ReactNode;
@@ -81,12 +80,16 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   }, []);
 
   const handleError = useCallback(
-    (error: Error) => {
+    (errorEvent: any) => {
+      // expo-image error event structure may vary, handle both possible formats
+      const actualError =
+        errorEvent?.error || errorEvent || new Error("Image load failed");
+
       // Get a user-friendly error message
-      const message = getStorageErrorMessage(error);
+      const message = getStorageErrorMessage(actualError);
 
       // Log the error for debugging
-      logError(error, `ImageWithFallback.${errorContext}`, {
+      logError(actualError, `ImageWithFallback.${errorContext}`, {
         retryCount,
         errorMessage: message,
         sourceType: typeof source === "number" ? "local" : "uri",
@@ -97,7 +100,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       setIsLoading(false);
 
       if (onLoadError) {
-        onLoadError(error);
+        onLoadError(actualError);
       }
 
       // Auto-retry if under the max retry limit
@@ -109,15 +112,18 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     [retryCount, maxRetries, onLoadError, source, errorContext]
   );
 
-  const handleLoad = useCallback(() => {
-    setHasError(false);
-    setErrorMessage(null);
-    setRetryCount(0); // Reset retry count on successful load
+  const handleLoad = useCallback(
+    (event?: any) => {
+      setHasError(false);
+      setErrorMessage(null);
+      setRetryCount(0); // Reset retry count on successful load
 
-    if (onLoadSuccess) {
-      onLoadSuccess();
-    }
-  }, [onLoadSuccess]);
+      if (onLoadSuccess) {
+        onLoadSuccess();
+      }
+    },
+    [onLoadSuccess]
+  );
 
   const handleRetry = useCallback(() => {
     setHasError(false);
@@ -146,7 +152,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         source={hasError ? actualFallbackSource : source}
         onLoadStart={handleLoadStart}
         onLoadEnd={handleLoadEnd}
-        onError={(e) => handleError(e.nativeEvent.error)}
+        onError={handleError} // expo-image passes error directly
         onLoad={handleLoad}
         style={[styles.image, style]}
         {...props}
