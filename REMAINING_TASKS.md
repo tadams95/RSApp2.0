@@ -150,7 +150,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - [x] Configure query client with optimal caching and retry settings
 - [x] Migrate product fetching to React Query (shop screens)
 - [x] Migrate event fetching to React Query (events screens)
-- [ ] Migrate user profile data fetching to React Query
+- [x] Migrate user profile data fetching to React Query (✅ Completed: Created `useUserProfile` hooks, integrated into account screen with loading/error states)
 - [ ] Add React Query DevTools for development
 
 **Phase 2: Redux Optimization (Parallel)**

@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { doc, getDoc, getFirestore, updateDoc } from "firebase/firestore";
+import { doc, getFirestore, updateDoc } from "firebase/firestore";
 import {
   getDownloadURL,
   getStorage,
@@ -24,6 +24,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { ImageWithFallback } from "../../../components/ui";
 import { useAuth } from "../../../hooks/AuthContext";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
+import { useUserProfileWithHelpers } from "../../../hooks/useUserProfile";
 import { selectUserName, setUserName } from "../../../store/redux/userSlice";
 import { retryWithBackoff } from "../../../utils/cart/networkErrorDetection";
 import { logError } from "../../../utils/logError";
@@ -97,12 +98,30 @@ export default function AccountScreen() {
   const localId = useSelector((state: any) => state.user.localId);
   const userEmail = useSelector((state: any) => state.user.userEmail);
 
-  // Memoize the database instance to prevent infinite re-renders
+  // Memoize the database instance for image upload functionality
   const db = useMemo(() => getFirestore(), []);
+
+  // Use React Query for user profile data
+  const {
+    profile: userProfile,
+    isLoading: isLoadingProfile,
+    error: profileError,
+    refetch: refetchProfile,
+    hasProfile,
+  } = useUserProfileWithHelpers();
+
+  // Update Redux and local state when profile data changes
+  useEffect(() => {
+    if (userProfile) {
+      const name = `${userProfile.firstName} ${userProfile.lastName}`;
+      dispatch(setUserName(name));
+      setProfilePicture(userProfile.profilePicture || null);
+    }
+  }, [userProfile, dispatch]);
 
   // Memoize the current profile object to prevent unnecessary re-renders
   const currentProfile: ProfileData | null = useMemo(() => {
-    return localId
+    return localId && userProfile
       ? {
           localId,
           userEmail,
@@ -110,7 +129,7 @@ export default function AccountScreen() {
           profilePicture: profilePicture || undefined,
         }
       : null;
-  }, [localId, userEmail, userName, profilePicture]);
+  }, [localId, userEmail, userName, profilePicture, userProfile]);
 
   const {
     profile: offlineProfile,
@@ -119,39 +138,9 @@ export default function AccountScreen() {
     updateCachedProfile,
   } = useOfflineProfile(currentProfile);
 
-  const fetchUserData = useCallback(() => {
-    if (!localId) {
-      console.error("User ID not available");
-      return;
-    }
-
-    const userDocRef = doc(db, `customers/${localId}`);
-
-    getDoc(userDocRef)
-      .then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          const name = `${userData.firstName} ${userData.lastName}`;
-          const profilePic = userData.profilePicture;
-
-          dispatch(setUserName(name));
-          setProfilePicture(profilePic);
-        } else {
-          console.error("No user document found");
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching user data:", error);
-      });
-  }, [db, localId, dispatch]);
-
-  useEffect(() => {
-    fetchUserData();
-  }, [fetchUserData]);
-
   const handleProfileUpdated = useCallback(() => {
-    fetchUserData();
-  }, [fetchUserData]);
+    refetchProfile();
+  }, [refetchProfile]);
 
   // Retry the last failed upload
   const retryUpload = useCallback(async () => {
@@ -499,156 +488,177 @@ export default function AccountScreen() {
     >
       <View style={styles.root}>
         <StatusBar style="light" />
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-        >
-          <View style={styles.container}>
-            {/* Profile Picture with Upload State */}
-            <ProfilePictureErrorBoundary
-              onError={(error, errorInfo) => {
-                console.error("Profile Picture Error:", error, errorInfo);
-                // Reset upload state on error
-                setUploadState(UploadState.ERROR);
-                setUploadError(error.message);
-              }}
-              onAuthError={() => {
-                // Handle auth errors by signing out and redirecting to login
-                handleLogout();
-              }}
-            >
-              <TouchableOpacity
-                onPress={
-                  uploadState === UploadState.UPLOADING ? undefined : pickImage
-                }
-                style={styles.profilePictureContainer}
-                accessibilityRole="button"
-                accessibilityLabel="Change profile picture"
-                disabled={uploadState === UploadState.UPLOADING}
-              >
-                <ImageWithFallback
-                  source={imageSource}
-                  fallbackSource={require("../../../assets/user.png")}
-                  style={styles.profilePicture}
-                  resizeMode="cover"
-                  showLoadingIndicator={true}
-                  loadingIndicatorColor="#ff3c00"
-                  loadingIndicatorSize="large"
-                  maxRetries={3}
-                  showRetryButton={imageError !== null}
-                  errorContext="ProfilePicture"
-                  onLoadError={(error) => {
-                    logError(error, "ProfilePicture", { userId: localId });
-                    // Show error alert for serious errors only if not already in error state
-                    if (uploadState !== UploadState.ERROR && imageError) {
-                      Alert.alert(
-                        "Image Load Error",
-                        "Failed to load profile picture. Would you like to retry?",
-                        [
-                          { text: "Cancel", style: "cancel" },
-                          { text: "Retry", onPress: reloadImage },
-                        ]
-                      );
-                    }
-                  }}
-                  onLoadSuccess={() => {
-                    // Clear any upload errors when image loads successfully
-                    if (uploadState === UploadState.ERROR) {
-                      setUploadState(UploadState.IDLE);
-                      setUploadError(null);
-                    }
-                  }}
-                />
-                {renderUploadOverlay()}
-              </TouchableOpacity>
-            </ProfilePictureErrorBoundary>
 
-            {/* Profile Name */}
-            <Text style={styles.nameTag}>{userName}</Text>
-
-            {/* Edit Profile Button */}
-            <TouchableOpacity
-              onPress={handleEditProfile}
-              style={styles.actionButton}
-              accessibilityRole="button"
-              accessibilityLabel="Edit profile"
-            >
-              <Text style={styles.buttonText}>EDIT PROFILE</Text>
-            </TouchableOpacity>
-
-            {/* Tab Container */}
-            <View style={styles.tabContainer}>
-              <TouchableOpacity
-                onPress={showAccountHistory}
-                style={[
-                  styles.tabButton,
-                  showHistoryModal && styles.activeTabButton,
-                ]}
-                accessibilityRole="tab"
-                accessibilityLabel="History"
-                accessibilityState={{ selected: showHistoryModal }}
-              >
-                <Text
-                  style={[
-                    styles.buttonText,
-                    showHistoryModal && styles.activeButtonText,
-                  ]}
-                >
-                  HISTORY
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={eventQRHandler}
-                style={[
-                  styles.tabButton,
-                  showQRModal && styles.activeTabButton,
-                ]}
-                accessibilityRole="tab"
-                accessibilityLabel="QR Code"
-                accessibilityState={{ selected: showQRModal }}
-              >
-                <Text
-                  style={[
-                    styles.buttonText,
-                    showQRModal && styles.activeButtonText,
-                  ]}
-                >
-                  QR
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={showSettingsHandler}
-                style={styles.tabButton}
-                accessibilityRole="button"
-                accessibilityLabel="Settings"
-              >
-                <Text style={styles.buttonText}>SETTINGS</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Modal Container */}
-            <View style={styles.modalContainer}>
-              {showEditProfileModal && (
-                <EditProfileErrorBoundary
-                  onError={(error, errorInfo) => {
-                    console.error("EditProfile Error:", error, errorInfo);
-                    // Optionally close modal on error
-                    setShowEditProfileModal(false);
-                  }}
-                >
-                  <EditProfile
-                    onProfileUpdated={handleProfileUpdated}
-                    onCancel={() => setShowEditProfileModal(false)}
-                  />
-                </EditProfileErrorBoundary>
-              )}
-              {showQRModal && <QRModal />}
-              {showHistoryModal && <HistoryModal />}
-            </View>
+        {/* Show loading indicator while fetching profile data */}
+        {isLoadingProfile ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#ffffff" />
+            <Text style={styles.loadingText}>Loading profile...</Text>
           </View>
-        </ScrollView>
+        ) : profileError ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.errorText}>Failed to load profile</Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => refetchProfile()}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+          >
+            <View style={styles.container}>
+              {/* Profile Picture with Upload State */}
+              <ProfilePictureErrorBoundary
+                onError={(error, errorInfo) => {
+                  console.error("Profile Picture Error:", error, errorInfo);
+                  // Reset upload state on error
+                  setUploadState(UploadState.ERROR);
+                  setUploadError(error.message);
+                }}
+                onAuthError={() => {
+                  // Handle auth errors by signing out and redirecting to login
+                  handleLogout();
+                }}
+              >
+                <TouchableOpacity
+                  onPress={
+                    uploadState === UploadState.UPLOADING
+                      ? undefined
+                      : pickImage
+                  }
+                  style={styles.profilePictureContainer}
+                  accessibilityRole="button"
+                  accessibilityLabel="Change profile picture"
+                  disabled={uploadState === UploadState.UPLOADING}
+                >
+                  <ImageWithFallback
+                    source={imageSource}
+                    fallbackSource={require("../../../assets/user.png")}
+                    style={styles.profilePicture}
+                    resizeMode="cover"
+                    showLoadingIndicator={true}
+                    loadingIndicatorColor="#ff3c00"
+                    loadingIndicatorSize="large"
+                    maxRetries={3}
+                    showRetryButton={imageError !== null}
+                    errorContext="ProfilePicture"
+                    onLoadError={(error) => {
+                      logError(error, "ProfilePicture", { userId: localId });
+                      // Show error alert for serious errors only if not already in error state
+                      if (uploadState !== UploadState.ERROR && imageError) {
+                        Alert.alert(
+                          "Image Load Error",
+                          "Failed to load profile picture. Would you like to retry?",
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            { text: "Retry", onPress: reloadImage },
+                          ]
+                        );
+                      }
+                    }}
+                    onLoadSuccess={() => {
+                      // Clear any upload errors when image loads successfully
+                      if (uploadState === UploadState.ERROR) {
+                        setUploadState(UploadState.IDLE);
+                        setUploadError(null);
+                      }
+                    }}
+                  />
+                  {renderUploadOverlay()}
+                </TouchableOpacity>
+              </ProfilePictureErrorBoundary>
+
+              {/* Profile Name */}
+              <Text style={styles.nameTag}>{userName}</Text>
+
+              {/* Edit Profile Button */}
+              <TouchableOpacity
+                onPress={handleEditProfile}
+                style={styles.actionButton}
+                accessibilityRole="button"
+                accessibilityLabel="Edit profile"
+              >
+                <Text style={styles.buttonText}>EDIT PROFILE</Text>
+              </TouchableOpacity>
+
+              {/* Tab Container */}
+              <View style={styles.tabContainer}>
+                <TouchableOpacity
+                  onPress={showAccountHistory}
+                  style={[
+                    styles.tabButton,
+                    showHistoryModal && styles.activeTabButton,
+                  ]}
+                  accessibilityRole="tab"
+                  accessibilityLabel="History"
+                  accessibilityState={{ selected: showHistoryModal }}
+                >
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      showHistoryModal && styles.activeButtonText,
+                    ]}
+                  >
+                    HISTORY
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={eventQRHandler}
+                  style={[
+                    styles.tabButton,
+                    showQRModal && styles.activeTabButton,
+                  ]}
+                  accessibilityRole="tab"
+                  accessibilityLabel="QR Code"
+                  accessibilityState={{ selected: showQRModal }}
+                >
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      showQRModal && styles.activeButtonText,
+                    ]}
+                  >
+                    QR
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={showSettingsHandler}
+                  style={styles.tabButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Settings"
+                >
+                  <Text style={styles.buttonText}>SETTINGS</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Modal Container */}
+              <View style={styles.modalContainer}>
+                {showEditProfileModal && (
+                  <EditProfileErrorBoundary
+                    onError={(error, errorInfo) => {
+                      console.error("EditProfile Error:", error, errorInfo);
+                      // Optionally close modal on error
+                      setShowEditProfileModal(false);
+                    }}
+                  >
+                    <EditProfile
+                      onProfileUpdated={handleProfileUpdated}
+                      onCancel={() => setShowEditProfileModal(false)}
+                    />
+                  </EditProfileErrorBoundary>
+                )}
+                {showQRModal && <QRModal />}
+                {showHistoryModal && <HistoryModal />}
+              </View>
+            </View>
+          </ScrollView>
+        )}
 
         {showSettingsModal && (
           <SettingsErrorBoundary
@@ -700,6 +710,26 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#000",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 16,
+    marginTop: 16,
+    fontFamily,
+  },
+  errorText: {
+    color: "#ff6b6b",
+    fontSize: 16,
+    marginTop: 16,
+    marginBottom: 16,
+    textAlign: "center",
+    fontFamily,
   },
   modalContainer: {
     width: "100%",
