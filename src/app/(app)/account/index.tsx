@@ -33,6 +33,12 @@ import {
 } from "../../../utils/storageErrorHandler";
 // Import offline profile management
 import { ProfileData, useOfflineProfile } from "../../../utils/offlineProfile";
+// Import image compression utility
+import {
+  compressImage,
+  COMPRESSION_PRESETS,
+  CompressionResult,
+} from "../../../utils/imageCompression";
 // Import the newly migrated modals from the barrel file
 import {
   EditProfile,
@@ -79,6 +85,8 @@ export default function AccountScreen() {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [lastUploadUri, setLastUploadUri] = useState<string | null>(null);
+  const [compressionResult, setCompressionResult] =
+    useState<CompressionResult | null>(null);
   const userName = useSelector(selectUserName);
   const { signOut } = useAuth();
   const router = useRouter();
@@ -153,8 +161,9 @@ export default function AccountScreen() {
     }
 
     try {
-      // Clear previous error
+      // Clear previous error and compression result
       setUploadError(null);
+      setCompressionResult(null);
       // Start new upload with the last selected image
       await handleImageUpload(lastUploadUri);
     } catch (error) {
@@ -164,7 +173,7 @@ export default function AccountScreen() {
     }
   }, [lastUploadUri]);
 
-  // Handle the image upload process with retry logic
+  // Handle the image upload process with compression and retry logic
   const handleImageUpload = async (imageUri: string): Promise<void> => {
     if (!localId) {
       const error = "User ID not available for uploading profile picture";
@@ -187,16 +196,42 @@ export default function AccountScreen() {
       setUploadState(UploadState.UPLOADING);
       setUploadProgress(0);
 
-      // Convert imageUri to blob
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
+      // Step 1: Compress the image (10% progress)
+      setUploadProgress(10);
+      const compressed = await compressImage(
+        imageUri,
+        COMPRESSION_PRESETS.PROFILE
+      );
+      setCompressionResult(compressed);
 
-      // Check file size - limit to 5MB
-      if (blob.size > 5 * 1024 * 1024) {
-        throw new Error("File size exceeds 5MB limit");
+      if (__DEV__ && compressed.compressionRatio) {
+        console.log(
+          `Profile picture compressed: ${(
+            compressed.compressionRatio * 100
+          ).toFixed(1)}% size reduction`
+        );
       }
 
-      // Upload the image to Firebase Storage with retry logic and permission error handling
+      setUploadProgress(25); // Compression complete
+
+      // Step 2: Convert compressed image to blob
+      const response = await fetch(compressed.uri);
+      const blob = await response.blob();
+
+      // Check compressed file size - should be much smaller now, but still validate
+      if (blob.size > 5 * 1024 * 1024) {
+        // This should be rare after compression, but handle it gracefully
+        throw new Error(
+          `Compressed image still exceeds 5MB limit (${(
+            blob.size /
+            (1024 * 1024)
+          ).toFixed(1)}MB)`
+        );
+      }
+
+      setUploadProgress(35); // Blob conversion complete
+
+      // Step 3: Upload the compressed image to Firebase Storage with retry logic
       await retryWithBackoff(async () => {
         try {
           await uploadBytes(profilePictureRef, blob);
@@ -231,6 +266,7 @@ export default function AccountScreen() {
               userId: localId,
               errorType: "storage/unauthorized",
               action: "uploadBytes",
+              compressionInfo: compressed,
             });
             return;
           }
@@ -282,6 +318,7 @@ export default function AccountScreen() {
               userId: localId,
               errorType: "firestore/permission-denied",
               action: "updateDoc",
+              compressionInfo: compressed,
             });
             return;
           }
@@ -303,7 +340,10 @@ export default function AccountScreen() {
       }, 2000);
     } catch (error: any) {
       // Log error for analysis
-      logError(error, "ProfilePictureUpload", { userId: localId });
+      logError(error, "ProfilePictureUpload", {
+        userId: localId,
+        compressionInfo: compressionResult,
+      });
 
       // Set user-friendly error message
       setUploadError(getStorageErrorMessage(error));
@@ -316,16 +356,17 @@ export default function AccountScreen() {
 
   const pickImage = useCallback(async () => {
     try {
-      // Reset upload state
+      // Reset upload state and compression result
       setUploadState(UploadState.IDLE);
       setUploadError(null);
+      setCompressionResult(null);
 
       // Request permission if needed (this is handled by the library in newer versions)
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 1,
+        quality: 1, // We'll handle compression ourselves
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -334,7 +375,7 @@ export default function AccountScreen() {
         // Store the URI for potential retry
         setLastUploadUri(imageUri);
 
-        // Start upload process
+        // Start upload process with compression
         await handleImageUpload(imageUri);
       }
     } catch (error) {
@@ -401,8 +442,18 @@ export default function AccountScreen() {
           <>
             <ActivityIndicator size="large" color="#ffffff" />
             <Text style={styles.uploadStatusText}>
-              Uploading... {uploadProgress.toFixed(0)}%
+              {uploadProgress <= 25 ? "Compressing..." : "Uploading..."}{" "}
+              {uploadProgress.toFixed(0)}%
             </Text>
+            {compressionResult && uploadProgress > 25 && (
+              <Text style={styles.uploadSubtext}>
+                {compressionResult.compressionRatio
+                  ? `${(compressionResult.compressionRatio * 100).toFixed(
+                      0
+                    )}% smaller`
+                  : "Optimized for faster upload"}
+              </Text>
+            )}
           </>
         )}
 
@@ -412,6 +463,12 @@ export default function AccountScreen() {
               <Text style={styles.uploadSuccessIconText}>✓</Text>
             </View>
             <Text style={styles.uploadStatusText}>Upload Complete</Text>
+            {compressionResult && compressionResult.compressionRatio && (
+              <Text style={styles.uploadSubtext}>
+                Reduced size by{" "}
+                {(compressionResult.compressionRatio * 100).toFixed(0)}%
+              </Text>
+            )}
           </>
         )}
 
@@ -689,6 +746,15 @@ const styles = StyleSheet.create({
     fontFamily,
     textAlign: "center",
     paddingHorizontal: 10,
+  },
+  uploadSubtext: {
+    color: "rgba(255, 255, 255, 0.8)",
+    marginTop: 5,
+    fontSize: 12,
+    fontFamily,
+    textAlign: "center",
+    paddingHorizontal: 10,
+    fontStyle: "italic",
   },
   uploadSuccessIcon: {
     width: 50,

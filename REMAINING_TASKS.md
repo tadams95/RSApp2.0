@@ -107,7 +107,24 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - [x] Replace Image components with expo-image (ImageWithFallback, LazyImage, and all static images migrated)
 - [x] Add proper image caching strategy (comprehensive caching system implemented with expo-image)
 - [x] Implement progressive image loading (ProgressiveImage component created and applied strategically to event hero images where blur placeholders make sense)
-- [ ] Add image compression for uploads
+- [x] Add image compression for uploads (comprehensive compression system implemented with expo-image-manipulator)
+
+**Image Compression Implementation Details:**
+
+- Created `imageCompression.ts` utility with configurable compression presets (PROFILE, EVENT, PRODUCT, THUMBNAIL)
+- Intelligent compression with automatic dimension calculation and quality optimization
+- Profile pictures: 512x512 max, 80% quality, ~50-70% file size reduction
+- Event images: 1024x1024 max, 85% quality for high-quality display
+- Product images: 800x800 max, 80% quality for e-commerce balance
+- Automatic EXIF orientation correction to fix camera rotation issues
+- Graceful fallback - if compression fails, original image is used (no upload blocking)
+- Real-time compression progress and file size reduction feedback in UI
+- Created reusable `CompressedImageUploader` component for future use
+- Created `useImageCompression` hook for advanced compression workflows
+- Integrated into profile picture upload flow with 3-step process:
+  1. Image compression (10-25% progress)
+  2. Upload to Firebase Storage (25-75% progress)
+  3. Update user profile in Firestore (75-100% progress)
 
 **Progressive Loading Implementation Details:**
 
