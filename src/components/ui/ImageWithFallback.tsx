@@ -11,6 +11,9 @@ import {
 import { GlobalStyles } from "../../constants/styles";
 import { logError } from "../../utils/logError";
 import { getStorageErrorMessage } from "../../utils/storageErrorHandler";
+import { CACHE_POLICIES, ImageCacheOptions, generateCacheKey } from "../../utils/imageCacheConfig";
+
+type ImageCacheType = "STATIC" | "PRODUCT" | "EVENT" | "PROFILE" | "LAZY_LIST" | "TEMPORARY";
 
 interface ImageWithFallbackProps extends Omit<ExpoImageProps, "source"> {
   source: ImageSourcePropType;
@@ -40,11 +43,24 @@ interface ImageWithFallbackProps extends Omit<ExpoImageProps, "source"> {
    * Context information for error logging
    */
   errorContext?: string;
+  /**
+   * Cache type for optimized caching strategy
+   * @default "PRODUCT"
+   */
+  cacheType?: ImageCacheType;
+  /**
+   * Unique identifier for cache key generation
+   */
+  cacheId?: string;
+  /**
+   * Version for cache invalidation
+   */
+  cacheVersion?: string | number;
 }
 
 /**
  * A component that renders an image with fallback and loading states
- * Enhanced with Firebase Storage support, retry capabilities, and error handling
+ * Enhanced with Firebase Storage support, retry capabilities, and optimized caching
  */
 const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   source,
@@ -60,6 +76,9 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   showRetryButton = false,
   showErrorMessage = false,
   errorContext = "ImageComponent",
+  cacheType = "PRODUCT",
+  cacheId,
+  cacheVersion,
   ...props
 }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -140,10 +159,31 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     setErrorMessage(null);
   }, [source]);
 
+  // Generate cache configuration based on type
+  const getCacheConfig = useCallback((): ImageCacheOptions => {
+    const baseConfig = CACHE_POLICIES[cacheType];
+    
+    // Generate recycling key for dynamic content
+    let recyclingKey: string | undefined;
+    if ('recyclingKey' in baseConfig) {
+      recyclingKey = baseConfig.recyclingKey;
+      if (cacheId) {
+        recyclingKey = generateCacheKey(cacheType.toLowerCase(), cacheId, cacheVersion);
+      }
+    }
+    
+    return {
+      ...baseConfig,
+      recyclingKey,
+    };
+  }, [cacheType, cacheId, cacheVersion]);
+
   // Handle custom fallback rendering
   if (hasError && renderFallback) {
     return <>{renderFallback()}</>;
   }
+
+  const cacheConfig = getCacheConfig();
 
   return (
     <View style={[styles.container, style]}>
@@ -155,6 +195,10 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         onError={handleError} // expo-image passes error directly
         onLoad={handleLoad}
         style={[styles.image, style]}
+        cachePolicy={cacheConfig.cachePolicy}
+        priority={cacheConfig.priority}
+        transition={cacheConfig.transition}
+        recyclingKey={cacheConfig.recyclingKey}
         {...props}
       />
 

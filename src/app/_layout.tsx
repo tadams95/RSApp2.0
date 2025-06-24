@@ -3,13 +3,15 @@ import { Slot, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as Updates from "expo-updates";
 import React, { useEffect, useState } from "react";
-import { Alert, AppState, StyleSheet, View } from "react-native";
+import { Alert, AppState, StyleSheet, View, AppStateStatus } from "react-native";
 import { PaperProvider } from "react-native-paper";
 import { Provider } from "react-redux";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { AuthProvider } from "../hooks/AuthContext";
 import { store } from "../store/redux/store";
 import { initializeOfflineCartSync } from "../utils/offlineCartSync";
+import { initializeImageCache, handleMemoryPressure } from "../utils/imageCacheConfig";
+import { imagePreloader } from "../utils/imagePreloader";
 
 // Prevent auto-hide of splash screen
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -24,6 +26,41 @@ export function Root() {
 
 export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
+
+  // Initialize image cache and preload critical images
+  useEffect(() => {
+    const initializeImageSystem = async () => {
+      try {
+        // Initialize image cache configuration
+        initializeImageCache();
+        
+        // Preload critical images for better UX
+        await imagePreloader.preloadCriticalImages();
+        
+        if (__DEV__) {
+          const status = imagePreloader.getPreloadStatus();
+          console.log(`Image preloading complete: ${status.loaded}/${status.total} images cached`);
+        }
+      } catch (error) {
+        console.error("Failed to initialize image system:", error);
+      }
+    };
+
+    initializeImageSystem();
+  }, []);
+
+  // Handle memory pressure events
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'background') {
+        // Clear memory cache when app goes to background to free up memory
+        handleMemoryPressure();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     // Hide custom splash screen after a timeout
