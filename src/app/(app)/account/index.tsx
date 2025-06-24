@@ -25,7 +25,12 @@ import { ImageWithFallback } from "../../../components/ui";
 import { useAuth } from "../../../hooks/AuthContext";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
 import { useUserProfileWithHelpers } from "../../../hooks/useUserProfile";
-import { selectUserName, setUserName } from "../../../store/redux/userSlice";
+import {
+  selectLocalId,
+  selectUserEmail,
+  selectUserName,
+  setUserName,
+} from "../../../store/redux/userSlice";
 import { retryWithBackoff } from "../../../utils/cart/networkErrorDetection";
 import { logError } from "../../../utils/logError";
 import {
@@ -94,9 +99,9 @@ export default function AccountScreen() {
 
   const dispatch = useDispatch();
 
-  // Access the localId from the Redux store
-  const localId = useSelector((state: any) => state.user.localId);
-  const userEmail = useSelector((state: any) => state.user.userEmail);
+  // Access user data from Redux store using typed selectors
+  const localId = useSelector(selectLocalId);
+  const userEmail = useSelector(selectUserEmail);
 
   // Memoize the database instance for image upload functionality
   const db = useMemo(() => getFirestore(), []);
@@ -124,7 +129,7 @@ export default function AccountScreen() {
     return localId && userProfile
       ? {
           localId,
-          userEmail,
+          userEmail: userEmail || undefined,
           userName: (userName as string) || undefined,
           profilePicture: profilePicture || undefined,
         }

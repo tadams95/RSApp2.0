@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "./store";
 
 interface UserState {
@@ -58,5 +58,20 @@ export const selectStripeCustomerId = (state: RootState): string | null =>
   state.user.stripeCustomerId;
 export const selectExpoPushToken = (state: RootState): string | null =>
   state.user.expoPushToken;
+
+// Memoized selectors for performance optimization
+export const selectIsAuthenticated = createSelector(
+  [selectLocalId],
+  (localId) => localId !== null
+);
+
+export const selectUserDisplayInfo = createSelector(
+  [selectUserName, selectUserEmail],
+  (userName, userEmail) => ({
+    displayName: userName || userEmail || "User",
+    userName,
+    userEmail,
+  })
+);
 
 export default userSlice.reducer;

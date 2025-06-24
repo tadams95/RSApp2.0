@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "./store"; // Assuming the store is in the same directory
 
 // Import shared types
@@ -104,5 +104,23 @@ export const selectCartItems = (state: RootState): CartItem[] =>
   state.cart.items;
 export const selectCheckoutPrice = (state: RootState): number =>
   state.cart.checkoutPrice;
+
+// Memoized selectors for performance optimization
+export const selectCartItemCount = createSelector(
+  [selectCartItems],
+  (items) => items.length
+);
+
+export const selectCartIsEmpty = createSelector(
+  [selectCartItems],
+  (items) => items.length === 0
+);
+
+export const selectCartSubtotal = createSelector([selectCartItems], (items) =>
+  items.reduce(
+    (total, item) => total + item.price.amount * item.selectedQuantity,
+    0
+  )
+);
 
 export default cartSlice.reducer;

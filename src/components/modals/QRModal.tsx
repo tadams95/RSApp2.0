@@ -2,16 +2,10 @@ import React from "react";
 import { Dimensions, Platform, StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { useSelector } from "react-redux";
+import { selectLocalId } from "../../store/redux/userSlice";
 
 // Import the migrated TypeScript version of MyEvents
 import MyEvents from "./MyEvents";
-
-// Define types for our Redux state
-interface RootState {
-  user: {
-    localId: string;
-  };
-}
 
 // Define props interface (empty for now, but good practice for future additions)
 interface QRModalProps {}
@@ -21,8 +15,8 @@ const QRModal: React.FC<QRModalProps> = () => {
   // Update the path to match the new directory structure
   const logo = require("../../assets/RSLogo2025.png");
 
-  // Access the localId from the Redux store with proper typing
-  const localId = useSelector((state: RootState) => state.user.localId);
+  // Access the localId from the Redux store using typed selector
+  const localId = useSelector(selectLocalId);
 
   // Type the dimensions
   const size: number = Dimensions.get("window").width * 0.45;
@@ -37,7 +31,7 @@ const QRModal: React.FC<QRModalProps> = () => {
         Show code to enter RAGESTATE events
       </Text>
       <View style={styles.QRBackground} accessibilityLabel="QR Code display">
-        <QRCode value={localId} size={size} logo={logo} logoSize={30} />
+        <QRCode value={localId || ""} size={size} logo={logo} logoSize={30} />
       </View>
       <MyEvents />
     </View>
