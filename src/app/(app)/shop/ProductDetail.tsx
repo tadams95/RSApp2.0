@@ -193,10 +193,11 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
         <View style={styles.swiperContainer}>
           <AppCarousel
             data={product.images}
-            height={windowWidth * 1.2}
+            height={windowWidth * 1.1}
             currentIndex={activeIndex}
             onSnapToItem={(index) => setActiveIndex(index)}
             showsPagination={true}
+            paginationStyle={styles.pagination}
             renderItem={({ item, index }) => (
               <ImageWithFallback
                 source={{ uri: item.url }}
@@ -511,11 +512,11 @@ const fontFamily = Platform.select({
 
 // Styles adapted from ProductDetailScreen.js - review and adjust as needed for dark theme and consistency
 const styles = StyleSheet.create({
-  rootContainer: { 
-    flex: 1, 
+  rootContainer: {
+    flex: 1,
     backgroundColor: "black",
     paddingTop: 0, // Ensure no top padding
-    marginTop: 0,  // Ensure no top margin
+    marginTop: 0, // Ensure no top margin
   },
   header: {
     position: "absolute",
@@ -551,7 +552,7 @@ const styles = StyleSheet.create({
   imageCounterText: {
     color: "white",
     fontFamily,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "600",
     backgroundColor: "rgba(0,0,0,0.5)",
     paddingVertical: 6,
@@ -562,12 +563,13 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1, backgroundColor: "black" },
   scrollViewContent: { paddingBottom: 40 }, // Ensure space for content below fold
   swiperContainer: {
-    height: windowWidth * 1.2, // Match guest version height
+    height: windowWidth * 1.1, // Match guest version height exactly
     position: "relative",
     backgroundColor: "#111",
-    top: 0, // Ensure it starts from the very top
-    marginTop: 0, // No top margin
   }, // Darker placeholder
+  pagination: {
+    bottom: 20,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -617,10 +619,10 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 20,
     fontWeight: "600",
-    color: GlobalStyles.colors.red7 || "#00C5EA",
+    color: GlobalStyles.colors.red7 || "#ff3c00",
     flex: 1,
     textAlign: "right",
-  }, // Use theme color
+  }, // Use red color to match guest version
   sectionContainer: {
     marginBottom: 20,
     borderTopWidth: 1,
@@ -656,18 +658,18 @@ const styles = StyleSheet.create({
   },
   optionText: { fontFamily, fontSize: 15, color: "white", marginRight: 8 },
   actionButton: {
-    backgroundColor: GlobalStyles.colors.red7 || "#00C5EA",
+    backgroundColor: GlobalStyles.colors.red7 || "#ff3c00",
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 20,
   },
   actionButtonText: {
     fontFamily,
     fontSize: 16,
     fontWeight: "bold",
-    color: "black",
-  }, // Text color for primary button
+    color: "white",
+  }, // White text to match guest version
   // Modal Styles (keep them consistent)
   modalOverlay: {
     flex: 1,
@@ -729,7 +731,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   confirmationButton: {
-    backgroundColor: GlobalStyles.colors.red7 || "#00C5EA",
+    backgroundColor: GlobalStyles.colors.red7 || "#ff3c00",
     paddingVertical: 10,
     paddingHorizontal: 30,
     borderRadius: 5,
@@ -738,6 +740,6 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 16,
     fontWeight: "bold",
-    color: "black",
+    color: "white",
   },
 });

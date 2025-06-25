@@ -1,11 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
-import { Platform } from "react-native";
 import ErrorBoundary from "../../components/ErrorBoundary";
-import {
-  NetworkStatusBanner,
-  useNetworkStatusBanner,
-} from "../../components/ui";
 import { useAuth } from "../../hooks/AuthContext";
 
 // Named export for app component registration
@@ -13,15 +8,8 @@ export function app() {
   return null;
 }
 
-const fontFamily = Platform.select({
-  ios: "Helvetica Neue",
-  android: "Roboto",
-  default: "system",
-});
-
 export default function AppLayout() {
   const { authenticated, isLoading } = useAuth();
-  const { visible, syncStatus } = useNetworkStatusBanner();
 
   // If not authenticated, redirect to auth flow
   if (!authenticated && !isLoading) {
@@ -30,11 +18,6 @@ export default function AppLayout() {
 
   return (
     <ErrorBoundary>
-      <NetworkStatusBanner
-        visible={visible}
-        syncStatus={syncStatus}
-        showConnectionQuality={true}
-      />
       <Tabs
         screenOptions={{
           tabBarStyle: {
