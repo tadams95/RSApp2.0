@@ -1,3 +1,7 @@
+import { Dimensions } from "react-native";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
 export const GlobalStyles = {
   colors: {
     red0: "#FFEEEE",
@@ -51,5 +55,83 @@ export const GlobalStyles = {
     warmGrey7: "#504A40",
     warmGrey8: "#423D33",
     warmGrey9: "#27241D",
+    // App-specific brand colors
+    primary: "#ff3c00",
+    background: "#000",
+    surface: "#222",
+    text: "#fff",
+    textSecondary: "#999",
+    border: "#555",
+    error: "#ef4444",
+  },
+
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    xxl: 24,
+    xxxl: 32,
+    // Standardized values from app analysis
+    flashListPadding: 10,
+    buttonPadding: 14,
+    modalPadding: 20,
+    screenPadding: 15,
+    tabButtonMargin: 12,
+    contentPadding: 10,
+  },
+
+  typography: {
+    fontFamily: "Arial", // Default font family
+    sizes: {
+      xs: 12,
+      sm: 14,
+      md: 16,
+      lg: 18,
+      xl: 20,
+      xxl: 24,
+      xxxl: 32,
+    },
+    weights: {
+      normal: "400",
+      medium: "500",
+      semibold: "600",
+      bold: "700",
+    },
+  },
+
+  layout: {
+    screenWidth,
+    screenHeight,
+    buttonHeight: 45,
+    touchTarget: 44,
+    borderRadius: 8,
+    // Platform-specific spacing adjustments
+    eventContentBottom: {
+      ios: 165,
+      android: 95,
+    },
+  },
+
+  shadows: {
+    sm: {
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.18,
+      shadowRadius: 1.0,
+      elevation: 1,
+    },
+    md: {
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1.41,
+      elevation: 2,
+    },
+    lg: {
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
   },
 };

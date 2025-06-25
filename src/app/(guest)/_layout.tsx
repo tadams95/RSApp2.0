@@ -19,7 +19,7 @@ export default function GuestLayout() {
           headerStyle: {
             backgroundColor: "black", // Set background color of the header
           },
-          headerTintColor: "white", // Changed to white to match the dark theme
+          headerTintColor: "black", // Changed to black to match the dark theme
           tabBarActiveTintColor: "white",
           tabBarInactiveTintColor: "gray",
           tabBarShowLabel: false,

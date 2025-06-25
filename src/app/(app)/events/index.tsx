@@ -445,7 +445,7 @@ const styles = StyleSheet.create<Styles>({
   },
   eventContent: {
     position: "absolute",
-    bottom: Platform.OS === "ios" ? 150 : 80,
+    bottom: Platform.OS === "ios" ? 165 : 95, // Standardized to match guest layout for optimal screen utilization
     left: 0,
     right: 0,
     padding: 20,

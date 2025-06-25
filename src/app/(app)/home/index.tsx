@@ -44,8 +44,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    paddingTop: 40,
-    paddingBottom: 20,
+    paddingTop: 20, // Reduced from 40px for more compact layout
+    paddingBottom: 15, // Reduced from 20px for better spacing
   },
   logo: {
     width: 80,
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   },
   welcomeSection: {
     paddingHorizontal: 20,
-    paddingVertical: 30,
+    paddingVertical: 15, // Reduced from 30px for more content-focused layout
     alignItems: "center",
   },
   welcomeText: {

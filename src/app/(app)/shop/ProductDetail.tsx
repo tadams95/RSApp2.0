@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react"; // Ensured useMemo is imported
 import {
   ActivityIndicator,
@@ -193,7 +193,7 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
         <View style={styles.swiperContainer}>
           <AppCarousel
             data={product.images}
-            height={windowWidth * 1.1}
+            height={windowWidth * 1.2}
             currentIndex={activeIndex}
             onSnapToItem={(index) => setActiveIndex(index)}
             showsPagination={true}
@@ -287,6 +287,13 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
     >
       <View style={styles.rootContainer}>
         <StatusBar barStyle="light-content" />
+
+        <Stack.Screen
+          options={{
+            headerShown: false,
+          }}
+        />
+
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
             <Ionicons name="arrow-back" size={22} color="white" />
@@ -504,7 +511,12 @@ const fontFamily = Platform.select({
 
 // Styles adapted from ProductDetailScreen.js - review and adjust as needed for dark theme and consistency
 const styles = StyleSheet.create({
-  rootContainer: { flex: 1, backgroundColor: "black" },
+  rootContainer: { 
+    flex: 1, 
+    backgroundColor: "black",
+    paddingTop: 0, // Ensure no top padding
+    marginTop: 0,  // Ensure no top margin
+  },
   header: {
     position: "absolute",
     top: Platform.OS === "ios" ? 50 : 20, // Adjust for status bar
@@ -550,9 +562,11 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1, backgroundColor: "black" },
   scrollViewContent: { paddingBottom: 40 }, // Ensure space for content below fold
   swiperContainer: {
-    height: windowWidth * 1.1,
+    height: windowWidth * 1.2, // Match guest version height
     position: "relative",
     backgroundColor: "#111",
+    top: 0, // Ensure it starts from the very top
+    marginTop: 0, // No top margin
   }, // Darker placeholder
   loadingContainer: {
     flex: 1,

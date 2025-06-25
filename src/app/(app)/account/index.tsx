@@ -708,8 +708,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    paddingVertical: 10, // Reduced from 20px to maximize content area
+    paddingHorizontal: 15, // Reduced from 20px to be more efficient
   },
   container: {
     flex: 1,

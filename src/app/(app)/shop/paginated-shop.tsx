@@ -283,8 +283,7 @@ const styles = StyleSheet.create({
     backgroundColor: "black",
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    padding: 10,
   },
   emptyListContent: {
     flexGrow: 1,
