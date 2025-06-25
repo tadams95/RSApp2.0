@@ -66,6 +66,10 @@ interface ImageWithFallbackProps extends Omit<ExpoImageProps, "source"> {
    * Version for cache invalidation
    */
   cacheVersion?: string | number;
+  /**
+   * Test ID for testing purposes
+   */
+  testID?: string;
 }
 
 /**
@@ -89,6 +93,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   cacheType = "PRODUCT",
   cacheId,
   cacheVersion,
+  testID,
   ...props
 }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -200,7 +205,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   const cacheConfig = getCacheConfig();
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, style]} testID={testID}>
       <Image
         key={`image-${retryCount}`} // Force re-mount on retry
         source={hasError ? actualFallbackSource : source}

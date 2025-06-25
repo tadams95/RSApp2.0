@@ -7,6 +7,7 @@ interface ContentContainerProps {
   padding?: keyof typeof GlobalStyles.spacing | number;
   style?: ViewStyle;
   centered?: boolean;
+  testID?: string;
 }
 
 /**
@@ -18,12 +19,14 @@ export const ContentContainer: React.FC<ContentContainerProps> = ({
   padding = "contentPadding",
   style,
   centered = false,
+  testID,
 }) => {
   const paddingValue =
     typeof padding === "string" ? GlobalStyles.spacing[padding] : padding;
 
   return (
     <View
+      testID={testID}
       style={[{ padding: paddingValue }, centered && styles.centered, style]}
     >
       {children}

@@ -305,7 +305,80 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
 **Next Steps**:
 
-- [ ] Add component tests for critical UI components
+- [ ] **Add component tests for critical UI components**
+
+  **Phase 1: Core UI Components (High Priority)** ✅ **COMPLETED**
+
+  - [x] `ScreenWrapper.tsx` - Layout foundation component with padding/styling options
+  - [x] `ContentContainer.tsx` - Content wrapper with design system integration
+  - [x] `ImageWithFallback.tsx` - Image component with error handling and fallback
+  - [x] `LoadingOverlay.tsx` - Global loading state component
+  - [x] `ErrorBoundary.tsx` - Top-level error boundary component
+  - [x] `ErrorUI.tsx` - Error display component with retry functionality
+
+  **Phase 1 Test Coverage**: 6/7 components tested (85.7% coverage)
+
+  **Phase 2: Authentication Components (High Priority)**
+
+  - [ ] `PasswordStrengthMeter.tsx` - Password validation visual component
+  - [ ] `ProfileFormInput.tsx` - Form input component with validation
+  - [ ] `LoginErrorNotice.tsx` - Login-specific error messaging
+  - [ ] `SignupErrorNotice.tsx` - Signup-specific error messaging
+  - [ ] `PasswordResetErrorNotice.tsx` - Password reset error messaging
+  - [ ] `ProfileUpdateErrorNotice.tsx` - Profile update error messaging
+
+  **Phase 3: Modal Components (Medium Priority)**
+
+  - [ ] `EditProfile.tsx` - Profile editing modal with form validation
+  - [ ] `SettingsModal.tsx` - App settings and account management modal
+  - [ ] `QRModal.tsx` - QR code display/scanning modal
+  - [ ] `HistoryModal.tsx` - User activity history modal
+  - [ ] `AdminModal.tsx` - Administrative functions modal
+  - [ ] `MyEvents.tsx` - User's events management modal
+
+  **Phase 4: E-commerce Components (High Priority)**
+
+  - [ ] `CartOperationErrorBoundary.tsx` - Cart operations error handling
+  - [ ] `CheckoutPaymentErrorBoundary.tsx` - Payment flow error handling
+  - [ ] `ProductFetchErrorBoundary.tsx` - Product loading error handling
+  - [ ] `ShopifyErrorBoundary.tsx` - General Shopify service error handling
+
+  **Phase 5: Account Management Components (Medium Priority)**
+
+  - [ ] `AccountErrorBoundary.tsx` - Account screen error handling
+  - [ ] `EditProfileErrorBoundary.tsx` - Profile editing error handling
+  - [ ] `ProfilePictureErrorBoundary.tsx` - Profile picture upload error handling
+  - [ ] `ProfileSyncErrorBoundary.tsx` - Profile synchronization error handling
+  - [ ] `SettingsErrorBoundary.tsx` - Settings operations error handling
+  - [ ] `UserDataErrorBoundary.tsx` - User data fetching error handling
+
+  **Phase 6: Advanced UI Components (Medium Priority)**
+
+  - [ ] `AppCarousel.tsx` - Image/content carousel component
+  - [ ] `CompressedImageUploader.tsx` - Image upload with compression
+  - [ ] `ProgressiveImage.tsx` - Progressive image loading component
+  - [ ] `LazyImage.tsx` - Lazy-loaded image component
+  - [ ] `PaginatedList.tsx` - Paginated list component
+  - [ ] `RealtimeDatabaseConnectionStatus.tsx` - Database connection indicator
+
+  **Phase 7: Event Components (Low Priority)**
+
+  - [ ] `EventNotFound.tsx` - Event not found error component
+  - [ ] `EventAdminView.tsx` - Event administration interface
+
+  **Phase 8: Debug Components (Low Priority)**
+
+  - [ ] `ProfileSyncDemo.tsx` - Profile sync demonstration component
+
+  **Testing Strategy Notes**:
+
+  - **Error Boundaries**: Test error catching, fallback UI rendering, and recovery mechanisms
+  - **Form Components**: Test validation, user input handling, and error states
+  - **Modal Components**: Test opening/closing, form submission, and data persistence
+  - **Image Components**: Test loading states, error handling, and fallback behavior
+  - **Network Components**: Test online/offline states and connectivity indicators
+  - **Layout Components**: Test responsive behavior and styling consistency
+
 - [ ] Add integration tests for auth flow
 
 ### 6.2 E2E Testing (OPTIONAL)

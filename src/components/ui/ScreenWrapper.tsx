@@ -7,6 +7,7 @@ interface ScreenWrapperProps {
   backgroundColor?: string;
   padding?: boolean;
   style?: ViewStyle;
+  testID?: string;
 }
 
 /**
@@ -18,9 +19,11 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
   backgroundColor = GlobalStyles.colors.background,
   padding = true,
   style,
+  testID,
 }) => {
   return (
     <View
+      testID={testID}
       style={[
         styles.container,
         { backgroundColor },
