@@ -7,6 +7,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "update-deps": "npx expo install --check && npx expo install",
     "doctor": "npx expo-doctor"
   },
@@ -55,8 +58,13 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@tanstack/react-query-devtools": "^5.81.2",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.2.0",
+    "@types/jest": "^30.0.0",
     "@types/shopify-buy": "^3.0.0",
     "babel-plugin-module-resolver": "^5.0.2",
+    "jest-expo": "^53.0.7",
+    "react-test-renderer": "^19.0.0",
     "typescript": "~5.8.3"
   },
   "private": true

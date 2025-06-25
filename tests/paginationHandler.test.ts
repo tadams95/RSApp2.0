@@ -12,8 +12,6 @@ import {
 
 // Mock Firestore
 jest.mock("firebase/firestore", () => {
-  const originalModule = jest.requireActual("firebase/firestore");
-
   // Mock documents for testing
   const mockDocs = Array(20)
     .fill(null)
@@ -31,15 +29,15 @@ jest.mock("firebase/firestore", () => {
     }));
 
   return {
-    ...originalModule,
+    getFirestore: jest.fn(() => ({ path: "mock-firestore" })),
     collection: jest.fn(() => ({ path: "testCollection" })),
-    query: jest.fn((...args) => args),
-    getDocs: jest.fn(async (query) => {
+    query: jest.fn((...args: any[]) => args),
+    getDocs: jest.fn(async (query: any) => {
       // Extract pagination info from the query
       const limitValue =
-        query.find((arg) => arg && arg.type === "limit")?.value || 10;
+        query.find((arg: any) => arg && arg.type === "limit")?.value || 10;
       const startAfterDoc = query.find(
-        (arg) => arg && arg.type === "startAfter"
+        (arg: any) => arg && arg.type === "startAfter"
       )?.value;
 
       let startIndex = 0;
@@ -65,14 +63,19 @@ jest.mock("firebase/firestore", () => {
         size: subset.length,
       };
     }),
-    limit: jest.fn((value) => ({ type: "limit", value })),
-    orderBy: jest.fn((field, direction) => ({
+    limit: jest.fn((value: number) => ({ type: "limit", value })),
+    orderBy: jest.fn((field: string, direction?: string) => ({
       type: "orderBy",
       field,
       direction,
     })),
-    startAfter: jest.fn((doc) => ({ type: "startAfter", value: doc })),
-    where: jest.fn((field, op, value) => ({ type: "where", field, op, value })),
+    startAfter: jest.fn((doc: any) => ({ type: "startAfter", value: doc })),
+    where: jest.fn((field: string, op: string, value: any) => ({
+      type: "where",
+      field,
+      op,
+      value,
+    })),
   };
 });
 

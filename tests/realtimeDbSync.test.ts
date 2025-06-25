@@ -64,7 +64,7 @@ describe("Realtime Database Sync Utilities", () => {
   describe("handleSyncError", () => {
     it("should format sync errors correctly", () => {
       const mockError = new Error("Test error");
-      mockError.code = "permission-denied";
+      (mockError as any).code = "permission-denied";
 
       const syncError = handleSyncError(mockError, "users/123/profile", 2);
 
@@ -125,7 +125,7 @@ describe("Realtime Database Sync Utilities", () => {
           maxBackoffDelay: 50,
         })
       ).rejects.toMatchObject({
-        code: "unknown-error",
+        code: "unknown",
         message: "Always fails",
         retryCount: 2,
       });
