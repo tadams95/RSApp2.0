@@ -7,6 +7,7 @@ interface PasswordResetErrorNoticeProps {
   message: string;
   onRetry?: () => void;
   style?: any;
+  testID?: string;
 }
 
 /**
@@ -14,9 +15,9 @@ interface PasswordResetErrorNoticeProps {
  */
 export const PasswordResetErrorNotice: React.FC<
   PasswordResetErrorNoticeProps
-> = ({ message, onRetry, style }) => {
+> = ({ message, onRetry, style, testID }) => {
   return (
-    <Surface style={[styles.container, style]}>
+    <Surface style={[styles.container, style]} testID={testID}>
       <View style={styles.header}>
         <MaterialCommunityIcons name="alert-circle" size={24} color="#FF6B6B" />
         <Text variant="titleMedium" style={styles.title}>

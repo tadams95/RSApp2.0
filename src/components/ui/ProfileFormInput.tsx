@@ -12,6 +12,7 @@ interface ProfileFormInputProps extends TextInputProps {
   label: string;
   error?: string;
   onChangeText: (text: string) => void;
+  testID?: string;
 }
 
 /**
@@ -21,10 +22,11 @@ const ProfileFormInput: React.FC<ProfileFormInputProps> = ({
   label,
   error,
   onChangeText,
+  testID,
   ...props
 }) => {
   return (
-    <View style={styles.inputContainer}>
+    <View style={styles.inputContainer} testID={testID}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         style={[styles.input, error ? styles.inputError : null]}

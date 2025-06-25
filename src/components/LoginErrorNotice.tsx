@@ -12,6 +12,7 @@ interface LoginErrorNoticeProps {
   };
   attempts?: number;
   style?: any;
+  testID?: string;
 }
 
 /**
@@ -24,9 +25,10 @@ export const LoginErrorNotice: React.FC<LoginErrorNoticeProps> = ({
   secondaryAction,
   attempts = 0,
   style,
+  testID,
 }) => {
   return (
-    <Surface style={[styles.container, style]}>
+    <Surface style={[styles.container, style]} testID={testID}>
       <View style={styles.header}>
         <MaterialCommunityIcons name="alert-circle" size={24} color="#FF6B6B" />
         <Text variant="titleMedium" style={styles.title}>

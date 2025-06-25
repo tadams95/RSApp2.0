@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 interface PasswordStrengthMeterProps {
   password: string;
+  testID?: string;
 }
 
 /**
@@ -11,6 +12,7 @@ interface PasswordStrengthMeterProps {
  */
 const PasswordStrengthMeter: React.FC<PasswordStrengthMeterProps> = ({
   password,
+  testID,
 }) => {
   // Skip rendering if password is empty
   if (!password) return null;
@@ -50,7 +52,7 @@ const PasswordStrengthMeter: React.FC<PasswordStrengthMeterProps> = ({
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID={testID}>
       <View style={styles.strengthBarContainer}>
         <View
           style={[

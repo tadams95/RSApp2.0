@@ -14,6 +14,7 @@ interface ProfileUpdateErrorNoticeProps {
   validationErrors?: Record<string, string>; // For field-specific validation errors
   errorCode?: string; // Optional error code for more specialized handling
   serverError?: boolean; // Flag to indicate if this was a server-side validation error
+  testID?: string;
 }
 
 /**
@@ -31,6 +32,7 @@ export const ProfileUpdateErrorNotice: React.FC<
   validationErrors,
   errorCode,
   serverError,
+  testID,
 }) => {
   // Check if we have field-specific validation errors to display
   const hasValidationErrors =
@@ -81,7 +83,7 @@ export const ProfileUpdateErrorNotice: React.FC<
   };
 
   return (
-    <Surface style={[styles.container, style]}>
+    <Surface style={[styles.container, style]} testID={testID}>
       <View style={styles.header}>
         <MaterialCommunityIcons
           name={serverError ? "server-remove" : "alert-circle"}
