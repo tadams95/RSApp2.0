@@ -332,13 +332,13 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
   **Phase 3: Modal Components (Medium Priority)**
 
   - [x] `EditProfile.tsx` - Profile editing modal with form validation ✅ **COMPLETED**
-  - [ ] `SettingsModal.tsx` - App settings and account management modal
+  - [x] `SettingsModal.tsx` - App settings and account management modal (37 tests covering rendering, user interaction, error handling, admin functionality, logout, account deletion, Firebase integration, and error logging)
   - [ ] `QRModal.tsx` - QR code display/scanning modal
   - [ ] `HistoryModal.tsx` - User activity history modal
   - [ ] `AdminModal.tsx` - Administrative functions modal
   - [ ] `MyEvents.tsx` - User's events management modal
 
-  **Phase 3 Test Coverage**: 1/6 components tested (16.7% coverage)
+  **Phase 3 Test Coverage**: 2/6 components tested (33.3% coverage)
 
   **Phase 4: E-commerce Components (High Priority)**
 
