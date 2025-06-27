@@ -1,6 +1,11 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 import React from "react";
-import { Alert, Linking } from "react-native";
+import { Alert } from "react-native";
 import MyEvents from "../../../components/modals/MyEvents";
 
 // Suppress console logs during tests
@@ -172,7 +177,7 @@ describe("MyEvents", () => {
   // Reset mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Setup Firebase mocks
     const firestore = require("firebase/firestore");
     const netInfo = require("@react-native-community/netinfo");
@@ -188,7 +193,9 @@ describe("MyEvents", () => {
 
     // Setup Camera mocks
     const { Camera } = require("expo-camera");
-    Camera.getCameraPermissionsAsync.mockImplementation(mockGetCameraPermissionsAsync);
+    Camera.getCameraPermissionsAsync.mockImplementation(
+      mockGetCameraPermissionsAsync
+    );
 
     // Setup utility mocks
     utils.handleEventFetchError.mockImplementation(mockHandleEventFetchError);
@@ -313,7 +320,9 @@ describe("MyEvents", () => {
       render(<MyEvents />);
 
       await waitFor(() => {
-        expect(screen.getByText("You're offline. Please check your connection.")).toBeTruthy();
+        expect(
+          screen.getByText("You're offline. Please check your connection.")
+        ).toBeTruthy();
       });
     });
   });
