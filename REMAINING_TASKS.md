@@ -391,18 +391,225 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
 ## PRIORITY 7: Analytics Implementation
 
-### 7.1 Firebase Analytics Setup
+### 7.1 Firebase Analytics Infrastructure Setup
 
-**Current Issue**: No user behavior tracking
+**Current Issue**: No user behavior tracking or insights into user engagement patterns
 
-- [ ] Install Firebase Analytics: `npm install @react-native-firebase/analytics`
-- [ ] Create analytics provider component
-- [ ] Add screen tracking hook
-- [ ] Implement event tracking for:
-  - Product views
-  - Add to cart actions
-  - Purchase completions
-  - Event ticket purchases
+**Phase 1: Core Infrastructure (High Priority)**
+
+- [ ] **Install Dependencies**
+
+  - [ ] Install Firebase Analytics: `expo install @react-native-firebase/analytics @react-native-firebase/app`
+  - [ ] Update app.json/app.config.js with Analytics plugin configuration
+  - [ ] Verify Google Services files are properly configured for Analytics
+
+- [ ] **Analytics Provider Implementation**
+
+  - [ ] Create `src/analytics/AnalyticsProvider.tsx` with comprehensive analytics context
+  - [ ] Implement core analytics methods: `logEvent`, `logScreenView`, `setUserProperty`, `setUserId`
+  - [ ] Add error handling and fallback for analytics failures
+  - [ ] Create `useAnalytics` hook for easy component integration
+
+- [ ] **Screen Tracking System**
+
+  - [ ] Create `src/hooks/useScreenTracking.tsx` for automatic screen view tracking
+  - [ ] Implement path-to-screen-name conversion for Expo Router compatibility
+  - [ ] Handle dynamic routes (product details, event details) with meaningful names
+  - [ ] Track screen view duration and engagement metrics
+
+- [ ] **Root Layout Integration**
+  - [ ] Add AnalyticsProvider to `src/app/_layout.tsx` root layout
+  - [ ] Initialize analytics on app start
+  - [ ] Set up user identification when authentication state changes
+  - [ ] Configure analytics for both development and production environments
+
+### 7.2 Core User Journey Analytics (High Priority)
+
+**Authentication Flow Tracking**
+
+- [ ] **Registration & Login Events**
+
+  - [ ] Track `sign_up` event in `src/app/(auth)/signup.tsx` with method parameter
+  - [ ] Track `login` event in `src/app/(auth)/login.tsx` with success/failure and method
+  - [ ] Track password reset attempts in forgot password flow
+  - [ ] Track authentication errors with specific error codes
+  - [ ] Set user properties: `authentication_status`, `signup_method`, `login_method`
+
+- [ ] **User Session Tracking**
+  - [ ] Track `app_open` event on app launch and foreground
+  - [ ] Track session duration and app usage patterns
+  - [ ] Track logout events and reasons (user-initiated vs automatic)
+  - [ ] Set user ID when user authenticates for cross-session tracking
+
+**E-commerce Analytics (Enhanced Ecommerce Compatible)**
+
+- [ ] **Product Interaction Events**
+
+  - [ ] Track `view_item` in `src/app/(app)/shop/[handle].tsx` and `src/app/(guest)/shop/[id].tsx`
+  - [ ] Track `view_item_list` in shop index screens with category/filter parameters
+  - [ ] Track product image carousel interactions and engagement
+  - [ ] Track product variant selections (size, color, quantity)
+
+- [ ] **Cart & Purchase Events**
+
+  - [ ] Track `add_to_cart` in product detail screens with item details and value
+  - [ ] Track `remove_from_cart` in `src/app/(app)/cart/index.tsx` with removal reason
+  - [ ] Track `view_cart` when cart screen is accessed
+  - [ ] Track `begin_checkout` when checkout process starts
+  - [ ] Track `add_payment_info` when payment method is selected
+  - [ ] Track `purchase` on successful order completion with transaction details
+  - [ ] Track cart abandonment at different stages
+
+- [ ] **Product Discovery Analytics**
+  - [ ] Track product list scroll depth and engagement
+  - [ ] Track product image load performance and user interaction
+  - [ ] Track guest vs authenticated user shopping behavior differences
+  - [ ] Track product popularity and view patterns
+
+### 7.3 Event Management Analytics (High Priority)
+
+**Event Engagement Tracking**
+
+- [ ] **Event Discovery & Viewing**
+
+  - [ ] Track `view_item` for events in detail screens with event-specific parameters
+  - [ ] Track `view_item_list` for event listings with scroll depth
+  - [ ] Track event image interactions and hero image engagement
+  - [ ] Track event detail expansions (description, location, etc.)
+
+- [ ] **Event Interactions**
+
+  - [ ] Track location button taps (`select_content` with map interaction)
+  - [ ] Track event sharing actions if implemented
+  - [ ] Track attendance count views and user interest indicators
+  - [ ] Track event date/time accessibility and user timezone patterns
+
+- [ ] **Event Ticket Purchases**
+
+  - [ ] Track `add_to_cart` for event tickets with event-specific metadata
+  - [ ] Track event checkout flow separately from product checkout
+  - [ ] Track successful event ticket purchases with event details
+  - [ ] Track event ticket transfers and QR code usage
+
+- [ ] **My Events Analytics**
+  - [ ] Track `view_item_list` in My Events screen (`src/app/(app)/events/my-events.tsx`)
+  - [ ] Track QR code generation and usage patterns
+  - [ ] Track ticket transfer requests and completions
+  - [ ] Track event check-in patterns and timing
+
+### 7.4 Navigation & User Experience Analytics (Medium Priority)
+
+**App Navigation Patterns**
+
+- [ ] **Screen Flow Analytics**
+
+  - [ ] Implement automatic screen view tracking with `useScreenTracking` hook
+  - [ ] Track user journey paths (guest → auth, browsing → purchase)
+  - [ ] Track tab navigation patterns and preferred sections
+  - [ ] Track back button usage and navigation abandonment
+
+- [ ] **Guest vs Authenticated Behavior**
+
+  - [ ] Track guest user conversion points (when they choose to authenticate)
+  - [ ] Track feature accessibility prompts for guest users
+  - [ ] Track authentication prompts and conversion rates
+  - [ ] Track guest browsing patterns vs authenticated user patterns
+
+- [ ] **Performance & Engagement Metrics**
+  - [ ] Track app launch time and initialization performance
+  - [ ] Track image load times and user wait patterns
+  - [ ] Track network connectivity issues and offline usage
+  - [ ] Track error recovery actions and user patience metrics
+
+### 7.5 Advanced Features Analytics (Lower Priority)
+
+**Account Management Analytics**
+
+- [ ] **Profile & Settings Tracking**
+
+  - [ ] Track profile updates and completion rates
+  - [ ] Track settings changes and preference patterns
+  - [ ] Track profile picture uploads and changes
+  - [ ] Track account deletion attempts and completion
+
+- [ ] **QR Code & Social Features**
+  - [ ] Track QR code generation and sharing in `src/components/modals/QRModal.tsx`
+  - [ ] Track QR code scanning attempts and success rates
+  - [ ] Track profile viewing and social interaction patterns
+  - [ ] Track admin panel usage if user has admin privileges
+
+**Error & Recovery Analytics**
+
+- [ ] **Error Tracking Integration**
+
+  - [ ] Integrate analytics with existing error boundary system
+  - [ ] Track authentication failures with specific error types
+  - [ ] Track payment failures and recovery attempts
+  - [ ] Track network errors and offline recovery patterns
+  - [ ] Track app crashes and error recovery success rates
+
+- [ ] **Cart Recovery Analytics**
+  - [ ] Track cart recovery modal appearances and user actions
+  - [ ] Track successful cart restorations vs dismissals
+  - [ ] Track payment retry attempts after failures
+  - [ ] Track user patience with checkout error recovery
+
+### 7.6 Analytics Implementation Details
+
+**User Properties to Set**
+
+- [ ] **Core User Properties**
+  - `user_type`: "guest" | "authenticated" | "admin"
+  - `platform`: "ios" | "android"
+  - `app_version`: Current app version
+  - `authentication_method`: "email" | "social" | null
+  - `first_login_date`: Date of first successful login
+  - `total_purchases`: Number of completed purchases
+  - `preferred_category`: Most viewed product/event category
+
+**Custom Event Parameters**
+
+- [ ] **E-commerce Parameters**
+
+  - `item_id`, `item_name`, `item_category`, `item_variant`
+  - `value`, `currency`, `quantity`
+  - `transaction_id`, `payment_method`
+  - `item_list_id`, `item_list_name`
+
+- [ ] **Event-Specific Parameters**
+
+  - `event_id`, `event_name`, `event_date`, `event_location`
+  - `ticket_type`, `ticket_quantity`, `ticket_price`
+  - `attendance_count`, `event_category`
+
+- [ ] **Navigation Parameters**
+  - `screen_name`, `screen_class`, `previous_screen`
+  - `user_journey_step`, `conversion_funnel_stage`
+  - `time_on_screen`, `scroll_depth`
+
+**Implementation Guidelines**
+
+- [ ] **Development vs Production**
+
+  - [ ] Set up separate Analytics configurations for dev/staging/production
+  - [ ] Implement analytics debugging tools for development
+  - [ ] Create analytics event validation system
+  - [ ] Add analytics performance monitoring
+
+- [ ] **Privacy & Compliance**
+  - [ ] Implement user consent management for analytics
+  - [ ] Ensure GDPR/CCPA compliance for user data collection
+  - [ ] Provide analytics opt-out functionality in settings
+  - [ ] Document data collection practices for privacy policy
+
+**Expected Analytics Benefits:**
+
+- **User Behavior Insights**: Understand how users navigate and engage with the app
+- **Conversion Optimization**: Identify bottlenecks in purchase and registration flows
+- **Feature Usage Analytics**: Determine which features are most/least used
+- **Performance Monitoring**: Track app performance from user perspective
+- **A/B Testing Foundation**: Enable data-driven feature testing and optimization
+- **Business Intelligence**: Revenue attribution, user lifetime value, retention metrics
 
 ### 7.2 Push Notifications Implementation
 
