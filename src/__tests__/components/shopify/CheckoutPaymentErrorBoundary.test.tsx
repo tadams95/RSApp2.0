@@ -264,10 +264,7 @@ describe("CheckoutPaymentErrorBoundary", () => {
     it("always shows safety notice", () => {
       const { getByText } = render(
         <CheckoutPaymentErrorBoundary>
-          <ThrowError
-            shouldThrow={true}
-            error={new Error("Test error")}
-          />
+          <ThrowError shouldThrow={true} error={new Error("Test error")} />
         </CheckoutPaymentErrorBoundary>
       );
 
@@ -350,10 +347,7 @@ describe("CheckoutPaymentErrorBoundary", () => {
     it("shows alert when Save for Later button is pressed", () => {
       const { getByText } = render(
         <CheckoutPaymentErrorBoundary>
-          <ThrowError
-            shouldThrow={true}
-            error={new Error("Test error")}
-          />
+          <ThrowError shouldThrow={true} error={new Error("Test error")} />
         </CheckoutPaymentErrorBoundary>
       );
 
@@ -370,10 +364,7 @@ describe("CheckoutPaymentErrorBoundary", () => {
     it("shows support alert when Get Help button is pressed", () => {
       const { getByText } = render(
         <CheckoutPaymentErrorBoundary>
-          <ThrowError
-            shouldThrow={true}
-            error={new Error("Test error")}
-          />
+          <ThrowError shouldThrow={true} error={new Error("Test error")} />
         </CheckoutPaymentErrorBoundary>
       );
 
@@ -399,7 +390,9 @@ describe("CheckoutPaymentErrorBoundary", () => {
         </CheckoutPaymentErrorBoundary>
       );
 
-      expect(getByText("Technical details: Specific payment error")).toBeTruthy();
+      expect(
+        getByText("Technical details: Specific payment error")
+      ).toBeTruthy();
     });
 
     it("handles empty error message gracefully", () => {
@@ -516,12 +509,14 @@ describe("CheckoutPaymentErrorBoundary", () => {
       {
         error: new Error("network connection lost"),
         expectedTitle: "Connection Error",
-        expectedHint: "🌐 Check your connection and try again - no charges were made",
+        expectedHint:
+          "🌐 Check your connection and try again - no charges were made",
       },
       {
         error: new Error("timeout during checkout"),
         expectedTitle: "Connection Error",
-        expectedHint: "🌐 Check your connection and try again - no charges were made",
+        expectedHint:
+          "🌐 Check your connection and try again - no charges were made",
       },
       {
         error: new Error("checkout session expired"),
@@ -546,28 +541,46 @@ describe("CheckoutPaymentErrorBoundary", () => {
       {
         error: new Error("item inventory exhausted"),
         expectedTitle: "Items Unavailable",
-        expectedHint: "📦 Review cart items and update quantities before retrying",
+        expectedHint:
+          "📦 Review cart items and update quantities before retrying",
       },
       {
         error: new Error("product sold out"),
         expectedTitle: "Items Unavailable",
-        expectedHint: "📦 Review cart items and update quantities before retrying",
+        expectedHint:
+          "📦 Review cart items and update quantities before retrying",
       },
       {
         error: new Error("item no longer available"),
         expectedTitle: "Items Unavailable",
-        expectedHint: "📦 Review cart items and update quantities before retrying",
+        expectedHint:
+          "📦 Review cart items and update quantities before retrying",
       },
     ];
 
     testCases.forEach(({ error, expectedTitle, expectedHint }) => {
       const errorType =
-        error.message.includes("payment") || error.message.includes("stripe") || error.message.includes("card") || error.message.includes("declined") ? "payment" :
-        error.message.includes("network") || error.message.includes("timeout") ? "network" :
-        error.message.includes("checkout") || error.message.includes("order") ? "checkout" :
-        error.message.includes("validation") || error.message.includes("invalid") || error.message.includes("required") ? "validation" :
-        error.message.includes("inventory") || error.message.includes("stock") || error.message.includes("available") || error.message.includes("sold out") ? "inventory" :
-        "general";
+        error.message.includes("payment") ||
+        error.message.includes("stripe") ||
+        error.message.includes("card") ||
+        error.message.includes("declined")
+          ? "payment"
+          : error.message.includes("network") ||
+            error.message.includes("timeout")
+          ? "network"
+          : error.message.includes("checkout") ||
+            error.message.includes("order")
+          ? "checkout"
+          : error.message.includes("validation") ||
+            error.message.includes("invalid") ||
+            error.message.includes("required")
+          ? "validation"
+          : error.message.includes("inventory") ||
+            error.message.includes("stock") ||
+            error.message.includes("available") ||
+            error.message.includes("sold out")
+          ? "inventory"
+          : "general";
 
       it(`correctly handles ${errorType} error: ${error.message}`, () => {
         const { getByText, queryByText } = render(
@@ -579,7 +592,9 @@ describe("CheckoutPaymentErrorBoundary", () => {
         expect(getByText(expectedTitle)).toBeTruthy();
 
         if (expectedHint) {
-          expect(queryByText(new RegExp(expectedHint.split(" ")[0]))).toBeTruthy();
+          expect(
+            queryByText(new RegExp(expectedHint.split(" ")[0]))
+          ).toBeTruthy();
         }
       });
     });
@@ -617,7 +632,9 @@ describe("CheckoutPaymentErrorBoundary", () => {
         </CheckoutPaymentErrorBoundary>
       );
 
-      expect(getByText(/This is a very long checkout error message/)).toBeTruthy();
+      expect(
+        getByText(/This is a very long checkout error message/)
+      ).toBeTruthy();
     });
   });
 
@@ -626,7 +643,10 @@ describe("CheckoutPaymentErrorBoundary", () => {
       // This test verifies the component integrates properly with ShopifyErrorBoundary
       const { getByText } = render(
         <CheckoutPaymentErrorBoundary>
-          <ThrowError shouldThrow={true} error={new Error("Integration test")} />
+          <ThrowError
+            shouldThrow={true}
+            error={new Error("Integration test")}
+          />
         </CheckoutPaymentErrorBoundary>
       );
 
@@ -652,24 +672,20 @@ describe("CheckoutPaymentErrorBoundary", () => {
       // Test network hint
       const { getByText: getByTextNetwork } = render(
         <CheckoutPaymentErrorBoundary>
-          <ThrowError
-            shouldThrow={true}
-            error={new Error("network timeout")}
-          />
+          <ThrowError shouldThrow={true} error={new Error("network timeout")} />
         </CheckoutPaymentErrorBoundary>
       );
 
       expect(
-        getByTextNetwork(/Check your connection and try again - no charges were made/)
+        getByTextNetwork(
+          /Check your connection and try again - no charges were made/
+        )
       ).toBeTruthy();
 
       // Test payment hint
       const { getByText: getByTextPayment } = render(
         <CheckoutPaymentErrorBoundary>
-          <ThrowError
-            shouldThrow={true}
-            error={new Error("payment failed")}
-          />
+          <ThrowError shouldThrow={true} error={new Error("payment failed")} />
         </CheckoutPaymentErrorBoundary>
       );
 
@@ -688,7 +704,9 @@ describe("CheckoutPaymentErrorBoundary", () => {
       );
 
       expect(
-        getByTextInventory(/Review cart items and update quantities before retrying/)
+        getByTextInventory(
+          /Review cart items and update quantities before retrying/
+        )
       ).toBeTruthy();
     });
   });
