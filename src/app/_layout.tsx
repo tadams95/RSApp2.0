@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { PaperProvider } from "react-native-paper";
 import { Provider } from "react-redux";
+import { AnalyticsProvider } from "../analytics/AnalyticsProvider";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { queryClient } from "../config/reactQuery";
 import { AuthProvider } from "../hooks/AuthContext";
@@ -165,10 +166,12 @@ export default function RootLayout() {
             }}
           >
             <AuthProvider>
-              <View style={{ flex: 1, backgroundColor: "#000" }}>
-                <StatusBar style="light" />
-                <Slot />
-              </View>
+              <AnalyticsProvider>
+                <View style={{ flex: 1, backgroundColor: "#000" }}>
+                  <StatusBar style="light" />
+                  <Slot />
+                </View>
+              </AnalyticsProvider>
             </AuthProvider>
           </ErrorBoundary>
         </PaperProvider>
