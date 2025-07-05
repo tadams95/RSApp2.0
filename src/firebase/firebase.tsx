@@ -1,11 +1,11 @@
 // src/firebase/firebase.ts
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getAnalytics } from "firebase/analytics";
 import { FirebaseError, initializeApp } from "firebase/app";
 import { initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getAnalytics } from "firebase/analytics";
 import { formatApiErrorMessage } from "../hooks/useErrorHandler";
 
 // Import getReactNativePersistence dynamically to avoid TypeScript errors
@@ -104,4 +104,4 @@ try {
 }
 
 // Export the initialized app, auth (as firebaseAuth), db, storage, and analytics
-export { app, firebaseAuth as auth, db, storage, analytics };
+export { analytics, app, firebaseAuth as auth, db, storage };

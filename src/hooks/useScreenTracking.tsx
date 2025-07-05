@@ -1,7 +1,7 @@
 // src/hooks/useScreenTracking.tsx
 
-import { useEffect } from "react";
 import { usePathname } from "expo-router";
+import { useEffect } from "react";
 import { useAnalytics } from "../analytics/AnalyticsProvider";
 
 export function useScreenTracking() {
@@ -24,16 +24,16 @@ function getScreenNameFromPath(path: string): string {
   // Extract screen name from path
   // This is a simple implementation - enhance as needed
   const segments = path.split("/").filter(Boolean);
-  
+
   if (segments.length === 0) return "Home";
-  
+
   // Remove route groups like (app), (auth), (guest)
-  const filteredSegments = segments.filter(segment => 
-    !segment.startsWith("(") || !segment.endsWith(")")
+  const filteredSegments = segments.filter(
+    (segment) => !segment.startsWith("(") || !segment.endsWith(")")
   );
-  
+
   if (filteredSegments.length === 0) return "Home";
-  
+
   const lastSegment = filteredSegments[filteredSegments.length - 1];
 
   if (!lastSegment) return "Home";

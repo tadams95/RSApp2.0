@@ -1,7 +1,7 @@
 // src/analytics/AnalyticsProvider.tsx
 
-import React, { createContext, useContext, ReactNode } from "react";
-import { logEvent, setUserProperties, setUserId } from "firebase/analytics";
+import { logEvent, setUserId, setUserProperties } from "firebase/analytics";
+import React, { createContext, ReactNode, useContext } from "react";
 import { analytics } from "../firebase/firebase";
 
 type EventParams = Record<string, any>;
@@ -64,7 +64,10 @@ export const AnalyticsProvider = ({ children }: AnalyticsProviderProps) => {
           screen_class: screenClass || screenName,
         });
       } else {
-        console.log("Analytics not available, screen view would be:", screenName);
+        console.log(
+          "Analytics not available, screen view would be:",
+          screenName
+        );
       }
     } catch (error) {
       console.error("Screen view log error:", error);
@@ -124,7 +127,11 @@ export const AnalyticsProvider = ({ children }: AnalyticsProviderProps) => {
       if (analytics) {
         await setUserProperties(analytics, { [name]: value });
       } else {
-        console.log("Analytics not available, user property would be:", name, value);
+        console.log(
+          "Analytics not available, user property would be:",
+          name,
+          value
+        );
       }
     } catch (error) {
       console.error("Set user property error:", error);
