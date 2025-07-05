@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 
-import { useAnalytics } from "../../analytics/AnalyticsProvider";
+
 // TODO: Update this path when auth utilities are moved to src
 import LoadingOverlay from "../../components/LoadingOverlay";
 import PasswordResetErrorNotice from "../../components/PasswordResetErrorNotice";
@@ -22,7 +22,7 @@ export default function ForgotPasswordScreen() {
   const [formError, setFormError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { logEvent } = useAnalytics();
+
 
   // Use the password reset error handler
   const {
@@ -60,13 +60,6 @@ export default function ForgotPasswordScreen() {
       const result = await forgotPassword(email);
 
       if (result.success) {
-        // Track successful password reset attempt
-        await logEvent("password_reset", {
-          method: "email",
-          success: true,
-          email_domain: email.split("@")[1],
-        });
-
         handleSuccess();
         // For security, we always show the same message whether the account exists or not
         Alert.alert(
@@ -75,28 +68,12 @@ export default function ForgotPasswordScreen() {
         );
         router.back();
       } else {
-        // Track failed password reset attempt
-        await logEvent("password_reset", {
-          method: "email",
-          success: false,
-          error_code: "request_failed",
-          error_message: result.message || "Request could not be completed",
-        });
-
         // Handle unsuccessful attempt but don't disclose specific details
         handleResetError(
           new Error(result.message || "Request could not be completed")
         );
       }
     } catch (error: any) {
-      // Track password reset error
-      await logEvent("password_reset", {
-        method: "email",
-        success: false,
-        error_code: error?.code || "unknown",
-        error_message: error?.message || "Unknown error",
-      });
-
       // Handle specific errors with user-friendly messages
       handleResetError(error);
     } finally {

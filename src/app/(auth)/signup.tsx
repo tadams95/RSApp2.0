@@ -15,7 +15,6 @@ import {
   View,
 } from "react-native";
 
-import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { createUser, loginUser, updateUserStripeId } from "../../utils/auth";
 import {
   extractFirebaseErrorCode,
@@ -61,7 +60,6 @@ export default function SignupScreen() {
   } | null>(null);
   const { getErrorMessage } = useErrorHandler();
   const router = useRouter();
-  const { logEvent, setUserProperty, setUserId } = useAnalytics();
 
   const API_URL =
     "https://us-central1-ragestate-app.cloudfunctions.net/stripePayment"; // TODO: Move to a config file
@@ -208,17 +206,6 @@ export default function SignupScreen() {
         // expoPushToken
       );
 
-      // Track successful sign_up event
-      await logEvent("sign_up", {
-        method: "email",
-        email_domain: email.split("@")[1],
-      });
-
-      // Set user properties for analytics
-      await setUserProperty("authentication_status", "authenticated");
-      await setUserProperty("signup_method", "email");
-      await setUserId(createdUser.userData.userId);
-
       // Handle Stripe customer creation
       try {
         const stripeCustomerResponse = await fetch(
@@ -263,14 +250,6 @@ export default function SignupScreen() {
 
       // Extract and handle Firebase error code
       const errorCode = extractFirebaseErrorCode(error);
-
-      // Track sign_up failure with error details
-      await logEvent("sign_up", {
-        method: "email",
-        success: false,
-        error_code: errorCode || "unknown",
-        error_message: error.message || "Unknown error",
-      });
 
       // Get user-friendly error message using our handler
       const errorMessage = getSignupErrorMessage(error);

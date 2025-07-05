@@ -13,11 +13,9 @@ import {
 } from "react-native";
 import { PaperProvider } from "react-native-paper";
 import { Provider } from "react-redux";
-import { AnalyticsProvider } from "../analytics/AnalyticsProvider";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { queryClient } from "../config/reactQuery";
 import { AuthProvider } from "../hooks/AuthContext";
-import { useScreenTracking } from "../hooks/useScreenTracking";
 import { store } from "../store/redux/store";
 import {
   handleMemoryPressure,
@@ -39,9 +37,6 @@ export function Root() {
 
 export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
-
-  // Enable automatic screen tracking for analytics
-  useScreenTracking();
 
   // Initialize image cache and preload critical images
   useEffect(() => {
@@ -170,12 +165,10 @@ export default function RootLayout() {
             }}
           >
             <AuthProvider>
-              <AnalyticsProvider>
-                <View style={{ flex: 1, backgroundColor: "#000" }}>
-                  <StatusBar style="light" />
-                  <Slot />
-                </View>
-              </AnalyticsProvider>
+              <View style={{ flex: 1, backgroundColor: "#000" }}>
+                <StatusBar style="light" />
+                <Slot />
+              </View>
             </AuthProvider>
           </ErrorBoundary>
         </PaperProvider>
