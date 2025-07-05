@@ -343,11 +343,11 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
   **Phase 4: E-commerce Components (High Priority)**
 
   - [x] `CartOperationErrorBoundary.tsx` - Cart operations error handling (30 tests covering component rendering, error classification, dynamic button rendering, user interactions, error message display, callback handling, error type variants, accessibility, and integration) ✅ **COMPLETED**
-  - [ ] `CheckoutPaymentErrorBoundary.tsx` - Payment flow error handling
-  - [ ] `ProductFetchErrorBoundary.tsx` - Product loading error handling
+  - [x] `CheckoutPaymentErrorBoundary.tsx` - Payment flow error handling (34 tests covering component rendering, error classification, dynamic UI rendering, user interactions, callback handling, safety features, integration with ShopifyErrorBoundary, edge cases, and error message display) ✅ **COMPLETED**
+  - [x] `ProductFetchErrorBoundary.tsx` - Product loading error handling (34 tests covering component rendering, error classification for network/rate limit/Shopify service/product not found errors, context-sensitive UI elements and hints, user interactions with alerts, callback handling, edge cases, and ShopifyErrorBoundary integration) ✅ **COMPLETED**
   - [ ] `ShopifyErrorBoundary.tsx` - General Shopify service error handling
 
-  **Phase 4 Test Coverage**: 1/4 components tested (25% coverage)
+  **Phase 4 Test Coverage**: 3/4 components tested (75% coverage)
 
   **Phase 5: Account Management Components (Medium Priority)**
 
