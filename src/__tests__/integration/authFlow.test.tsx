@@ -12,7 +12,7 @@
  *    - Authentication error handling and user feedback
  *
  * 2. Logout Flow (2 tests):
- *    - External auth state changes (token expiry scenarios)
+ *    - External auth state changes (token expiry) → redirect to auth screens
  *    - Error handling during logout operations
  *
  * 3. Auth State Persistence (3 tests):
@@ -36,9 +36,9 @@
  * - Comprehensive error boundary and edge case coverage
  *
  * Implementation Notes:
- * - Tests revealed AuthContext behavior: external auth state changes (like
- *   token expiry) don't automatically set authenticated=false, which only
- *   happens through explicit signOut() calls. Tests reflect current behavior.
+ * - ✅ FIXED: AuthContext now properly handles external auth state changes (token
+ *   expiry, user deletion, etc.) by setting authenticated=false when Firebase
+ *   auth state becomes null, ensuring users are redirected to auth screens.
  * - Navigation testing properly simulates route segments and user flows
  * - All async operations properly wrapped in act() for deterministic results
  */
@@ -267,7 +267,7 @@ describe("Auth Flow Integration Tests", () => {
   });
 
   describe("Logout Flow", () => {
-    it("should complete logout flow: state cleanup → redirect to guest screens", async () => {
+    it("should handle external auth state changes (e.g., token expiry) → redirect to auth", async () => {
       // Set initial segments to simulate user being in authenticated area
       setMockSegments(["(app)", "home"]);
 
@@ -308,16 +308,14 @@ describe("Auth Flow Integration Tests", () => {
       // Mock AsyncStorage operations for logout cleanup
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
 
-      // Since we know setAuthenticated(false) needs to be called for navigation,
-      // let's simulate that part. In a real app, this would be called by signOut()
-      // For now, we'll wait and see if the auth state change triggers the correct flow
+      // Since we now properly handle auth state changes, when Firebase auth becomes null,
+      // the authenticated state should be set to false and navigation should occur
       await waitFor(
         () => {
-          // Note: This test reveals that the AuthContext doesn't automatically set
-          // authenticated=false when Firebase auth state becomes null. This is actually
-          // a bug in the implementation that should be fixed.
-          // For now, let's verify that we don't navigate (which is current behavior)
-          expect(mockRouter.replace).not.toHaveBeenCalledWith("/(auth)/");
+          // ✅ FIXED: AuthContext now correctly sets authenticated=false when Firebase
+          // auth state becomes null, which triggers navigation to auth screens.
+          // This properly handles external auth state changes like token expiry.
+          expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/");
         },
         { timeout: 1000 }
       );

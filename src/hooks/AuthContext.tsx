@@ -84,6 +84,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAuthenticated(true);
         setIsLoading(false);
       } else {
+        // Firebase auth state is null - this could be due to:
+        // - Initial app load (handled by checkStayLoggedIn)
+        // - Token expiry, user deletion, or other auth state changes
+        // For security, set authenticated to false first, then check for auto-login
+        setAuthenticated(false);
         checkStayLoggedIn();
       }
     });
