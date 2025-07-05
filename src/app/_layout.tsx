@@ -17,6 +17,7 @@ import { AnalyticsProvider } from "../analytics/AnalyticsProvider";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { queryClient } from "../config/reactQuery";
 import { AuthProvider } from "../hooks/AuthContext";
+import { useScreenTracking } from "../hooks/useScreenTracking";
 import { store } from "../store/redux/store";
 import {
   handleMemoryPressure,
@@ -38,6 +39,9 @@ export function Root() {
 
 export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
+
+  // Enable automatic screen tracking for analytics
+  useScreenTracking();
 
   // Initialize image cache and preload critical images
   useEffect(() => {
