@@ -3,6 +3,8 @@ import { useRouter, useSegments } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
+
+import { useAnalytics } from "../analytics/AnalyticsProvider";
 import { setLocalId, setUserEmail } from "../store/redux/userSlice";
 
 // Import the Firebase auth instance
@@ -32,12 +34,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
   const segments = useSegments();
   const router = useRouter();
+  const { setUserId, setUserProperty } = useAnalytics();
 
   // Sign out function
   const signOut = async (): Promise<void> => {
     try {
       await firebaseAuth.signOut();
       await AsyncStorage.removeItem("stayLoggedIn");
+
+      // Clear analytics tracking when user signs out
+      await setUserId(null);
+      await setUserProperty("authentication_status", "guest");
+
       setAuthenticated(false);
     } catch (error) {
       console.error("Error signing out:", error);
@@ -77,10 +85,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Listen to Firebase auth state changes
-    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
       if (user) {
         dispatch(setLocalId(user.uid));
         dispatch(setUserEmail(user.email || ""));
+
+        // Set analytics user ID and properties when user is authenticated
+        await setUserId(user.uid);
+        await setUserProperty("authentication_status", "authenticated");
+
         setAuthenticated(true);
         setIsLoading(false);
       } else {
@@ -88,13 +101,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // - Initial app load (handled by checkStayLoggedIn)
         // - Token expiry, user deletion, or other auth state changes
         // For security, set authenticated to false first, then check for auto-login
+
+        // Clear analytics user ID when user logs out
+        await setUserId(null);
+        await setUserProperty("authentication_status", "guest");
+
         setAuthenticated(false);
         checkStayLoggedIn();
       }
     });
 
     return () => unsubscribe();
-  }, [dispatch]);
+  }, [dispatch, setUserId, setUserProperty]);
 
   // Handle routing based on authentication state
   useEffect(() => {

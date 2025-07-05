@@ -427,13 +427,13 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
 **Authentication Flow Tracking**
 
-- [ ] **Registration & Login Events**
+- [x] **Registration & Login Events**
 
-  - [ ] Track `sign_up` event in `src/app/(auth)/signup.tsx` with method parameter
-  - [ ] Track `login` event in `src/app/(auth)/login.tsx` with success/failure and method
-  - [ ] Track password reset attempts in forgot password flow
-  - [ ] Track authentication errors with specific error codes
-  - [ ] Set user properties: `authentication_status`, `signup_method`, `login_method`
+  - [x] Track `sign_up` event in `src/app/(auth)/signup.tsx` with method parameter
+  - [x] Track `login` event in `src/app/(auth)/login.tsx` with success/failure and method
+  - [x] Track password reset attempts in forgot password flow
+  - [x] Track authentication errors with specific error codes
+  - [x] Set user properties: `authentication_status`, `signup_method`, `login_method`
 
 - [ ] **User Session Tracking**
   - [ ] Track `app_open` event on app launch and foreground

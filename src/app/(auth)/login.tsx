@@ -14,6 +14,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
+
+import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import LoginErrorNotice from "../../components/LoginErrorNotice";
 import { GlobalStyles } from "../../constants/styles";
@@ -29,6 +31,7 @@ export default function LoginScreen() {
   const { setAuthenticated } = useAuth();
   const router = useRouter();
   const dispatch = useDispatch();
+  const { logEvent, setUserProperty, setUserId } = useAnalytics();
 
   // Use the login error handler
   const {
@@ -53,6 +56,17 @@ export default function LoginScreen() {
 
       await loginUser(email.trim(), password, dispatch);
 
+      // Track successful login event
+      await logEvent("login", {
+        method: "email",
+        success: true,
+      });
+
+      // Set user properties for analytics
+      await setUserProperty("authentication_status", "authenticated");
+      await setUserProperty("login_method", "email");
+      // Note: setUserId will be called in AuthContext when user data is available
+
       // Save login preferences if "Stay logged in" is selected
       if (stayLoggedIn) {
         await Promise.all([
@@ -74,7 +88,15 @@ export default function LoginScreen() {
 
       setAuthenticated(true);
       router.replace("/(app)/home");
-    } catch (error) {
+    } catch (error: any) {
+      // Track login failure event with error details
+      await logEvent("login", {
+        method: "email",
+        success: false,
+        error_code: error?.code || "unknown",
+        error_message: error?.message || "Unknown error",
+      });
+
       handleLoginError(error);
     } finally {
       setIsLoading(false);
