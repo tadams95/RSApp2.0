@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { PaperProvider } from "react-native-paper";
 import { Provider } from "react-redux";
+import { PostHogProvider } from "../analytics/PostHogProvider";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { queryClient } from "../config/reactQuery";
 import { AuthProvider } from "../hooks/AuthContext";
@@ -155,25 +156,27 @@ export default function RootLayout() {
   }
 
   return (
-    <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <PaperProvider>
-          <ErrorBoundary
-            onError={(error, errorInfo) => {
-              // Log any errors to your monitoring service here
-              console.error("Root error boundary caught error:", error);
-            }}
-          >
-            <AuthProvider>
-              <View style={{ flex: 1, backgroundColor: "#000" }}>
-                <StatusBar style="light" />
-                <Slot />
-              </View>
-            </AuthProvider>
-          </ErrorBoundary>
-        </PaperProvider>
-      </QueryClientProvider>
-    </Provider>
+    <PostHogProvider>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <PaperProvider>
+            <ErrorBoundary
+              onError={(error, errorInfo) => {
+                // Log any errors to your monitoring service here
+                console.error("Root error boundary caught error:", error);
+              }}
+            >
+              <AuthProvider>
+                <View style={{ flex: 1, backgroundColor: "#000" }}>
+                  <StatusBar style="light" />
+                  <Slot />
+                </View>
+              </AuthProvider>
+            </ErrorBoundary>
+          </PaperProvider>
+        </QueryClientProvider>
+      </Provider>
+    </PostHogProvider>
   );
 }
 

@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 
+import { usePostHog, useScreenTracking } from "../../analytics/PostHogProvider";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import LoginErrorNotice from "../../components/LoginErrorNotice";
 import { GlobalStyles } from "../../constants/styles";
@@ -30,6 +31,12 @@ export default function LoginScreen() {
   const { setAuthenticated } = useAuth();
   const router = useRouter();
   const dispatch = useDispatch();
+  const { track } = usePostHog();
+
+  // Track screen view
+  useScreenTracking("Login Screen", {
+    screen_category: "auth",
+  });
 
   // Use the login error handler
   const {
@@ -45,8 +52,18 @@ export default function LoginScreen() {
     setIsLoading(true);
     clearErrors();
 
+    // Track login attempt
+    await track("login_attempt", {
+      method: "email_password",
+      stay_logged_in: stayLoggedIn,
+    });
+
     try {
       if (!email || !password) {
+        await track("login_failed", {
+          error_type: "validation",
+          error_message: "Missing email or password",
+        });
         handleLoginError(new Error("Please provide both email and password."));
         setIsLoading(false);
         return;
@@ -73,9 +90,20 @@ export default function LoginScreen() {
       // Reset failed attempts counter on successful login
       resetFailedAttempts();
 
+      // Track successful login
+      await track("login_successful", {
+        method: "email_password",
+        stay_logged_in: stayLoggedIn,
+      });
+
       setAuthenticated(true);
       router.replace("/(app)/home");
     } catch (error: any) {
+      // Track failed login
+      await track("login_failed", {
+        error_type: "authentication",
+        error_message: error.message || "Unknown error",
+      });
       handleLoginError(error);
     } finally {
       setIsLoading(false);

@@ -13,7 +13,9 @@
       "backgroundColor": "#000000",
       "hideExponentText": true
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
@@ -70,7 +72,8 @@
           "recordAudioAndroid": true
         }
       ],
-      "expo-router"
+      "expo-router",
+      "expo-localization"
     ],
     "extra": {
       "eas": {

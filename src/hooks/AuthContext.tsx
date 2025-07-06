@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 
+import { usePostHog } from "../analytics/PostHogProvider";
 import { setLocalId, setUserEmail } from "../store/redux/userSlice";
 
 // Import the Firebase auth instance
@@ -33,12 +34,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
   const segments = useSegments();
   const router = useRouter();
+  const { identify, track, reset } = usePostHog();
 
   // Sign out function
   const signOut = async (): Promise<void> => {
     try {
       await firebaseAuth.signOut();
       await AsyncStorage.removeItem("stayLoggedIn");
+
+      // Track sign out event
+      await track("user_signed_out");
+
+      // Reset PostHog user context
+      await reset();
 
       setAuthenticated(false);
     } catch (error) {
@@ -83,6 +91,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         dispatch(setLocalId(user.uid));
         dispatch(setUserEmail(user.email || ""));
+
+        // Identify user with PostHog
+        await identify(user.uid, {
+          email: user.email || "",
+          userId: user.uid,
+          // Add any other user properties you want to track
+        });
+
+        // Track authentication event
+        await track("user_authenticated", {
+          auth_method: "firebase",
+        });
 
         setAuthenticated(true);
         setIsLoading(false);
