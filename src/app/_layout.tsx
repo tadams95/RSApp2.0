@@ -28,19 +28,21 @@ import { initializeOfflineCartSync } from "../utils/offlineCartSync";
 
 // Suppress PostHog's getCurrentRoute error logs (harmless navigation tracking incompatibility with Expo Router)
 LogBox.ignoreLogs([
-  'getCurrentRoute is not a function',
-  'Warning: getCurrentRoute is not a function',
-  'getCurrentRoute error',
-  'navigation.getCurrentRoute is not a function',
-  'TypeError: navigation.getCurrentRoute is not a function',
+  "getCurrentRoute is not a function",
+  "Warning: getCurrentRoute is not a function",
+  "getCurrentRoute error",
+  "navigation.getCurrentRoute is not a function",
+  "TypeError: navigation.getCurrentRoute is not a function",
 ]);
 
 // Override console.error to suppress PostHog getCurrentRoute errors
 const originalConsoleError = console.error;
 console.error = (...args) => {
-  const message = args.join(' ');
-  if (message.includes('getCurrentRoute') || 
-      message.includes('navigation.getCurrentRoute is not a function')) {
+  const message = args.join(" ");
+  if (
+    message.includes("getCurrentRoute") ||
+    message.includes("navigation.getCurrentRoute is not a function")
+  ) {
     // Suppress PostHog getCurrentRoute errors - these are harmless
     return;
   }
