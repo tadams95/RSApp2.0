@@ -14,7 +14,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 
 // Configuration interface
 interface PostHogConfig {
@@ -135,10 +135,13 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
   const isInitialized = useRef(false);
   const offlineEventsRef = useRef<OfflineEvent[]>([]);
   const isOnlineRef = useRef(true);
+  const sessionStartTime = useRef<number>(Date.now());
+  const lastActiveTime = useRef<number>(Date.now());
 
   useEffect(() => {
     initializeEnhancements();
     setupNetworkListener();
+    setupAppStateTracking();
 
     return () => {
       // Cleanup
@@ -147,6 +150,51 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
       }
     };
   }, [postHog]);
+
+  const setupAppStateTracking = () => {
+    const handleAppStateChange = (nextAppState: string) => {
+      const currentTime = Date.now();
+
+      if (nextAppState === "active") {
+        // App came to foreground
+        const timeAwayMs = currentTime - lastActiveTime.current;
+        const wasAwayLong = timeAwayMs > 30000; // 30 seconds threshold
+
+        // Track app opened event
+        track("app_opened", {
+          session_start_time: sessionStartTime.current,
+          time_away_ms: wasAwayLong ? timeAwayMs : null,
+          returning_from_background: wasAwayLong,
+        });
+
+        lastActiveTime.current = currentTime;
+      } else if (nextAppState === "background") {
+        // App went to background
+        const sessionDurationMs = currentTime - sessionStartTime.current;
+
+        // Track app backgrounded event
+        track("app_backgrounded", {
+          session_duration_ms: sessionDurationMs,
+          session_start_time: sessionStartTime.current,
+        });
+
+        lastActiveTime.current = currentTime;
+      }
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+
+    // Track initial app open
+    track("app_opened", {
+      session_start_time: sessionStartTime.current,
+      initial_launch: true,
+    });
+
+    return () => subscription?.remove();
+  };
 
   const initializeEnhancements = async () => {
     try {

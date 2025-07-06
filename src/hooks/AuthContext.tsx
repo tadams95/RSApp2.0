@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useSegments } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { useDispatch } from "react-redux";
 
 import { usePostHog } from "../analytics/PostHogProvider";
@@ -9,7 +10,7 @@ import { setLocalId, setUserEmail } from "../store/redux/userSlice";
 
 // Import the Firebase auth instance
 import { auth as firebaseAuth } from "../firebase/firebase";
-import { loginUser } from "../utils/auth";
+import { getUserData, loginUser } from "../utils/auth";
 
 // Define the context type
 type AuthContextType = {
@@ -42,15 +43,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await firebaseAuth.signOut();
       await AsyncStorage.removeItem("stayLoggedIn");
 
-      // Track sign out event
-      await track("user_signed_out");
+      // Track sign out event with user context before resetting
+      await track("user_signed_out", {
+        session_duration: "unknown", // Could be enhanced with session tracking
+        logout_method: "manual",
+      });
 
-      // Reset PostHog user context
+      // Reset PostHog user context for privacy compliance
       await reset();
 
       setAuthenticated(false);
     } catch (error) {
       console.error("Error signing out:", error);
+      // Still reset PostHog context even if sign out fails
+      await reset();
+      setAuthenticated(false);
     }
   };
 
@@ -92,17 +99,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         dispatch(setLocalId(user.uid));
         dispatch(setUserEmail(user.email || ""));
 
-        // Identify user with PostHog
-        await identify(user.uid, {
-          email: user.email || "",
-          userId: user.uid,
-          // Add any other user properties you want to track
-        });
+        try {
+          // Get comprehensive user data for enhanced analytics
+          const userData = await getUserData(user.uid);
 
-        // Track authentication event
-        await track("user_authenticated", {
-          auth_method: "firebase",
-        });
+          // Extract email domain for analytics (privacy-compliant)
+          const emailDomain = user.email ? user.email.split("@")[1] : "unknown";
+
+          // Prepare user properties for PostHog identification
+          const userProperties = {
+            email: user.email || "",
+            userId: user.uid,
+            email_domain: emailDomain,
+            platform: Platform.OS,
+            user_type: userData?.isAdmin ? "admin" : "user",
+            signup_date:
+              userData?.createdAt || user.metadata.creationTime || "",
+            last_login_date:
+              userData?.lastLogin || user.metadata.lastSignInTime || "",
+            has_profile_picture: !!userData?.profilePicture,
+            verification_status: user.emailVerified ? "verified" : "unverified",
+          };
+
+          // Identify user with PostHog with comprehensive properties
+          await identify(user.uid, userProperties);
+
+          // Track authentication event with enhanced context
+          await track("user_authenticated", {
+            auth_method: "firebase",
+            email_domain: emailDomain,
+            user_type: userData?.isAdmin ? "admin" : "user",
+            verification_status: user.emailVerified ? "verified" : "unverified",
+            has_complete_profile: !!(userData?.firstName && userData?.lastName),
+          });
+        } catch (error) {
+          console.error("Error fetching user data for analytics:", error);
+
+          // Fall back to basic identification if user data fetch fails
+          const basicProperties = {
+            email: user.email || "",
+            userId: user.uid,
+            email_domain: user.email ? user.email.split("@")[1] : "unknown",
+            platform: Platform.OS,
+            user_type: "user", // Default to user if we can't determine admin status
+            verification_status: user.emailVerified ? "verified" : "unverified",
+          };
+
+          await identify(user.uid, basicProperties);
+          await track("user_authenticated", {
+            auth_method: "firebase",
+            fallback_identification: true,
+          });
+        }
 
         setAuthenticated(true);
         setIsLoading(false);
@@ -112,13 +160,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // - Token expiry, user deletion, or other auth state changes
         // For security, set authenticated to false first, then check for auto-login
 
+        // Track user becoming unauthenticated (but only if we were previously authenticated)
+        if (authenticated) {
+          await track("user_session_ended", {
+            reason: "auth_state_change",
+            auto_logout: true,
+          });
+          // Reset PostHog user context when user becomes unauthenticated
+          await reset();
+        }
+
         setAuthenticated(false);
         checkStayLoggedIn();
       }
     });
 
     return () => unsubscribe();
-  }, [dispatch]);
+  }, [dispatch, authenticated, identify, track, reset]);
+
+  // Track anonymous users vs authenticated users with PostHog's automatic anonymous ID
+  useEffect(() => {
+    const setUserAnalyticsProperties = async () => {
+      try {
+        if (!authenticated && !isLoading) {
+          // User is in guest/anonymous mode
+          // PostHog automatically assigns anonymous IDs, we just need to set user properties
+          await track("anonymous_user_session", {
+            user_status: "anonymous",
+            platform: Platform.OS,
+            session_type: "guest",
+          });
+
+          // Set user properties for anonymous users (no personal data)
+          await identify("", {
+            user_type: "anonymous",
+            authentication_status: "guest",
+            platform: Platform.OS,
+          });
+        } else if (authenticated) {
+          // User properties are already set in the auth state change handler above
+          // This ensures we have the latest user type status
+          await track("authenticated_user_session", {
+            user_status: "authenticated",
+            platform: Platform.OS,
+            session_type: "authenticated",
+          });
+        }
+      } catch (error) {
+        console.error("Error setting user analytics properties:", error);
+      }
+    };
+
+    // Only run when authentication state is stable (not loading)
+    if (!isLoading) {
+      setUserAnalyticsProperties();
+    }
+  }, [authenticated, isLoading, track, identify]);
 
   // Handle routing based on authentication state
   useEffect(() => {

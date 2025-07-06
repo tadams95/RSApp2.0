@@ -22,6 +22,7 @@ import { GlobalStyles } from "../../constants/styles";
 import { useAuth } from "../../hooks/AuthContext";
 import { useLoginErrorHandler } from "../../hooks/useLoginErrorHandler";
 import { loginUser } from "../../utils/auth";
+import { extractFirebaseErrorCode } from "../../utils/firebaseErrorHandler";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -94,16 +95,26 @@ export default function LoginScreen() {
       await track("login_successful", {
         method: "email_password",
         stay_logged_in: stayLoggedIn,
+        email_domain: email.split("@")[1] || "unknown",
+        failed_attempts_before_success: failedAttempts,
       });
 
       setAuthenticated(true);
       router.replace("/(app)/home");
     } catch (error: any) {
-      // Track failed login
+      // Extract Firebase error code for detailed tracking
+      const errorCode = extractFirebaseErrorCode(error);
+
+      // Track failed login with detailed error information
       await track("login_failed", {
-        error_type: "authentication",
+        error_type: "firebase_auth",
+        error_code: errorCode,
         error_message: error.message || "Unknown error",
+        email_domain: email.split("@")[1] || "unknown",
+        failed_attempts: failedAttempts + 1,
+        stay_logged_in_attempted: stayLoggedIn,
       });
+
       handleLoginError(error);
     } finally {
       setIsLoading(false);

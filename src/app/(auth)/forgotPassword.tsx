@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 // TODO: Update this path when auth utilities are moved to src
+import { usePostHog, useScreenTracking } from "../../analytics/PostHogProvider";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import PasswordResetErrorNotice from "../../components/PasswordResetErrorNotice";
 import { usePasswordResetErrorHandler } from "../../hooks/usePasswordResetErrorHandler";
@@ -20,6 +21,12 @@ export default function ForgotPasswordScreen() {
   const [formError, setFormError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { track } = usePostHog();
+
+  // Track screen view
+  useScreenTracking("Forgot Password Screen", {
+    screen_category: "auth",
+  });
 
   // Use the password reset error handler
   const {
@@ -42,14 +49,29 @@ export default function ForgotPasswordScreen() {
     // Basic form validation
     if (!email) {
       setFormError("Please enter your email address");
+      await track("password_reset_failed", {
+        error_type: "validation",
+        error_code: "missing_email",
+        error_message: "Email address required",
+      });
       return;
     }
 
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
     if (!emailRegex.test(email)) {
       setFormError("Please enter a valid email address");
+      await track("password_reset_failed", {
+        error_type: "validation",
+        error_code: "invalid_email",
+        error_message: "Invalid email format",
+      });
       return;
     }
+
+    // Track password reset attempt
+    await track("password_reset_requested", {
+      email_domain: email.split("@")[1] || "unknown",
+    });
 
     setIsLoading(true);
 
@@ -58,6 +80,10 @@ export default function ForgotPasswordScreen() {
 
       if (result.success) {
         handleSuccess();
+        // Track successful password reset request
+        await track("password_reset_success", {
+          email_domain: email.split("@")[1] || "unknown",
+        });
         // For security, we always show the same message whether the account exists or not
         Alert.alert(
           "Password Reset",
@@ -65,12 +91,26 @@ export default function ForgotPasswordScreen() {
         );
         router.back();
       } else {
+        // Track unsuccessful password reset attempt
+        await track("password_reset_failed", {
+          error_type: "service",
+          error_code: "reset_service_error",
+          error_message: result.message || "Request could not be completed",
+          email_domain: email.split("@")[1] || "unknown",
+        });
         // Handle unsuccessful attempt but don't disclose specific details
         handleResetError(
           new Error(result.message || "Request could not be completed")
         );
       }
     } catch (error: any) {
+      // Track password reset error
+      await track("password_reset_failed", {
+        error_type: "firebase_auth",
+        error_code: error.code || "unknown_error",
+        error_message: error.message,
+        email_domain: email.split("@")[1] || "unknown",
+      });
       // Handle specific errors with user-friendly messages
       handleResetError(error);
     } finally {

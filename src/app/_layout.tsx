@@ -87,7 +87,7 @@ export default function RootLayout() {
     initializeImageSystem();
   }, []);
 
-  // Handle memory pressure events
+  // Handle memory pressure events and session tracking
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === "background") {

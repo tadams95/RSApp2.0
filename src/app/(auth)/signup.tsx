@@ -25,6 +25,7 @@ import {
 // import { usePushNotifications } from "../../../../notifications/PushNotifications";
 import { useDispatch } from "react-redux";
 // Updated import path for userSlice
+import { usePostHog, useScreenTracking } from "../../analytics/PostHogProvider";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import SignupErrorNotice from "../../components/SignupErrorNotice";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
@@ -48,6 +49,12 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const dispatch = useDispatch();
+  const { track } = usePostHog();
+
+  // Track screen view
+  useScreenTracking("Signup Screen", {
+    screen_category: "auth",
+  });
   // const { registerForPushNotifications } = usePushNotifications(); // TODO: Re-enable when notifications are set up
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -178,15 +185,32 @@ export default function SignupScreen() {
       setSignupError(null);
       setRecoveryAction(null);
 
+      // Track signup attempt
+      await track("sign_up_attempt", {
+        method: "email_password",
+        has_phone_number: !!phoneNumber,
+        email_domain: email.split("@")[1] || "unknown",
+      });
+
       // Form validation
       const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
       if (!emailRegex.test(email)) {
+        await track("sign_up_failed", {
+          error_type: "validation",
+          error_code: "invalid_email",
+          error_message: "Invalid email format",
+        });
         throw new Error("Please enter a valid email address");
       }
 
       try {
         validatePassword(password);
       } catch (passwordError: any) {
+        await track("sign_up_failed", {
+          error_type: "validation",
+          error_code: "weak_password",
+          error_message: passwordError.message,
+        });
         setFormErrors((prev) => ({
           ...prev,
           password: passwordError.message,
@@ -206,7 +230,17 @@ export default function SignupScreen() {
         // expoPushToken
       );
 
+      // Track successful user account creation
+      await track("sign_up_success", {
+        method: "email_password",
+        user_id: createdUser.userData.userId,
+        email_domain: email.split("@")[1] || "unknown",
+        has_phone_number: !!phoneNumber,
+        signup_date: new Date().toISOString(),
+      });
+
       // Handle Stripe customer creation
+      let stripeCustomerCreated = false;
       try {
         const stripeCustomerResponse = await fetch(
           `${API_URL}/create-customer`,
@@ -226,6 +260,11 @@ export default function SignupScreen() {
         if (!stripeCustomerResponse.ok) {
           const errorMessage = await stripeCustomerResponse.text();
           console.warn(`Stripe customer creation issue: ${errorMessage}`);
+          await track("stripe_customer_creation_failed", {
+            user_id: createdUser.userData.userId,
+            error_message: errorMessage,
+            signup_context: true,
+          });
           // Continue with user creation even if Stripe has issues
         } else {
           const stripeCustomerData = await stripeCustomerResponse.json();
@@ -234,14 +273,35 @@ export default function SignupScreen() {
             stripeCustomerData.customerId
           );
           dispatch(setStripeCustomerId(stripeCustomerData.customerId));
+          stripeCustomerCreated = true;
+          await track("stripe_customer_created", {
+            user_id: createdUser.userData.userId,
+            customer_id: stripeCustomerData.customerId,
+            signup_context: true,
+          });
         }
       } catch (stripeError) {
         // Log the stripe error but continue with account creation
         console.error("Stripe customer creation failed:", stripeError);
+        await track("stripe_customer_creation_error", {
+          user_id: createdUser.userData.userId,
+          error_message:
+            stripeError instanceof Error
+              ? stripeError.message
+              : "Unknown Stripe error",
+          signup_context: true,
+        });
         // We'll set up the Stripe customer later
       }
 
       await loginUser(email, password); // This should ideally set the auth state for the router
+
+      // Track successful signup flow completion
+      await track("sign_up_completed", {
+        user_id: createdUser.userData.userId,
+        stripe_customer_created: stripeCustomerCreated,
+        auto_login_successful: true,
+      });
 
       // Navigate to app or home screen after successful signup and login
       router.replace("/(app)/home"); // Or your desired route
@@ -250,6 +310,15 @@ export default function SignupScreen() {
 
       // Extract and handle Firebase error code
       const errorCode = extractFirebaseErrorCode(error);
+
+      // Track signup failure with detailed error information
+      await track("sign_up_failed", {
+        error_type: "firebase_auth",
+        error_code: errorCode,
+        error_message: error.message,
+        email_domain: email.split("@")[1] || "unknown",
+        has_phone_number: !!phoneNumber,
+      });
 
       // Get user-friendly error message using our handler
       const errorMessage = getSignupErrorMessage(error);
