@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
-import React, { useMemo, useState } from "react"; // Ensured useMemo is imported
+import React, { useEffect, useMemo, useState } from "react"; // Ensured useMemo is imported
 import {
   ActivityIndicator,
   Alert,
@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { useDispatch } from "react-redux";
+import { usePostHog } from "../../../analytics/PostHogProvider";
 import {
   CartOperationErrorBoundary,
   ProductFetchErrorBoundary,
@@ -59,6 +60,7 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
   const router = useRouter();
   const dispatch = useDispatch();
   const { error, setError, clearError } = useErrorHandler();
+  const { track } = usePostHog();
 
   // Use React Query for product fetching
   const productQuery = useProduct(handle);
@@ -68,6 +70,29 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
     error: productError,
   } = getProductLoadingState(productQuery);
   const product = productQuery.data;
+
+  // Track product view when product data is loaded
+  useEffect(() => {
+    if (product && handle) {
+      const firstVariant = product.variants?.[0];
+      const price = firstVariant?.price?.amount
+        ? parseFloat(firstVariant.price.amount)
+        : 0;
+
+      track("product_viewed", {
+        product_id: product.id,
+        product_name: product.title,
+        product_handle: handle,
+        price: price,
+        currency: firstVariant?.price?.currencyCode || "USD",
+        category: "merchandise",
+        image_count: product.images?.length || 0,
+        variant_count: product.variants?.length || 0,
+        has_description: !!product.descriptionHtml,
+        screen_type: "authenticated",
+      });
+    }
+  }, [product, handle, track]);
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -170,6 +195,22 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
       },
       variantId: matchedVariant.id,
     };
+
+    // Track add to cart event with PostHog e-commerce properties
+    track("add_to_cart", {
+      $revenue: parseFloat(matchedVariant.price.amount) * selectedQuantity,
+      $currency: matchedVariant.price.currencyCode,
+      product_id: product.id,
+      product_name: product.title,
+      price: parseFloat(matchedVariant.price.amount),
+      quantity: selectedQuantity,
+      variant_id: matchedVariant.id,
+      selected_size: selectedSize || null,
+      selected_color: selectedColor || null,
+      category: "merchandise",
+      source: "product_detail_page",
+    });
+
     dispatch(addToCart(productToAdd));
     setAddToCartConfirmationVisible(true);
     // Optionally reset selections

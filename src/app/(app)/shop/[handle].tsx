@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useDispatch } from "react-redux";
+import { usePostHog } from "../../../analytics/PostHogProvider";
 import ErrorBoundary from "../../../components/ErrorBoundary";
 import { AppCarousel } from "../../../components/ui";
 import { GlobalStyles } from "../../../constants/styles";
@@ -65,11 +66,35 @@ function ProductDetailScreen() {
   const { handle } = useLocalSearchParams<{ handle: string }>();
   const router = useRouter();
   const dispatch = useDispatch();
+  const { track } = usePostHog();
 
   // Use React Query for product fetching
   const productQuery = useProduct(handle);
   const { isLoading, isError, error } = getProductLoadingState(productQuery);
   const product = productQuery.data;
+
+  // Track product view when product data is loaded
+  useEffect(() => {
+    if (product && handle) {
+      const firstVariant = product.variants?.[0];
+      const price = firstVariant?.price?.amount
+        ? parseFloat(firstVariant.price.amount)
+        : 0;
+
+      track("product_viewed", {
+        product_id: product.id,
+        product_name: product.title,
+        product_handle: handle,
+        price: price,
+        currency: firstVariant?.price?.currencyCode || "USD",
+        category: "merchandise",
+        image_count: product.images?.length || 0,
+        variant_count: product.variants?.length || 0,
+        has_description: !!product.descriptionHtml,
+        screen_type: "authenticated",
+      });
+    }
+  }, [product, handle, track]);
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);

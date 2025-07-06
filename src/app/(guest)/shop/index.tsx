@@ -1,5 +1,5 @@
 import { FlashList } from "@shopify/flash-list";
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import {
   Dimensions,
   Platform,
@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { usePostHog } from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { LazyImage } from "../../../components/ui";
 import {
@@ -83,11 +84,25 @@ const fontFamily: string =
   }) || "system"; // Provide fallback for null/undefined cases
 
 const GuestShop: React.FC = () => {
+  const posthog = usePostHog();
+
   // Use React Query for product fetching
   const productsQuery = useProducts();
   const { isLoading, isError, isFetching, isRefreshing, error } =
     getProductLoadingState(productsQuery);
   const products = productsQuery.data || [];
+
+  // Track product list viewed when products are loaded
+  useEffect(() => {
+    if (products.length > 0 && !isLoading) {
+      posthog.track("product_list_viewed", {
+        product_count: products.length,
+        category: "all_products",
+        page_type: "shop_index",
+        user_type: "guest",
+      });
+    }
+  }, [products.length, isLoading, posthog]);
 
   // Memoized serializer function to prepare product data for navigation
   const serializeObject = useMemo(() => {

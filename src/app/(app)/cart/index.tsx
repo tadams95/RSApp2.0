@@ -23,6 +23,7 @@ import {
   View,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
+import { usePostHog } from "../../../analytics/PostHogProvider";
 import {
   clearCart,
   CartItem as ReduxCartItem,
@@ -139,6 +140,7 @@ interface OrderDetails {
 
 export default function CartScreen() {
   const dispatch = useDispatch();
+  const posthog = usePostHog();
   const cartItems = useSelector(selectCartItems) as unknown as CartItem[];
   const [totalPrice, setTotalPrice] = useState<number>(0);
   // Only show order summary when actually checking out or when cart has items
@@ -366,6 +368,18 @@ export default function CartScreen() {
     setTaxAmount(calculatedTaxAmount);
     setTotalPrice(newTotalPrice + shippingCost + calculatedTaxAmount);
 
+    // Track cart viewed when cart has items
+    if (cartItems.length > 0) {
+      posthog.track("cart_viewed", {
+        cart_value: newTotalPrice + shippingCost + calculatedTaxAmount,
+        item_count: cartItems.length,
+        currency: "USD",
+        has_clothing_items: hasClothingItems,
+        shipping_cost: shippingCost,
+        tax_amount: calculatedTaxAmount,
+      });
+    }
+
     // Automatically show order summary when cart has items
     if (cartItems.length > 0) {
       setCheckoutInProgress(true);
@@ -419,6 +433,22 @@ export default function CartScreen() {
       // Show order summary when checkout starts
       setCheckoutInProgress(true);
 
+      // Track checkout started
+      posthog.track("checkout_started", {
+        cart_value: totalPrice,
+        item_count: cartItems.length,
+        currency: "USD",
+        has_clothing_items: hasClothingItems,
+        shipping_cost: shippingCost,
+        tax_amount: taxAmount,
+        product_ids: cartItems.map((item) => item.productId).join(","),
+        total_quantity: cartItems.reduce(
+          (sum, item) => sum + item.selectedQuantity,
+          0
+        ),
+        has_event_tickets: cartItems.some((item) => !!item.eventDetails),
+      });
+
       // Save cart state before proceeding with checkout in case there's an error
       await saveCartState(cartItems as any[], totalPrice);
 
@@ -471,6 +501,28 @@ export default function CartScreen() {
     selectedColor?: string | null,
     selectedSize?: string | null
   ) => {
+    // Find the item being removed for analytics
+    const itemToRemove = cartItems.find(
+      (item) =>
+        item.productId === productId &&
+        item.selectedColor === selectedColor &&
+        item.selectedSize === selectedSize
+    );
+
+    // Track remove from cart
+    if (itemToRemove) {
+      posthog.track("remove_from_cart", {
+        product_id: itemToRemove.productId,
+        product_name: itemToRemove.title || "Unknown Product",
+        price: itemToRemove.price.amount,
+        currency: itemToRemove.price.currencyCode || "USD",
+        quantity: itemToRemove.selectedQuantity,
+        selected_color: itemToRemove.selectedColor,
+        selected_size: itemToRemove.selectedSize,
+        is_event_ticket: !!itemToRemove.eventDetails,
+      });
+    }
+
     // Clear validation errors for this product when removing it
     if (validationErrors?.items && validationErrors.items[productId]) {
       const updatedErrors = { ...validationErrors };
@@ -769,6 +821,14 @@ export default function CartScreen() {
       console.log("Presenting payment sheet to user");
       const { error } = await presentPaymentSheet();
 
+      // Track payment info added (when payment sheet is presented)
+      posthog.track("payment_info_added", {
+        cart_value: totalPrice,
+        item_count: cartItems.length,
+        currency: "USD",
+        has_clothing_items: hasClothingItems,
+      });
+
       if (error) {
         console.error("Payment error:", error);
 
@@ -849,6 +909,24 @@ export default function CartScreen() {
             status: "processing",
           } as OrderData);
           console.log("Order creation complete");
+
+          // Track purchase completed
+          posthog.track("purchase_completed", {
+            order_id: orderDetails.orderId,
+            revenue: totalPrice,
+            currency: "USD",
+            item_count: cartItems.length,
+            payment_method: "stripe",
+            has_clothing_items: hasClothingItems,
+            shipping_cost: shippingCost,
+            tax_amount: taxAmount,
+            product_ids: cartItems.map((item) => item.productId).join(","),
+            total_quantity: cartItems.reduce(
+              (sum, item) => sum + item.selectedQuantity,
+              0
+            ),
+            has_event_tickets: cartItems.some((item) => !!item.eventDetails),
+          });
 
           // Send notification
           await sendPurchaseNotification();

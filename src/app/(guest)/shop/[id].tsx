@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { usePostHog } from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { AppCarousel } from "../../../components/ui";
 import { GlobalStyles } from "../../../constants/styles";
@@ -60,6 +61,7 @@ const windowHeight = Dimensions.get("window").height;
 export default function GuestProductDetail() {
   // Get params from URL
   const params = useLocalSearchParams();
+  const { track } = usePostHog();
 
   // Parse the serialized product data
   const data: ProductData = JSON.parse(params.data as string);
@@ -71,6 +73,26 @@ export default function GuestProductDetail() {
   const [activeIndex, setActiveIndex] = useState<number>(0);
 
   const totalImages = images ? images.length : 0;
+
+  // Track product view for guest users
+  useEffect(() => {
+    if (data) {
+      const productPrice = price?.amount ? parseFloat(price.amount) : 0;
+
+      track("product_viewed", {
+        product_id: data.id,
+        product_name: title,
+        product_handle: data.handle || "unknown",
+        price: productPrice,
+        currency: price?.currencyCode || "USD",
+        category: "merchandise",
+        image_count: images?.length || 0,
+        variant_count: variants?.length || 0,
+        has_description: !!descriptionHtml,
+        screen_type: "guest",
+      });
+    }
+  }, [data, track, title, price, images, variants, descriptionHtml]);
 
   useEffect(() => {
     // When all images are loaded, set loading to false

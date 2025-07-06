@@ -1,6 +1,6 @@
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import {
   Dimensions,
   ImageStyle,
@@ -12,6 +12,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { usePostHog } from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { LazyImage } from "../../../components/ui";
 import {
@@ -52,12 +53,25 @@ interface ShopifyProduct {
 
 export default function ShopScreen() {
   const router = useRouter();
+  const posthog = usePostHog();
 
   // Use React Query for product fetching
   const productsQuery = useProducts();
   const { isLoading, isError, isFetching, isRefreshing, error } =
     getProductLoadingState(productsQuery);
   const products = productsQuery.data || [];
+
+  // Track product list viewed when products are loaded
+  useEffect(() => {
+    if (products.length > 0 && !isLoading) {
+      posthog.track("product_list_viewed", {
+        product_count: products.length,
+        category: "all_products",
+        page_type: "shop_index",
+        user_type: "authenticated",
+      });
+    }
+  }, [products.length, isLoading, posthog]);
 
   // Initialize offline product management
   const {
