@@ -12,7 +12,10 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { usePostHog } from "../../../analytics/PostHogProvider";
+import {
+  usePostHog,
+  useScreenTracking,
+} from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { LazyImage } from "../../../components/ui";
 import {
@@ -80,6 +83,15 @@ export default function ShopScreen() {
     hasOfflineData,
     cacheProduct,
   } = useOfflineProducts(products.length > 0 ? products : null);
+
+  // Track screen view
+  useScreenTracking("Shop Screen", {
+    user_type: "authenticated",
+    product_count: products.length,
+    is_loading: isLoading,
+    is_offline: isOffline,
+    has_offline_data: hasOfflineData,
+  });
 
   const handleProductPress = useCallback(
     (product: ShopifyProduct) => {

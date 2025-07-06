@@ -13,7 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { usePostHog } from "../../../analytics/PostHogProvider";
+import {
+  usePostHog,
+  useScreenTracking,
+} from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { AppCarousel } from "../../../components/ui";
 import { GlobalStyles } from "../../../constants/styles";
@@ -73,6 +76,20 @@ export default function GuestProductDetail() {
   const [activeIndex, setActiveIndex] = useState<number>(0);
 
   const totalImages = images ? images.length : 0;
+
+  // Track screen view for analytics
+  useScreenTracking("Guest Product Detail", {
+    productId: data.id,
+    productName: title,
+    productHandle: data.handle || "unknown",
+    price: price?.amount ? parseFloat(price.amount) : 0,
+    currency: price?.currencyCode || "USD",
+    userType: "guest",
+    imageCount: images?.length || 0,
+    variantCount: variants?.length || 0,
+    hasDescription: !!descriptionHtml,
+    isLoading: isLoading,
+  });
 
   // Track product view for guest users
   useEffect(() => {

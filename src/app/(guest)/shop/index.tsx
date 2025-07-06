@@ -8,7 +8,10 @@ import {
   Text,
   View,
 } from "react-native";
-import { usePostHog } from "../../../analytics/PostHogProvider";
+import {
+  usePostHog,
+  useScreenTracking,
+} from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { LazyImage } from "../../../components/ui";
 import {
@@ -103,6 +106,13 @@ const GuestShop: React.FC = () => {
       });
     }
   }, [products.length, isLoading, posthog]);
+
+  // Track screen view
+  useScreenTracking("Guest Shop Screen", {
+    user_type: "guest",
+    product_count: products.length,
+    is_loading: isLoading,
+  });
 
   // Memoized serializer function to prepare product data for navigation
   const serializeObject = useMemo(() => {

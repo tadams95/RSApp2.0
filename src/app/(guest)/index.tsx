@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useScreenTracking } from "../../analytics/PostHogProvider";
 import { navigateToAuth } from "../../utils/navigation";
 
 /**
@@ -15,6 +16,11 @@ import { navigateToAuth } from "../../utils/navigation";
  * It allows users to sign in or sign up for a full account
  */
 const GuestAccountPage: React.FC = () => {
+  // Track screen view
+  useScreenTracking("Guest Account Screen", {
+    user_type: "guest",
+  });
+
   const handleNavigateToAuth = () => {
     navigateToAuth();
   };

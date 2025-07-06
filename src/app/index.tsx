@@ -10,12 +10,20 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useScreenTracking } from "../analytics/PostHogProvider";
 import { GlobalStyles } from "../constants/styles";
 import { useAuth } from "../hooks/AuthContext";
 
 export default function Index() {
   const { authenticated, isLoading } = useAuth();
   const router = useRouter();
+
+  // Track screen view for analytics
+  useScreenTracking("Landing Screen", {
+    userType: authenticated ? "authenticated" : "guest",
+    isLoading: isLoading,
+    willRedirect: authenticated,
+  });
 
   // Redirect authenticated users to home page automatically
   useEffect(() => {

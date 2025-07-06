@@ -22,6 +22,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { useScreenTracking } from "../../../analytics/PostHogProvider";
 
 // Import React Query hooks
 import { useEventsWithHelpers } from "../../../hooks/useEvents";
@@ -43,6 +44,17 @@ export default function EventsScreen() {
   const [isOffline, setIsOffline] = useState(false);
   const flatListRef = useRef<FlatList<EventData>>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Track screen view
+  useScreenTracking("Events Screen", {
+    user_type: "authenticated",
+    event_count: events.length,
+    is_loading: isLoading,
+    has_events: hasEvents || false,
+    is_empty: isEmpty || false,
+    has_error: hasError || false,
+    is_offline: isOffline,
+  });
 
   // Monitor network status
   useEffect(() => {

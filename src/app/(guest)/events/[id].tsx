@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import { ProgressiveImage } from "../../../components/ui";
 import { useEventAttendingCountWithHelpers } from "../../../hooks/useEvents";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
@@ -55,6 +56,18 @@ const GuestEventView: React.FC = () => {
   } = useFirebaseImage(eventImgURL || null, {
     fallbackImage: require("../../../assets/BlurHero_2.png"),
     cacheExpiry: 3600000, // 1 hour cache
+  });
+
+  // Track screen view for analytics
+  useScreenTracking("Guest Event Detail", {
+    eventId: params.id,
+    eventName: eventName,
+    eventLocation: eventLocation,
+    eventPrice: eventPrice,
+    userType: "guest",
+    attendingCount: attendingCount,
+    isLoading: isLoading,
+    hasImage: !!eventImgURL,
   });
 
   const handleGuestCheckout = (): void => {

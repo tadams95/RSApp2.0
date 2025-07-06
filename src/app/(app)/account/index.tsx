@@ -21,6 +21,7 @@ import {
   View,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
+import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import { ImageWithFallback } from "../../../components/ui";
 import { useAuth } from "../../../hooks/AuthContext";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
@@ -114,6 +115,15 @@ export default function AccountScreen() {
     refetch: refetchProfile,
     hasProfile,
   } = useUserProfileWithHelpers();
+
+  // Track screen view
+  useScreenTracking("Account Screen", {
+    user_type: "authenticated",
+    has_profile: hasProfile,
+    has_profile_picture: !!profilePicture,
+    has_user_name: !!userName,
+    is_loading_profile: isLoadingProfile,
+  });
 
   // Update Redux and local state when profile data changes
   useEffect(() => {

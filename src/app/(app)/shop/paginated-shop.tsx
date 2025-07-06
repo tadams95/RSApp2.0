@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 
+import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import { LazyImage } from "../../../components/ui";
 import { useShopifyPagination } from "../../../hooks/useShopifyPagination";
 import { ShopifyProduct } from "../../../services/shopifyService";
@@ -32,6 +33,12 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
  * and error handling for cursor errors, out-of-bounds requests, and network issues
  */
 export default function PaginatedShopScreen() {
+  // Track screen view for analytics
+  useScreenTracking("Paginated Shop", {
+    userType: "authenticated",
+    screenType: "pagination",
+  });
+
   const handleProductPress = (product: ShopifyProduct) => {
     // Check if variants is defined before calling every
     const isOutOfStock =

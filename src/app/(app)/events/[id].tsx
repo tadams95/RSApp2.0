@@ -19,6 +19,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { useDispatch } from "react-redux";
+import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import EventNotFound from "../../../components/events/EventNotFound";
 import { ProgressiveImage } from "../../../components/ui";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
@@ -101,6 +102,20 @@ export default function EventDetailScreen() {
   } = useFirebaseImage(eventData?.imgURL || null, {
     fallbackImage: require("../../../assets/BlurHero_2.png"),
     cacheExpiry: 3600000, // 1 hour cache
+  });
+
+  // Track screen view for analytics
+  useScreenTracking("Event Detail", {
+    eventId: Array.isArray(params.id) ? params.id[0] : params.id,
+    eventName: eventData?.name,
+    eventLocation: eventData?.location,
+    eventPrice: eventData?.price,
+    userType: "authenticated",
+    attendingCount: attendingCount,
+    isLoading: isLoading,
+    hasImage: !!eventData?.imgURL,
+    hasError: !!error,
+    errorCode: errorCode,
   });
 
   useEffect(() => {

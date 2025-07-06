@@ -2,6 +2,7 @@ import { Image } from "expo-image";
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSelector } from "react-redux";
+import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import { useAuth } from "../../../hooks/AuthContext";
 import {
   selectUserEmail,
@@ -12,6 +13,13 @@ export default function HomeScreen() {
   const { authenticated } = useAuth();
   const userEmail = useSelector(selectUserEmail);
   const userName = useSelector(selectUserName);
+
+  // Track screen view
+  useScreenTracking("Home Screen", {
+    user_type: "authenticated",
+    has_user_name: !!userName,
+    has_email: !!userEmail,
+  });
 
   return (
     <ScrollView style={styles.container}>

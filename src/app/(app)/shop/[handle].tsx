@@ -16,7 +16,10 @@ import {
   View,
 } from "react-native";
 import { useDispatch } from "react-redux";
-import { usePostHog } from "../../../analytics/PostHogProvider";
+import {
+  usePostHog,
+  useScreenTracking,
+} from "../../../analytics/PostHogProvider";
 import ErrorBoundary from "../../../components/ErrorBoundary";
 import { AppCarousel } from "../../../components/ui";
 import { GlobalStyles } from "../../../constants/styles";
@@ -72,6 +75,23 @@ function ProductDetailScreen() {
   const productQuery = useProduct(handle);
   const { isLoading, isError, error } = getProductLoadingState(productQuery);
   const product = productQuery.data;
+
+  // Track screen view for analytics
+  useScreenTracking("Product Detail", {
+    productId: product?.id || null,
+    productName: product?.title || null,
+    productHandle: handle,
+    price: product?.variants?.[0]?.price?.amount
+      ? parseFloat(product.variants[0].price.amount)
+      : 0,
+    currency: product?.variants?.[0]?.price?.currencyCode || "USD",
+    userType: "authenticated",
+    imageCount: product?.images?.length || 0,
+    variantCount: product?.variants?.length || 0,
+    hasDescription: !!product?.descriptionHtml,
+    isLoading: isLoading,
+    isError: isError,
+  });
 
   // Track product view when product data is loaded
   useEffect(() => {

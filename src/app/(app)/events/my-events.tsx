@@ -35,6 +35,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import { retryWithBackoff } from "../../../utils/cart/networkErrorDetection";
 
 // Calculate screen width once
@@ -130,6 +131,20 @@ export default function MyEventsScreen() {
 
   // Check if user is logged in
   const currentUser = auth.currentUser?.uid;
+
+  // Track screen view for analytics
+  useScreenTracking("My Events", {
+    userType: "authenticated",
+    userId: currentUser || null,
+    eventCount: eventsData.length,
+    totalTickets: eventsData.reduce(
+      (sum, event) => sum + (event.ragersData?.length || 0),
+      0
+    ),
+    hasPermission: hasPermission === PermissionStatus.GRANTED,
+    isLoading: loading,
+    scanningAllowed: scanningAllowed,
+  });
 
   const fetchEventsData = useCallback(async () => {
     if (!currentUser) {

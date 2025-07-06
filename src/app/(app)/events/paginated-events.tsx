@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import PaginatedList from "../../../components/ui/PaginatedList";
 import { EventData } from "../../../utils/eventDataHandler";
 
@@ -29,6 +30,13 @@ const fontFamily =
  */
 export default function PaginatedEventsScreen() {
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+
+  // Track screen view for analytics
+  useScreenTracking("Paginated Events", {
+    userType: "authenticated",
+    screenType: "pagination",
+    loadedImagesCount: Object.keys(loadedImages).length,
+  });
 
   // Handle image load events
   const handleImageLoad = (eventId: string) => {

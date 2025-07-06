@@ -23,7 +23,10 @@ import {
   View,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
-import { usePostHog } from "../../../analytics/PostHogProvider";
+import {
+  usePostHog,
+  useScreenTracking,
+} from "../../../analytics/PostHogProvider";
 import {
   clearCart,
   CartItem as ReduxCartItem,
@@ -190,6 +193,15 @@ export default function CartScreen() {
 
   // Initialize offline cart sync utilities
   const offlineCartSync = useOfflineCartSync();
+
+  // Track screen view
+  useScreenTracking("Cart Screen", {
+    user_type: "authenticated",
+    cart_item_count: cartItems.length,
+    cart_is_empty: cartItems.length === 0,
+    is_checking_recovery: isCheckingRecovery,
+    show_recovery_modal: showRecoveryModal,
+  });
 
   // Check for recoverable cart or previous payment errors on component mount
   useEffect(() => {
