@@ -9,8 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-
 // TODO: Update this path when auth utilities are moved to src
 import LoadingOverlay from "../../components/LoadingOverlay";
 import PasswordResetErrorNotice from "../../components/PasswordResetErrorNotice";
@@ -22,7 +20,6 @@ export default function ForgotPasswordScreen() {
   const [formError, setFormError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-
 
   // Use the password reset error handler
   const {

@@ -389,227 +389,273 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
 **Expected Coverage**: ✅ **13 integration tests** covering critical authentication journeys
 
-## PRIORITY 7: Analytics Implementation
+## PRIORITY 7: PostHog Analytics Implementation
 
-### 7.1 Firebase Analytics Infrastructure Setup
+**Current Status**: Clean slate - previous Firebase Analytics infrastructure removed due to Expo Go compatibility issues
 
-**Current Issue**: No user behavior tracking or insights into user engagement patterns
+**Decision**: Implement PostHog for comprehensive, Expo Go compatible analytics with enterprise-grade features
 
-**Phase 1: Core Infrastructure (High Priority)** ✅ **COMPLETED**
+### 7.1 PostHog Infrastructure Setup (High Priority)
 
-- [x] **Install Dependencies**
+**Implementation Timeline**: 3-4 days for complete analytics infrastructure
 
-  - [x] ~~Install Firebase Analytics: `expo install @react-native-firebase/analytics @react-native-firebase/app`~~ **DECISION**: Use Firebase Web SDK instead for simplicity and non-breaking integration
-  - [x] ~~Update app.json/app.config.js with Analytics plugin configuration~~ **NOT NEEDED**: Web SDK requires no plugin configuration
-  - [x] Verify Google Services files are properly configured for Analytics (✅ measurementId already configured)
+**Phase 1: Core PostHog Setup (Day 1)**
 
-- [x] **Analytics Provider Implementation**
+- [ ] **Install PostHog Dependencies**
 
-  - [x] Create `src/analytics/AnalyticsProvider.tsx` with comprehensive analytics context
-  - [x] Implement core analytics methods: `logEvent`, `logScreenView`, `setUserProperty`, `setUserId`
-  - [x] Add error handling and fallback for analytics failures
-  - [x] Create `useAnalytics` hook for easy component integration
+  - [ ] Install PostHog React Native SDK: `npm install posthog-react-native`
+  - [ ] Create PostHog account and obtain API key
+  - [ ] Configure PostHog initialization with development/production environments
 
-- [x] **Screen Tracking System**
+- [ ] **Analytics Provider Implementation**
 
-  - [x] Create `src/hooks/useScreenTracking.tsx` for automatic screen view tracking
-  - [x] Implement path-to-screen-name conversion for Expo Router compatibility
-  - [x] Handle dynamic routes (product details, event details) with meaningful names
-  - [x] ~~Track screen view duration and engagement metrics~~ **FUTURE ENHANCEMENT**: Basic screen tracking implemented
+  - [ ] Create `src/analytics/PostHogProvider.tsx` with PostHog context
+  - [ ] Implement core analytics methods: `track`, `identify`, `capture`, `screen`
+  - [ ] Add error handling and offline event queuing
+  - [ ] Create `usePostHog` hook for component integration
 
-- [x] **Root Layout Integration**
-  - [x] Add AnalyticsProvider to `src/app/_layout.tsx` root layout
-  - [x] Initialize analytics on app start
-  - [x] ~~Set up user identification when authentication state changes~~ **NEXT PHASE**: Ready for implementation
-  - [x] ~~Configure analytics for both development and production environments~~ **NEXT PHASE**: Web SDK works in all environments
+- [ ] **Automatic Screen Tracking**
 
-### 7.2 Core User Journey Analytics (High Priority)
+  - [ ] Create `src/hooks/useScreenTracking.tsx` for Expo Router compatibility
+  - [ ] Implement path-to-screen-name mapping for meaningful analytics
+  - [ ] Handle dynamic routes (product/[handle], event/[id]) with context
+  - [ ] Add screen view duration and engagement tracking
 
-**Authentication Flow Tracking**
+- [ ] **Root Layout Integration**
+  - [ ] Add PostHogProvider to `src/app/_layout.tsx` root layout
+  - [ ] Initialize PostHog on app start with user session tracking
+  - [ ] Configure environment-specific settings (dev vs production)
+  - [ ] Add user identification integration with AuthContext
 
-- [x] **Registration & Login Events**
+### 7.2 Authentication & User Journey Analytics (High Priority)
 
-  - [x] Track `sign_up` event in `src/app/(auth)/signup.tsx` with method parameter
-  - [x] Track `login` event in `src/app/(auth)/login.tsx` with success/failure and method
-  - [x] Track password reset attempts in forgot password flow
-  - [x] Track authentication errors with specific error codes
-  - [x] Set user properties: `authentication_status`, `signup_method`, `login_method`
+**Phase 2: User Identification & Auth Flow (Day 2)**
 
-- [ ] **User Session Tracking**
-  - [ ] Track `app_open` event on app launch and foreground
-  - [ ] Track session duration and app usage patterns
-  - [ ] Track logout events and reasons (user-initiated vs automatic)
-  - [ ] Set user ID when user authenticates for cross-session tracking
+**Integration with Existing AuthContext:**
 
-**E-commerce Analytics (Enhanced Ecommerce Compatible)**
+- [ ] **User Identification Setup**
 
-- [ ] **Product Interaction Events**
+  - [ ] Integrate PostHog `identify()` with existing AuthContext user state changes
+  - [ ] Set user properties: `user_type`, `email_domain`, `signup_date`, `platform`
+  - [ ] Track anonymous users vs authenticated users with PostHog's automatic anonymous ID
+  - [ ] Handle user logout with PostHog `reset()` for privacy compliance
 
-  - [ ] Track `view_item` in `src/app/(app)/shop/[handle].tsx` and `src/app/(guest)/shop/[id].tsx`
-  - [ ] Track `view_item_list` in shop index screens with category/filter parameters
-  - [ ] Track product image carousel interactions and engagement
-  - [ ] Track product variant selections (size, color, quantity)
+- [ ] **Authentication Flow Events**
 
-- [ ] **Cart & Purchase Events**
+  - [ ] Track `sign_up` in `src/app/(auth)/signup.tsx` with registration method and user properties
+  - [ ] Track `login` in `src/app/(auth)/login.tsx` with success/failure states and error codes
+  - [ ] Track `password_reset` in `src/app/(auth)/forgotPassword.tsx` with attempt outcomes
+  - [ ] Track authentication errors with specific Firebase error codes for debugging
+  - [ ] Set user properties: `authentication_status`, `signup_method`, `last_login_date`
 
-  - [ ] Track `add_to_cart` in product detail screens with item details and value
-  - [ ] Track `remove_from_cart` in `src/app/(app)/cart/index.tsx` with removal reason
-  - [ ] Track `view_cart` when cart screen is accessed
-  - [ ] Track `begin_checkout` when checkout process starts
-  - [ ] Track `add_payment_info` when payment method is selected
-  - [ ] Track `purchase` on successful order completion with transaction details
-  - [ ] Track cart abandonment at different stages
+- [ ] **Session & App Usage Tracking**
+  - [ ] Track `app_opened` event on app launch and foreground transitions
+  - [ ] Track `app_backgrounded` for session duration calculations
+  - [ ] Track `logout` events with user-initiated vs automatic session expiry context
+  - [ ] Implement session duration tracking with PostHog's automatic session management
 
-- [ ] **Product Discovery Analytics**
-  - [ ] Track product list scroll depth and engagement
-  - [ ] Track product image load performance and user interaction
-  - [ ] Track guest vs authenticated user shopping behavior differences
-  - [ ] Track product popularity and view patterns
+### 7.3 E-commerce & Revenue Analytics (High Priority)
 
-### 7.3 Event Management Analytics (High Priority)
+**Phase 3: Shopify Integration & Purchase Tracking (Day 3)**
 
-**Event Engagement Tracking**
+**Integration with Existing Shopify Service:**
 
-- [ ] **Event Discovery & Viewing**
+- [ ] **Product Discovery Events**
 
-  - [ ] Track `view_item` for events in detail screens with event-specific parameters
-  - [ ] Track `view_item_list` for event listings with scroll depth
-  - [ ] Track event image interactions and hero image engagement
-  - [ ] Track event detail expansions (description, location, etc.)
+  - [ ] Track `product_viewed` in shop detail screens (`src/app/(app)/shop/[handle].tsx`, `src/app/(guest)/shop/[id].tsx`)
+  - [ ] Track `product_list_viewed` in shop index screens with category/collection context
+  - [ ] Track product image carousel interactions and engagement metrics
+  - [ ] Track search queries and product filter usage for discovery insights
 
-- [ ] **Event Interactions**
+- [ ] **E-commerce Funnel Events (PostHog Enhanced E-commerce)**
 
-  - [ ] Track location button taps (`select_content` with map interaction)
-  - [ ] Track event sharing actions if implemented
-  - [ ] Track attendance count views and user interest indicators
-  - [ ] Track event date/time accessibility and user timezone patterns
+  - [ ] Track `add_to_cart` with PostHog's built-in e-commerce properties: `$revenue`, `$currency`, `product_id`, `product_name`, `price`, `quantity`
+  - [ ] Track `remove_from_cart` in cart management with removal reason tracking
+  - [ ] Track `cart_viewed` when cart screen is accessed with cart value and item count
+  - [ ] Track `checkout_started` when checkout process begins
+  - [ ] Track `payment_info_added` when payment method is selected
+  - [ ] Track `purchase_completed` with full transaction details: order_id, revenue, items, payment_method
 
-- [ ] **Event Ticket Purchases**
+- [ ] **Cart Abandonment & Recovery Analytics**
+  - [ ] Track cart abandonment at specific funnel stages (product view → add to cart → checkout → payment)
+  - [ ] Track cart recovery attempts and success rates
+  - [ ] Track checkout errors and user retry behavior
+  - [ ] Implement cart value segments for high-value abandonment analysis
 
-  - [ ] Track `add_to_cart` for event tickets with event-specific metadata
-  - [ ] Track event checkout flow separately from product checkout
-  - [ ] Track successful event ticket purchases with event details
-  - [ ] Track event ticket transfers and QR code usage
+### 7.4 Event Management & Ticket Analytics (High Priority)
 
-- [ ] **My Events Analytics**
-  - [ ] Track `view_item_list` in My Events screen (`src/app/(app)/events/my-events.tsx`)
+**Phase 4: Event-Specific Business Intelligence (Day 4)**
+
+**Integration with Existing Event System:**
+
+- [ ] **Event Discovery & Engagement**
+
+  - [ ] Track `event_viewed` in event detail screens with event metadata (date, location, attendance)
+  - [ ] Track `event_list_viewed` in events index with scroll depth and engagement
+  - [ ] Track event hero image interactions and location button taps
+  - [ ] Track event sharing and social engagement features
+
+- [ ] **Event Ticket Purchase Flow**
+
+  - [ ] Track `ticket_add_to_cart` with event-specific metadata: `event_id`, `event_name`, `event_date`, `ticket_type`, `ticket_price`
+  - [ ] Track `ticket_purchase_completed` with full event transaction details
+  - [ ] Track `ticket_transferred` for QR code sharing and transfer analytics
+  - [ ] Track `event_checked_in` for attendance validation and timing analysis
+
+- [ ] **My Events & User Engagement**
+  - [ ] Track `my_events_viewed` in user's events dashboard
   - [ ] Track QR code generation and usage patterns
-  - [ ] Track ticket transfer requests and completions
-  - [ ] Track event check-in patterns and timing
+  - [ ] Track event reminder interactions and attendance correlation
+  - [ ] Track repeat event attendance and user loyalty patterns
 
-### 7.4 Navigation & User Experience Analytics (Medium Priority)
+### 7.5 Advanced Analytics & Business Intelligence (Medium Priority)
 
-**App Navigation Patterns**
+**Phase 5: User Behavior & Optimization (Week 2)**
 
-- [x] **Screen Flow Analytics**
+- [ ] **Navigation & User Experience Analytics**
 
-  - [x] Implement automatic screen view tracking with `useScreenTracking` hook
-  - [ ] Track user journey paths (guest → auth, browsing → purchase)
-  - [ ] Track tab navigation patterns and preferred sections
-  - [ ] Track back button usage and navigation abandonment
+  - [ ] Track user journey paths: guest → authenticated conversion funnel
+  - [ ] Track tab navigation patterns and feature usage preferences
+  - [ ] Track back button usage and navigation abandonment patterns
+  - [ ] Track feature discovery and onboarding completion rates
 
-- [ ] **Guest vs Authenticated Behavior**
+- [ ] **Performance & Technical Analytics**
 
-  - [ ] Track guest user conversion points (when they choose to authenticate)
-  - [ ] Track feature accessibility prompts for guest users
-  - [ ] Track authentication prompts and conversion rates
-  - [ ] Track guest browsing patterns vs authenticated user patterns
+  - [ ] Track app launch performance and initialization times
+  - [ ] Track image load failures and user patience metrics
+  - [ ] Track network connectivity issues and offline usage patterns
+  - [ ] Track error recovery success rates and user resilience
 
-- [ ] **Performance & Engagement Metrics**
-  - [ ] Track app launch time and initialization performance
-  - [ ] Track image load times and user wait patterns
-  - [ ] Track network connectivity issues and offline usage
-  - [ ] Track error recovery actions and user patience metrics
+- [ ] **Account Management & Profile Analytics**
+  - [ ] Track profile completion rates and update frequency
+  - [ ] Track settings changes and user preference patterns
+  - [ ] Track profile picture uploads and social feature usage
+  - [ ] Track account deletion attempts and churn analysis
 
-### 7.5 Advanced Features Analytics (Lower Priority)
+### 7.6 PostHog Dashboard & Business Intelligence Setup
 
-**Account Management Analytics**
+**Phase 6: Analytics Dashboard & Insights (Week 2)**
 
-- [ ] **Profile & Settings Tracking**
+- [ ] **PostHog Dashboard Configuration**
 
-  - [ ] Track profile updates and completion rates
-  - [ ] Track settings changes and preference patterns
-  - [ ] Track profile picture uploads and changes
-  - [ ] Track account deletion attempts and completion
+  - [ ] Set up key business metrics dashboard: MAU, conversion rates, revenue
+  - [ ] Create e-commerce funnel analysis with conversion optimization insights
+  - [ ] Set up user cohorts: new users, power users, churned users, high-value customers
+  - [ ] Configure retention analysis for user engagement and loyalty tracking
 
-- [ ] **QR Code & Social Features**
-  - [ ] Track QR code generation and sharing in `src/components/modals/QRModal.tsx`
-  - [ ] Track QR code scanning attempts and success rates
-  - [ ] Track profile viewing and social interaction patterns
-  - [ ] Track admin panel usage if user has admin privileges
+- [ ] **A/B Testing & Feature Flags Integration**
 
-**Error & Recovery Analytics**
+  - [ ] Set up PostHog feature flags for A/B testing infrastructure
+  - [ ] Create conversion rate optimization experiments
+  - [ ] Implement feature rollout strategies with gradual user exposure
+  - [ ] Set up automated experiment analysis and statistical significance tracking
 
-- [ ] **Error Tracking Integration**
+- [ ] **Custom Properties & Advanced Segmentation**
+  - [ ] Set up user properties: `total_purchases`, `favorite_category`, `user_lifetime_value`
+  - [ ] Create behavioral segments: frequent buyers, event enthusiasts, cart abandoners
+  - [ ] Implement geographic and demographic segmentation for targeted insights
+  - [ ] Set up automated alerts for key metric changes and anomalies
 
-  - [ ] Integrate analytics with existing error boundary system
-  - [ ] Track authentication failures with specific error types
-  - [ ] Track payment failures and recovery attempts
-  - [ ] Track network errors and offline recovery patterns
-  - [ ] Track app crashes and error recovery success rates
+### 7.7 Privacy & Compliance Implementation
 
-- [ ] **Cart Recovery Analytics**
-  - [ ] Track cart recovery modal appearances and user actions
-  - [ ] Track successful cart restorations vs dismissals
-  - [ ] Track payment retry attempts after failures
-  - [ ] Track user patience with checkout error recovery
+**Phase 7: GDPR & Privacy Features (Week 2)**
 
-### 7.6 Analytics Implementation Details
+- [ ] **Privacy Controls & User Consent**
 
-**User Properties to Set**
+  - [ ] Implement analytics opt-out functionality in user settings
+  - [ ] Add GDPR-compliant data collection notices and consent management
+  - [ ] Configure PostHog's built-in privacy features: IP anonymization, data retention
+  - [ ] Implement user data export and deletion requests for GDPR compliance
 
-- [ ] **Core User Properties**
-  - `user_type`: "guest" | "authenticated" | "admin"
-  - `platform`: "ios" | "android"
-  - `app_version`: Current app version
-  - `authentication_method`: "email" | "social" | null
-  - `first_login_date`: Date of first successful login
-  - `total_purchases`: Number of completed purchases
-  - `preferred_category`: Most viewed product/event category
+- [ ] **Data Security & Performance**
+  - [ ] Configure PostHog's EU data residency for European users
+  - [ ] Implement event batching and offline queuing for optimal performance
+  - [ ] Set up analytics performance monitoring and error tracking
+  - [ ] Configure development vs production PostHog instances for data separation
 
-**Custom Event Parameters**
+### 7.8 Implementation Integration Points
 
-- [ ] **E-commerce Parameters**
+**Leveraging Existing Rage State Infrastructure:**
 
-  - `item_id`, `item_name`, `item_category`, `item_variant`
-  - `value`, `currency`, `quantity`
-  - `transaction_id`, `payment_method`
-  - `item_list_id`, `item_list_name`
+**AuthContext Integration:**
 
-- [ ] **Event-Specific Parameters**
+```typescript
+// Integrate with existing src/hooks/AuthContext.tsx
+const { user, authenticated } = useAuth();
+const posthog = usePostHog();
 
-  - `event_id`, `event_name`, `event_date`, `event_location`
-  - `ticket_type`, `ticket_quantity`, `ticket_price`
-  - `attendance_count`, `event_category`
+useEffect(() => {
+  if (authenticated && user) {
+    posthog.identify(user.uid, {
+      email_domain: user.email?.split("@")[1],
+      user_type: user.isAdmin ? "admin" : "user",
+      signup_date: user.createdAt,
+    });
+  } else {
+    posthog.reset(); // Clear user data on logout
+  }
+}, [authenticated, user]);
+```
 
-- [ ] **Navigation Parameters**
-  - `screen_name`, `screen_class`, `previous_screen`
-  - `user_journey_step`, `conversion_funnel_stage`
-  - `time_on_screen`, `scroll_depth`
+**Redux State Integration:**
 
-**Implementation Guidelines**
+```typescript
+// Integrate with existing cart state in Redux
+const cartItems = useSelector((state) => state.cart.items);
+const cartTotal = useSelector(selectCartSubtotal);
 
-- [ ] **Development vs Production**
+posthog.capture("add_to_cart", {
+  $revenue: productPrice,
+  product_id: product.id,
+  product_name: product.title,
+  cart_total: cartTotal,
+  cart_item_count: cartItems.length,
+});
+```
 
-  - [ ] Set up separate Analytics configurations for dev/staging/production
-  - [ ] Implement analytics debugging tools for development
-  - [ ] Create analytics event validation system
-  - [ ] Add analytics performance monitoring
+**Shopify Service Integration:**
 
-- [ ] **Privacy & Compliance**
-  - [ ] Implement user consent management for analytics
-  - [ ] Ensure GDPR/CCPA compliance for user data collection
-  - [ ] Provide analytics opt-out functionality in settings
-  - [ ] Document data collection practices for privacy policy
+```typescript
+// Integrate with existing src/services/shopifyService.tsx
+export const trackProductPurchase = (order, items) => {
+  posthog.capture("purchase_completed", {
+    $revenue: order.total,
+    $currency: "USD",
+    order_id: order.id,
+    payment_method: order.paymentMethod,
+    items: items.map((item) => ({
+      product_id: item.id,
+      product_name: item.title,
+      price: item.price,
+      quantity: item.quantity,
+    })),
+  });
+};
+```
 
-**Expected Analytics Benefits:**
+**Expected Business Impact:**
 
-- **User Behavior Insights**: Understand how users navigate and engage with the app
-- **Conversion Optimization**: Identify bottlenecks in purchase and registration flows
-- **Feature Usage Analytics**: Determine which features are most/least used
-- **Performance Monitoring**: Track app performance from user perspective
-- **A/B Testing Foundation**: Enable data-driven feature testing and optimization
-- **Business Intelligence**: Revenue attribution, user lifetime value, retention metrics
+- **User Behavior Insights**: Complete understanding of user journey from discovery to purchase
+- **Conversion Optimization**: 15-25% improvement in purchase conversion through funnel analysis
+- **Cart Abandonment Reduction**: 20-30% reduction in cart abandonment through behavioral insights
+- **Feature Usage Analytics**: Data-driven feature development and user experience optimization
+- **Revenue Attribution**: Clear understanding of user acquisition channels and lifetime value
+- **A/B Testing Platform**: Continuous optimization of user experience and business metrics
+
+**Success Metrics (30-Day Post-Implementation):**
+
+- [ ] 100% user action coverage: authentication, e-commerce, events, navigation
+- [ ] Real-time dashboard providing actionable business insights
+- [ ] A/B testing platform operational for feature optimization
+- [ ] User segmentation and cohort analysis driving marketing strategies
+- [ ] Privacy-compliant analytics with user opt-out functionality
+- [ ] 90%+ analytics event delivery rate with offline queuing
+
+**Cost Projection for Rage State:**
+
+- **Year 1**: Free tier (1M events/month covers initial growth)
+- **Year 2**: $240/year as user base scales to 5K-15K MAU
+- **Year 3**: $600/year for 15K-50K MAU with advanced features
 
 ### 7.2 Push Notifications Implementation
 
@@ -732,7 +778,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
 **Recommended Implementation Order:**
 
-1. **Week 1**: Analytics Implementation (Priority 7) - **High business value for user insights**
+1. **Week 1**: PostHog Analytics Implementation (Priority 7) - **High business value for user insights and conversion optimization**
 2. **Week 2**: Styling System with NativeWind (Priority 8) - **Consistency and maintainability**
 3. **Week 3**: Final Optimizations (Priority 9) - **Performance and security polish**
 
@@ -747,7 +793,9 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 - [x] Hybrid state management: React Query for server state, Redux for client state
 - [x] 80% reduction in redundant API calls through intelligent caching
 - [x] **Comprehensive test coverage for critical user journeys (131 passing tests)**
-- [ ] Analytics tracking implemented
+- [ ] PostHog analytics tracking implemented with comprehensive user journey analysis
+- [ ] E-commerce conversion funnel optimization active (target: 15-25% improvement)
+- [ ] A/B testing platform operational for continuous feature optimization
 - [ ] Consistent styling system in place
 
 **Performance Benchmarks:**
