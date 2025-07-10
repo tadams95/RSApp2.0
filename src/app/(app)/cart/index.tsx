@@ -9,9 +9,11 @@
  */
 
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import {
   Alert,
+  AppState,
   Dimensions,
   Image,
   Modal,
@@ -51,7 +53,7 @@ import {
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { getFirestore } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   CartOperationErrorBoundary,
   CheckoutPaymentErrorBoundary,
@@ -194,6 +196,18 @@ export default function CartScreen() {
   // Initialize offline cart sync utilities
   const offlineCartSync = useOfflineCartSync();
 
+  // Cart abandonment tracking state
+  const [cartSessionStartTime, setCartSessionStartTime] = useState<number>(
+    Date.now()
+  );
+  const [lastInteractionTime, setLastInteractionTime] = useState<number>(
+    Date.now()
+  );
+  const [checkoutStage, setCheckoutStage] = useState<string>("cart_view");
+  const [hasAttemptedCheckout, setHasAttemptedCheckout] =
+    useState<boolean>(false);
+  const [abandonmentTracked, setAbandonmentTracked] = useState<boolean>(false);
+
   // Track screen view
   useScreenTracking("Cart Screen", {
     user_type: "authenticated",
@@ -202,6 +216,123 @@ export default function CartScreen() {
     is_checking_recovery: isCheckingRecovery,
     show_recovery_modal: showRecoveryModal,
   });
+
+  // Cart abandonment tracking functions
+  const updateLastInteraction = () => {
+    setLastInteractionTime(Date.now());
+  };
+
+  const trackCartAbandonment = (abandonmentStage: string, reason: string) => {
+    if (abandonmentTracked || cartItems.length === 0) return;
+
+    const sessionDuration = Date.now() - cartSessionStartTime;
+    const timeSinceLastInteraction = Date.now() - lastInteractionTime;
+    const cartValue = cartItems.reduce(
+      (sum, item) => sum + item.price.amount * item.selectedQuantity,
+      0
+    );
+
+    // Determine cart value segment
+    let valueSegment = "low";
+    if (cartValue >= 100) valueSegment = "high";
+    else if (cartValue >= 50) valueSegment = "medium";
+
+    posthog.track("cart_abandoned", {
+      abandonment_stage: abandonmentStage,
+      abandonment_reason: reason,
+      cart_value: cartValue,
+      cart_value_segment: valueSegment,
+      item_count: cartItems.length,
+      session_duration_seconds: Math.round(sessionDuration / 1000),
+      time_since_last_interaction_seconds: Math.round(
+        timeSinceLastInteraction / 1000
+      ),
+      had_attempted_checkout: hasAttemptedCheckout,
+      checkout_stage: checkoutStage,
+      has_clothing_items: cartItems.some((item) => !item.eventDetails),
+      has_event_tickets: cartItems.some((item) => !!item.eventDetails),
+      product_ids: cartItems.map((item) => item.productId).join(","),
+      user_type: "authenticated",
+    });
+
+    setAbandonmentTracked(true);
+  };
+
+  const trackCartRecoveryAttempt = (recoveryMethod: string) => {
+    const cartValue = recoveredCartItems.reduce(
+      (sum, item) => sum + item.price.amount * item.selectedQuantity,
+      0
+    );
+
+    posthog.track("cart_recovery_attempt", {
+      recovery_method: recoveryMethod,
+      cart_value: cartValue,
+      item_count: recoveredCartItems.length,
+      time_since_abandonment: recoveredTimestamp
+        ? Date.now() - recoveredTimestamp
+        : null,
+      user_type: "authenticated",
+    });
+  };
+
+  const trackCheckoutError = (error: any, errorStage: string) => {
+    const cartValue = cartItems.reduce(
+      (sum, item) => sum + item.price.amount * item.selectedQuantity,
+      0
+    );
+
+    posthog.track("checkout_error", {
+      error_stage: errorStage,
+      error_code: error?.code || "unknown",
+      error_message: error?.message || "Unknown error",
+      cart_value: cartValue,
+      item_count: cartItems.length,
+      checkout_stage: checkoutStage,
+      user_type: "authenticated",
+      retry_available: true,
+    });
+  };
+
+  // Track cart abandonment when user navigates away or app goes to background
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset abandonment tracking when screen is focused
+      setAbandonmentTracked(false);
+      setCartSessionStartTime(Date.now());
+      setLastInteractionTime(Date.now());
+
+      return () => {
+        // Track abandonment when user navigates away
+        if (cartItems.length > 0 && !abandonmentTracked) {
+          trackCartAbandonment("navigation", "user_navigated_away");
+        }
+      };
+    }, [cartItems.length, abandonmentTracked])
+  );
+
+  // Track app state changes for abandonment
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      if (
+        nextAppState === "background" &&
+        cartItems.length > 0 &&
+        !abandonmentTracked
+      ) {
+        trackCartAbandonment("app_background", "app_backgrounded");
+      }
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+    return () => subscription?.remove();
+  }, [cartItems.length, abandonmentTracked]);
+
+  // Update interaction time on any cart interaction
+  useEffect(() => {
+    updateLastInteraction();
+  }, [cartItems]);
 
   // Check for recoverable cart or previous payment errors on component mount
   useEffect(() => {
@@ -291,6 +422,9 @@ export default function CartScreen() {
     setRecoveryLoading(true);
 
     try {
+      // Track cart recovery attempt
+      trackCartRecoveryAttempt("cart_recovery_modal");
+
       // Update redux store with saved items - convert to the expected Redux format
       dispatch(
         updateCartItems(recoveredCartItems as unknown as ReduxCartItem[])
@@ -305,6 +439,11 @@ export default function CartScreen() {
       // Show order summary after cart restoration
       setCheckoutInProgress(true);
 
+      // Reset abandonment tracking for new session
+      setAbandonmentTracked(false);
+      setCartSessionStartTime(Date.now());
+      setLastInteractionTime(Date.now());
+
       // Show confirmation to user
       Alert.alert(
         "Cart Restored",
@@ -312,6 +451,14 @@ export default function CartScreen() {
       );
     } catch (error) {
       console.error("Error restoring cart:", error);
+
+      // Track recovery failure
+      posthog.track("cart_recovery_failed", {
+        recovery_method: "cart_recovery_modal",
+        error_message: error instanceof Error ? error.message : "Unknown error",
+        user_type: "authenticated",
+      });
+
       Alert.alert(
         "Restore Failed",
         "There was a problem restoring your cart. Please try again."
@@ -323,12 +470,38 @@ export default function CartScreen() {
 
   // Dismiss recovery modal
   const handleDismissRecovery = () => {
+    // Track abandonment of recovery attempt
+    posthog.track("cart_recovery_dismissed", {
+      recovery_method: "cart_recovery_modal",
+      cart_value: recoveredCartItems.reduce(
+        (sum, item) => sum + item.price.amount * item.selectedQuantity,
+        0
+      ),
+      item_count: recoveredCartItems.length,
+      time_since_abandonment: recoveredTimestamp
+        ? Date.now() - recoveredTimestamp
+        : null,
+      user_type: "authenticated",
+    });
+
     clearCartState();
     setShowRecoveryModal(false);
   };
 
   // Handle retry of failed payment
   const handleRetryPayment = async () => {
+    // Track checkout retry attempt
+    posthog.track("checkout_retry_attempt", {
+      retry_method: "payment_error_handler",
+      checkout_stage: checkoutStage,
+      cart_value: cartItems.reduce(
+        (sum, item) => sum + item.price.amount * item.selectedQuantity,
+        0
+      ),
+      item_count: cartItems.length,
+      user_type: "authenticated",
+    });
+
     setShowPaymentErrorHandler(false);
     await clearCheckoutError();
 
@@ -340,6 +513,11 @@ export default function CartScreen() {
 
   // Handle cancellation of payment retry
   const handleCancelRetry = () => {
+    // Track abandonment from payment error
+    if (cartItems.length > 0) {
+      trackCartAbandonment("payment_error", "user_cancelled_payment_retry");
+    }
+
     clearCheckoutError();
     setShowPaymentErrorHandler(false);
   };
@@ -407,6 +585,9 @@ export default function CartScreen() {
 
   // Handle the checkout process
   const handleCheckout = async () => {
+    // Update interaction tracking
+    updateLastInteraction();
+
     if (cartItems.length === 0) {
       Alert.alert("Empty Cart", "Your cart is empty.");
       return;
@@ -445,6 +626,10 @@ export default function CartScreen() {
       // Show order summary when checkout starts
       setCheckoutInProgress(true);
 
+      // Update checkout stage
+      setCheckoutStage("checkout_started");
+      setHasAttemptedCheckout(true);
+
       // Track checkout started
       posthog.track("checkout_started", {
         cart_value: totalPrice,
@@ -470,13 +655,16 @@ export default function CartScreen() {
 
       if (hasClothingItems) {
         console.log("Physical items detected, opening address collection");
+        setCheckoutStage("address_collection");
         setShowAddressSheet(true); // Show the address sheet
         // The payment flow continues in the AddressSheet.onSubmit handler
       } else {
         console.log("Digital items only, proceeding directly to payment");
         // For event tickets, go directly to payment
+        setCheckoutStage("payment_initialization");
         const initialized = await initializePaymentSheet(null);
         if (initialized) {
+          setCheckoutStage("payment_sheet");
           await openPaymentSheet("RS-EVENT", null);
         } else {
           // Payment initialization failed
@@ -485,6 +673,9 @@ export default function CartScreen() {
       }
     } catch (error) {
       console.error("Checkout error:", error);
+
+      // Track checkout error
+      trackCheckoutError(error, "checkout_initialization");
 
       // Save error information for potential recovery
       if (error instanceof Error) {
@@ -513,6 +704,9 @@ export default function CartScreen() {
     selectedColor?: string | null,
     selectedSize?: string | null
   ) => {
+    // Update interaction tracking
+    updateLastInteraction();
+
     // Find the item being removed for analytics
     const itemToRemove = cartItems.find(
       (item) =>
@@ -568,6 +762,11 @@ export default function CartScreen() {
   };
 
   const confirmClearCart = () => {
+    // Track cart clearing as abandonment
+    if (cartItems.length > 0) {
+      trackCartAbandonment("cart_clear", "user_cleared_cart");
+    }
+
     dispatch(clearCart());
     setClearConfirmationModalVisible(false);
     setCheckoutInProgress(false); // Hide order summary when cart is cleared
@@ -756,6 +955,9 @@ export default function CartScreen() {
       } else {
         console.error("Error initializing payment sheet:", initResult.error);
 
+        // Track payment initialization error
+        trackCheckoutError(initResult.error, "payment_sheet_initialization");
+
         // Handle specific error codes
         if (initResult.error.code === "Failed") {
           Alert.alert(
@@ -791,6 +993,9 @@ export default function CartScreen() {
       }
     } catch (error) {
       console.error("Payment initialization error:", error);
+
+      // Track payment initialization error
+      trackCheckoutError(error, "payment_sheet_initialization_exception");
 
       // Save error for recovery
       if (error instanceof Error) {
@@ -844,6 +1049,9 @@ export default function CartScreen() {
       if (error) {
         console.error("Payment error:", error);
 
+        // Track payment error
+        trackCheckoutError(error, "payment_sheet_presentation");
+
         // Save error information for recovery
         await saveCheckoutError({
           code: error.code || "PAYMENT_ERROR",
@@ -854,6 +1062,10 @@ export default function CartScreen() {
         // Handle different error types
         if (error.code === "Canceled") {
           console.log("User canceled the payment");
+          // Track payment cancellation as abandonment
+          if (cartItems.length > 0) {
+            trackCartAbandonment("payment_sheet", "user_cancelled_payment");
+          }
           // No need to show an alert for user-initiated cancellation
         } else if (
           error.code === "Failed" &&
@@ -894,6 +1106,8 @@ export default function CartScreen() {
         // Payment successful, save order information
         try {
           console.log("Payment successful, saving order");
+          setCheckoutStage("order_processing");
+
           const orderDetails: OrderDetails = {
             orderId: `${paymentIntentPrefix}-${Date.now()}`,
             orderItems: cartItems,
@@ -950,9 +1164,11 @@ export default function CartScreen() {
           await clearCartState();
           await clearCheckoutError();
 
-          // Reset payment state
+          // Reset payment state and update to completion stage
           setPaymentSheetInitialized(false);
           setCheckoutInProgress(false);
+          setCheckoutStage("completed");
+          setAbandonmentTracked(false); // Reset for next session
 
           Alert.alert(
             "Payment Successful!",
@@ -1070,6 +1286,9 @@ export default function CartScreen() {
     if (error.code !== "Canceled" && error.code !== "Cancelled") {
       console.error("Address sheet error:", error);
 
+      // Track address sheet error
+      trackCheckoutError(error, "address_sheet");
+
       // Save error info for potential recovery
       saveCheckoutError({
         code: "ADDRESS_ERROR",
@@ -1081,7 +1300,10 @@ export default function CartScreen() {
         "Could not validate address. Please try again."
       );
     } else {
-      // Handle cancellation silently
+      // Handle cancellation as abandonment
+      if (cartItems.length > 0) {
+        trackCartAbandonment("address_sheet", "user_cancelled_address_entry");
+      }
       // console.log("AddressSheet flow canceled by user - this is normal behavior");
     }
 
@@ -1356,21 +1578,27 @@ export default function CartScreen() {
                   "Address submission successful, proceeding with payment"
                 );
                 setAddressDetails(addressDetails);
+                setCheckoutStage("address_completed");
                 setShowAddressSheet(false);
 
                 // Ensure we set a small delay before proceeding with payment
                 // to allow the AddressSheet to properly dismiss
                 setTimeout(async () => {
                   try {
+                    setCheckoutStage("payment_initialization");
                     const initialized = await initializePaymentSheet(
                       addressDetails
                     );
                     if (initialized) {
+                      setCheckoutStage("payment_sheet");
                       await openPaymentSheet("RS-MERCH", addressDetails);
                     }
                     // If initialization failed, the function already shows an error message
                   } catch (error) {
                     console.error("Error in address-to-payment flow:", error);
+
+                    // Track checkout error in address-to-payment flow
+                    trackCheckoutError(error, "address_to_payment_flow");
 
                     // Save error information
                     if (error instanceof Error) {
