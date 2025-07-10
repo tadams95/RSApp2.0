@@ -127,6 +127,24 @@ function ProductDetailScreen() {
     useState(false);
   const [activeIndex, setActiveIndex] = useState(0); // For image swiping
 
+  // Track image carousel interactions
+  const handleImageCarouselSwipe = (index: number) => {
+    setActiveIndex(index);
+
+    // Track carousel interaction for analytics
+    if (product) {
+      track("product_image_carousel_swipe", {
+        product_id: product.id,
+        product_name: product.title,
+        product_handle: handle,
+        image_index: index,
+        total_images: product.images?.length || 0,
+        swipe_direction: index > activeIndex ? "next" : "previous",
+        user_type: "authenticated",
+      });
+    }
+  };
+
   const availableSizes = useMemo(() => {
     if (!product) return [];
     const sizes = product.variants
@@ -152,16 +170,48 @@ function ProductDetailScreen() {
   const handleSizeSelect = (size: string) => {
     setSelectedSize(size);
     setSizeModalVisible(false);
+
+    // Track variant selection for analytics
+    track("product_variant_selected", {
+      product_id: product?.id || null,
+      product_name: product?.title || null,
+      product_handle: handle,
+      variant_type: "size",
+      variant_value: size,
+      available_sizes: availableSizes.length,
+      user_type: "authenticated",
+    });
   };
 
   const handleColorSelect = (color: string) => {
     setSelectedColor(color);
     setColorModalVisible(false);
+
+    // Track variant selection for analytics
+    track("product_variant_selected", {
+      product_id: product?.id || null,
+      product_name: product?.title || null,
+      product_handle: handle,
+      variant_type: "color",
+      variant_value: color,
+      available_colors: availableColors.length,
+      user_type: "authenticated",
+    });
   };
 
   const handleQuantitySelect = (quantity: number) => {
     setSelectedQuantity(quantity);
     setQuantityModalVisible(false);
+
+    // Track variant selection for analytics
+    track("product_variant_selected", {
+      product_id: product?.id || null,
+      product_name: product?.title || null,
+      product_handle: handle,
+      variant_type: "quantity",
+      variant_value: quantity,
+      user_type: "authenticated",
+    });
   };
 
   const handleAddToCart = () => {
@@ -240,7 +290,7 @@ function ProductDetailScreen() {
             data={product.images}
             height={windowWidth * 1.1}
             currentIndex={activeIndex}
-            onSnapToItem={setActiveIndex}
+            onSnapToItem={handleImageCarouselSwipe}
             renderItem={({ item, index }) => (
               <Image
                 source={{ uri: item.url }}

@@ -506,8 +506,8 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
   - [x] Track `product_viewed` in shop detail screens (`src/app/(app)/shop/[handle].tsx`, `src/app/(guest)/shop/[id].tsx`) ✅
   - [x] Track `product_list_viewed` in shop index screens with category/collection context ✅
-  - [ ] Track product image carousel interactions and engagement metrics
-  - [ ] Track search queries and product filter usage for discovery insights
+  - [x] Track product image carousel interactions and engagement metrics ✅
+  - [ ] Track search queries and product filter usage for discovery insights (requires search/filter UI implementation)
 
 - [x] **E-commerce Funnel Events (PostHog Enhanced E-commerce)** ✅
 
@@ -534,9 +534,22 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
   - `checkout_started` with full cart context and item breakdown
   - `payment_info_added` when payment sheet is presented
   - `purchase_completed` with order details, revenue, and comprehensive metadata
+- ✅ Added product image carousel interaction tracking:
+  - `product_image_carousel_swipe` events in both authenticated and guest product detail screens
+  - Tracks swipe direction, image index, total images, and user context
+  - Enhanced user engagement analytics for product discovery
+- ✅ Added product variant selection tracking:
+  - `product_variant_selected` events for size, color, and quantity selections
+  - Comprehensive metadata including available options and user interaction patterns
 - ✅ All tracking follows PostHog's e-commerce best practices with appropriate properties
 - ✅ No breaking changes introduced - all additions are minimal and additive
 - ✅ Maintains existing error handling and user experience flows
+
+**✅ Product Discovery Events Implementation Summary:**
+
+- **Image carousel tracking**: Users' interaction with product image galleries now tracked with swipe direction and engagement metrics
+- **Variant selection tracking**: Size, color, and quantity selection interactions captured for conversion optimization insights
+- **Search/filter tracking**: Deferred pending implementation of search and filter UI components (currently not present in the application)
 
 ### 7.4 Event Management & Ticket Analytics (High Priority)
 

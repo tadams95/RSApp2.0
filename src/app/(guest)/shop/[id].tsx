@@ -77,6 +77,23 @@ export default function GuestProductDetail() {
 
   const totalImages = images ? images.length : 0;
 
+  // Track image carousel interactions
+  const handleImageCarouselSwipe = (index: number) => {
+    const previousIndex = activeIndex;
+    setActiveIndex(index);
+
+    // Track carousel interaction for analytics
+    track("product_image_carousel_swipe", {
+      product_id: data.id,
+      product_name: title,
+      product_handle: data.handle || "unknown",
+      image_index: index,
+      total_images: totalImages,
+      swipe_direction: index > previousIndex ? "next" : "previous",
+      user_type: "guest",
+    });
+  };
+
   // Track screen view for analytics
   useScreenTracking("Guest Product Detail", {
     productId: data.id,
@@ -183,7 +200,7 @@ export default function GuestProductDetail() {
             data={images}
             height={windowWidth * 1.2}
             currentIndex={activeIndex}
-            onSnapToItem={(index) => setActiveIndex(index)}
+            onSnapToItem={handleImageCarouselSwipe}
             showsPagination={true}
             paginationStyle={styles.pagination}
             renderItem={({ item, index }) => (
