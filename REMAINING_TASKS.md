@@ -902,5 +902,5 @@ export const trackProductPurchase = (order, items) => {
 
 ---
 
-_Last Updated: January 2025_
+_Last Updated: July 2025_
 _This document should be the single source of truth for remaining work_

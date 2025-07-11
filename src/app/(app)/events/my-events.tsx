@@ -35,7 +35,10 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { useScreenTracking } from "../../../analytics/PostHogProvider";
+import {
+  usePostHog,
+  useScreenTracking,
+} from "../../../analytics/PostHogProvider";
 import { retryWithBackoff } from "../../../utils/cart/networkErrorDetection";
 
 // Calculate screen width once
@@ -128,9 +131,36 @@ export default function MyEventsScreen() {
 
   const firestore = getFirestore();
   const auth = getAuth();
+  const posthog = usePostHog();
 
   // Check if user is logged in
   const currentUser = auth.currentUser?.uid;
+
+  // Track my events viewed analytics
+  useEffect(() => {
+    if (!loading && eventsData.length >= 0) {
+      posthog.capture("my_events_viewed", {
+        user_id: currentUser || "anonymous",
+        events_with_tickets: eventsData.length,
+        total_tickets: eventsData.reduce(
+          (sum, event) => sum + (event.ragersData?.length || 0),
+          0
+        ),
+        camera_permission_granted: hasPermission === PermissionStatus.GRANTED,
+        upcoming_events: eventsData.filter((event) => {
+          if (!event.eventData?.dateTime) return false;
+          const eventDate = new Date(event.eventData.dateTime);
+          return eventDate > new Date();
+        }).length,
+        past_events: eventsData.filter((event) => {
+          if (!event.eventData?.dateTime) return false;
+          const eventDate = new Date(event.eventData.dateTime);
+          return eventDate <= new Date();
+        }).length,
+        screen_context: "my_events_dashboard",
+      });
+    }
+  }, [loading, eventsData, hasPermission, currentUser, posthog]);
 
   // Track screen view for analytics
   useScreenTracking("My Events", {
@@ -264,12 +294,31 @@ export default function MyEventsScreen() {
         try {
           console.log("QR code scanned:", data);
 
+          // Track QR code scan attempt
+          posthog?.capture("qr_code_scanned", {
+            scan_context: "ticket_transfer",
+            scanned_data: data,
+            event_id: eventNameTransfer,
+            ticket_id: selectedTicketId,
+            user_type: "authenticated",
+          });
+
           // Query the realtime database to get the recipient's details
           const db = getDatabase();
           const userRef = ref(db, `userProfiles/${data}`);
           const snapshot = await get(userRef);
 
           if (!snapshot.exists()) {
+            // Track invalid QR code
+            posthog?.capture("qr_code_scan_failed", {
+              scan_context: "ticket_transfer",
+              failure_reason: "user_not_found",
+              scanned_data: data,
+              event_id: eventNameTransfer,
+              ticket_id: selectedTicketId,
+              user_type: "authenticated",
+            });
+
             Alert.alert("Invalid QR Code", "No user found with this QR code.", [
               { text: "OK", onPress: () => setScanningAllowed(true) },
             ]);
@@ -281,6 +330,16 @@ export default function MyEventsScreen() {
           const recipientName =
             recipientData.name || recipientData.email || "User";
 
+          // Track successful QR code validation
+          posthog?.capture("qr_code_scan_success", {
+            scan_context: "ticket_transfer",
+            recipient_id: data,
+            recipient_name: recipientName,
+            event_id: eventNameTransfer,
+            ticket_id: selectedTicketId,
+            user_type: "authenticated",
+          });
+
           // Confirm the transfer with the user
           Alert.alert(
             "Confirm Transfer",
@@ -289,6 +348,16 @@ export default function MyEventsScreen() {
               {
                 text: "Cancel",
                 onPress: () => {
+                  // Track transfer cancellation
+                  posthog?.capture("ticket_transfer_cancelled", {
+                    event_id: eventNameTransfer,
+                    ticket_id: selectedTicketId,
+                    recipient_id: data,
+                    recipient_name: recipientName,
+                    cancellation_stage: "confirmation_dialog",
+                    user_type: "authenticated",
+                  });
+
                   setScannedData(null);
                   setScanningAllowed(true);
                   setTransferModalVisible(false);
@@ -301,6 +370,19 @@ export default function MyEventsScreen() {
                   try {
                     // Update the database to transfer ownership of the ticket
                     await transferTicket(data, recipientData);
+
+                    // Track ticket transfer analytics
+                    posthog?.capture("ticket_transferred", {
+                      event_id: eventNameTransfer,
+                      ticket_id: selectedTicketId,
+                      transfer_method: "qr_code_scan",
+                      recipient_id: data,
+                      recipient_name: recipientName,
+                      transferred_from: currentUser || "unknown",
+                      transfer_timestamp: new Date().toISOString(),
+                      screen_context: "my_events_transfer_modal",
+                      user_type: "authenticated",
+                    });
 
                     // Send push notification to the recipient if they have a token
                     if (recipientData.expoPushToken) {
@@ -382,6 +464,17 @@ export default function MyEventsScreen() {
         setEventData(eventData);
         setSelectedTicketId(ticketId);
         setEventNameTransfer(eventName);
+
+        // Track transfer modal opening
+        posthog?.capture("ticket_transfer_initiated", {
+          event_id: eventName,
+          ticket_id: ticketId,
+          event_title: eventData.name,
+          event_date: eventData.dateTime,
+          permission_status: "granted",
+          screen_context: "my_events_ticket_list",
+          user_type: "authenticated",
+        });
       } else {
         // Need to request permission
         Alert.alert(
@@ -399,6 +492,17 @@ export default function MyEventsScreen() {
                   setEventData(eventData);
                   setSelectedTicketId(ticketId);
                   setEventNameTransfer(eventName);
+
+                  // Track transfer modal opening after permission grant
+                  posthog?.capture("ticket_transfer_initiated", {
+                    event_id: eventName,
+                    ticket_id: ticketId,
+                    event_title: eventData.name,
+                    event_date: eventData.dateTime,
+                    permission_status: "granted_after_request",
+                    screen_context: "my_events_ticket_list",
+                    user_type: "authenticated",
+                  });
                 } else {
                   // If permission still denied, guide user to settings
                   Alert.alert(
@@ -559,7 +663,17 @@ export default function MyEventsScreen() {
             </View>
             <TouchableOpacity
               style={styles.cancelButton}
-              onPress={() => setTransferModalVisible(false)}
+              onPress={() => {
+                // Track transfer modal closure
+                posthog?.capture("ticket_transfer_cancelled", {
+                  event_id: eventNameTransfer,
+                  ticket_id: selectedTicketId,
+                  cancellation_stage: "transfer_modal",
+                  user_type: "authenticated",
+                });
+
+                setTransferModalVisible(false);
+              }}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>

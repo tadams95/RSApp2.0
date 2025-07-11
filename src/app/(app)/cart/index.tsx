@@ -1136,7 +1136,10 @@ export default function CartScreen() {
           } as OrderData);
           console.log("Order creation complete");
 
-          // Track purchase completed
+          // Track purchase completed with detailed ticket information
+          const eventTickets = cartItems.filter((item) => !!item.eventDetails);
+          const hasEventTickets = eventTickets.length > 0;
+
           posthog.track("purchase_completed", {
             order_id: orderDetails.orderId,
             revenue: totalPrice,
@@ -1151,8 +1154,38 @@ export default function CartScreen() {
               (sum, item) => sum + item.selectedQuantity,
               0
             ),
-            has_event_tickets: cartItems.some((item) => !!item.eventDetails),
+            has_event_tickets: hasEventTickets,
+            // Enhanced ticket-specific tracking
+            ticket_count: eventTickets.length,
+            total_ticket_quantity: eventTickets.reduce(
+              (sum, item) => sum + item.selectedQuantity,
+              0
+            ),
+            ticket_revenue: eventTickets.reduce(
+              (sum, item) => sum + item.price.amount * item.selectedQuantity,
+              0
+            ),
+            event_names: eventTickets.map((item) => item.title).join(","),
           });
+
+          // Track specific ticket purchase completion for events
+          if (hasEventTickets) {
+            eventTickets.forEach((ticket) => {
+              posthog.track("ticket_purchase_completed", {
+                order_id: orderDetails.orderId,
+                event_id: ticket.productId,
+                event_name: ticket.title,
+                event_date: ticket.eventDetails?.dateTime || null,
+                event_location: ticket.eventDetails?.location || null,
+                ticket_type: "general_admission",
+                ticket_price: ticket.price.amount,
+                ticket_quantity: ticket.selectedQuantity,
+                payment_method: "stripe",
+                transaction_total: totalPrice,
+                purchase_timestamp: new Date().toISOString(),
+              });
+            });
+          }
 
           // Send notification
           await sendPurchaseNotification();

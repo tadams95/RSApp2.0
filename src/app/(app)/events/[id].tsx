@@ -247,13 +247,17 @@ export default function EventDetailScreen() {
     dispatch(addToCart(cartItem));
     setAddToCartConfirmationVisible(true);
 
-    // Track add to cart event
-    posthog.capture("event_added_to_cart", {
+    // Track ticket add to cart event
+    posthog.capture("ticket_add_to_cart", {
       event_id: Array.isArray(params.id) ? params.id[0] : params.id,
       event_name: eventData.name,
+      event_date: eventData.dateTime,
       event_location: eventData.location,
-      event_price: eventData.price,
+      ticket_type: "general_admission", // Default ticket type
+      ticket_price: eventData.price,
+      tickets_available: eventData.quantity,
       user_type: "authenticated",
+      ticket_quantity: 1,
     });
   };
 
