@@ -19,7 +19,10 @@ import {
   ViewStyle,
 } from "react-native";
 import { useDispatch } from "react-redux";
-import { useScreenTracking } from "../../../analytics/PostHogProvider";
+import {
+  usePostHog,
+  useScreenTracking,
+} from "../../../analytics/PostHogProvider";
 import EventNotFound from "../../../components/events/EventNotFound";
 import { ProgressiveImage } from "../../../components/ui";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
@@ -78,6 +81,7 @@ interface EventDetail {
 export default function EventDetailScreen() {
   const params = useLocalSearchParams();
   const dispatch = useDispatch();
+  const posthog = usePostHog();
 
   // Parse event data from params
   const eventData: EventDetail = params.eventData
@@ -117,6 +121,38 @@ export default function EventDetailScreen() {
     hasError: !!error,
     errorCode: errorCode,
   });
+
+  // Track detailed event_viewed analytics
+  useEffect(() => {
+    if (eventData && !isLoading) {
+      const eventId = Array.isArray(params.id) ? params.id[0] : params.id;
+
+      posthog.capture("event_viewed", {
+        event_id: eventId,
+        event_name: eventData.name || "Unknown Event",
+        event_date: eventData.dateTime || null,
+        event_location: eventData.location || "Unknown Location",
+        event_price: eventData.price || 0,
+        event_description_length: eventData.description
+          ? eventData.description.length
+          : 0,
+        has_event_description: !!eventData.description,
+        has_event_image: !!eventData.imgURL,
+        attending_count: attendingCount,
+        user_type: "authenticated",
+        viewing_context: "detail_screen",
+        event_quantity_available: eventData.quantity || 0,
+        is_event_sold_out: (eventData.quantity || 0) <= 0,
+        event_date_from_now_days: eventData.dateTime
+          ? Math.ceil(
+              (new Date(eventData.dateTime).getTime() - Date.now()) /
+                (1000 * 60 * 60 * 24)
+            )
+          : null,
+        screen_load_time: Date.now(),
+      });
+    }
+  }, [eventData, isLoading, attendingCount, params.id, posthog]);
 
   useEffect(() => {
     const fetchAttendingCount = async () => {
@@ -210,6 +246,15 @@ export default function EventDetailScreen() {
     // Add item to cart
     dispatch(addToCart(cartItem));
     setAddToCartConfirmationVisible(true);
+
+    // Track add to cart event
+    posthog.capture("event_added_to_cart", {
+      event_id: Array.isArray(params.id) ? params.id[0] : params.id,
+      event_name: eventData.name,
+      event_location: eventData.location,
+      event_price: eventData.price,
+      user_type: "authenticated",
+    });
   };
 
   const closeAddToCartConfirmation = () => {
@@ -218,6 +263,16 @@ export default function EventDetailScreen() {
 
   const handleOpenMaps = () => {
     if (!eventData) return;
+
+    // Track location button tap
+    posthog.capture("event_location_tapped", {
+      event_id: Array.isArray(params.id) ? params.id[0] : params.id,
+      event_name: eventData.name,
+      event_location: eventData.location,
+      user_type: "authenticated",
+      platform: Platform.OS,
+      interaction_type: "location_button",
+    });
 
     const address = eventData.location;
     const encodedAddress = encodeURIComponent(address);
@@ -241,10 +296,26 @@ export default function EventDetailScreen() {
   };
 
   const handleImageLoadSuccess = () => {
-    // Image loaded successfully
+    // Track successful hero image load
+    posthog.capture("event_hero_image_loaded", {
+      event_id: Array.isArray(params.id) ? params.id[0] : params.id,
+      event_name: eventData?.name || "Unknown Event",
+      user_type: "authenticated",
+      image_load_success: true,
+      has_fallback_used: false,
+    });
   };
 
   const handleImageLoadError = (error: Error) => {
+    // Track hero image interaction error
+    posthog.capture("event_hero_image_error", {
+      event_id: Array.isArray(params.id) ? params.id[0] : params.id,
+      event_name: eventData?.name || "Unknown Event",
+      user_type: "authenticated",
+      error_type: "image_load_failure",
+      error_message: error.message,
+    });
+
     // Log image loading error
     logError(error, "EventDetailScreen.imageLoading", {
       eventId: params.id,

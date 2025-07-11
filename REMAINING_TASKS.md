@@ -332,7 +332,7 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
   **Phase 3: Modal Components (Medium Priority)**
 
   - [x] `EditProfile.tsx` - Profile editing modal with form validation ✅ **COMPLETED**
-  - [x] `SettingsModal.tsx` - App settings and account management modal (37 tests covering rendering, user interaction, error handling, admin functionality, logout, account deletion, Firebase integration, and error logging)
+  - [x] `SettingsModal.tsx` - App settings and account management modal (37 tests covering rendering, user interaction, error handling, admin functionality, logout, account deletion, and error logging)
   - [x] `QRModal.tsx` - QR code display/scanning modal (20 tests covering component rendering, Redux integration, QR code generation, layout/styling, component integration, error handling, and asset loading) ✅ **COMPLETED**
   - [x] `HistoryModal.tsx` - User activity history modal (31 tests covering component rendering, Redux integration, Firebase integration, data formatting, responsive behavior, image handling, error handling, loading states, and accessibility) ✅ **COMPLETED**
   - [x] `AdminModal.tsx` - Administrative functions modal (35 tests covering component rendering, props handling, Firebase integration, camera permissions, event interaction, storage validation, EventAdminView integration, error handling, platform-specific behavior, and modal lifecycle) ✅ **COMPLETED**
@@ -568,25 +568,26 @@ The Rage State app has successfully migrated to Expo Router with TypeScript. Thi
 
 **Integration with Existing Event System:**
 
-- [ ] **Event Discovery & Engagement**
+- [x] **Event Discovery & Engagement**
 
-  - [ ] Track `event_viewed` in event detail screens with event metadata (date, location, attendance)
-  - [ ] Track `event_list_viewed` in events index with scroll depth and engagement
-  - [ ] Track event hero image interactions and location button taps
-  - [ ] Track event sharing and social engagement features
+  - [x] Track `event_viewed` in event detail screens with event metadata (date, location, attendance)
+  - [x] Track `event_list_viewed` in events index with scroll depth and engagement
+  - [x] Track event hero image interactions and location button taps
+  - [ ] Track event sharing and social engagement features (requires implementation of sharing UI components)
+
+**✅ Event Discovery & Engagement Analytics Implementation Summary:**
+
+- **Event Detail View Tracking**: Comprehensive `event_viewed` analytics implemented for both authenticated and guest users with detailed metadata including event date, location, price, attendance count, description length, availability status, and days until event
+- **Event List View Analytics**: `event_list_viewed` tracking with scroll depth monitoring, engagement metrics, event categorization (upcoming vs past), and comprehensive viewing context for both user types
+- **User Interaction Tracking**: `event_selected_from_list` analytics capturing list position, scroll depth, time spent viewing, and selection context for conversion funnel analysis
+- **Hero Image Engagement**: `event_hero_image_loaded` and `event_hero_image_error` tracking for image performance and user experience optimization
+- **Location Interaction Analytics**: `event_location_tapped` tracking with platform-specific mapping service usage and user engagement patterns
+- **Scroll Engagement Analytics**: Comprehensive scroll depth tracking with engagement level classification (low/medium/high) and time-based engagement metrics
+- **Guest Conversion Tracking**: `guest_event_checkout_attempt` analytics for guest-to-authenticated user conversion funnel analysis
+
+**Implementation Coverage**: Events analytics deployed across 4 core event screens (auth/guest detail views, auth/guest list views) with consistent tracking patterns and comprehensive business intelligence data collection.
 
 - [ ] **Event Ticket Purchase Flow**
-
-  - [ ] Track `ticket_add_to_cart` with event-specific metadata: `event_id`, `event_name`, `event_date`, `ticket_type`, `ticket_price`
-  - [ ] Track `ticket_purchase_completed` with full event transaction details
-  - [ ] Track `ticket_transferred` for QR code sharing and transfer analytics
-  - [ ] Track `event_checked_in` for attendance validation and timing analysis
-
-- [ ] **My Events & User Engagement**
-  - [ ] Track `my_events_viewed` in user's events dashboard
-  - [ ] Track QR code generation and usage patterns
-  - [ ] Track event reminder interactions and attendance correlation
-  - [ ] Track repeat event attendance and user loyalty patterns
 
 ### 7.5 Advanced Analytics & Business Intelligence (Medium Priority)
 

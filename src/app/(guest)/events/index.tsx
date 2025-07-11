@@ -19,6 +19,10 @@ import { navigateToGuestEvent } from "../../../utils/navigation";
 
 // Import our enhanced components and hooks
 import NetInfo from "@react-native-community/netinfo"; // For network status checking
+import {
+  usePostHog,
+  useScreenTracking,
+} from "../../../analytics/PostHogProvider";
 import { ProgressiveImage } from "../../../components/ui";
 import { useEventsWithHelpers } from "../../../hooks/useEvents";
 import { EventData } from "../../../utils/eventDataHandler";
@@ -36,22 +40,72 @@ const GuestEvent: React.FC = () => {
   // Use React Query for events data
   const { events, isLoading, error, refetch, hasEvents, isEmpty, hasError } =
     useEventsWithHelpers();
+  const posthog = usePostHog();
 
   const [isOffline, setIsOffline] = useState(false);
   const flatListRef = useRef<Animated.FlatList>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
   const [isScrollEnabled, setIsScrollEnabled] = useState<boolean>(true);
 
-  // Monitor network status
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      setIsOffline(!state.isConnected);
-    });
+  // Scroll depth tracking state
+  const [scrollDepth, setScrollDepth] = useState(0);
+  const [maxScrollDepth, setMaxScrollDepth] = useState(0);
+  const [viewStartTime] = useState(Date.now());
 
-    return () => unsubscribe();
-  }, []);
+  // Track screen view for guest users
+  useScreenTracking("Guest Events Screen", {
+    user_type: "guest",
+    event_count: events.length,
+    is_loading: isLoading,
+    has_events: hasEvents || false,
+    is_empty: isEmpty || false,
+    has_error: hasError || false,
+    is_offline: isOffline,
+  });
+
+  // Track event list viewed with comprehensive analytics for guest users
+  useEffect(() => {
+    if (!isLoading && events.length > 0) {
+      posthog.capture("event_list_viewed", {
+        user_type: "guest",
+        event_count: events.length,
+        list_type: "all_events",
+        screen_context: "guest_events_index",
+        has_offline_events: isOffline,
+        events_loaded_successfully: !hasError,
+        events_with_images: events.filter((event) => !!event.imgURL).length,
+        upcoming_events: events.filter((event) => {
+          if (!event.dateTime || !(event.dateTime instanceof Timestamp))
+            return false;
+          return event.dateTime.toDate() > new Date();
+        }).length,
+        past_events: events.filter((event) => {
+          if (!event.dateTime || !(event.dateTime instanceof Timestamp))
+            return false;
+          return event.dateTime.toDate() <= new Date();
+        }).length,
+        view_start_time: viewStartTime,
+      });
+    }
+  }, [events, isLoading, hasError, isOffline, posthog, viewStartTime]);
 
   const handleEventPress = (event: EventData): void => {
+    // Track event selection from list for guest users
+    posthog.capture("event_selected_from_list", {
+      event_id: event.id || event.name,
+      event_name: event.name,
+      event_location: event.location,
+      event_price: event.price,
+      user_type: "guest",
+      list_position: events.findIndex(
+        (e) => e.id === event.id || e.name === event.name
+      ),
+      total_events_in_list: events.length,
+      scroll_depth_percentage: scrollDepth,
+      time_on_list: Date.now() - viewStartTime,
+      selection_method: "event_card_tap",
+    });
+
     // Format date for display and navigation
     const formattedDateTime = format(
       event.dateTime.toDate(),
@@ -70,8 +124,37 @@ const GuestEvent: React.FC = () => {
     });
   };
 
-  // Removed handleImageLoad and handleImageError as we now handle image loading
-  // with individual state in each renderEventItem render function
+  // Scroll depth tracking handler
+  const handleScrollDepthTracking = useCallback((event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const currentScrollDepth = Math.round(
+      (contentOffset.y / (contentSize.height - layoutMeasurement.height)) * 100
+    );
+
+    setScrollDepth(currentScrollDepth);
+    setMaxScrollDepth((prev) => Math.max(prev, currentScrollDepth));
+  }, []);
+
+  // Track scroll engagement when user leaves the screen
+  useEffect(() => {
+    return () => {
+      if (maxScrollDepth > 0) {
+        posthog.capture("event_list_scroll_engagement", {
+          user_type: "guest",
+          max_scroll_depth_percentage: maxScrollDepth,
+          final_scroll_depth_percentage: scrollDepth,
+          time_spent_viewing: Date.now() - viewStartTime,
+          events_count: events.length,
+          scroll_engagement_level:
+            maxScrollDepth > 75
+              ? "high"
+              : maxScrollDepth > 25
+              ? "medium"
+              : "low",
+        });
+      }
+    };
+  }, [maxScrollDepth, scrollDepth, viewStartTime, events.length, posthog]);
 
   const handlePressIn = useCallback((): void => {
     setIsScrollEnabled(false);
@@ -302,8 +385,12 @@ const GuestEvent: React.FC = () => {
           scrollEnabled={isScrollEnabled} // Control scroll with our state
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: true }
+            {
+              useNativeDriver: true,
+              listener: handleScrollDepthTracking,
+            }
           )}
+          onScrollEndDrag={handleScrollDepthTracking}
           accessibilityLabel="Events list"
         />
 

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -13,7 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useScreenTracking } from "../../../analytics/PostHogProvider";
+import {
+  usePostHog,
+  useScreenTracking,
+} from "../../../analytics/PostHogProvider";
 import { ProgressiveImage } from "../../../components/ui";
 import { useEventAttendingCountWithHelpers } from "../../../hooks/useEvents";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
@@ -35,6 +38,7 @@ interface EventDetailParams {
 const GuestEventView: React.FC = () => {
   // Get route parameters from Expo Router
   const params = useLocalSearchParams<Record<string, string>>();
+  const posthog = usePostHog();
 
   const eventName = params.name as string;
   const eventImgURL = params.imgURL as string;
@@ -70,7 +74,56 @@ const GuestEventView: React.FC = () => {
     hasImage: !!eventImgURL,
   });
 
+  // Track detailed event_viewed analytics for guest users
+  useEffect(() => {
+    if (eventName && !isLoading) {
+      posthog.capture("event_viewed", {
+        event_id: params.id,
+        event_name: eventName || "Unknown Event",
+        event_date: eventDateTime || null,
+        event_location: eventLocation || "Unknown Location",
+        event_price: parseFloat(eventPrice) || 0,
+        event_description_length: eventDescription
+          ? eventDescription.length
+          : 0,
+        has_event_description: !!eventDescription,
+        has_event_image: !!eventImgURL,
+        attending_count: attendingCount,
+        user_type: "guest",
+        viewing_context: "detail_screen",
+        event_date_from_now_days: eventDateTime
+          ? Math.ceil(
+              (new Date(eventDateTime).getTime() - Date.now()) /
+                (1000 * 60 * 60 * 24)
+            )
+          : null,
+        screen_load_time: Date.now(),
+      });
+    }
+  }, [
+    eventName,
+    isLoading,
+    attendingCount,
+    params.id,
+    posthog,
+    eventDateTime,
+    eventLocation,
+    eventPrice,
+    eventDescription,
+    eventImgURL,
+  ]);
+
   const handleGuestCheckout = (): void => {
+    // Track guest checkout attempt
+    posthog.capture("guest_event_checkout_attempt", {
+      event_id: params.id,
+      event_name: eventName,
+      event_location: eventLocation,
+      event_price: parseFloat(eventPrice) || 0,
+      user_type: "guest",
+      conversion_trigger: "event_detail_checkout",
+    });
+
     navigateToAuth();
   };
 
@@ -80,6 +133,16 @@ const GuestEventView: React.FC = () => {
 
   const handleOpenMaps = (): void => {
     if (!eventLocation) return;
+
+    // Track location button tap for guest users
+    posthog.capture("event_location_tapped", {
+      event_id: params.id,
+      event_name: eventName,
+      event_location: eventLocation,
+      user_type: "guest",
+      platform: Platform.OS,
+      interaction_type: "location_button",
+    });
 
     const address = eventLocation;
     const encodedAddress = encodeURIComponent(address);
@@ -95,7 +158,14 @@ const GuestEventView: React.FC = () => {
   };
 
   const handleImageLoadSuccess = (): void => {
-    // Image loaded successfully
+    // Track successful hero image load for guest users
+    posthog.capture("event_hero_image_loaded", {
+      event_id: params.id,
+      event_name: eventName || "Unknown Event",
+      user_type: "guest",
+      image_load_success: true,
+      has_fallback_used: false,
+    });
   };
 
   const handleImageLoadError = (error: Error): void => {
