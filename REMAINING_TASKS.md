@@ -930,24 +930,28 @@ export const trackProductPurchase = (order, items) => {
 **Implementation Approach**:
 
 - [ ] **Research & Setup**
+
   - [ ] Investigate SoundCloud API v2 authentication and rate limits
   - [ ] Register app with SoundCloud for API access
   - [ ] Choose optimal integration method (API + WebView vs oEmbed)
   - [ ] Design user profile music section layout
 
 - [ ] **Core Integration**
+
   - [ ] Add SoundCloud track URL field to user profile data model
   - [ ] Create SoundCloud track input component in EditProfile modal
   - [ ] Implement SoundCloud API service for track metadata fetching
   - [ ] Add track URL validation (SoundCloud URL format)
 
 - [ ] **Player Component**
+
   - [ ] Create SoundCloud track embed component using WebView
   - [ ] Implement fallback for tracks that can't be embedded
   - [ ] Add loading states and error handling for track loading
   - [ ] Ensure responsive design across device sizes
 
 - [ ] **User Experience**
+
   - [ ] Add SoundCloud section to user profile display
   - [ ] Implement "Add Track" functionality in profile editing
   - [ ] Support multiple tracks per user (optional: track list/playlist)
@@ -960,6 +964,7 @@ export const trackProductPurchase = (order, items) => {
   - [ ] Ensure compliance with SoundCloud's terms of service
 
 **Expected Benefits**:
+
 - Enhanced user profiles with musical identity
 - Increased user engagement and profile completeness
 - Community discovery through shared music taste
@@ -1013,7 +1018,7 @@ export const trackProductPurchase = (order, items) => {
 1. **Week 1-2**: NativeWind Styling System (Priority 8) - **Consistency and maintainability**
 2. **Week 3**: SoundCloud Integration (Priority 9) - **Enhanced user profiles with music**
 3. **Week 4**: Final Optimizations (Priority 10) - **Performance and security polish**
-3. **External Tasks**: PostHog dashboard configuration (user-managed in PostHog interface)
+4. **External Tasks**: PostHog dashboard configuration (user-managed in PostHog interface)
 
 ## SUCCESS CRITERIA
 
