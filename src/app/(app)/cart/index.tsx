@@ -263,14 +263,49 @@ export default function CartScreen() {
     // Schedule cart abandonment reminder notification for high-value carts or checkout attempts
     if ((cartValue >= 50 || hasAttemptedCheckout) && expoPushToken) {
       try {
-        await NotificationManager.scheduleCartAbandonmentReminderWithRetry(
+        // Prepare top products for enhanced notifications
+        const topProducts = cartItems
+          .sort(
+            (a, b) =>
+              b.price.amount * b.selectedQuantity -
+              a.price.amount * a.selectedQuantity
+          )
+          .slice(0, 3)
+          .map((item) => ({
+            title: item.title || "Product",
+            price: item.price.amount,
+          }));
+
+        // Schedule enhanced cart abandonment reminder with product details
+        await NotificationManager.sendEnhancedCartAbandonmentReminder(
           cartValue,
           cartItems.length,
-          30 // 30 minutes delay
+          topProducts,
+          60 // 1 hour delay for enhanced notification
         );
-        console.log("Cart abandonment reminder scheduled");
+
+        // Schedule additional cart recovery with incentive for higher value carts
+        if (cartValue >= 100) {
+          await NotificationManager.sendCartRecoveryWithIncentive(
+            cartValue,
+            cartItems.length,
+            "Free shipping on orders over $50",
+            180 // 3 hours delay
+          );
+        }
+
+        // Schedule final cart abandonment notification for very high value carts
+        if (cartValue >= 200) {
+          await NotificationManager.sendFinalCartAbandonmentNotification(
+            cartValue,
+            cartItems.length,
+            24 // 24 hours left message
+          );
+        }
+
+        console.log("Enhanced cart abandonment reminders scheduled");
       } catch (error) {
-        console.error("Error scheduling cart abandonment reminder:", error);
+        console.error("Error scheduling cart abandonment reminders:", error);
       }
     }
 

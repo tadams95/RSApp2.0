@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { NotificationManager } from "../../services/notificationManager";
 
 const CART_STORAGE_KEY = "ragestate_cart_data";
 const CHECKOUT_ERROR_KEY = "ragestate_last_checkout_error";
@@ -53,6 +54,10 @@ export const getCartState = async (): Promise<{
 export const clearCartState = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem(CART_STORAGE_KEY);
+
+    // Cancel all cart and commerce related notifications when cart is cleared
+    await NotificationManager.cancelCartCommerceNotifications();
+
     console.log("Cart state cleared successfully");
   } catch (error) {
     console.error("Failed to clear cart state:", error);

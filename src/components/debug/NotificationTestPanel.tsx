@@ -4,6 +4,8 @@ import { useNotifications } from "../../hooks/useNotifications";
 import {
   testCartAbandonmentNotification,
   testCartAbandonmentWithRetry,
+  testCartCommerceNotifications,
+  testCartRecoveryScenarios,
   testEventManagementNotifications,
   testEventReminderScheduling,
   testNotifications,
@@ -134,6 +136,36 @@ const NotificationTestPanel: React.FC = () => {
     }
   };
 
+  const handleTestCartCommerce = async () => {
+    try {
+      await testCartCommerceNotifications();
+      Alert.alert(
+        "Cart & Commerce Test",
+        "Cart & commerce notifications test completed! Check your notifications."
+      );
+    } catch (error) {
+      Alert.alert(
+        "Cart & Commerce Test Failed",
+        "Failed to test cart & commerce notifications"
+      );
+    }
+  };
+
+  const handleTestCartRecovery = async () => {
+    try {
+      await testCartRecoveryScenarios();
+      Alert.alert(
+        "Cart Recovery Test",
+        "Cart recovery scenarios test completed! Check your notifications."
+      );
+    } catch (error) {
+      Alert.alert(
+        "Cart Recovery Test Failed",
+        "Failed to test cart recovery scenarios"
+      );
+    }
+  };
+
   if (!isInitialized) {
     return (
       <View style={styles.container}>
@@ -202,6 +234,24 @@ const NotificationTestPanel: React.FC = () => {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Cart & Commerce Notifications:</Text>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestCartCommerce}
+        >
+          <Text style={styles.buttonText}>Test Cart & Commerce Flow</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestCartRecovery}
+        >
+          <Text style={styles.buttonText}>Test Cart Recovery Scenarios</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Order Status Notifications:</Text>
 
         <TouchableOpacity
@@ -236,6 +286,26 @@ const NotificationTestPanel: React.FC = () => {
           onPress={handleTestOrderConfirmation}
         >
           <Text style={styles.buttonText}>Test Order Confirmation</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Cart & Commerce Tests:</Text>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestCartCommerce}
+        >
+          <Text style={styles.buttonText}>
+            Test Cart & Commerce Notifications
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestCartRecovery}
+        >
+          <Text style={styles.buttonText}>Test Cart Recovery Scenarios</Text>
         </TouchableOpacity>
       </View>
     </View>

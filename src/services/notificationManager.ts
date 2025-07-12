@@ -10,7 +10,8 @@ export interface PushNotificationData {
     | "event_reminder"
     | "order_status"
     | "general"
-    | "event_management";
+    | "event_management"
+    | "cart_commerce";
   title: string;
   body: string;
   data?: Record<string, any>;
@@ -38,6 +39,18 @@ export interface EventNotificationData {
   ticketId?: string;
   recipientName?: string;
   transferFromUser?: string;
+}
+
+export interface CommerceNotificationData {
+  productId: string;
+  productTitle: string;
+  productPrice?: number;
+  productImage?: string;
+  variantId?: string;
+  inventoryLevel?: number;
+  previousPrice?: number;
+  newPrice?: number;
+  stockThreshold?: number;
 }
 
 /**
@@ -694,6 +707,294 @@ class NotificationManager {
       return notificationId;
     } catch (error) {
       console.error("Error sending event update notification:", error);
+      return null;
+    }
+  }
+
+  // ========== CART & COMMERCE NOTIFICATIONS ==========
+
+  /**
+   * Send low stock alert for products in user's cart
+   */
+  static async sendLowStockAlert(
+    commerceData: CommerceNotificationData,
+    stockLevel: number,
+    threshold: number = 5
+  ): Promise<string | null> {
+    try {
+      let bodyText = `Hurry! Only ${stockLevel} left of ${commerceData.productTitle}`;
+
+      if (stockLevel <= 1) {
+        bodyText = `⚠️ Last one! ${commerceData.productTitle} is almost sold out`;
+      } else if (stockLevel <= 3) {
+        bodyText = `🔥 Only ${stockLevel} left! ${commerceData.productTitle} is selling fast`;
+      }
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title: "Low Stock Alert",
+        body: bodyText,
+        data: {
+          type: "cart_commerce",
+          subtype: "low_stock_alert",
+          productId: commerceData.productId,
+          productTitle: commerceData.productTitle,
+          stockLevel,
+          threshold,
+          screen: "shop",
+          action: "view_product",
+        },
+      });
+
+      console.log("Low stock alert sent:", notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending low stock alert:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send enhanced cart abandonment reminder with product details
+   */
+  static async sendEnhancedCartAbandonmentReminder(
+    cartValue: number,
+    itemCount: number,
+    topProducts: Array<{ title: string; price: number }>,
+    delayInMinutes: number = 60
+  ): Promise<string | null> {
+    try {
+      let title: string;
+      let body: string;
+
+      if (itemCount === 1) {
+        title = "Complete your purchase";
+        body = `${
+          topProducts[0]?.title
+        } is waiting in your cart ($${cartValue.toFixed(2)})`;
+      } else if (itemCount <= 3) {
+        title = "Your items are waiting";
+        body = `${itemCount} items in your cart including ${
+          topProducts[0]?.title
+        } ($${cartValue.toFixed(2)})`;
+      } else {
+        title = `${itemCount} items in your cart`;
+        body = `Complete your order ($${cartValue.toFixed(
+          2
+        )}) - items may sell out!`;
+      }
+
+      const notificationId = await notificationService.scheduleNotification({
+        title,
+        body,
+        data: {
+          type: "cart_commerce",
+          subtype: "enhanced_cart_abandonment",
+          cartValue,
+          itemCount,
+          topProducts: topProducts.slice(0, 3), // Limit to top 3 products
+          screen: "cart",
+          action: "complete_checkout",
+        },
+        trigger: {
+          seconds: delayInMinutes * 60,
+        } as Notifications.TimeIntervalTriggerInput,
+      });
+
+      console.log(
+        "Enhanced cart abandonment reminder scheduled:",
+        notificationId
+      );
+      return notificationId;
+    } catch (error) {
+      console.error(
+        "Error scheduling enhanced cart abandonment reminder:",
+        error
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Send new product launch notification
+   */
+  static async sendNewProductLaunchNotification(
+    commerceData: CommerceNotificationData,
+    launchDate?: Date
+  ): Promise<string | null> {
+    try {
+      let bodyText = `${commerceData.productTitle} is now available! Check it out.`;
+
+      if (commerceData.productPrice) {
+        bodyText = `🆕 ${
+          commerceData.productTitle
+        } is now available for $${commerceData.productPrice.toFixed(2)}!`;
+      }
+
+      if (launchDate) {
+        const launchDateStr = launchDate.toLocaleDateString();
+        bodyText += ` Launched ${launchDateStr}`;
+      }
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title: "🎉 New Product Alert",
+        body: bodyText,
+        data: {
+          type: "cart_commerce",
+          subtype: "new_product_launch",
+          productId: commerceData.productId,
+          productTitle: commerceData.productTitle,
+          productPrice: commerceData.productPrice,
+          launchDate: launchDate?.toISOString(),
+          screen: "shop",
+          action: "view_new_product",
+        },
+      });
+
+      console.log("New product launch notification sent:", notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending new product launch notification:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send back in stock notification for previously unavailable items
+   */
+  static async sendBackInStockNotification(
+    commerceData: CommerceNotificationData
+  ): Promise<string | null> {
+    try {
+      const bodyText = `Good news! ${commerceData.productTitle} is back in stock. Get yours now!`;
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title: "🔄 Back in Stock!",
+        body: bodyText,
+        data: {
+          type: "cart_commerce",
+          subtype: "back_in_stock",
+          productId: commerceData.productId,
+          productTitle: commerceData.productTitle,
+          productPrice: commerceData.productPrice,
+          screen: "shop",
+          action: "view_restocked_product",
+        },
+      });
+
+      console.log("Back in stock notification sent:", notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending back in stock notification:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send cart recovery notification with incentive
+   */
+  static async sendCartRecoveryWithIncentive(
+    cartValue: number,
+    itemCount: number,
+    incentiveText: string = "Free shipping on orders over $50",
+    delayInMinutes: number = 120
+  ): Promise<string | null> {
+    try {
+      const title = "Come back and save!";
+      const body = `Your cart ($${cartValue.toFixed(
+        2
+      )}) is waiting. ${incentiveText}`;
+
+      const notificationId = await notificationService.scheduleNotification({
+        title,
+        body,
+        data: {
+          type: "cart_commerce",
+          subtype: "cart_recovery_incentive",
+          cartValue,
+          itemCount,
+          incentiveText,
+          screen: "cart",
+          action: "return_to_cart",
+        },
+        trigger: {
+          seconds: delayInMinutes * 60,
+        } as Notifications.TimeIntervalTriggerInput,
+      });
+
+      console.log("Cart recovery with incentive scheduled:", notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error("Error scheduling cart recovery with incentive:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Cancel all cart and commerce related notifications
+   */
+  static async cancelCartCommerceNotifications(): Promise<void> {
+    try {
+      const scheduledNotifications =
+        await notificationService.getScheduledNotifications();
+
+      // Cancel notifications with cart_commerce or cart_abandonment type
+      for (const notification of scheduledNotifications) {
+        const notificationType = notification.content.data?.type;
+        if (
+          notificationType === "cart_commerce" ||
+          notificationType === "cart_abandonment"
+        ) {
+          await notificationService.cancelNotification(notification.identifier);
+          console.log(
+            "Cancelled cart/commerce notification:",
+            notification.identifier
+          );
+        }
+      }
+
+      console.log("Cart and commerce notifications cancelled");
+    } catch (error) {
+      console.error("Error cancelling cart and commerce notifications:", error);
+    }
+  }
+
+  /**
+   * Send final cart abandonment notification with urgency
+   */
+  static async sendFinalCartAbandonmentNotification(
+    cartValue: number,
+    itemCount: number,
+    hoursLeft: number = 24
+  ): Promise<string | null> {
+    try {
+      const title = "⏰ Cart expires soon!";
+      const body = `Your ${itemCount} item${
+        itemCount > 1 ? "s" : ""
+      } ($${cartValue.toFixed(
+        2
+      )}) expire in ${hoursLeft} hours. Don't miss out!`;
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title,
+        body,
+        data: {
+          type: "cart_commerce",
+          subtype: "final_cart_abandonment",
+          cartValue,
+          itemCount,
+          hoursLeft,
+          screen: "cart",
+          action: "urgent_checkout",
+        },
+      });
+
+      console.log("Final cart abandonment notification sent:", notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error(
+        "Error sending final cart abandonment notification:",
+        error
+      );
       return null;
     }
   }

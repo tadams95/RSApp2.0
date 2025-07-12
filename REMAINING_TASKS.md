@@ -860,12 +860,14 @@ export const trackProductPurchase = (order, items) => {
   - [x] Ticket transfer confirmations
   - [x] Event check-in notifications
 
-- [ ] **Cart & Commerce Notifications**:
+- [x] **Cart & Commerce Notifications**: ✅ **COMPLETED**
 
-  - Cart abandonment recovery (items left in cart)
-  - Price drop alerts for wishlisted items
-  - Limited inventory alerts (low stock)
-  - New product launch notifications
+  - [x] Enhanced cart abandonment recovery with product details
+  - [x] Low stock alerts for items in cart
+  - [x] New product launch notifications
+  - [x] Back in stock notifications for previously unavailable items
+  - [x] Cart recovery with incentives and urgency messaging
+  - [x] Final cart abandonment notifications with expiration warnings
 
 - [ ] **Account & Security Notifications**:
   - Login from new device alerts

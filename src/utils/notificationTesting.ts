@@ -358,6 +358,168 @@ export const testEventReminderScheduling = async () => {
 };
 
 /**
+ * Test cart and commerce notifications
+ */
+export const testCartCommerceNotifications = async () => {
+  console.log("🛒 Testing Cart & Commerce Notifications...");
+
+  try {
+    // Sample commerce data for testing
+    const testCommerceData = {
+      productId: "test-product-123",
+      productTitle: "Test Rage State Hoodie",
+      productPrice: 59.99,
+      productImage: "https://example.com/test-image.jpg",
+      variantId: "variant-123",
+      inventoryLevel: 3,
+    };
+
+    console.log("1. Testing low stock alert...");
+    await NotificationManager.sendLowStockAlert(
+      testCommerceData,
+      3, // Only 3 left
+      5 // Threshold of 5
+    );
+
+    console.log("2. Testing enhanced cart abandonment reminder...");
+    const topProducts = [
+      { title: "Rage State Hoodie", price: 59.99 },
+      { title: "RS T-Shirt", price: 29.99 },
+      { title: "RS Cap", price: 24.99 },
+    ];
+    await NotificationManager.sendEnhancedCartAbandonmentReminder(
+      114.97, // Total cart value
+      3, // Item count
+      topProducts,
+      1 // 1 minute delay for testing
+    );
+
+    console.log("3. Testing new product launch notification...");
+    await NotificationManager.sendNewProductLaunchNotification(
+      {
+        ...testCommerceData,
+        productTitle: "Limited Edition RS Jacket",
+      },
+      new Date() // Just launched
+    );
+
+    console.log("4. Testing back in stock notification...");
+    await NotificationManager.sendBackInStockNotification({
+      ...testCommerceData,
+      productTitle: "Popular RS Hoodie",
+    });
+
+    console.log("5. Testing cart recovery with incentive...");
+    await NotificationManager.sendCartRecoveryWithIncentive(
+      149.99, // Cart value
+      4, // Item count
+      "Free shipping on orders over $50 + 10% off!",
+      1 // 1 minute delay for testing
+    );
+
+    console.log("6. Testing final cart abandonment notification...");
+    await NotificationManager.sendFinalCartAbandonmentNotification(
+      199.99, // High value cart
+      5, // Item count
+      24 // 24 hours left
+    );
+
+    console.log("✅ Cart & commerce notification tests completed!");
+
+    Alert.alert(
+      "Cart & Commerce Test",
+      "Cart & commerce notifications test completed! Check your notification history for 6 test notifications including scheduled ones.",
+      [{ text: "OK" }]
+    );
+
+    return true;
+  } catch (error) {
+    console.error("❌ Cart & commerce notification test failed:", error);
+    Alert.alert(
+      "Test Failed",
+      `Cart & commerce notification test failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+    return false;
+  }
+};
+
+/**
+ * Test cart recovery scenarios with different notification types
+ */
+export const testCartRecoveryScenarios = async () => {
+  console.log("🔄 Testing Cart Recovery Scenarios...");
+
+  try {
+    console.log("1. Testing low-value cart abandonment (< $50)...");
+    await NotificationManager.sendEnhancedCartAbandonmentReminder(
+      35.99,
+      1,
+      [{ title: "RS T-Shirt", price: 35.99 }],
+      1 // 1 minute for testing
+    );
+
+    console.log("2. Testing medium-value cart abandonment ($50-$100)...");
+    await NotificationManager.sendEnhancedCartAbandonmentReminder(
+      79.99,
+      2,
+      [
+        { title: "RS Hoodie", price: 59.99 },
+        { title: "RS Sticker Pack", price: 19.99 },
+      ],
+      1 // 1 minute for testing
+    );
+
+    console.log("3. Testing high-value cart abandonment (> $100)...");
+    await NotificationManager.sendEnhancedCartAbandonmentReminder(
+      159.97,
+      3,
+      [
+        { title: "Limited Edition Jacket", price: 89.99 },
+        { title: "RS Hoodie", price: 59.99 },
+        { title: "RS Cap", price: 9.99 },
+      ],
+      1 // 1 minute for testing
+    );
+
+    console.log("4. Testing cart recovery with different incentives...");
+    await NotificationManager.sendCartRecoveryWithIncentive(
+      120.0,
+      3,
+      "Limited time: 15% off everything!",
+      1 // 1 minute for testing
+    );
+
+    console.log("5. Testing urgent final cart notification...");
+    await NotificationManager.sendFinalCartAbandonmentNotification(
+      175.5,
+      4,
+      12 // 12 hours left
+    );
+
+    console.log("✅ Cart recovery scenario tests completed!");
+
+    Alert.alert(
+      "Cart Recovery Test",
+      "Cart recovery scenario tests completed! Check your notifications for 5 different cart recovery scenarios.",
+      [{ text: "OK" }]
+    );
+
+    return true;
+  } catch (error) {
+    console.error("❌ Cart recovery scenario test failed:", error);
+    Alert.alert(
+      "Test Failed",
+      `Cart recovery scenario test failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+    return false;
+  }
+};
+
+/**
  * React hook for testing notifications in components
  */
 export const useNotificationTesting = () => {
@@ -376,6 +538,10 @@ export const useNotificationTesting = () => {
       await testOrderStatusNotifications();
       await testEventManagementNotifications();
       await testEventReminderScheduling();
+      await testCartCommerceNotifications();
+      await testCartRecoveryScenarios();
+      await testCartCommerceNotifications();
+      await testCartRecoveryScenarios();
     }
 
     return basicTest;
