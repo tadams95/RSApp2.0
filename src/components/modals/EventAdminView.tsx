@@ -16,6 +16,9 @@ import {
 import { validateAndCleanupStorageReferences } from "../../utils/storageErrorHandler";
 import ImageWithFallback from "../ui/ImageWithFallback";
 
+// Import notification manager for event check-in notifications
+import { NotificationManager } from "../../services/notificationManager";
+
 import React, { useEffect, useState } from "react";
 
 import { db } from "../../firebase/firebase";
@@ -163,14 +166,59 @@ const EventAdminView: React.FC<EventAdminViewProps> = ({
 
         // Provide feedback to the admin user
         if (hasActiveTickets) {
-          // At least one ticket is valid
+          // At least one ticket is valid - send check-in notification to user
+          try {
+            const eventData = {
+              eventId: event.id || event.name,
+              eventName: event.name,
+              eventDate: event.dateTime ? event.dateTime.toDate() : undefined,
+              eventLocation: event.location,
+              ticketId: data, // Using the scanned user ID as ticket identifier
+            };
+
+            // Send successful check-in notification to the ticket holder
+            await NotificationManager.sendEventCheckInNotification(
+              eventData,
+              true
+            );
+            console.log("Check-in notification sent to user:", data);
+          } catch (notificationError) {
+            console.error(
+              "Error sending check-in notification:",
+              notificationError
+            );
+            // Don't fail the check-in process if notification fails
+          }
+
           Alert.alert(
             "SUCCESS",
             "Tickets have been successfully deactivated.",
             [{ text: "OK", onPress: () => setScanningAllowed(true) }]
           );
         } else {
-          // No active tickets found
+          // No active tickets found - send failed check-in notification
+          try {
+            const eventData = {
+              eventId: event.id || event.name,
+              eventName: event.name,
+              eventDate: event.dateTime ? event.dateTime.toDate() : undefined,
+              eventLocation: event.location,
+              ticketId: data,
+            };
+
+            // Send failed check-in notification to the user
+            await NotificationManager.sendEventCheckInNotification(
+              eventData,
+              false
+            );
+            console.log("Failed check-in notification sent to user:", data);
+          } catch (notificationError) {
+            console.error(
+              "Error sending failed check-in notification:",
+              notificationError
+            );
+          }
+
           Alert.alert(
             "INVALID TICKET",
             "This user does not have any active tickets.",

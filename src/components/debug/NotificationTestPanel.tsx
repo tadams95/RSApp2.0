@@ -4,6 +4,8 @@ import { useNotifications } from "../../hooks/useNotifications";
 import {
   testCartAbandonmentNotification,
   testCartAbandonmentWithRetry,
+  testEventManagementNotifications,
+  testEventReminderScheduling,
   testNotifications,
   testOrderConfirmation,
   testOrderStatusNotifications,
@@ -102,6 +104,36 @@ const NotificationTestPanel: React.FC = () => {
     }
   };
 
+  const handleTestEventManagement = async () => {
+    try {
+      await testEventManagementNotifications();
+      Alert.alert(
+        "Event Management Test",
+        "Event management notifications test completed! Check your notifications."
+      );
+    } catch (error) {
+      Alert.alert(
+        "Event Management Test Failed",
+        "Failed to test event management notifications"
+      );
+    }
+  };
+
+  const handleTestEventReminders = async () => {
+    try {
+      await testEventReminderScheduling();
+      Alert.alert(
+        "Event Reminders Test",
+        "Event reminder scheduling test completed! Check console for details."
+      );
+    } catch (error) {
+      Alert.alert(
+        "Event Reminders Test Failed",
+        "Failed to test event reminder scheduling"
+      );
+    }
+  };
+
   if (!isInitialized) {
     return (
       <View style={styles.container}>
@@ -150,6 +182,24 @@ const NotificationTestPanel: React.FC = () => {
       <TouchableOpacity style={styles.button} onPress={handleRunFullTest}>
         <Text style={styles.buttonText}>Run Full Test Suite</Text>
       </TouchableOpacity>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Event Management Notifications:</Text>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestEventManagement}
+        >
+          <Text style={styles.buttonText}>Test Event Management Flow</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestEventReminders}
+        >
+          <Text style={styles.buttonText}>Test Event Reminder Scheduling</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Order Status Notifications:</Text>

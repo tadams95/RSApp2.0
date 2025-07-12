@@ -5,7 +5,12 @@ import { notificationService } from "./notificationService";
 const db = getFirestore();
 
 export interface PushNotificationData {
-  type: "cart_abandonment" | "event_reminder" | "order_status" | "general";
+  type:
+    | "cart_abandonment"
+    | "event_reminder"
+    | "order_status"
+    | "general"
+    | "event_management";
   title: string;
   body: string;
   data?: Record<string, any>;
@@ -23,6 +28,16 @@ export interface OrderStatusNotificationData {
   shippingAddress?: any;
   paymentMethod?: string;
   customerEmail?: string;
+}
+
+export interface EventNotificationData {
+  eventId: string;
+  eventName: string;
+  eventDate?: Date;
+  eventLocation?: string;
+  ticketId?: string;
+  recipientName?: string;
+  transferFromUser?: string;
 }
 
 /**
@@ -397,6 +412,289 @@ class NotificationManager {
       console.log("Notifications cleaned up for user:", userId);
     } catch (error) {
       console.error("Error cleaning up notifications for user:", error);
+    }
+  }
+
+  // ========== EVENT MANAGEMENT NOTIFICATIONS ==========
+
+  /**
+   * Send event ticket purchase confirmation
+   */
+  static async sendEventTicketPurchaseConfirmation(
+    eventData: EventNotificationData,
+    ticketQuantity: number = 1,
+    totalPrice?: number
+  ): Promise<string | null> {
+    try {
+      let bodyText = `Your ticket${ticketQuantity > 1 ? "s" : ""} for ${
+        eventData.eventName
+      } ${ticketQuantity > 1 ? "have" : "has"} been confirmed!`;
+
+      if (eventData.eventDate) {
+        const eventDateStr = eventData.eventDate.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        });
+        bodyText += ` Event: ${eventDateStr}`;
+      }
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title: "🎫 Ticket Confirmed!",
+        body: bodyText,
+        data: {
+          type: "event_management",
+          subtype: "ticket_purchase_confirmation",
+          eventId: eventData.eventId,
+          eventName: eventData.eventName,
+          ticketQuantity,
+          totalPrice,
+          screen: "my-events",
+        },
+      });
+
+      console.log("Event ticket purchase confirmation sent:", notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending event ticket purchase confirmation:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Schedule event date/time reminders (24hr and 1hr before)
+   */
+  static async scheduleEventReminders(
+    eventData: EventNotificationData
+  ): Promise<{ reminder24h?: string; reminder1h?: string }> {
+    const results: { reminder24h?: string; reminder1h?: string } = {};
+
+    if (!eventData.eventDate) {
+      console.log("No event date provided, skipping reminder scheduling");
+      return results;
+    }
+
+    try {
+      const eventTime = eventData.eventDate.getTime();
+      const now = new Date().getTime();
+
+      // Schedule 24-hour reminder
+      const reminder24hTime = new Date(eventTime - 24 * 60 * 60 * 1000);
+      if (reminder24hTime.getTime() > now) {
+        const notificationId24h =
+          await notificationService.scheduleNotification({
+            title: `📅 ${eventData.eventName} Tomorrow`,
+            body: `Don't forget! Your event is tomorrow. Make sure you're ready to rage!`,
+            data: {
+              type: "event_management",
+              subtype: "24h_reminder",
+              eventId: eventData.eventId,
+              eventName: eventData.eventName,
+              eventLocation: eventData.eventLocation,
+              screen: "event-detail",
+            },
+            trigger: {
+              date: reminder24hTime,
+            } as Notifications.DateTriggerInput,
+          });
+
+        if (notificationId24h) {
+          results.reminder24h = notificationId24h;
+          console.log("24-hour event reminder scheduled:", notificationId24h);
+        }
+      }
+
+      // Schedule 1-hour reminder
+      const reminder1hTime = new Date(eventTime - 60 * 60 * 1000);
+      if (reminder1hTime.getTime() > now) {
+        const notificationId1h = await notificationService.scheduleNotification(
+          {
+            title: `🔥 ${eventData.eventName} in 1 Hour!`,
+            body: `Get ready to rage! Your event starts in 1 hour. See you there!`,
+            data: {
+              type: "event_management",
+              subtype: "1h_reminder",
+              eventId: eventData.eventId,
+              eventName: eventData.eventName,
+              eventLocation: eventData.eventLocation,
+              screen: "event-detail",
+            },
+            trigger: {
+              date: reminder1hTime,
+            } as Notifications.DateTriggerInput,
+          }
+        );
+
+        if (notificationId1h) {
+          results.reminder1h = notificationId1h;
+          console.log("1-hour event reminder scheduled:", notificationId1h);
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error("Error scheduling event reminders:", error);
+      return results;
+    }
+  }
+
+  /**
+   * Send ticket transfer confirmation to both sender and recipient
+   */
+  static async sendTicketTransferConfirmation(
+    eventData: EventNotificationData,
+    isRecipient: boolean = false
+  ): Promise<string | null> {
+    try {
+      let title: string;
+      let body: string;
+
+      if (isRecipient) {
+        title = "🎫 You Received a Ticket!";
+        body = `${
+          eventData.transferFromUser || "Someone"
+        } sent you a ticket for ${eventData.eventName}. Check your events!`;
+      } else {
+        title = "✅ Ticket Transferred";
+        body = `Your ticket for ${
+          eventData.eventName
+        } was successfully transferred to ${
+          eventData.recipientName || "the recipient"
+        }.`;
+      }
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title,
+        body,
+        data: {
+          type: "event_management",
+          subtype: isRecipient ? "ticket_received" : "ticket_sent",
+          eventId: eventData.eventId,
+          eventName: eventData.eventName,
+          ticketId: eventData.ticketId,
+          recipientName: eventData.recipientName,
+          transferFromUser: eventData.transferFromUser,
+          screen: "my-events",
+        },
+      });
+
+      console.log(
+        `Ticket transfer confirmation sent (${
+          isRecipient ? "recipient" : "sender"
+        }):`,
+        notificationId
+      );
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending ticket transfer confirmation:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send event check-in notification (when admin scans ticket)
+   */
+  static async sendEventCheckInNotification(
+    eventData: EventNotificationData,
+    isValid: boolean = true
+  ): Promise<string | null> {
+    try {
+      let title: string;
+      let body: string;
+
+      if (isValid) {
+        title = "🎉 Welcome to the Event!";
+        body = `You're checked in to ${eventData.eventName}. Have an amazing time!`;
+      } else {
+        title = "❌ Check-in Issue";
+        body = `There was an issue checking you in to ${eventData.eventName}. Please see event staff.`;
+      }
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title,
+        body,
+        data: {
+          type: "event_management",
+          subtype: isValid ? "check_in_success" : "check_in_failed",
+          eventId: eventData.eventId,
+          eventName: eventData.eventName,
+          ticketId: eventData.ticketId,
+          screen: "my-events",
+        },
+      });
+
+      console.log(
+        `Event check-in notification sent (${isValid ? "success" : "failed"}):`,
+        notificationId
+      );
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending event check-in notification:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Cancel event-related notifications for a specific event
+   */
+  static async cancelEventNotifications(eventId: string): Promise<void> {
+    try {
+      const scheduledNotifications =
+        await notificationService.getScheduledNotifications();
+
+      // Cancel notifications for this specific event
+      for (const notification of scheduledNotifications) {
+        if (notification.content.data?.eventId === eventId) {
+          await notificationService.cancelNotification(notification.identifier);
+        }
+      }
+
+      console.log(`Event notifications cancelled for event: ${eventId}`);
+    } catch (error) {
+      console.error("Error cancelling event notifications:", error);
+    }
+  }
+
+  /**
+   * Send event location/detail update notification
+   */
+  static async sendEventUpdateNotification(
+    eventData: EventNotificationData,
+    updateType: "location" | "time" | "details",
+    updateMessage: string
+  ): Promise<string | null> {
+    try {
+      const typeEmojis = {
+        location: "📍",
+        time: "⏰",
+        details: "ℹ️",
+      };
+
+      const title = `${typeEmojis[updateType]} Event Update: ${eventData.eventName}`;
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title,
+        body: updateMessage,
+        data: {
+          type: "event_management",
+          subtype: "event_update",
+          updateType,
+          eventId: eventData.eventId,
+          eventName: eventData.eventName,
+          screen: "event-detail",
+        },
+      });
+
+      console.log(
+        `Event update notification sent (${updateType}):`,
+        notificationId
+      );
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending event update notification:", error);
+      return null;
     }
   }
 }

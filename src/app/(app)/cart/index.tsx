@@ -806,33 +806,71 @@ export default function CartScreen() {
     }
 
     try {
-      // Send order confirmation notification
-      await NotificationManager.sendOrderConfirmation(
-        orderId,
-        `$${orderTotal.toFixed(2)}`
-      );
+      // Check if we have event tickets vs regular products
+      const eventTickets = orderItems.filter((item) => !!item.eventDetails);
+      const regularProducts = orderItems.filter((item) => !item.eventDetails);
 
-      // Send order processing notification immediately after
-      const orderData = {
-        orderId,
-        orderTotal,
-        orderItems: orderItems.map((item) => ({
-          productId: item.productId,
-          title: item.title,
-          quantity: item.selectedQuantity,
-          price: item.price.amount,
-        })),
-        shippingAddress: addressDetails,
-        paymentMethod: "stripe",
-        customerEmail: userEmail || undefined,
-      };
+      // Send event ticket purchase confirmations for each event
+      for (const ticket of eventTickets) {
+        const eventData = {
+          eventId: ticket.productId,
+          eventName: ticket.title,
+          eventDate: ticket.eventDetails?.dateTime
+            ? new Date(ticket.eventDetails.dateTime.seconds * 1000)
+            : undefined,
+          eventLocation: ticket.eventDetails?.location,
+        };
 
-      await NotificationManager.sendOrderProcessingNotification(
-        orderId,
-        orderData
-      );
+        // Send ticket purchase confirmation
+        await NotificationManager.sendEventTicketPurchaseConfirmation(
+          eventData,
+          ticket.selectedQuantity,
+          ticket.price.amount * ticket.selectedQuantity
+        );
 
-      console.log("Order notifications sent successfully");
+        // Schedule event reminders (24hr and 1hr before event)
+        if (eventData.eventDate) {
+          const reminderResults =
+            await NotificationManager.scheduleEventReminders(eventData);
+          if (reminderResults.reminder24h || reminderResults.reminder1h) {
+            console.log(
+              `Event reminders scheduled for ${eventData.eventName}:`,
+              reminderResults
+            );
+          }
+        }
+      }
+
+      // Send regular order notifications only if we have non-event items
+      if (regularProducts.length > 0) {
+        // Send order confirmation notification
+        await NotificationManager.sendOrderConfirmation(
+          orderId,
+          `$${orderTotal.toFixed(2)}`
+        );
+
+        // Send order processing notification immediately after
+        const orderData = {
+          orderId,
+          orderTotal,
+          orderItems: orderItems.map((item) => ({
+            productId: item.productId,
+            title: item.title,
+            quantity: item.selectedQuantity,
+            price: item.price.amount,
+          })),
+          shippingAddress: addressDetails,
+          paymentMethod: "stripe",
+          customerEmail: userEmail || undefined,
+        };
+
+        await NotificationManager.sendOrderProcessingNotification(
+          orderId,
+          orderData
+        );
+      }
+
+      console.log("Order and event notifications sent successfully");
     } catch (error) {
       console.error("Error sending order notifications:", error);
     }

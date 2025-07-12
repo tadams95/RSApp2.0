@@ -33,7 +33,8 @@ import * as Notifications from "expo-notifications";
 import { getAuth } from "firebase/auth";
 import { get, getDatabase, ref } from "firebase/database";
 
-// Import the event data handler functions
+// Import notification manager for event notifications
+import { NotificationManager } from "../../services/notificationManager";
 import { retryWithBackoff } from "../../utils/cart/networkErrorDetection";
 import { extractDatabaseErrorCode } from "../../utils/databaseErrorHandler";
 import {
@@ -415,7 +416,30 @@ const MyEvents: React.FC = () => {
                   await transferTicket(ticketUrl, recipientData);
                   Alert.alert("Success", "Ticket transferred successfully!");
 
-                  // Send notification if recipient has a token
+                  // Send transfer confirmation notifications using NotificationManager
+                  const currentEventData = {
+                    eventId: eventNameTransfer,
+                    eventName: eventData.name,
+                    eventDate: eventData.date
+                      ? new Date(eventData.date)
+                      : undefined,
+                    eventLocation: eventData.location,
+                    ticketId: selectedTicketId,
+                    recipientName: `${recipientData.firstName} ${recipientData.lastName}`,
+                    transferFromUser:
+                      auth.currentUser?.displayName ||
+                      auth.currentUser?.email ||
+                      "You",
+                  };
+
+                  // Send confirmation to sender (current user)
+                  await NotificationManager.sendTicketTransferConfirmation(
+                    currentEventData,
+                    false // isRecipient = false (sender)
+                  );
+
+                  // Send old-style push notification to recipient if they have a token
+                  // (keeping this for backward compatibility until all users update)
                   if (recipientData.expoPushToken) {
                     await sendPushNotification(recipientData.expoPushToken);
                   }

@@ -202,6 +202,162 @@ export const testCartAbandonmentWithRetry = async (): Promise<void> => {
 };
 
 /**
+ * Test event management notifications
+ */
+export const testEventManagementNotifications = async () => {
+  console.log("🎫 Testing Event Management Notifications...");
+
+  try {
+    // Test event data
+    const testEventData = {
+      eventId: "test-event-123",
+      eventName: "RAGESTATE Test Event",
+      eventDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+      eventLocation: "Test Venue, Test City",
+      ticketId: "ticket-123",
+      recipientName: "Test User",
+      transferFromUser: "Test Sender",
+    };
+
+    console.log("1. Testing ticket purchase confirmation...");
+    await NotificationManager.sendEventTicketPurchaseConfirmation(
+      testEventData,
+      2, // 2 tickets
+      50.0 // $50 total
+    );
+
+    console.log("2. Testing event reminders scheduling...");
+    const reminderResults = await NotificationManager.scheduleEventReminders(
+      testEventData
+    );
+    console.log("   Reminders scheduled:", reminderResults);
+
+    console.log("3. Testing ticket transfer confirmation (sender)...");
+    await NotificationManager.sendTicketTransferConfirmation(
+      testEventData,
+      false
+    );
+
+    console.log("4. Testing ticket transfer confirmation (recipient)...");
+    await NotificationManager.sendTicketTransferConfirmation(
+      testEventData,
+      true
+    );
+
+    console.log("5. Testing successful check-in notification...");
+    await NotificationManager.sendEventCheckInNotification(testEventData, true);
+
+    console.log("6. Testing failed check-in notification...");
+    await NotificationManager.sendEventCheckInNotification(
+      testEventData,
+      false
+    );
+
+    console.log("7. Testing event update notification...");
+    await NotificationManager.sendEventUpdateNotification(
+      testEventData,
+      "location",
+      "Event location has been updated to the main stage area."
+    );
+
+    console.log("✅ Event management notification tests completed!");
+
+    Alert.alert(
+      "Event Notifications Test",
+      "Event management notifications test completed! Check your notification history for 7 test notifications.",
+      [{ text: "OK" }]
+    );
+
+    return true;
+  } catch (error) {
+    console.error("❌ Event management notification test failed:", error);
+    Alert.alert(
+      "Test Failed",
+      `Event management notification test failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+    return false;
+  }
+};
+
+/**
+ * Test event reminder scheduling with different timing scenarios
+ */
+export const testEventReminderScheduling = async () => {
+  console.log("⏰ Testing Event Reminder Scheduling...");
+
+  try {
+    // Test 1: Event in the future (should schedule both reminders)
+    console.log(
+      "1. Testing event in 3 days (should schedule both reminders)..."
+    );
+    const futureEvent = {
+      eventId: "future-event",
+      eventName: "Future Event Test",
+      eventDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      eventLocation: "Future Venue",
+    };
+
+    const futureResults = await NotificationManager.scheduleEventReminders(
+      futureEvent
+    );
+    console.log("   Future event reminders:", futureResults);
+
+    // Test 2: Event in 12 hours (should only schedule 1-hour reminder)
+    console.log(
+      "2. Testing event in 12 hours (should only schedule 1h reminder)..."
+    );
+    const nearEvent = {
+      eventId: "near-event",
+      eventName: "Near Event Test",
+      eventDate: new Date(Date.now() + 12 * 60 * 60 * 1000),
+      eventLocation: "Near Venue",
+    };
+
+    const nearResults = await NotificationManager.scheduleEventReminders(
+      nearEvent
+    );
+    console.log("   Near event reminders:", nearResults);
+
+    // Test 3: Event in the past (should schedule no reminders)
+    console.log(
+      "3. Testing event in the past (should schedule no reminders)..."
+    );
+    const pastEvent = {
+      eventId: "past-event",
+      eventName: "Past Event Test",
+      eventDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      eventLocation: "Past Venue",
+    };
+
+    const pastResults = await NotificationManager.scheduleEventReminders(
+      pastEvent
+    );
+    console.log("   Past event reminders:", pastResults);
+
+    console.log("✅ Event reminder scheduling tests completed!");
+
+    Alert.alert(
+      "Reminder Scheduling Test",
+      "Event reminder scheduling test completed! Check console for details about which reminders were scheduled.",
+      [{ text: "OK" }]
+    );
+
+    return true;
+  } catch (error) {
+    console.error("❌ Event reminder scheduling test failed:", error);
+    Alert.alert(
+      "Test Failed",
+      `Event reminder scheduling test failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+    return false;
+  }
+};
+
+/**
  * React hook for testing notifications in components
  */
 export const useNotificationTesting = () => {
@@ -218,6 +374,8 @@ export const useNotificationTesting = () => {
       await testCartAbandonmentNotification();
       await testOrderConfirmation();
       await testOrderStatusNotifications();
+      await testEventManagementNotifications();
+      await testEventReminderScheduling();
     }
 
     return basicTest;
