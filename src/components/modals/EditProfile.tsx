@@ -11,11 +11,11 @@ import {
 } from "react-native";
 
 import { useRouter } from "expo-router";
-import { getDatabase, ref, update } from "firebase/database";
 import { useSelector } from "react-redux";
 import useProfileUpdateErrorHandler from "../../hooks/useProfileUpdateErrorHandler";
 import { NotificationManager } from "../../services/notificationManager";
 import { selectLocalId } from "../../store/redux/userSlice";
+import { updateUserData } from "../../utils/auth";
 import ProfileUpdateErrorNotice from "../ProfileUpdateErrorNotice";
 import {
   formatPhoneNumberInput,
@@ -28,6 +28,12 @@ import {
 interface EditProfileProps {
   onProfileUpdated: () => void;
   onCancel: () => void;
+  initialData?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phoneNumber?: string;
+  };
 }
 
 // Define interface for user data updates
@@ -49,6 +55,7 @@ interface FormErrors {
 const EditProfile: React.FC<EditProfileProps> = ({
   onProfileUpdated,
   onCancel,
+  initialData,
 }) => {
   // State variables with proper types
   const [firstName, setFirstName] = useState<string>("");
@@ -75,8 +82,17 @@ const EditProfile: React.FC<EditProfileProps> = ({
   // Get user ID from Redux store
   const userId = useSelector(selectLocalId);
 
-  // Get Firebase Realtime Database instance
-  const database = getDatabase();
+  /**
+   * Initialize form fields with existing user data
+   */
+  useEffect(() => {
+    if (initialData) {
+      setFirstName(initialData.firstName || "");
+      setLastName(initialData.lastName || "");
+      setEmail(initialData.email || "");
+      setPhoneNumber(initialData.phoneNumber || "");
+    }
+  }, [initialData]);
 
   /**
    * Apply update field errors to form errors
@@ -235,15 +251,22 @@ const EditProfile: React.FC<EditProfileProps> = ({
     // Set submitting state to true to show loading state if needed
     setIsSubmitting(true);
 
-    // Reference to the user node in the database
-    const userRef = ref(database, `users/${userId}`);
-
-    // Create an object with the specific fields you want to update
+    // Create an object with only the fields that have changed
     const updatedUserData: UserDataUpdate = {};
-    if (firstName) updatedUserData.firstName = firstName;
-    if (lastName) updatedUserData.lastName = lastName;
-    if (email) updatedUserData.email = email;
-    if (phoneNumber) updatedUserData.phoneNumber = phoneNumber;
+
+    // Check each field against initial data to see what changed
+    if (firstName !== (initialData?.firstName || "")) {
+      updatedUserData.firstName = firstName || undefined;
+    }
+    if (lastName !== (initialData?.lastName || "")) {
+      updatedUserData.lastName = lastName || undefined;
+    }
+    if (email !== (initialData?.email || "")) {
+      updatedUserData.email = email || undefined;
+    }
+    if (phoneNumber !== (initialData?.phoneNumber || "")) {
+      updatedUserData.phoneNumber = phoneNumber || undefined;
+    }
 
     // Only update if there are changes to make
     if (Object.keys(updatedUserData).length === 0) {
@@ -254,8 +277,12 @@ const EditProfile: React.FC<EditProfileProps> = ({
     }
 
     try {
-      // Update the specific fields of the user's details in the database
-      await update(userRef, updatedUserData);
+      // Update user data in both Firestore and RTDB using existing utility
+      const result = await updateUserData(userId, updatedUserData);
+
+      if (!result.success) {
+        throw new Error(result.message || "Failed to update profile");
+      }
 
       // Send profile update confirmation notification
       try {

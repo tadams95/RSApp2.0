@@ -665,6 +665,12 @@ export default function AccountScreen() {
                     <EditProfile
                       onProfileUpdated={handleProfileUpdated}
                       onCancel={() => setShowEditProfileModal(false)}
+                      initialData={{
+                        firstName: userProfile?.firstName || "",
+                        lastName: userProfile?.lastName || "",
+                        email: userProfile?.email || userEmail || "",
+                        phoneNumber: userProfile?.phoneNumber || "",
+                      }}
                     />
                   </EditProfileErrorBoundary>
                 )}
