@@ -921,15 +921,59 @@ export const trackProductPurchase = (order, items) => {
 - [ ] Migrate core components to NativeWind classes
 - [ ] Update theme provider for dark/light mode
 
-## PRIORITY 9: Final Optimizations
+## PRIORITY 9: SoundCloud Integration
 
-### 9.1 Build Optimization
+### 9.1 SoundCloud Profile Integration
+
+**Feature**: Allow users to showcase their music/tracks on their profile
+
+**Implementation Approach**:
+
+- [ ] **Research & Setup**
+  - [ ] Investigate SoundCloud API v2 authentication and rate limits
+  - [ ] Register app with SoundCloud for API access
+  - [ ] Choose optimal integration method (API + WebView vs oEmbed)
+  - [ ] Design user profile music section layout
+
+- [ ] **Core Integration**
+  - [ ] Add SoundCloud track URL field to user profile data model
+  - [ ] Create SoundCloud track input component in EditProfile modal
+  - [ ] Implement SoundCloud API service for track metadata fetching
+  - [ ] Add track URL validation (SoundCloud URL format)
+
+- [ ] **Player Component**
+  - [ ] Create SoundCloud track embed component using WebView
+  - [ ] Implement fallback for tracks that can't be embedded
+  - [ ] Add loading states and error handling for track loading
+  - [ ] Ensure responsive design across device sizes
+
+- [ ] **User Experience**
+  - [ ] Add SoundCloud section to user profile display
+  - [ ] Implement "Add Track" functionality in profile editing
+  - [ ] Support multiple tracks per user (optional: track list/playlist)
+  - [ ] Add deep linking to SoundCloud app when available
+
+- [ ] **Technical Considerations**
+  - [ ] Handle SoundCloud privacy settings (private tracks)
+  - [ ] Implement caching for track metadata
+  - [ ] Add analytics tracking for music engagement
+  - [ ] Ensure compliance with SoundCloud's terms of service
+
+**Expected Benefits**:
+- Enhanced user profiles with musical identity
+- Increased user engagement and profile completeness
+- Community discovery through shared music taste
+- Potential for music-based event promotion
+
+## PRIORITY 10: Final Optimizations
+
+### 10.1 Build Optimization
 
 - [ ] Optimize bundle size with Metro config
 - [ ] Add code splitting for route-based chunks
 - [ ] Optimize asset loading
 
-### 9.2 Security Review
+### 10.2 Security Review
 
 - [ ] Audit Firebase security rules
 - [ ] Review sensitive data storage practices
@@ -959,14 +1003,16 @@ export const trackProductPurchase = (order, items) => {
 - **Priority 6 (Testing)**: ✅ Complete
 - **Priority 7 (Analytics & Privacy)**: ✅ **Complete Implementation with Privacy Controls** (Dashboard setup external)
 - **Priority 8 (Styling)**: 1-2 weeks
-- **Priority 9 (Final)**: 3-5 days
+- **Priority 9 (SoundCloud Integration)**: 1-2 weeks
+- **Priority 10 (Final)**: 3-5 days
 
-**Remaining Timeline**: 2-3 weeks for styling system and final optimizations
+**Remaining Timeline**: 3-4 weeks for styling system, SoundCloud integration, and final optimizations
 
 **Recommended Implementation Order:**
 
 1. **Week 1-2**: NativeWind Styling System (Priority 8) - **Consistency and maintainability**
-2. **Week 3**: Final Optimizations (Priority 9) - **Performance and security polish**
+2. **Week 3**: SoundCloud Integration (Priority 9) - **Enhanced user profiles with music**
+3. **Week 4**: Final Optimizations (Priority 10) - **Performance and security polish**
 3. **External Tasks**: PostHog dashboard configuration (user-managed in PostHog interface)
 
 ## SUCCESS CRITERIA
