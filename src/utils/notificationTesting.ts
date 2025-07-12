@@ -1,3 +1,4 @@
+import { Alert } from "react-native";
 import { useNotifications } from "../hooks/useNotifications";
 import { NotificationManager } from "../services/notificationManager";
 import { notificationService } from "../services/notificationService";
@@ -108,6 +109,99 @@ export const testOrderConfirmation = async () => {
 };
 
 /**
+ * Test order status notifications
+ */
+export const testOrderStatusNotifications = async (): Promise<void> => {
+  try {
+    const testOrderId = `TEST-ORDER-${Date.now()}`;
+    const testOrderData = {
+      orderId: testOrderId,
+      orderTotal: 99.99,
+      orderItems: [
+        {
+          productId: "test-product-1",
+          title: "Test Product",
+          quantity: 2,
+          price: 49.99,
+        },
+      ],
+      customerEmail: "test@example.com",
+      paymentMethod: "stripe",
+    };
+
+    // Test order confirmation
+    await NotificationManager.sendOrderConfirmation(testOrderId, "$99.99");
+    console.log("✅ Order confirmation notification sent");
+
+    // Test order processing
+    await NotificationManager.sendOrderProcessingNotification(
+      testOrderId,
+      testOrderData
+    );
+    console.log("✅ Order processing notification sent");
+
+    // Test shipping notification (delayed)
+    setTimeout(async () => {
+      await NotificationManager.sendShippingNotification(
+        testOrderId,
+        "1Z999999999999999999",
+        new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 days from now
+      );
+      console.log("✅ Shipping notification sent");
+    }, 2000);
+
+    // Test payment failure notification
+    setTimeout(async () => {
+      await NotificationManager.sendPaymentFailureNotification(
+        `FAILED-${testOrderId}`,
+        "Your payment method was declined"
+      );
+      console.log("✅ Payment failure notification sent");
+    }, 4000);
+
+    // Test delivery confirmation (delayed)
+    setTimeout(async () => {
+      await NotificationManager.sendDeliveryConfirmation(
+        testOrderId,
+        new Date()
+      );
+      console.log("✅ Delivery confirmation notification sent");
+    }, 6000);
+
+    Alert.alert(
+      "Order Status Tests Started",
+      "Check your notifications over the next few seconds to see all order status notifications in action."
+    );
+  } catch (error) {
+    console.error("Error testing order status notifications:", error);
+    Alert.alert("Test Failed", "Could not test order status notifications");
+  }
+};
+
+/**
+ * Test cart abandonment notification with retry functionality
+ */
+export const testCartAbandonmentWithRetry = async (): Promise<void> => {
+  try {
+    // Test enhanced cart abandonment reminder
+    await NotificationManager.scheduleCartAbandonmentReminderWithRetry(
+      75.5, // $75.50 cart value
+      3, // 3 items
+      1 // 1 minute delay for testing
+    );
+
+    Alert.alert(
+      "Cart Abandonment Test Scheduled",
+      "Enhanced cart abandonment reminder scheduled for 1 minute from now. Check your notifications!"
+    );
+    console.log("✅ Enhanced cart abandonment reminder scheduled");
+  } catch (error) {
+    console.error("Error testing cart abandonment with retry:", error);
+    Alert.alert("Test Failed", "Could not test cart abandonment notification");
+  }
+};
+
+/**
  * React hook for testing notifications in components
  */
 export const useNotificationTesting = () => {
@@ -123,6 +217,7 @@ export const useNotificationTesting = () => {
       // Test business-specific notifications
       await testCartAbandonmentNotification();
       await testOrderConfirmation();
+      await testOrderStatusNotifications();
     }
 
     return basicTest;

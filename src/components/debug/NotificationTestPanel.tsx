@@ -3,70 +3,103 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useNotifications } from "../../hooks/useNotifications";
 import {
   testCartAbandonmentNotification,
+  testCartAbandonmentWithRetry,
   testNotifications,
   testOrderConfirmation,
+  testOrderStatusNotifications,
 } from "../../utils/notificationTesting";
 
-/**
- * Development component for testing push notifications
- * Can be temporarily added to any screen for testing
- */
-export const NotificationTestPanel: React.FC = () => {
+const NotificationTestPanel: React.FC = () => {
   const {
-    requestPermissions,
     permissionStatus,
     expoPushToken,
     isInitialized,
+    requestPermissions,
     sendLocalNotification,
   } = useNotifications();
 
   const handleRequestPermissions = async () => {
     const result = await requestPermissions();
     Alert.alert(
-      "Permission Result",
+      "Permission Request",
       result.granted
-        ? `Granted! Token: ${result.token?.slice(0, 20)}...`
-        : `Denied: ${result.error}`
+        ? "Notification permissions granted!"
+        : "Permission denied or error occurred"
     );
   };
 
   const handleTestBasicNotification = async () => {
-    try {
-      await sendLocalNotification({
-        title: "Test Notification",
-        body: "This is a test from your Rage State app!",
-        data: { test: true },
-      });
-      Alert.alert("Success", "Test notification sent!");
-    } catch (error) {
-      Alert.alert("Error", `Failed to send notification: ${error}`);
-    }
+    const result = await sendLocalNotification({
+      title: "Test Notification",
+      body: "This is a test notification from the debug panel!",
+    });
+    Alert.alert(
+      "Basic Test",
+      result ? "Test notification sent!" : "Failed to send notification"
+    );
   };
 
   const handleRunFullTest = async () => {
-    const success = await testNotifications();
-    Alert.alert(
-      "Test Complete",
-      success ? "All tests passed! 🎉" : "Some tests failed ❌"
-    );
+    try {
+      await testNotifications();
+      Alert.alert(
+        "Full Test",
+        "Comprehensive notification test completed! Check console for details."
+      );
+    } catch (error) {
+      Alert.alert("Test Failed", "Could not complete notification test");
+    }
   };
 
   const handleTestCartAbandonment = async () => {
-    const result = await testCartAbandonmentNotification();
-    Alert.alert(
-      "Cart Test",
-      result
-        ? "Cart abandonment notification scheduled!"
-        : "Failed to schedule notification"
-    );
+    try {
+      await testCartAbandonmentNotification();
+      Alert.alert("Cart Test", "Cart abandonment notification scheduled!");
+    } catch (error) {
+      Alert.alert(
+        "Test Failed",
+        "Could not test cart abandonment notification"
+      );
+    }
   };
 
   const handleTestOrderConfirmation = async () => {
-    const result = await testOrderConfirmation();
-    Alert.alert(
-      "Order Test",
-      result ? "Order confirmation sent!" : "Failed to send confirmation"
-    );
+    try {
+      await testOrderConfirmation();
+      Alert.alert("Order Test", "Order confirmation notification sent!");
+    } catch (error) {
+      Alert.alert("Test Failed", "Could not test order confirmation");
+    }
+  };
+
+  const handleTestOrderStatus = async () => {
+    try {
+      await testOrderStatusNotifications();
+      Alert.alert(
+        "Order Status Test",
+        "Order status notifications scheduled! Check your notifications over the next few seconds."
+      );
+    } catch (error) {
+      Alert.alert(
+        "Order Status Test Failed",
+        "Failed to schedule order status notifications"
+      );
+    }
+  };
+
+  const handleTestCartAbandonmentWithRetry = async () => {
+    try {
+      await testCartAbandonmentWithRetry();
+      Alert.alert(
+        "Cart Abandonment Retry Test",
+        "Enhanced cart abandonment notification scheduled!"
+      );
+    } catch (error) {
+      Alert.alert(
+        "Cart Abandonment Test Failed",
+        "Failed to schedule cart abandonment notification with retry"
+      );
+    }
   };
 
   if (!isInitialized) {
@@ -89,14 +122,14 @@ export const NotificationTestPanel: React.FC = () => {
             { color: permissionStatus === "granted" ? "green" : "red" },
           ]}
         >
-          {permissionStatus || "unknown"}
+          {permissionStatus || "Unknown"}
         </Text>
       </View>
 
       <View style={styles.statusRow}>
         <Text style={styles.statusLabel}>Token:</Text>
         <Text style={styles.statusValue}>
-          {expoPushToken ? `${expoPushToken.slice(0, 15)}...` : "none"}
+          {expoPushToken ? `${expoPushToken.substring(0, 20)}...` : "No token"}
         </Text>
       </View>
 
@@ -119,7 +152,27 @@ export const NotificationTestPanel: React.FC = () => {
       </TouchableOpacity>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Business Tests:</Text>
+        <Text style={styles.sectionTitle}>Order Status Notifications:</Text>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestOrderStatus}
+        >
+          <Text style={styles.buttonText}>Test Order Status Flow</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestCartAbandonmentWithRetry}
+        >
+          <Text style={styles.buttonText}>
+            Test Cart Abandonment with Retry
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Legacy Tests:</Text>
 
         <TouchableOpacity
           style={[styles.button, styles.secondaryButton]}
@@ -141,59 +194,62 @@ export const NotificationTestPanel: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: 20,
     backgroundColor: "#f5f5f5",
-    margin: 16,
+    margin: 10,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ddd",
   },
   title: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 16,
+    marginBottom: 15,
     textAlign: "center",
   },
   statusRow: {
     flexDirection: "row",
-    marginBottom: 8,
+    justifyContent: "space-between",
+    marginBottom: 10,
   },
   statusLabel: {
-    fontWeight: "bold",
-    width: 80,
+    fontWeight: "600",
+    color: "#333",
   },
   statusValue: {
+    color: "#666",
     flex: 1,
+    textAlign: "right",
     fontSize: 12,
   },
-  status: {
-    textAlign: "center",
-    fontStyle: "italic",
-    color: "#666",
-  },
   button: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#007bff",
     padding: 12,
     borderRadius: 6,
-    marginBottom: 8,
+    marginVertical: 5,
+    alignItems: "center",
   },
   secondaryButton: {
-    backgroundColor: "#34C759",
+    backgroundColor: "#6c757d",
   },
   buttonText: {
     color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   section: {
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 20,
+    paddingTop: 15,
     borderTopWidth: 1,
     borderTopColor: "#ddd",
   },
   sectionTitle: {
+    fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 8,
+    marginBottom: 10,
+    color: "#333",
+  },
+  status: {
+    textAlign: "center",
+    color: "#666",
+    fontStyle: "italic",
   },
 });
 

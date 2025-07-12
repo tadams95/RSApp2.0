@@ -11,6 +11,20 @@ export interface PushNotificationData {
   data?: Record<string, any>;
 }
 
+export interface OrderStatusNotificationData {
+  orderId: string;
+  orderTotal: number;
+  orderItems: Array<{
+    productId: string;
+    title: string;
+    quantity: number;
+    price: number;
+  }>;
+  shippingAddress?: any;
+  paymentMethod?: string;
+  customerEmail?: string;
+}
+
 /**
  * Firebase integration for push notification tokens
  */
@@ -139,6 +153,171 @@ class NotificationManager {
       return notificationId;
     } catch (error) {
       console.error("Error sending order confirmation:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send order processing notification
+   */
+  static async sendOrderProcessingNotification(
+    orderId: string,
+    orderData: OrderStatusNotificationData
+  ): Promise<string | null> {
+    try {
+      const notificationId = await notificationService.sendLocalNotification({
+        title: "Order Processing",
+        body: `Your order #${orderId} is being prepared`,
+        data: {
+          type: "order_status",
+          orderId,
+          status: "processing",
+          screen: "order-details",
+        },
+      });
+
+      console.log("Order processing notification sent:", notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending order processing notification:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send shipping notification for physical items
+   */
+  static async sendShippingNotification(
+    orderId: string,
+    trackingNumber?: string,
+    estimatedDelivery?: Date
+  ): Promise<string | null> {
+    try {
+      let bodyText = `Your order #${orderId} has shipped!`;
+      if (trackingNumber) {
+        bodyText += ` Tracking: ${trackingNumber}`;
+      }
+      if (estimatedDelivery) {
+        const deliveryDate = estimatedDelivery.toLocaleDateString();
+        bodyText += ` Est. delivery: ${deliveryDate}`;
+      }
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title: "Order Shipped!",
+        body: bodyText,
+        data: {
+          type: "order_status",
+          orderId,
+          status: "shipped",
+          trackingNumber,
+          screen: "order-details",
+        },
+      });
+
+      console.log("Shipping notification sent:", notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending shipping notification:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send payment failure notification with recovery options
+   */
+  static async sendPaymentFailureNotification(
+    orderId: string,
+    failureReason: string = "Payment could not be processed"
+  ): Promise<string | null> {
+    try {
+      const notificationId = await notificationService.sendLocalNotification({
+        title: "Payment Issue",
+        body: `${failureReason}. Tap to retry your order.`,
+        data: {
+          type: "order_status",
+          orderId,
+          status: "payment_failed",
+          screen: "cart",
+          action: "retry_payment",
+        },
+      });
+
+      console.log("Payment failure notification sent:", notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending payment failure notification:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Schedule a cart abandonment reminder with order context
+   */
+  static async scheduleCartAbandonmentReminderWithRetry(
+    cartValue: number,
+    itemCount: number,
+    delayInMinutes: number = 30
+  ): Promise<string | null> {
+    try {
+      const notificationId = await notificationService.scheduleNotification({
+        title: "Complete your order",
+        body: `${itemCount} item${
+          itemCount > 1 ? "s" : ""
+        } waiting ($${cartValue.toFixed(2)}). Complete your purchase now!`,
+        data: {
+          type: "cart_abandonment",
+          cartValue,
+          itemCount,
+          screen: "cart",
+          action: "complete_order",
+        },
+        trigger: {
+          seconds: delayInMinutes * 60,
+        } as Notifications.TimeIntervalTriggerInput,
+      });
+
+      console.log(
+        "Cart abandonment reminder with retry scheduled:",
+        notificationId
+      );
+      return notificationId;
+    } catch (error) {
+      console.error(
+        "Error scheduling cart abandonment reminder with retry:",
+        error
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Send order delivery confirmation
+   */
+  static async sendDeliveryConfirmation(
+    orderId: string,
+    deliveryDate?: Date
+  ): Promise<string | null> {
+    try {
+      const deliveryText = deliveryDate
+        ? ` on ${deliveryDate.toLocaleDateString()}`
+        : "";
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title: "Order Delivered!",
+        body: `Your order #${orderId} was delivered${deliveryText}. How was your experience?`,
+        data: {
+          type: "order_status",
+          orderId,
+          status: "delivered",
+          screen: "order-details",
+          action: "review_order",
+        },
+      });
+
+      console.log("Delivery confirmation sent:", notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending delivery confirmation:", error);
       return null;
     }
   }

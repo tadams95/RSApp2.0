@@ -42,6 +42,9 @@ import {
 // Import our new offline cart sync utilities
 import { useOfflineCartSync } from "../../../utils/offlineCartSync";
 
+// Import notification manager for order status notifications
+import { NotificationManager } from "../../../services/notificationManager";
+
 // Import the actual CartItem type from the redux slice if available
 // Or define a type that matches the structure in the Redux store
 import {
@@ -50,7 +53,6 @@ import {
   StripeProvider,
   useStripe,
 } from "@stripe/stripe-react-native";
-import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { getFirestore } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
@@ -222,7 +224,10 @@ export default function CartScreen() {
     setLastInteractionTime(Date.now());
   };
 
-  const trackCartAbandonment = (abandonmentStage: string, reason: string) => {
+  const trackCartAbandonment = async (
+    abandonmentStage: string,
+    reason: string
+  ) => {
     if (abandonmentTracked || cartItems.length === 0) return;
 
     const sessionDuration = Date.now() - cartSessionStartTime;
@@ -254,6 +259,20 @@ export default function CartScreen() {
       product_ids: cartItems.map((item) => item.productId).join(","),
       user_type: "authenticated",
     });
+
+    // Schedule cart abandonment reminder notification for high-value carts or checkout attempts
+    if ((cartValue >= 50 || hasAttemptedCheckout) && expoPushToken) {
+      try {
+        await NotificationManager.scheduleCartAbandonmentReminderWithRetry(
+          cartValue,
+          cartItems.length,
+          30 // 30 minutes delay
+        );
+        console.log("Cart abandonment reminder scheduled");
+      } catch (error) {
+        console.error("Error scheduling cart abandonment reminder:", error);
+      }
+    }
 
     setAbandonmentTracked(true);
   };
@@ -776,21 +795,46 @@ export default function CartScreen() {
     setClearConfirmationModalVisible(false);
   };
 
-  const sendPurchaseNotification = async () => {
-    if (!expoPushToken) return;
+  const sendPurchaseNotification = async (
+    orderId: string,
+    orderTotal: number,
+    orderItems: any[]
+  ) => {
+    if (!expoPushToken) {
+      console.log("No push token available, skipping notification");
+      return;
+    }
 
     try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Purchase Successful",
-          body: `Thank you for your purchase of $${totalPrice.toFixed(
-            2
-          )}. Your order is being processed.`,
-        },
-        trigger: null,
-      });
+      // Send order confirmation notification
+      await NotificationManager.sendOrderConfirmation(
+        orderId,
+        `$${orderTotal.toFixed(2)}`
+      );
+
+      // Send order processing notification immediately after
+      const orderData = {
+        orderId,
+        orderTotal,
+        orderItems: orderItems.map((item) => ({
+          productId: item.productId,
+          title: item.title,
+          quantity: item.selectedQuantity,
+          price: item.price.amount,
+        })),
+        shippingAddress: addressDetails,
+        paymentMethod: "stripe",
+        customerEmail: userEmail || undefined,
+      };
+
+      await NotificationManager.sendOrderProcessingNotification(
+        orderId,
+        orderData
+      );
+
+      console.log("Order notifications sent successfully");
     } catch (error) {
-      console.error("Error sending notification:", error);
+      console.error("Error sending order notifications:", error);
     }
   };
 
@@ -1059,6 +1103,23 @@ export default function CartScreen() {
           paymentIntentId: stripePaymentIntent,
         });
 
+        // Send payment failure notification (only for actual failures, not cancellations)
+        if (error.code !== "Canceled" && expoPushToken) {
+          try {
+            const tempOrderId = `FAILED-${Date.now()}`;
+            await NotificationManager.sendPaymentFailureNotification(
+              tempOrderId,
+              error.message || "Payment could not be processed"
+            );
+            console.log("Payment failure notification sent");
+          } catch (notificationError) {
+            console.error(
+              "Error sending payment failure notification:",
+              notificationError
+            );
+          }
+        }
+
         // Handle different error types
         if (error.code === "Canceled") {
           console.log("User canceled the payment");
@@ -1187,8 +1248,20 @@ export default function CartScreen() {
             });
           }
 
-          // Send notification
-          await sendPurchaseNotification();
+          // Send order status notifications
+          await sendPurchaseNotification(
+            orderDetails.orderId,
+            totalPrice,
+            cartItems
+          );
+
+          // Cancel any pending cart abandonment notifications since order is complete
+          try {
+            await NotificationManager.cancelCartNotifications();
+            console.log("Cancelled pending cart abandonment notifications");
+          } catch (error) {
+            console.error("Error cancelling cart notifications:", error);
+          }
 
           // Clear cart after successful purchase
           dispatch(clearCart());
