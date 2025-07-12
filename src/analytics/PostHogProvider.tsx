@@ -13,8 +13,10 @@ import React, {
   useContext,
   useEffect,
   useRef,
+  useState,
 } from "react";
 import { AppState, Platform } from "react-native";
+import { AnalyticsPreferences } from "../utils/analyticsPreferences";
 
 // Configuration interface
 interface PostHogConfig {
@@ -68,6 +70,11 @@ interface EnhancedPostHogContextType {
     properties?: AnalyticsProperties
   ) => Promise<void>;
   setUserContext: (userProperties: UserProperties) => Promise<void>;
+
+  // Privacy & Analytics Opt-out
+  isAnalyticsEnabled: () => Promise<boolean>;
+  setAnalyticsEnabled: (enabled: boolean) => Promise<void>;
+  getAnalyticsPreference: () => Promise<boolean>;
 }
 
 // Environment configuration
@@ -137,6 +144,7 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
   const isOnlineRef = useRef(true);
   const sessionStartTime = useRef<number>(Date.now());
   const lastActiveTime = useRef<number>(Date.now());
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
 
   useEffect(() => {
     initializeEnhancements();
@@ -150,6 +158,19 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
       }
     };
   }, [postHog]);
+
+  useEffect(() => {
+    const loadAnalyticsPreferences = async () => {
+      try {
+        const preferences = await AnalyticsPreferences.getPreference();
+        setAnalyticsEnabled(preferences.enabled);
+      } catch (error) {
+        console.error("Failed to load analytics preferences:", error);
+      }
+    };
+
+    loadAnalyticsPreferences();
+  }, []);
 
   const setupAppStateTracking = () => {
     const handleAppStateChange = (nextAppState: string) => {
@@ -338,9 +359,9 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
         type: "track",
       };
 
-      if (isOnlineRef.current && postHog) {
+      if (isOnlineRef.current && postHog && analyticsEnabled) {
         await postHog.capture(event, sanitizeProperties(eventData.properties));
-      } else {
+      } else if (analyticsEnabled) {
         await storeOfflineEvent(eventData);
       }
     } catch (error) {
@@ -364,9 +385,9 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
         type: "identify",
       };
 
-      if (isOnlineRef.current && postHog) {
+      if (isOnlineRef.current && postHog && analyticsEnabled) {
         postHog.identify(userId, sanitizeProperties(eventData.userProperties));
-      } else {
+      } else if (analyticsEnabled) {
         await storeOfflineEvent(eventData);
       }
     } catch (error) {
@@ -398,12 +419,12 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
         type: "screen",
       };
 
-      if (isOnlineRef.current && postHog) {
+      if (isOnlineRef.current && postHog && analyticsEnabled) {
         await postHog.screen(
           screenName,
           sanitizeProperties(eventData.properties)
         );
-      } else {
+      } else if (analyticsEnabled) {
         await storeOfflineEvent(eventData);
       }
     } catch (error) {
@@ -487,6 +508,35 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  // Analytics preference methods
+  const isAnalyticsEnabled = async (): Promise<boolean> => {
+    return await AnalyticsPreferences.isEnabled();
+  };
+
+  const setAnalyticsEnabledState = async (enabled: boolean): Promise<void> => {
+    try {
+      await AnalyticsPreferences.setPreference(enabled);
+      setAnalyticsEnabled(enabled);
+
+      // If disabling analytics, clear any pending events and reset PostHog
+      if (!enabled && postHog) {
+        await postHog.flush();
+        postHog.reset();
+        // Clear offline events
+        offlineEventsRef.current = [];
+        await AsyncStorage.removeItem(OFFLINE_EVENTS_KEY);
+      }
+    } catch (error) {
+      console.error("Failed to set analytics preference:", error);
+      throw error;
+    }
+  };
+
+  const getAnalyticsPreference = async (): Promise<boolean> => {
+    const preference = await AnalyticsPreferences.getPreference();
+    return preference.enabled;
+  };
+
   const value: EnhancedPostHogContextType = {
     track,
     identify,
@@ -499,6 +549,9 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
     isInitialized: isInitialized.current,
     trackWithContext,
     setUserContext,
+    isAnalyticsEnabled,
+    setAnalyticsEnabled: setAnalyticsEnabledState,
+    getAnalyticsPreference,
   };
 
   return (

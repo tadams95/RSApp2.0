@@ -20,10 +20,13 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
+import { usePostHog } from "../../analytics/PostHogProvider";
 import { auth } from "../../firebase/firebase";
+import { AnalyticsPreferences } from "../../utils/analyticsPreferences";
 import { logError } from "../../utils/logError";
 import { extractStorageErrorCode } from "../../utils/storageErrorHandler";
 
@@ -56,6 +59,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [adminModalVisible, setAdminModalVisible] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [admin, setAdmin] = useState<AdminUser | null>(null);
+  const [analyticsEnabled, setAnalyticsEnabled] = useState<boolean>(true);
+  const [loadingAnalytics, setLoadingAnalytics] = useState<boolean>(false);
+
+  const postHog = usePostHog();
 
   useEffect(() => {
     // Fetch current user data and check isAdmin status
@@ -110,10 +117,58 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       }
     };
 
+    const loadAnalyticsPreference = async () => {
+      try {
+        const preference = await AnalyticsPreferences.getPreference();
+        setAnalyticsEnabled(preference.enabled);
+      } catch (error) {
+        console.error("Failed to load analytics preference:", error);
+        // Default to enabled on error
+        setAnalyticsEnabled(true);
+      }
+    };
+
     if (visible) {
       fetchUserData();
+      loadAnalyticsPreference();
     }
   }, [visible]);
+
+  const handleAnalyticsToggle = async (enabled: boolean) => {
+    setLoadingAnalytics(true);
+    try {
+      await postHog.setAnalyticsEnabled(enabled);
+      setAnalyticsEnabled(enabled);
+
+      // Track the privacy preference change (if analytics is being enabled)
+      if (enabled) {
+        await postHog.track("analytics_preference_changed", {
+          analytics_enabled: enabled,
+          changed_from_settings: true,
+          user_opted_in: enabled,
+        });
+      }
+
+      Alert.alert(
+        "Analytics Settings Updated",
+        enabled
+          ? "Analytics tracking has been enabled. This helps us improve the app experience."
+          : "Analytics tracking has been disabled. No usage data will be collected.",
+        [{ text: "OK", style: "default" }]
+      );
+    } catch (error) {
+      console.error("Failed to update analytics preference:", error);
+      Alert.alert(
+        "Settings Error",
+        "Failed to update analytics preference. Please try again.",
+        [{ text: "OK", style: "default" }]
+      );
+      // Revert the state on error
+      setAnalyticsEnabled(!enabled);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
 
   const toggleAdminVisibility = () => {
     if (isAdmin) {
@@ -132,6 +187,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         text: "Yes",
         onPress: async () => {
           try {
+            // Reset PostHog for privacy compliance
+            await postHog.reset();
+
             setAuthenticated(false);
             await AsyncStorage.removeItem("stayLoggedIn");
             if (typeof handleClose === "function") {
@@ -147,7 +205,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
             console.error("Error during logout:", error);
 
-            // Still set authenticated to false even if storage clear fails
+            // Still set authenticated to false and reset PostHog even if storage clear fails
+            await postHog.reset();
             setAuthenticated(false);
             if (typeof handleClose === "function") {
               handleClose();
@@ -275,6 +334,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   }
                 }
 
+                // Clear analytics preferences for GDPR compliance
+                try {
+                  await AnalyticsPreferences.clear();
+                  await postHog.reset();
+                } catch (cleanupError) {
+                  console.warn(
+                    "Failed to clear analytics data during account deletion:",
+                    cleanupError
+                  );
+                  // Don't block account deletion on analytics cleanup failure
+                }
+
                 setAuthenticated(false);
                 if (typeof handleClose === "function") {
                   handleClose();
@@ -349,6 +420,25 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 <Text style={styles.buttonText}>ADMIN PANEL</Text>
               </Pressable>
             )}
+
+            {/* Analytics Privacy Toggle */}
+            <View style={styles.settingsRow}>
+              <View style={styles.settingsLabelContainer}>
+                <Text style={styles.settingsLabel}>Analytics & Usage Data</Text>
+                <Text style={styles.settingsDescription}>
+                  Help improve the app by sharing usage data
+                </Text>
+              </View>
+              <Switch
+                value={analyticsEnabled}
+                onValueChange={handleAnalyticsToggle}
+                disabled={loadingAnalytics}
+                trackColor={{ false: "#767577", true: "#4caf50" }}
+                thumbColor={analyticsEnabled ? "#ffffff" : "#f4f3f4"}
+                accessibilityLabel="Toggle analytics tracking"
+                accessibilityHint="When enabled, usage data is collected to improve the app"
+              />
+            </View>
 
             <Pressable
               style={styles.actionButton}
@@ -459,6 +549,36 @@ const styles = StyleSheet.create({
     fontFamily,
     fontWeight: "600",
     textTransform: "uppercase",
+  },
+  settingsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "80%",
+    marginVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#555",
+    borderRadius: 8,
+    backgroundColor: "#222",
+  },
+  settingsLabelContainer: {
+    flex: 1,
+    marginRight: 16,
+  },
+  settingsLabel: {
+    color: "white",
+    fontSize: 16,
+    fontFamily,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  settingsDescription: {
+    color: "#999",
+    fontSize: 12,
+    fontFamily,
+    lineHeight: 16,
   },
 });
 
