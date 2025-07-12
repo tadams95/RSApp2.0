@@ -15,8 +15,10 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
+import { Platform } from "react-native";
 import { Dispatch } from "redux";
 import { auth as firebaseAuth } from "../firebase/firebase";
+import { NotificationManager } from "../services/notificationManager";
 import { retryWithBackoff } from "./cart/networkErrorDetection";
 
 import { setLocalId, setUserEmail } from "../store/redux/userSlice";
@@ -153,6 +155,29 @@ export async function loginUser(
       if (typeof dispatch === "function") {
         dispatch(setLocalId(userId));
         dispatch(setUserEmail(email));
+      }
+
+      // Send login notification (non-blocking)
+      try {
+        await NotificationManager.sendLoginAlert(
+          {
+            userId: userId,
+            actionType: "login",
+            timestamp: new Date(),
+            isSuccessful: true,
+            deviceInfo: {
+              platform: Platform.OS,
+              deviceType:
+                Platform.OS === "ios" ? "iOS Device" : "Android Device",
+            },
+          },
+          false, // isNewDevice - could be enhanced with device tracking
+          false // isSuspiciousActivity
+        );
+        console.log("Login notification sent");
+      } catch (notificationError) {
+        console.error("Failed to send login notification:", notificationError);
+        // Don't block login flow if notification fails
       }
 
       return user;

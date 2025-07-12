@@ -869,13 +869,24 @@ export const trackProductPurchase = (order, items) => {
   - [x] Cart recovery with incentives and urgency messaging
   - [x] Final cart abandonment notifications with expiration warnings
 
-- [ ] **Account & Security Notifications**:
-  - Login from new device alerts
-  - Password reset confirmations
-  - Profile update confirmations
-  - Two-factor authentication codes
+- [x] **Account & Security Notifications**: ✅ **COMPLETED**
+
+  - [x] Login from new device alerts
+  - [x] Password reset confirmations
+  - [x] Profile update confirmations
+  - [x] Security alerts for suspicious activity
+  - [x] Account verification notifications
+  - [x] Data export/download notifications
 
 **Phase 3: Advanced Features**
+
+- [ ] **Two-Factor Authentication (2FA)** 🔐 **ROADMAP ITEM**
+
+  - SMS-based 2FA verification codes
+  - Authenticator app integration (TOTP)
+  - Backup recovery codes
+  - 2FA setup and management in account settings
+  - Notification system integration for 2FA codes and alerts
 
 - [ ] Personalized recommendations based on purchase history
 - [ ] Location-based notifications for nearby events

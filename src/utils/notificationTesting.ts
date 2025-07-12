@@ -520,6 +520,226 @@ export const testCartRecoveryScenarios = async () => {
 };
 
 /**
+ * Test account and security notifications
+ */
+export const testAccountSecurityNotifications = async () => {
+  console.log("🔐 Testing Account & Security Notifications...");
+
+  try {
+    // Sample account data for testing
+    const testAccountData = {
+      userId: "test-user-123",
+      actionType: "login" as const,
+      timestamp: new Date(),
+      isSuccessful: true,
+      deviceInfo: {
+        deviceName: "Test Device",
+        deviceType: "mobile",
+        platform: "test",
+        ipAddress: "192.168.1.1",
+        location: "San Francisco, CA",
+      },
+    };
+
+    console.log("1. Testing normal login alert...");
+    await NotificationManager.sendLoginAlert(
+      testAccountData,
+      false, // Not a new device
+      false // Not suspicious
+    );
+
+    console.log("2. Testing new device login alert...");
+    await NotificationManager.sendLoginAlert(
+      {
+        ...testAccountData,
+        deviceInfo: {
+          ...testAccountData.deviceInfo,
+          deviceName: "Unknown iPhone",
+          location: "New York, NY",
+        },
+      },
+      true, // New device
+      false // Not suspicious
+    );
+
+    console.log("3. Testing suspicious activity alert...");
+    await NotificationManager.sendLoginAlert(
+      {
+        ...testAccountData,
+        deviceInfo: {
+          ...testAccountData.deviceInfo,
+          location: "Unknown Location",
+          ipAddress: "10.0.0.1",
+        },
+      },
+      false, // Not necessarily new device
+      true // Suspicious activity
+    );
+
+    console.log("4. Testing password reset confirmation...");
+    await NotificationManager.sendPasswordResetConfirmation(
+      {
+        ...testAccountData,
+        actionType: "password_reset",
+      },
+      "email"
+    );
+
+    console.log("5. Testing profile update confirmation (basic info)...");
+    await NotificationManager.sendProfileUpdateConfirmation(
+      {
+        ...testAccountData,
+        actionType: "profile_update",
+        changedFields: ["firstName", "lastName"],
+      },
+      "basic_info"
+    );
+
+    console.log("6. Testing profile update confirmation (contact info)...");
+    await NotificationManager.sendProfileUpdateConfirmation(
+      {
+        ...testAccountData,
+        actionType: "profile_update",
+        changedFields: ["email", "phoneNumber"],
+      },
+      "contact_info"
+    );
+
+    console.log("7. Testing security alert (account locked)...");
+    await NotificationManager.sendSecurityAlert(
+      {
+        ...testAccountData,
+        actionType: "security_alert",
+        securityLevel: "high",
+      },
+      "account_locked"
+    );
+
+    console.log("8. Testing account verification notification...");
+    await NotificationManager.sendAccountVerificationNotification(
+      {
+        ...testAccountData,
+        actionType: "profile_update",
+      },
+      "email",
+      true
+    );
+
+    console.log("✅ Account & security notification tests completed!");
+
+    Alert.alert(
+      "Account & Security Test",
+      "Account & security notifications test completed! Check your notification history for 8 test notifications.",
+      [{ text: "OK" }]
+    );
+
+    return true;
+  } catch (error) {
+    console.error("❌ Account & security notification test failed:", error);
+    Alert.alert(
+      "Test Failed",
+      `Account & security notification test failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+    return false;
+  }
+};
+
+/**
+ * Test various security alert scenarios
+ */
+export const testSecurityAlertScenarios = async () => {
+  console.log("🚨 Testing Security Alert Scenarios...");
+
+  try {
+    const baseAccountData = {
+      userId: "test-user-456",
+      actionType: "security_alert" as const,
+      timestamp: new Date(),
+      securityLevel: "high" as const,
+      deviceInfo: {
+        platform: "mobile",
+        location: "Unknown",
+      },
+    };
+
+    console.log("1. Testing suspicious activity alert...");
+    await NotificationManager.sendSecurityAlert(
+      baseAccountData,
+      "suspicious_activity",
+      "We detected multiple failed login attempts from an unknown location."
+    );
+
+    console.log("2. Testing unauthorized access attempt...");
+    await NotificationManager.sendSecurityAlert(
+      baseAccountData,
+      "unauthorized_access",
+      "Someone tried to access your account with an incorrect password."
+    );
+
+    console.log("3. Testing data breach notification...");
+    await NotificationManager.sendSecurityAlert(
+      baseAccountData,
+      "data_breach",
+      "As a precaution, please update your password due to a security incident."
+    );
+
+    console.log("4. Testing account verification (email success)...");
+    await NotificationManager.sendAccountVerificationNotification(
+      {
+        ...baseAccountData,
+        actionType: "profile_update",
+        securityLevel: "medium",
+      },
+      "email",
+      true
+    );
+
+    console.log("5. Testing account verification (phone failed)...");
+    await NotificationManager.sendAccountVerificationNotification(
+      {
+        ...baseAccountData,
+        actionType: "profile_update",
+        securityLevel: "medium",
+      },
+      "phone",
+      false
+    );
+
+    console.log("6. Testing data export notification...");
+    await NotificationManager.sendDataExportNotification(
+      {
+        ...baseAccountData,
+        actionType: "profile_update",
+        securityLevel: "medium",
+      },
+      "full_export",
+      "https://example.com/download/user-data.zip"
+    );
+
+    console.log("✅ Security alert scenario tests completed!");
+
+    Alert.alert(
+      "Security Alerts Test",
+      "Security alert scenario tests completed! Check your notifications for 6 different security scenarios.",
+      [{ text: "OK" }]
+    );
+
+    return true;
+  } catch (error) {
+    console.error("❌ Security alert scenario test failed:", error);
+    Alert.alert(
+      "Test Failed",
+      `Security alert scenario test failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+    return false;
+  }
+};
+
+/**
  * React hook for testing notifications in components
  */
 export const useNotificationTesting = () => {
@@ -540,8 +760,8 @@ export const useNotificationTesting = () => {
       await testEventReminderScheduling();
       await testCartCommerceNotifications();
       await testCartRecoveryScenarios();
-      await testCartCommerceNotifications();
-      await testCartRecoveryScenarios();
+      await testAccountSecurityNotifications();
+      await testSecurityAlertScenarios();
     }
 
     return basicTest;

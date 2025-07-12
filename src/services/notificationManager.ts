@@ -11,7 +11,8 @@ export interface PushNotificationData {
     | "order_status"
     | "general"
     | "event_management"
-    | "cart_commerce";
+    | "cart_commerce"
+    | "account_security";
   title: string;
   body: string;
   data?: Record<string, any>;
@@ -51,6 +52,22 @@ export interface CommerceNotificationData {
   previousPrice?: number;
   newPrice?: number;
   stockThreshold?: number;
+}
+
+export interface AccountSecurityNotificationData {
+  userId: string;
+  deviceInfo?: {
+    deviceName?: string;
+    deviceType?: string;
+    platform?: string;
+    ipAddress?: string;
+    location?: string;
+  };
+  actionType: "login" | "password_reset" | "profile_update" | "security_alert";
+  timestamp: Date;
+  isSuccessful?: boolean;
+  changedFields?: string[];
+  securityLevel?: "low" | "medium" | "high";
 }
 
 /**
@@ -996,6 +1013,385 @@ class NotificationManager {
         error
       );
       return null;
+    }
+  }
+
+  // ========== ACCOUNT & SECURITY NOTIFICATIONS ==========
+
+  /**
+   * Send login alert for new device or suspicious activity
+   */
+  static async sendLoginAlert(
+    accountData: AccountSecurityNotificationData,
+    isNewDevice: boolean = false,
+    isSuspiciousActivity: boolean = false
+  ): Promise<string | null> {
+    try {
+      let title: string;
+      let body: string;
+
+      if (isSuspiciousActivity) {
+        title = "🚨 Suspicious Login Detected";
+        body = `Someone tried to access your account from ${
+          accountData.deviceInfo?.location || "an unknown location"
+        }. If this wasn't you, secure your account immediately.`;
+      } else if (isNewDevice) {
+        title = "🔐 New Device Login";
+        body = `Your account was accessed from a new ${
+          accountData.deviceInfo?.deviceType || "device"
+        }${
+          accountData.deviceInfo?.location
+            ? ` in ${accountData.deviceInfo.location}`
+            : ""
+        }. Was this you?`;
+      } else {
+        title = "✅ Account Access";
+        body = `You successfully logged in from ${
+          accountData.deviceInfo?.deviceName || "your device"
+        }`;
+      }
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title,
+        body,
+        data: {
+          type: "account_security",
+          subtype: "login_alert",
+          actionType: accountData.actionType,
+          isNewDevice,
+          isSuspiciousActivity,
+          securityLevel: isSuspiciousActivity
+            ? "high"
+            : isNewDevice
+            ? "medium"
+            : "low",
+          timestamp: accountData.timestamp.toISOString(),
+          deviceInfo: accountData.deviceInfo,
+          screen: "account",
+          action: isSuspiciousActivity ? "secure_account" : "view_activity",
+        },
+      });
+
+      console.log(
+        `Login alert sent (${
+          isSuspiciousActivity
+            ? "suspicious"
+            : isNewDevice
+            ? "new device"
+            : "normal"
+        }):`,
+        notificationId
+      );
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending login alert:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send password reset confirmation notification
+   */
+  static async sendPasswordResetConfirmation(
+    accountData: AccountSecurityNotificationData,
+    resetMethod: "email" | "sms" = "email"
+  ): Promise<string | null> {
+    try {
+      const title = "🔑 Password Reset Confirmed";
+      const body = `Your password was successfully reset${
+        accountData.deviceInfo?.location
+          ? ` from ${accountData.deviceInfo.location}`
+          : ""
+      }. If you didn't request this, contact support immediately.`;
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title,
+        body,
+        data: {
+          type: "account_security",
+          subtype: "password_reset_confirmation",
+          actionType: accountData.actionType,
+          resetMethod,
+          isSuccessful: accountData.isSuccessful ?? true,
+          securityLevel: "medium",
+          timestamp: accountData.timestamp.toISOString(),
+          deviceInfo: accountData.deviceInfo,
+          screen: "account",
+          action: "view_security_settings",
+        },
+      });
+
+      console.log("Password reset confirmation sent:", notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending password reset confirmation:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send profile update confirmation notification
+   */
+  static async sendProfileUpdateConfirmation(
+    accountData: AccountSecurityNotificationData,
+    updateType:
+      | "basic_info"
+      | "contact_info"
+      | "security_settings" = "basic_info"
+  ): Promise<string | null> {
+    try {
+      let title: string;
+      let body: string;
+
+      const changedFieldsList =
+        accountData.changedFields?.join(", ") || "profile information";
+
+      switch (updateType) {
+        case "contact_info":
+          title = "📧 Contact Info Updated";
+          body = `Your ${changedFieldsList} has been updated successfully.`;
+          break;
+        case "security_settings":
+          title = "🔒 Security Settings Updated";
+          body = `Your security settings (${changedFieldsList}) have been updated.`;
+          break;
+        default:
+          title = "✏️ Profile Updated";
+          body = `Your ${changedFieldsList} has been updated successfully.`;
+      }
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title,
+        body,
+        data: {
+          type: "account_security",
+          subtype: "profile_update_confirmation",
+          actionType: accountData.actionType,
+          updateType,
+          changedFields: accountData.changedFields,
+          isSuccessful: accountData.isSuccessful ?? true,
+          securityLevel: updateType === "security_settings" ? "medium" : "low",
+          timestamp: accountData.timestamp.toISOString(),
+          screen: "account",
+          action: "view_profile",
+        },
+      });
+
+      console.log(
+        `Profile update confirmation sent (${updateType}):`,
+        notificationId
+      );
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending profile update confirmation:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send security alert for various account security events
+   */
+  static async sendSecurityAlert(
+    accountData: AccountSecurityNotificationData,
+    alertType:
+      | "account_locked"
+      | "suspicious_activity"
+      | "data_breach"
+      | "unauthorized_access",
+    customMessage?: string
+  ): Promise<string | null> {
+    try {
+      let title: string;
+      let body: string;
+
+      switch (alertType) {
+        case "account_locked":
+          title = "🔒 Account Locked";
+          body =
+            customMessage ||
+            "Your account has been temporarily locked due to security concerns. Contact support to unlock.";
+          break;
+        case "suspicious_activity":
+          title = "⚠️ Suspicious Activity Detected";
+          body =
+            customMessage ||
+            "We detected unusual activity on your account. Please verify your recent actions.";
+          break;
+        case "data_breach":
+          title = "🛡️ Security Notice";
+          body =
+            customMessage ||
+            "We've detected a potential security issue. Please update your password as a precaution.";
+          break;
+        case "unauthorized_access":
+          title = "🚨 Unauthorized Access Attempt";
+          body =
+            customMessage ||
+            "Someone attempted to access your account without authorization. Your account is secure.";
+          break;
+      }
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title,
+        body,
+        data: {
+          type: "account_security",
+          subtype: "security_alert",
+          actionType: accountData.actionType,
+          alertType,
+          securityLevel: "high",
+          timestamp: accountData.timestamp.toISOString(),
+          deviceInfo: accountData.deviceInfo,
+          screen: "account",
+          action: "view_security_settings",
+        },
+      });
+
+      console.log(`Security alert sent (${alertType}):`, notificationId);
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending security alert:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send account verification completion notification
+   */
+  static async sendAccountVerificationNotification(
+    accountData: AccountSecurityNotificationData,
+    verificationType: "email" | "phone" | "identity",
+    isSuccessful: boolean = true
+  ): Promise<string | null> {
+    try {
+      let title: string;
+      let body: string;
+
+      if (isSuccessful) {
+        switch (verificationType) {
+          case "email":
+            title = "✅ Email Verified";
+            body =
+              "Your email address has been successfully verified. Your account is now fully active.";
+            break;
+          case "phone":
+            title = "✅ Phone Verified";
+            body =
+              "Your phone number has been successfully verified. You can now receive SMS notifications.";
+            break;
+          case "identity":
+            title = "✅ Identity Verified";
+            body =
+              "Your identity has been successfully verified. You now have access to all features.";
+            break;
+        }
+      } else {
+        title = "❌ Verification Failed";
+        body = `${verificationType} verification failed. Please try again or contact support if the issue persists.`;
+      }
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title,
+        body,
+        data: {
+          type: "account_security",
+          subtype: "account_verification",
+          actionType: accountData.actionType,
+          verificationType,
+          isSuccessful,
+          securityLevel: "medium",
+          timestamp: accountData.timestamp.toISOString(),
+          screen: "account",
+          action: isSuccessful ? "view_profile" : "retry_verification",
+        },
+      });
+
+      console.log(
+        `Account verification notification sent (${verificationType}, ${
+          isSuccessful ? "success" : "failed"
+        }):`,
+        notificationId
+      );
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending account verification notification:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send data export/download completion notification
+   */
+  static async sendDataExportNotification(
+    accountData: AccountSecurityNotificationData,
+    exportType:
+      | "profile_data"
+      | "order_history"
+      | "analytics_data"
+      | "full_export",
+    downloadUrl?: string
+  ): Promise<string | null> {
+    try {
+      const title = "📦 Data Export Ready";
+      let body = `Your ${exportType.replace(
+        "_",
+        " "
+      )} export is ready for download.`;
+
+      if (downloadUrl) {
+        body += " The download link has been sent to your registered email.";
+      }
+
+      const notificationId = await notificationService.sendLocalNotification({
+        title,
+        body,
+        data: {
+          type: "account_security",
+          subtype: "data_export",
+          actionType: accountData.actionType,
+          exportType,
+          downloadUrl,
+          isSuccessful: true,
+          securityLevel: "medium",
+          timestamp: accountData.timestamp.toISOString(),
+          screen: "account",
+          action: "download_data",
+        },
+      });
+
+      console.log(
+        `Data export notification sent (${exportType}):`,
+        notificationId
+      );
+      return notificationId;
+    } catch (error) {
+      console.error("Error sending data export notification:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Cancel all account and security related notifications
+   */
+  static async cancelAccountSecurityNotifications(): Promise<void> {
+    try {
+      const scheduledNotifications =
+        await notificationService.getScheduledNotifications();
+
+      // Cancel notifications with account_security type
+      for (const notification of scheduledNotifications) {
+        if (notification.content.data?.type === "account_security") {
+          await notificationService.cancelNotification(notification.identifier);
+          console.log(
+            "Cancelled account security notification:",
+            notification.identifier
+          );
+        }
+      }
+
+      console.log("Account security notifications cancelled");
+    } catch (error) {
+      console.error("Error cancelling account security notifications:", error);
     }
   }
 }

@@ -2,6 +2,7 @@ import React from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useNotifications } from "../../hooks/useNotifications";
 import {
+  testAccountSecurityNotifications,
   testCartAbandonmentNotification,
   testCartAbandonmentWithRetry,
   testCartCommerceNotifications,
@@ -11,6 +12,7 @@ import {
   testNotifications,
   testOrderConfirmation,
   testOrderStatusNotifications,
+  testSecurityAlertScenarios,
 } from "../../utils/notificationTesting";
 
 const NotificationTestPanel: React.FC = () => {
@@ -166,6 +168,36 @@ const NotificationTestPanel: React.FC = () => {
     }
   };
 
+  const handleTestAccountSecurity = async () => {
+    try {
+      await testAccountSecurityNotifications();
+      Alert.alert(
+        "Account & Security Test",
+        "Account & security notifications test completed! Check your notifications."
+      );
+    } catch (error) {
+      Alert.alert(
+        "Account & Security Test Failed",
+        "Failed to test account & security notifications"
+      );
+    }
+  };
+
+  const handleTestSecurityAlerts = async () => {
+    try {
+      await testSecurityAlertScenarios();
+      Alert.alert(
+        "Security Alerts Test",
+        "Security alert scenarios test completed! Check your notifications."
+      );
+    } catch (error) {
+      Alert.alert(
+        "Security Alerts Test Failed",
+        "Failed to test security alert scenarios"
+      );
+    }
+  };
+
   if (!isInitialized) {
     return (
       <View style={styles.container}>
@@ -252,6 +284,26 @@ const NotificationTestPanel: React.FC = () => {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>
+          Account & Security Notifications:
+        </Text>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestAccountSecurity}
+        >
+          <Text style={styles.buttonText}>Test Account & Security Flow</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestSecurityAlerts}
+        >
+          <Text style={styles.buttonText}>Test Security Alert Scenarios</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Order Status Notifications:</Text>
 
         <TouchableOpacity
@@ -306,6 +358,26 @@ const NotificationTestPanel: React.FC = () => {
           onPress={handleTestCartRecovery}
         >
           <Text style={styles.buttonText}>Test Cart Recovery Scenarios</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Account & Security Tests:</Text>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestAccountSecurity}
+        >
+          <Text style={styles.buttonText}>
+            Test Account & Security Notifications
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleTestSecurityAlerts}
+        >
+          <Text style={styles.buttonText}>Test Security Alert Scenarios</Text>
         </TouchableOpacity>
       </View>
     </View>

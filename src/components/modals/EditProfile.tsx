@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { getDatabase, ref, update } from "firebase/database";
 import { useSelector } from "react-redux";
 import useProfileUpdateErrorHandler from "../../hooks/useProfileUpdateErrorHandler";
+import { NotificationManager } from "../../services/notificationManager";
 import { selectLocalId } from "../../store/redux/userSlice";
 import ProfileUpdateErrorNotice from "../ProfileUpdateErrorNotice";
 import {
@@ -255,6 +256,35 @@ const EditProfile: React.FC<EditProfileProps> = ({
     try {
       // Update the specific fields of the user's details in the database
       await update(userRef, updatedUserData);
+
+      // Send profile update confirmation notification
+      try {
+        const changedFields = Object.keys(updatedUserData);
+        const updateType = changedFields.some(
+          (field) => field === "email" || field === "phoneNumber"
+        )
+          ? "contact_info"
+          : "basic_info";
+
+        await NotificationManager.sendProfileUpdateConfirmation(
+          {
+            userId: userId,
+            actionType: "profile_update",
+            timestamp: new Date(),
+            isSuccessful: true,
+            changedFields,
+          },
+          updateType
+        );
+        console.log("Profile update notification sent");
+      } catch (notificationError) {
+        console.error(
+          "Failed to send profile update notification:",
+          notificationError
+        );
+        // Don't block the profile update flow if notification fails
+      }
+
       resetFields();
       onProfileUpdated();
     } catch (error) {

@@ -162,7 +162,9 @@ export class NotificationService {
           body: notification.body,
           data: notification.data || {},
           sound: notification.sound !== false, // Default to true
-          badge: notification.badge,
+          ...(notification.badge !== undefined && {
+            badge: notification.badge,
+          }),
         },
         trigger: null, // Send immediately
       });
@@ -193,7 +195,9 @@ export class NotificationService {
           body: notification.body,
           data: notification.data || {},
           sound: notification.sound !== false,
-          badge: notification.badge,
+          ...(notification.badge !== undefined && {
+            badge: notification.badge,
+          }),
         },
         trigger: notification.trigger,
       });
