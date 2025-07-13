@@ -786,7 +786,9 @@ export const trackProductPurchase = (order, items) => {
 - [ ] A/B testing platform operational for feature optimization
 - [ ] User segmentation and cohort analysis driving marketing strategies
 - [x] Privacy-compliant analytics with user opt-out functionality ✅
-- [ ] 90%+ analytics event delivery rate with offline queuing
+- [x] GDPR compliance: data clearing on logout/account deletion
+- Privacy-compliant event tracking with offline queuing
+- **PostHog prebuilt dashboards ready for immediate insights**
 
 **Cost Projection for Rage State:**
 
@@ -921,6 +923,184 @@ export const trackProductPurchase = (order, items) => {
 - [ ] Migrate core components to NativeWind classes
 - [ ] Update theme provider for dark/light mode
 
+## PRIORITY 9.5: User Profile MVP (Social Foundation)
+
+### 9.5.1 Enhanced User Profile Data Model
+
+**Current State**: Basic user profiles exist but lack social features and consistent viewing patterns
+
+**MVP Enhancement Approach**:
+
+- [ ] **Extend Existing UserData Interface**
+
+  - [ ] Add social fields to `src/utils/auth.ts` UserData interface:
+    - `bio?: string` (max 160 chars)
+    - `socialLinks?: { soundcloud?: string, instagram?: string, twitter?: string }`
+    - `interests?: string[]` (music genres, event types)
+    - `isPublic?: boolean` (profile visibility)
+    - `lastActive?: string` (for activity status)
+    - `verificationStatus?: 'none' | 'verified' | 'artist'`
+    - `joinedDate?: string` (account creation for profile display)
+    - `stats?: { eventsAttended: number, postsCount: number }`
+
+- [ ] **Leverage Existing Profile Infrastructure**
+  - [ ] Use existing `useProfileSync` hook for real-time profile updates
+  - [ ] Extend `EditProfile.tsx` modal to include bio and social links
+  - [ ] Use existing image compression system for profile pictures
+  - [ ] Leverage current PostHog analytics for profile view tracking
+
+### 9.5.2 User Profile View Component
+
+**Implementation Strategy**: Create reusable profile component that works for both self and other users
+
+- [ ] **Core Profile View Component**
+
+  - [ ] Create `src/components/profile/UserProfileView.tsx` with two modes:
+    - **Self Mode**: Shows "Edit Profile" button, private stats, full access
+    - **Other User Mode**: Shows "Follow" button, public info only, interaction options
+  - [ ] Implement profile header with:
+    - Profile picture (using existing ImageWithFallback pattern)
+    - Display name and verification badge
+    - Bio section with expandable text
+    - Joined date and last active status
+    - Public stats (events attended, posts)
+
+- [ ] **Social Interaction Elements**
+  - [ ] Follow/Unfollow button (MVP: UI only, function placeholder for social feed phase)
+  - [ ] Social links (SoundCloud, Instagram, Twitter) with external opening
+  - [ ] Interest tags display (music genres, event preferences)
+  - [ ] Recent activity section (events attended, upcoming events)
+
+### 9.5.3 Profile Navigation & Routing
+
+**Leverage Existing Expo Router Structure**:
+
+- [ ] **New Profile Routes**
+
+  - [ ] Create `src/app/(app)/profile/[userId].tsx` for viewing other users
+  - [ ] Keep existing `src/app/(app)/account/index.tsx` for self-profile
+  - [ ] Add profile navigation helper: `navigateToProfile(userId)` utility
+
+- [ ] **Profile Access Points**
+  - [ ] Add profile links to existing user mentions (events, shop)
+  - [ ] Implement user search/discovery (basic list for MVP)
+  - [ ] Add "View Profile" options in existing user interactions
+
+### 9.5.4 Integration with Existing Systems
+
+**Analytics Integration**:
+
+- [ ] Extend existing PostHog tracking with profile analytics:
+  - `profile_viewed` (own vs other user, profile completion percentage)
+  - `profile_edited` (which fields changed, completion improvements)
+  - `profile_link_clicked` (SoundCloud, social media links)
+  - `profile_search` (user discovery patterns)
+
+**Data Integration**:
+
+- [ ] **Event Integration**: Show user's upcoming/past events on profile
+- [ ] **Shop Integration**: Display favorite items or recent purchases (privacy-controlled)
+- [ ] **Music Integration**: Ready for SoundCloud integration (Priority 9)
+
+### 9.5.5 Privacy & Security (MVP)
+
+**Basic Privacy Controls**:
+
+- [ ] Profile visibility toggle (public/private)
+- [ ] Control what's shown to other users vs self
+- [ ] Basic blocking functionality (UI preparation)
+- [ ] Report profile option (safety foundation)
+
+### 9.5.6 Technical Implementation Plan
+
+**Phase 1: Data Model Enhancement (1-2 days)**
+
+```typescript
+// Extend existing UserData interface
+interface UserData {
+  // ...existing fields...
+  bio?: string;
+  socialLinks?: SocialLinks;
+  interests?: string[];
+  isPublic?: boolean;
+  lastActive?: string;
+  verificationStatus?: VerificationStatus;
+  joinedDate?: string;
+  stats?: UserStats;
+}
+```
+
+**Phase 2: Profile View Component (2-3 days)**
+
+```typescript
+interface UserProfileViewProps {
+  userId: string;
+  mode: "self" | "other";
+  onFollowToggle?: (userId: string, isFollowing: boolean) => void;
+  onEditProfile?: () => void;
+}
+```
+
+**Phase 3: Routing & Navigation (1-2 days)**
+
+- Dynamic route for `profile/[userId]`
+- Navigation utilities and deep linking
+- Integration with existing screen patterns
+
+**Phase 4: Integration & Polish (1-2 days)**
+
+- Analytics integration
+- Privacy controls
+- Performance optimization
+- Error handling
+
+### 9.5.7 MVP Success Criteria
+
+**User Experience**:
+
+- [ ] Users can view their own enhanced profile with bio, interests, stats
+- [ ] Users can view other users' public profiles with follow button (non-functional for MVP)
+- [ ] Seamless navigation between self-profile and other-user profiles
+- [ ] Consistent design with existing app styling
+
+**Technical Foundation**:
+
+- [ ] Profile data structure ready for social features (following, posts, activity)
+- [ ] Analytics tracking user engagement with profiles
+- [ ] Privacy controls foundation for future social features
+- [ ] Performance optimized for profile viewing patterns
+
+**Integration Readiness**:
+
+- [ ] Ready for SoundCloud integration (Priority 9) - music sections prepared
+- [ ] Ready for social feed implementation (Priority 10) - user following structure prepared
+- [ ] Existing event/shop systems enhanced with profile connections
+
+### 9.5.8 Implementation Benefits
+
+**Immediate Value**:
+
+- Enhanced user profiles create better community feel
+- Foundation for user discovery and connection
+- Better user retention through profile personalization
+- Analytics insights into user interests and engagement
+
+**Future-Proofing**:
+
+- Social feed implementation becomes much simpler with robust profile foundation
+- Follow/unfollow system plugs directly into prepared UI
+- User-generated content attribution ready
+- Community features build on established profile patterns
+
+**Leverages Existing Infrastructure**:
+
+- Uses current authentication and user data systems
+- Builds on existing image compression and caching
+- Extends current analytics tracking patterns
+- Follows established error handling and offline support
+
+---
+
 ## PRIORITY 9: SoundCloud Integration
 
 ### 9.1 SoundCloud Profile Integration
@@ -970,9 +1150,63 @@ export const trackProductPurchase = (order, items) => {
 - Community discovery through shared music taste
 - Potential for music-based event promotion
 
-## PRIORITY 10: Social Features & Community
+## PRIORITY 10: Social Feed & Community Platform
 
-### 10.1 User Connections & Following System
+### 10.1 Home Screen Social Feed (Core Feature)
+
+**Feature**: Transform the home screen into a dynamic social feed similar to X/Twitter or TikTok, leveraging existing infrastructure
+
+**Implementation Approach**:
+
+- [ ] **Feed Infrastructure & UI**
+
+  - [ ] Replace current home screen minimal content with full-screen social feed
+  - [ ] Implement FlashList-based feed component (following existing shop/events patterns)
+  - [ ] Create post display cards with consistent design system integration
+  - [ ] Add pull-to-refresh and infinite scroll with React Query caching
+  - [ ] Implement feed algorithm: chronological + engagement scoring
+  - [ ] Add comprehensive PostHog analytics for feed engagement tracking
+
+- [ ] **Post Creation System**
+
+  - [ ] Create floating "+" button for post creation (consistent with existing UI patterns)
+  - [ ] Build post composer modal with text, image, and link support
+  - [ ] Integrate existing image compression system for photo posts
+  - [ ] Add character limit (280 chars) with real-time counter
+  - [ ] Implement post preview before publishing
+  - [ ] Add post categories: text, photo, event check-in, music share
+
+- [ ] **Post Types & Rich Content**
+
+  - [ ] **Text Posts**: Thoughtful sharing with natural topic detection (no forced hashtags)
+  - [ ] **Photo Posts**: Single/multi-image posts using existing image infrastructure
+  - [ ] **Event Check-ins**: Automatic location/event detection from ticket system
+  - [ ] **Music Shares**: SoundCloud track embedding (post-SoundCloud integration)
+  - [ ] **Product Features**: Shop item highlights with purchase links
+  - [ ] **Event Highlights**: Upcoming events promotion with RSVP integration
+  - [ ] **Quality Indicators**: Visual cues for high-engagement, trending, or curator-picked content
+
+- [ ] **Social Interactions**
+
+  - [ ] Like system with heart animation and count display
+  - [ ] Comment system with threaded replies (nested up to 2 levels)
+  - [ ] Share/repost functionality with quote posting option
+  - [ ] Bookmark/save posts for later viewing
+  - [ ] Report system for inappropriate content
+  - [ ] User tagging with @mention functionality
+  - [ ] Quality voting system (community-driven content curation)
+  - [ ] "Best of" collections curated by engagement and community voting
+
+**Integration Points**:
+
+- Uses existing FlashList patterns from shop/events screens for smooth 60fps scrolling
+- Leverages current image compression and caching infrastructure
+- Integrates with PostHog analytics for comprehensive engagement tracking
+- Uses existing push notification system for social interactions
+- Built on Firebase Firestore with real-time updates
+- Follows established design system and styling patterns
+
+### 10.2 User Connections & Following System
 
 **Feature**: Allow users to follow each other and build community connections
 
@@ -1000,7 +1234,63 @@ export const trackProductPurchase = (order, items) => {
 - Integrates with PostHog analytics for social engagement tracking
 - Leverages existing push notification system for follow notifications
 
-### 10.2 Event Social Features
+### 10.3 Content Discovery & Algorithm
+
+**Feature**: Smart content discovery and personalized feed curation
+
+**Implementation Approach**:
+
+- [ ] **Quality-First Feed Algorithm**
+
+  - [ ] **Initial Phase**: Pure chronological feed (until content base grows)
+  - [ ] **Content Quality Scoring System**:
+    - [ ] Engagement velocity (likes/comments per minute after posting)
+    - [ ] Time spent viewing (dwell time tracking via PostHog)
+    - [ ] Complete engagement rate (view → like/comment conversion)
+    - [ ] Creator reputation score (based on historical post performance)
+    - [ ] Authenticity signals (original content vs shares/reposts)
+  - [ ] **Relevance Algorithm**:
+    - [ ] User behavior pattern matching (music taste, event attendance, purchase history)
+    - [ ] Social graph signals (followers' engagement patterns)
+    - [ ] Content type preferences (photo vs text vs music posts)
+    - [ ] Recency decay (newer content gets boost, but quality can override)
+  - [ ] **Anti-Gaming Measures**:
+    - [ ] Detect and penalize artificial engagement (rapid-fire likes, bot activity)
+    - [ ] Creator diversity (prevent single user dominating feed)
+    - [ ] Engagement authenticity verification (real users vs suspected fake accounts)
+
+- [ ] **Organic Discovery & Quality Curation**
+
+  - [ ] **Best Content Surface**:
+    - [ ] "Best This Week" section highlighting top-performing posts
+    - [ ] Quality content from users you don't follow (discovery via excellence)
+    - [ ] Cross-interest discovery (great music posts for event-goers, etc.)
+  - [ ] **Natural Topic Detection**:
+    - [ ] ML-based content categorization (music, events, fashion, lifestyle)
+    - [ ] Automatic topic clustering without forced hashtags
+    - [ ] Related content suggestions based on semantic similarity
+  - [ ] **Creator & Community Quality**:
+    - [ ] Emerging creator amplification (new users with quality content)
+    - [ ] Community-driven curation (user-initiated content collections)
+    - [ ] Artist/venue verification for authoritative event/music content
+
+- [ ] **Intelligent Search & Exploration**
+
+  - [ ] **Content-First Search**: Posts, events, music, products (users secondary)
+  - [ ] **Semantic Search**: Find content by meaning, not just keywords
+  - [ ] **Visual Search**: Find similar images/styles in posts and products
+  - [ ] **Context-Aware Filters**: "Recent events I attended", "Music similar to my taste"
+  - [ ] **Curated Collections**: System-generated topic feeds based on quality content
+  - [ ] **Trending Analysis**: Organic trend detection without hashtag dependency
+
+**Integration Points**:
+
+- **Advanced Analytics**: Uses PostHog's comprehensive engagement metrics for quality scoring
+- **Behavioral Intelligence**: Leverages event attendance, music taste, and purchase patterns for relevance
+- **Quality Signals**: Integrates dwell time, completion rates, and authentic engagement patterns
+- **Content Intelligence**: Uses existing image/music/event data for semantic content understanding
+
+### 10.4 Event Social Features
 
 **Feature**: Social interactions around events and community engagement
 
@@ -1017,10 +1307,11 @@ export const trackProductPurchase = (order, items) => {
 - [ ] **Event Social Feed**
 
   - [ ] Create event-specific activity feeds (check-ins, photos, comments)
-  - [ ] Add event hashtag system for discovery
+  - [ ] Add organic topic discovery for events (no forced hashtags)
   - [ ] Implement live event updates from organizers
   - [ ] Create event countdown and hype features
   - [ ] Add event memory sharing (post-event photo albums)
+  - [ ] Quality-based event content curation (best photos, most engaging posts)
 
 **Integration Points**:
 
@@ -1028,7 +1319,7 @@ export const trackProductPurchase = (order, items) => {
 - Uses existing event detail screens and navigation
 - Integrates with current image upload/compression system
 
-### 10.3 Music Discovery & Social Sharing
+### 10.5 Music Discovery & Social Sharing
 
 **Feature**: Social features around music discovery and artist promotion
 
@@ -1056,7 +1347,7 @@ export const trackProductPurchase = (order, items) => {
 - Uses existing profile system and notification infrastructure
 - Integrates with event system for artist/fan connections
 
-### 10.4 Shopping & Commerce Social Features
+### 10.6 Shopping & Commerce Social Features
 
 **Feature**: Social elements to enhance shopping experience and community commerce
 
@@ -1084,7 +1375,7 @@ export const trackProductPurchase = (order, items) => {
 - Uses current ticket transfer system as foundation
 - Integrates with existing order history and purchase tracking
 
-### 10.5 Community Content & Engagement
+### 10.7 Community Content & Engagement
 
 **Feature**: User-generated content and community-driven features
 
@@ -1101,10 +1392,10 @@ export const trackProductPurchase = (order, items) => {
 - [ ] **Feed & Discovery**
 
   - [ ] Create main social feed combining follows, events, and music
-  - [ ] Add trending hashtags and topics
+  - [ ] Add organic trending content detection (quality-based, not hashtag-based)
   - [ ] Implement content moderation and reporting system
   - [ ] Create location-based discovery (users at same events)
-  - [ ] Add interest-based community groups
+  - [ ] Add interest-based community groups formed around content quality and engagement
 
 **Integration Points**:
 
@@ -1112,7 +1403,7 @@ export const trackProductPurchase = (order, items) => {
 - Builds on current image/media infrastructure
 - Integrates with existing event and user systems
 
-### 10.6 Gamification & Community Rewards
+### 10.8 Gamification & Community Rewards
 
 **Feature**: Engagement rewards and community recognition system
 
@@ -1140,7 +1431,7 @@ export const trackProductPurchase = (order, items) => {
 - Integrates with push notification system for achievement alerts
 - Builds on existing point/reward concepts from shopping
 
-### 10.7 Privacy & Safety Features
+### 10.9 Privacy & Safety Features
 
 **Feature**: Comprehensive privacy controls and community safety
 
@@ -1168,51 +1459,63 @@ export const trackProductPurchase = (order, items) => {
 - Integrates with analytics for safety monitoring
 - Builds on existing admin/moderation infrastructure
 
-### 10.8 Technical Implementation Strategy
+### 10.10 Technical Implementation Strategy
 
-**Phase 1: Foundation (Week 1)**
+**Phase 1: Core Social Feed (Week 1)**
 
+- Home screen social feed with FlashList-based infinite scroll
+- Basic post creation (text, images) with existing image compression
 - User following system and basic profile enhancements
-- Event check-ins and attendee lists
-- Basic social analytics integration
+- Real-time feed updates and engagement tracking
 
-**Phase 2: Content & Discovery (Week 2)**
+**Phase 2: Rich Content & Discovery (Week 2)**
 
-- Social feed implementation
-- Content creation tools
-- Music social features (post-SoundCloud integration)
+- Event check-ins and music sharing integration
+- **Quality-first algorithm implementation** with engagement velocity tracking
+- Advanced social interactions (comments, shares, bookmarks)
+- **Semantic content search** and natural topic detection (no hashtags required)
 
-**Phase 3: Commerce & Community (Week 3)**
+**Phase 3: Community Features (Week 3)**
 
-- Social shopping features
-- Community marketplace
-- Achievement system basics
+- Social shopping features and product highlights
+- Community marketplace and user-to-user interactions
+- Advanced privacy controls and content moderation
+- Gamification and community rewards system
 
-**Phase 4: Advanced Features (Week 4)**
+**Phase 4: Advanced Features & Polish (Week 4)**
 
-- Advanced privacy controls
-- Community moderation tools
-- Gamification and rewards system
+- **Advanced quality-based feed algorithm optimization** with ML content categorization
+- Performance optimizations and caching strategies
+- Analytics dashboard and community insights
+- **Organic trending system** and content curation tools
 
 **Expected Benefits**:
 
-- **Community Building**: Transform from individual app usage to community engagement
-- **User Retention**: Social connections increase app stickiness and return visits
-- **Discovery Enhancement**: Social recommendations improve content and event discovery
+- **Central Social Hub**: Transform home screen from static welcome to dynamic community center
+- **User Retention**: Social feed creates sticky, engaging experience driving daily active users
+- **Community Building**: Real-time social interactions foster sense of belonging and engagement
+- **Content Discovery**: Algorithm-driven feed improves event and product discovery organically
 - **Revenue Growth**: Social proof and community commerce increase conversion rates
 - **User-Generated Content**: Reduce content creation burden through community contributions
-- **Network Effects**: Each new user adds value for existing users through connections
-- **Event Success**: Social features drive higher event attendance and engagement
-- **Artist Promotion**: Built-in fan engagement tools for artist community growth
+- **Cross-Platform Synergy**: Social features drive traffic to events, shop, and music features
+- **Network Effects**: Each new user adds value for existing users through connections and content
 
 **Analytics & Success Metrics**:
 
-- User connection rates and follower growth
-- Social engagement metrics (likes, shares, comments)
-- Event attendance correlation with social features
-- Social commerce conversion rates
-- Community-generated content volume and quality
-- User retention improvement through social connections
+- **Content Quality Metrics**: Engagement velocity, dwell time, completion rates
+- **Algorithm Performance**: Quality content discovery rates, user satisfaction scores
+- **Organic Growth**: Natural content virality without hashtag gaming
+- **Community Health**: Authentic engagement vs. artificial amplification detection
+- **Discovery Effectiveness**: Cross-interest content success and creator diversity
+- **User Retention**: Quality-driven feed impact on session length and return rates
+
+**Performance Considerations**:
+
+- Leverage existing FlashList implementation for 60fps scrolling with 1000+ posts
+- Use React Query caching patterns established in shop/events for optimal performance
+- Implement image lazy loading and compression following current best practices
+- Utilize PostHog analytics infrastructure for real-time engagement tracking
+- Maintain offline functionality with existing Firebase caching strategies
 
 ## PRIORITY 11: Final Optimizations
 
@@ -1252,20 +1555,22 @@ export const trackProductPurchase = (order, items) => {
 - **Priority 6 (Testing)**: ✅ Complete
 - **Priority 7 (Analytics & Privacy)**: ✅ **Complete Implementation with Privacy Controls** (Dashboard setup external)
 - **Priority 8 (Styling)**: 1-2 weeks
+- **Priority 9.5 (User Profile MVP)**: 5-7 days (social foundation)
 - **Priority 9 (SoundCloud Integration)**: 1-2 weeks
-- **Priority 10 (Social Features & Community)**: 2-3 weeks (optional future enhancement)
+- **Priority 10 (Social Feed & Community Platform)**: 3-4 weeks (optional future enhancement with comprehensive social features)
 - **Priority 11 (Final Optimizations)**: 3-5 days
 
-**Current Timeline**: 3-4 weeks for styling system, SoundCloud integration, and final optimizations
-**Extended Timeline (with Social Features)**: 6-8 weeks total
+**Current Timeline**: 4-5 weeks for styling system, profile MVP, SoundCloud integration, and final optimizations
+**Extended Timeline (with Social Features)**: 8-12 weeks total
 
 **Recommended Implementation Order**:
 
 1. **Week 1-2**: NativeWind Styling System (Priority 8) - **Consistency and maintainability**
-2. **Week 3**: SoundCloud Integration (Priority 9) - **Enhanced user profiles with music**
-3. **Week 4**: Final Optimizations (Priority 11) - **Performance and security polish**
-4. **Future Phases**: Social Features (Priority 10) - **Community building and engagement** (post-MVP)
-5. **External Tasks**: PostHog dashboard configuration (user-managed in PostHog interface)
+2. **Week 3**: User Profile MVP (Priority 9.5) - **Social foundation for community features**
+3. **Week 4**: SoundCloud Integration (Priority 9) - **Enhanced user profiles with music**
+4. **Week 5**: Final Optimizations (Priority 11) - **Performance and security polish**
+5. **Future Phases**: Social Feed & Community Platform (Priority 10) - **Transform app into social platform** (post-MVP)
+6. **External Tasks**: PostHog dashboard configuration (user-managed in PostHog interface)
 
 ## SUCCESS CRITERIA
 
