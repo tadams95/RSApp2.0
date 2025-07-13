@@ -28,11 +28,13 @@ The Rage State app has completed its technical modernization phase. This documen
     - `bio?: string` (max 160 chars)
     - `socialLinks?: { soundcloud?: string, instagram?: string, twitter?: string }`
     - `interests?: string[]` (music genres, event types)
+    - `location?: { city?: string, state?: string, country?: string }` (for geographic discovery)
     - `isPublic?: boolean` (profile visibility)
+    - `searchable?: boolean` (appears in search results)
     - `lastActive?: string` (for activity status)
     - `verificationStatus?: 'none' | 'verified' | 'artist'`
     - `joinedDate?: string` (account creation for profile display)
-    - `stats?: { eventsAttended: number, postsCount: number }`
+    - `stats?: { eventsAttended: number, postsCount: number, profileViews: number }`
 
 - [ ] **Leverage Existing Profile Infrastructure**
   - [ ] Use existing `useProfileSync` hook for real-time profile updates
@@ -69,13 +71,73 @@ The Rage State app has completed its technical modernization phase. This documen
 - [ ] **New Profile Routes**
 
   - [ ] Create `src/app/(app)/profile/[userId].tsx` for viewing other users
+  - [ ] Create `src/app/(app)/search/index.tsx` for user search/discovery
   - [ ] Keep existing `src/app/(app)/account/index.tsx` for self-profile
   - [ ] Add profile navigation helper: `navigateToProfile(userId)` utility
 
 - [ ] **Profile Access Points**
   - [ ] Add profile links to existing user mentions (events, shop)
-  - [ ] Implement user search/discovery (basic list for MVP)
+  - [ ] Implement comprehensive user search/discovery system
   - [ ] Add "View Profile" options in existing user interactions
+
+### 1.3.1 User Search & Discovery System
+
+**Core Search Functionality**:
+
+- [ ] **Search Interface**
+
+  - [ ] Create `src/components/profile/UserSearch.tsx` component
+  - [ ] Add search input with real-time filtering (debounced)
+  - [ ] Implement search results list with user cards
+  - [ ] Add search filters: location, interests, verification status
+  - [ ] Create "Recent Searches" and "Suggested Users" sections
+
+- [ ] **Search Backend & Data**
+
+  - [ ] Create Firestore compound indexes for user search:
+    - `displayName + isPublic + lastActive`
+    - `interests + isPublic + lastActive`
+    - `location + isPublic + lastActive`
+  - [ ] Implement search service in `src/services/userSearch.ts`
+  - [ ] Add fuzzy search for display names (handle typos)
+  - [ ] Create search result ranking algorithm (activity, mutual connections, interests)
+
+- [ ] **Search Analytics**
+
+  - [ ] Extend existing analytics with user search tracking:
+    - `user_search_performed` (query, results count, filters used)
+    - `user_search_result_clicked` (clicked user ID, search query, position in results)
+    - `user_search_no_results` (query that returned no results)
+    - `user_discovery_method` (search vs suggestions vs mutual friends)
+
+- [ ] **Discovery Features**
+
+  - [ ] **"People You May Know" Algorithm**:
+
+    - Users with similar interests (music genres, event types)
+    - Attendees of same events (mutual event attendance)
+    - Geographic proximity (same city/region)
+    - Mutual connections when following system is implemented
+
+  - [ ] **Trending Users Section**:
+    - Most active users this week
+    - Recently joined verified artists
+    - Users with recent event activity
+    - Popular profiles in user's area
+
+**Search Performance Optimization**:
+
+- [ ] Implement search result caching (5-minute TTL)
+- [ ] Add pagination for search results (20 results per page)
+- [ ] Debounce search input (300ms delay)
+- [ ] Create search index for offline functionality
+
+**User Privacy in Search**:
+
+- [ ] Respect `isPublic` profile setting (private profiles not searchable)
+- [ ] Allow users to opt-out of "People You May Know" suggestions
+- [ ] Implement search visibility settings (searchable by: everyone, mutual friends, no one)
+- [ ] Add blocking functionality (blocked users don't appear in search)
 
 ### 1.4 Integration with Existing Systems
 
