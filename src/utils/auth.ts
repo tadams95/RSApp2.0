@@ -45,6 +45,27 @@ export interface UserData {
   isAdmin: boolean;
   migratedFromRTDB: boolean;
   migrationDate?: string;
+  // Social profile fields (Phase 1)
+  bio?: string; // max 160 chars
+  username?: string; // unique, lowercase
+  socialLinks?: {
+    soundcloud?: string;
+    instagram?: string;
+    twitter?: string;
+  };
+  interests?: string[]; // music genres, event types
+  location?: {
+    city?: string;
+    state?: string;
+  };
+  isPublic?: boolean; // profile visibility, defaults to true
+  verificationStatus?: "none" | "verified" | "artist";
+  stats?: {
+    eventsAttended: number;
+    postsCount: number;
+    followersCount: number;
+    followingCount: number;
+  };
   [key: string]: any; // For any additional fields
 }
 

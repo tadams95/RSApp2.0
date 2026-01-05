@@ -75,14 +75,14 @@ Create under `src/components/profile/`:
 
 ### Implementation Checklist
 
-- [ ] Extend UserData interface with social fields
-- [ ] Create `profile/[userId].tsx` dynamic route
-- [ ] Build `UserProfileView` with self/other mode detection
-- [ ] Implement follow/unfollow in Firestore
-- [ ] Build user search with Firestore compound queries
-- [ ] Add profile edit modal/screen
-- [ ] Integrate with existing EditProfile modal
-- [ ] Add PostHog tracking for profile events
+- [x] Extend UserData interface with social fields
+- [x] Create `profile/[userId].tsx` dynamic route
+- [x] Build `UserProfileView` with self/other mode detection
+- [x] Implement follow/unfollow in Firestore (`src/services/followService.ts`)
+- [x] Build user search with Firestore queries (`src/services/userSearchService.ts`)
+- [x] Add profile edit modal/screen (integrated EditProfile modal)
+- [x] Integrate with existing EditProfile modal
+- [x] Add PostHog tracking for profile events (`FollowButton.tsx`)
 
 ---
 
@@ -177,7 +177,7 @@ Create under `src/services/` and `src/hooks/`:
 - useComments(postId)
 ```
 
-### Implementation Checklist
+### Implementation Checklist 1.2
 
 - [ ] Create `social/` route group with layout
 - [ ] Build feed screen with Following/Latest tabs

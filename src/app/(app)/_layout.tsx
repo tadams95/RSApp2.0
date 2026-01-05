@@ -78,6 +78,13 @@ export default function AppLayout() {
             ),
           }}
         />
+        {/* Profile routes - hidden from tab bar, accessed via navigation */}
+        <Tabs.Screen
+          name="profile"
+          options={{
+            href: null, // Hide from tab bar
+          }}
+        />
       </Tabs>
     </ErrorBoundary>
   );
