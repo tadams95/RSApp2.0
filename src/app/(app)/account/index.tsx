@@ -20,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import { ImageWithFallback } from "../../../components/ui";
@@ -82,6 +83,7 @@ enum UploadState {
 
 // Convert to default export
 export default function AccountScreen() {
+  const insets = useSafeAreaInsets();
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [showEditProfileModal, setShowEditProfileModal] =
@@ -501,7 +503,7 @@ export default function AccountScreen() {
         handleLogout();
       }}
     >
-      <View style={styles.root}>
+      <View style={[styles.root, { paddingTop: insets.top }]}>
         <StatusBar style="light" />
 
         {/* Show loading indicator while fetching profile data */}

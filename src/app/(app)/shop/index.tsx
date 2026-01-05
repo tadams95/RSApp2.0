@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect } from "react";
@@ -9,19 +10,24 @@ import {
   StyleSheet,
   Text,
   TextStyle,
+  TouchableOpacity,
   View,
   ViewStyle,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
 import {
   usePostHog,
   useScreenTracking,
 } from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { LazyImage } from "../../../components/ui";
+import { GlobalStyles } from "../../../constants/styles";
 import {
   getProductLoadingState,
   useProducts,
 } from "../../../hooks/useProducts";
+import { selectCartItemCount } from "../../../store/redux/cartSlice";
 // Import offline product management
 import { useOfflineProducts } from "../../../utils/offlineProducts";
 
@@ -57,6 +63,8 @@ interface ShopifyProduct {
 export default function ShopScreen() {
   const router = useRouter();
   const posthog = usePostHog();
+  const insets = useSafeAreaInsets();
+  const cartItemCount = useSelector(selectCartItemCount);
 
   // Use React Query for product fetching
   const productsQuery = useProducts();
@@ -220,11 +228,32 @@ export default function ShopScreen() {
     );
   }, []);
 
+  const renderHeader = () => (
+    <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <Text style={styles.headerTitle}>Shop</Text>
+      <TouchableOpacity
+        style={styles.cartButton}
+        onPress={() => router.push("/cart")}
+        activeOpacity={0.7}
+      >
+        <MaterialCommunityIcons name="cart-outline" size={26} color="#fff" />
+        {cartItemCount > 0 && (
+          <View style={styles.cartBadge}>
+            <Text style={styles.cartBadgeText}>
+              {cartItemCount > 9 ? "9+" : cartItemCount}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+
   if (isLoading && !isRefreshing && products.length === 0) {
     // Show skeleton loading with FlashList
     return (
       <ProductFetchErrorBoundary>
         <View style={styles.container}>
+          {renderHeader()}
           <FlashList
             data={renderSkeletonItems()}
             renderItem={renderSkeletonItem}
@@ -241,6 +270,7 @@ export default function ShopScreen() {
   if (error) {
     return (
       <View style={styles.errorContainer}>
+        {renderHeader()}
         <Text style={styles.errorText}>{error}</Text>
         <Pressable
           style={styles.retryButton}
@@ -258,6 +288,7 @@ export default function ShopScreen() {
   return (
     <ProductFetchErrorBoundary>
       <View style={styles.container}>
+        {renderHeader()}
         <FlashList
           data={products}
           renderItem={renderItem}
@@ -292,6 +323,11 @@ const fontFamily = Platform.select({
 // Define types for StyleSheet to ensure proper typing
 interface Styles {
   container: ViewStyle;
+  header: ViewStyle;
+  headerTitle: TextStyle;
+  cartButton: ViewStyle;
+  cartBadge: ViewStyle;
+  cartBadgeText: TextStyle;
   flashListContent: ViewStyle;
   emptyContainer: ViewStyle;
   title: TextStyle;
@@ -318,6 +354,43 @@ const styles = StyleSheet.create<Styles>({
   container: {
     flex: 1,
     backgroundColor: "#000",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: GlobalStyles.colors.grey8,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+    fontFamily,
+  },
+  cartButton: {
+    padding: 4,
+    position: "relative",
+  },
+  cartBadge: {
+    position: "absolute",
+    top: -2,
+    right: -4,
+    backgroundColor: GlobalStyles.colors.redVivid5,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  cartBadgeText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "bold",
+    fontFamily,
   },
   flashListContent: {
     padding: 10,

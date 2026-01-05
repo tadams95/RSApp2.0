@@ -21,13 +21,10 @@ export default function AppLayout() {
       <Tabs
         screenOptions={{
           tabBarStyle: {
-            backgroundColor: "black", // Set background color of the tab bar
+            backgroundColor: "black",
             borderTopColor: "#333",
           },
-          headerStyle: {
-            backgroundColor: "black", // Set background color of the header
-          },
-          headerTintColor: "black", // Set text color of the header text to white (fixed from black for consistency)
+          headerShown: false,
           tabBarActiveTintColor: "white",
           tabBarInactiveTintColor: "gray",
           tabBarShowLabel: false,
@@ -36,7 +33,6 @@ export default function AppLayout() {
         <Tabs.Screen
           name="home"
           options={{
-            title: "RAGESTATE",
             tabBarIcon: ({ color }) => (
               <MaterialCommunityIcons name="home" color={color} size={24} />
             ),
@@ -45,7 +41,6 @@ export default function AppLayout() {
         <Tabs.Screen
           name="shop"
           options={{
-            title: "Shop",
             tabBarIcon: ({ color }) => (
               <MaterialCommunityIcons name="shopping" color={color} size={24} />
             ),
@@ -54,35 +49,43 @@ export default function AppLayout() {
         <Tabs.Screen
           name="events"
           options={{
-            title: "Events",
             tabBarIcon: ({ color }) => (
               <MaterialCommunityIcons name="calendar" color={color} size={24} />
             ),
           }}
         />
         <Tabs.Screen
-          name="cart"
+          name="social"
           options={{
-            title: "Cart",
             tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons name="cart" color={color} size={24} />
+              <MaterialCommunityIcons
+                name="newspaper"
+                color={color}
+                size={24}
+              />
             ),
           }}
         />
         <Tabs.Screen
           name="account"
           options={{
-            title: "Account",
             tabBarIcon: ({ color }) => (
               <MaterialCommunityIcons name="account" color={color} size={24} />
             ),
+          }}
+        />
+        {/* Cart - hidden from tab bar, accessed via Shop header icon */}
+        <Tabs.Screen
+          name="cart"
+          options={{
+            href: null,
           }}
         />
         {/* Profile routes - hidden from tab bar, accessed via navigation */}
         <Tabs.Screen
           name="profile"
           options={{
-            href: null, // Hide from tab bar
+            href: null,
           }}
         />
       </Tabs>

@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import { useAuth } from "../../../hooks/AuthContext";
@@ -10,6 +11,7 @@ import {
 } from "../../../store/redux/userSlice";
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const { authenticated } = useAuth();
   const userEmail = useSelector(selectUserEmail);
   const userName = useSelector(selectUserName);
@@ -22,32 +24,40 @@ export default function HomeScreen() {
   });
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Image
-          source={require("../../../assets/RSLogo2025.png")}
-          style={styles.logo}
-          contentFit="contain"
-        />
-      </View>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Image
+            source={require("../../../assets/RSLogo2025.png")}
+            style={styles.logo}
+            contentFit="contain"
+          />
+        </View>
 
-      <View style={styles.welcomeSection}>
-        <Text style={styles.welcomeText}>
-          Welcome{userName ? `, ${userName.split("@")[0]}` : ""}!
-        </Text>
-      </View>
+        <View style={styles.welcomeSection}>
+          <Text style={styles.welcomeText}>
+            Welcome{userName ? `, ${userName.split("@")[0]}` : ""}!
+          </Text>
+        </View>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.infoTitle}>Migration Complete</Text>
-        <Text style={styles.infoText}>We'll implement a feed here soon.</Text>
-      </View>
-    </ScrollView>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>Migration Complete</Text>
+          <Text style={styles.infoText}>We'll implement a feed here soon.</Text>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#000",
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  header: {
     backgroundColor: "#000",
   },
   header: {

@@ -179,8 +179,8 @@ Create under `src/services/` and `src/hooks/`:
 
 ### Implementation Checklist 1.2
 
-- [ ] Create `social/` route group with layout
-- [ ] Build feed screen with Following/Latest tabs
+- [x] Create `social/` route group with layout (`src/app/(app)/social/_layout.tsx`)
+- [x] Build feed screen with Following/Latest tabs (`src/app/(app)/social/index.tsx`)
 - [ ] Implement real-time Firestore listener for feed
 - [ ] Build PostCard component with media support
 - [ ] Implement like/unlike with optimistic updates

@@ -22,6 +22,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   usePostHog,
   useScreenTracking,
@@ -48,6 +49,7 @@ export default function EventsScreen() {
   const [isOffline, setIsOffline] = useState(false);
   const flatListRef = useRef<FlatList<EventData>>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
 
   // Scroll depth tracking state
   const [scrollDepth, setScrollDepth] = useState(0);
@@ -240,7 +242,7 @@ export default function EventsScreen() {
           />
 
           {/* Price tag */}
-          <View style={styles.priceTag}>
+          <View style={[styles.priceTag, { top: insets.top + 20 }]}>
             <Text style={styles.priceText}>
               ${typeof item.price === "number" ? item.price.toFixed(2) : "0.00"}
             </Text>
