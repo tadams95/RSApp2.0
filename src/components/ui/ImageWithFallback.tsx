@@ -14,7 +14,6 @@ import {
   ImageCacheOptions,
   generateCacheKey,
 } from "../../utils/imageCacheConfig";
-import { logError } from "../../utils/logError";
 import { getStorageErrorMessage } from "../../utils/storageErrorHandler";
 
 type ImageCacheType =
@@ -98,6 +97,26 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+
+  // Fix Firebase Storage URLs that are missing ?alt=media
+  const fixedSource = React.useMemo(() => {
+    if (
+      typeof source === "object" &&
+      "uri" in source &&
+      typeof (source as any).uri === "string"
+    ) {
+      const uri = (source as any).uri as string;
+      // Check if it's a Firebase Storage URL missing alt=media
+      if (
+        uri.includes("firebasestorage.googleapis.com") &&
+        !uri.includes("alt=media")
+      ) {
+        const separator = uri.includes("?") ? "&" : "?";
+        return { ...(source as object), uri: `${uri}${separator}alt=media` };
+      }
+    }
+    return source;
+  }, [source]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
@@ -119,15 +138,8 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       const actualError =
         errorEvent?.error || errorEvent || new Error("Image load failed");
 
-      // Get a user-friendly error message
+      // Get a user-friendly error message (this also logs the error)
       const message = getStorageErrorMessage(actualError);
-
-      // Log the error for debugging
-      logError(actualError, `ImageWithFallback.${errorContext}`, {
-        retryCount,
-        errorMessage: message,
-        sourceType: typeof source === "number" ? "local" : "uri",
-      });
 
       setErrorMessage(message);
       setHasError(true);
@@ -208,7 +220,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     <View style={[styles.container, style]} testID={testID}>
       <Image
         key={`image-${retryCount}`} // Force re-mount on retry
-        source={hasError ? actualFallbackSource : source}
+        source={hasError ? actualFallbackSource : fixedSource}
         onLoadStart={handleLoadStart}
         onLoadEnd={handleLoadEnd}
         onError={handleError} // expo-image passes error directly

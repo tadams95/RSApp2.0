@@ -177,14 +177,14 @@ Create under `src/services/` and `src/hooks/`:
 - useComments(postId)
 ```
 
-### Implementation Checklist 1.2
+### 1.2 Implementation Checklist
 
 - [x] Create `social/` route group with layout (`src/app/(app)/social/_layout.tsx`)
 - [x] Build feed screen with Following/Latest tabs (`src/app/(app)/social/index.tsx`)
-- [ ] Implement real-time Firestore listener for feed
-- [ ] Build PostCard component with media support
-- [ ] Implement like/unlike with optimistic updates
-- [ ] Add infinite scroll pagination
+- [x] Implement real-time Firestore listener for feed (`src/services/feedService.ts`, `src/hooks/useFeed.ts`)
+- [x] Build PostCard component with media support (`src/components/feed/PostCard.tsx`, `src/components/feed/MediaGrid.tsx`, `src/components/feed/PostActions.tsx`)
+- [x] Implement like/unlike with optimistic updates (`src/hooks/usePostInteractions.ts`)
+- [x] Add infinite scroll pagination (`src/hooks/useFeed.ts` - `loadMore`, `hasMore`, `isLoadingMore`)
 - [ ] Create single post view with comments
 - [ ] Add PostHog tracking for feed events
 

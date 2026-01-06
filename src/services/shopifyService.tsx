@@ -57,7 +57,7 @@ export interface ShopifyPaginationParams {
 // Define the client configuration
 const clientConfig = {
   storeDomain: "ragestate.myshopify.com", // Corrected from domain to storeDomain
-  apiVersion: "2024-10", // Updated to supported API version
+  apiVersion: "2025-01", // Updated to supported API version
   publicAccessToken: "e4803750ab24a8c8b98cc614e0f34d98", // Corrected from storefrontAccessToken to publicAccessToken
 };
 

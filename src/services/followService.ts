@@ -140,6 +140,12 @@ export async function getFollowing(
   userId: string,
   limit: number = 50
 ): Promise<string[]> {
+  // Guard against undefined userId to prevent Firebase errors
+  if (!userId) {
+    console.error("Error getting following list: userId is required");
+    return [];
+  }
+
   const followsQuery = query(
     collection(db, "follows"),
     where("followerId", "==", userId)

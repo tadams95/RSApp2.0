@@ -1,0 +1,82 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isVideo() {
+      return request.resource.contentType.matches('video/.*');
+    }
+
+    function isAudio() {
+      return request.resource.contentType.matches('audio/.*') ||
+             request.resource.contentType == 'application/octet-stream'; // fallback some browsers use
+    }
+
+    // Limit sizes (in bytes)
+    function under(size) {
+      return request.resource.size < size;
+    }
+
+    // Publicly readable profile pictures; users can write to their own folder
+    match /profilePictures/{uid}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == uid && isImage() && under(5 * 1024 * 1024);
+    }
+
+    // Post media uploaded under posts/
+    // Accommodate both nested (posts/{postId}/{filename}) and flat (posts/{filename}) structures
+    match /posts/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && (
+        (isImage() && under(10 * 1024 * 1024)) ||
+        (isVideo() && under(100 * 1024 * 1024))
+      );
+    }
+
+    // Optimized videos created by server-side transcoding (Cloud Function)
+    // Separate top-level folder to avoid lifecycle rule on posts/ prefix
+    // Public read; writes happen via Admin SDK (no client writes allowed)
+    match /posts-optimized/{postId}/{filename} {
+      allow read: if true;
+      allow write: if false; // Only Cloud Function (Admin SDK) can write
+    }
+
+    // Guest mixes (public submission form currently unauthenticated)
+    // Keep public reads; allow writes without auth but constrain type/size.
+    match /guest-mixes/{filename} {
+      allow read: if true;
+      allow write: if isAudio() && under(200 * 1024 * 1024);
+    }
+
+    match /guest-mix-cover-photo/{filename} {
+      allow read: if true;
+      allow write: if isImage() && under(10 * 1024 * 1024);
+    }
+
+    // Event hero images: only admins (custom claim) may upload; public read
+    match /events/{slug}/{filename} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.token.admin == true && isImage() && under(5 * 1024 * 1024);
+    }
+
+    // Temporary event hero image uploads before an event slug is finalized.
+    // Structure: temp-events/{uid}/{timestamp-filename}
+    // Allow any signed-in user to upload to THEIR OWN temp folder (uid match) so we don't rely on custom claims here.
+    // Final event creation is still admin-gated server-side, so non-admin uploads remain harmless.
+    match /temp-events/{uid}/{filename} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == uid && isImage() && under(5 * 1024 * 1024);
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
