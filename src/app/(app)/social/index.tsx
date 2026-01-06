@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,8 +11,11 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useScreenTracking } from "../../../analytics/PostHogProvider";
-import { PostCard } from "../../../components/feed";
+import {
+  usePostHog,
+  useScreenTracking,
+} from "../../../analytics/PostHogProvider";
+import { PostCard, PostComposer } from "../../../components/feed";
 import { GlobalStyles } from "../../../constants/styles";
 import { useFeed } from "../../../hooks/useFeed";
 import { likePost, unlikePost } from "../../../hooks/usePostInteractions";
@@ -19,9 +23,12 @@ import { Post } from "../../../services/feedService";
 
 export default function SocialFeedScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const posthog = usePostHog();
   const [refreshing, setRefreshing] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [showComposer, setShowComposer] = useState(false);
 
   // Single feed - all public posts (like web version)
   const { posts, isLoading, error, refetch, loadMore, hasMore, isLoadingMore } =
@@ -37,11 +44,22 @@ export default function SocialFeedScreen() {
     }
   }, [isLoading, error, posts]);
 
-  // Track screen view
+  // Track screen view with feed_viewed event
   useScreenTracking("Social Feed", {
     post_count: posts.length,
     has_error: !!error,
+    tab: "forYou",
   });
+
+  // Track feed_viewed when posts load
+  useEffect(() => {
+    if (!isLoading && posts.length > 0) {
+      posthog.capture("feed_viewed", {
+        tab: "forYou",
+        post_count: posts.length,
+      });
+    }
+  }, [isLoading, posts.length, posthog]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -78,8 +96,13 @@ export default function SocialFeedScreen() {
       try {
         if (currentlyLiked) {
           await unlikePost(postId);
+          posthog.capture("post_unliked", { post_id: postId });
         } else {
           await likePost(postId);
+          posthog.capture("post_liked", {
+            post_id: postId,
+            author_id: post?.userId,
+          });
         }
       } catch (err) {
         // Rollback on error
@@ -146,12 +169,26 @@ export default function SocialFeedScreen() {
           likeCount: displayLikeCount,
         }}
         isLiked={isLiked}
-        onPress={() => console.log("Post pressed:", item.id)}
-        onProfilePress={(userId) => console.log("Profile pressed:", userId)}
+        onPress={() => {
+          posthog.capture("post_opened", { post_id: item.id });
+          router.push(`/social/post/${item.id}`);
+        }}
+        onProfilePress={(userId) => {
+          posthog.capture("profile_opened_from_feed", {
+            profile_user_id: userId,
+          });
+          router.push(`/profile/${userId}`);
+        }}
         onLike={handleLike}
-        onComment={(postId) => console.log("Comment pressed:", postId)}
+        onComment={() => {
+          posthog.capture("comment_opened_from_feed", { post_id: item.id });
+          router.push(`/social/post/${item.id}`);
+        }}
         onRepost={(postId) => console.log("Repost pressed:", postId)}
-        onShare={(postId) => console.log("Share pressed:", postId)}
+        onShare={(postId) => {
+          posthog.capture("share_initiated", { post_id: postId });
+          console.log("Share pressed:", postId);
+        }}
         onMore={(postId) => console.log("More options pressed:", postId)}
       />
     );
@@ -196,11 +233,22 @@ export default function SocialFeedScreen() {
 
       {/* Floating Compose Button */}
       <TouchableOpacity
-        style={[styles.fab, { bottom: 24 + insets.bottom }]}
+        style={[styles.fab, { bottom: 16 }]}
         activeOpacity={0.85}
+        onPress={() => setShowComposer(true)}
       >
         <MaterialCommunityIcons name="plus" size={28} color="#fff" />
       </TouchableOpacity>
+
+      {/* Post Composer Modal */}
+      <PostComposer
+        visible={showComposer}
+        onClose={() => setShowComposer(false)}
+        onPostCreated={() => {
+          posthog.capture("post_composer_opened");
+          refetch();
+        }}
+      />
     </View>
   );
 }
@@ -274,7 +322,7 @@ const styles = StyleSheet.create({
     right: 20,
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 16,
     backgroundColor: GlobalStyles.colors.redVivid5,
     justifyContent: "center",
     alignItems: "center",

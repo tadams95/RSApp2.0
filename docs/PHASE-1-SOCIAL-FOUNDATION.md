@@ -185,8 +185,8 @@ Create under `src/services/` and `src/hooks/`:
 - [x] Build PostCard component with media support (`src/components/feed/PostCard.tsx`, `src/components/feed/MediaGrid.tsx`, `src/components/feed/PostActions.tsx`)
 - [x] Implement like/unlike with optimistic updates (`src/hooks/usePostInteractions.ts`)
 - [x] Add infinite scroll pagination (`src/hooks/useFeed.ts` - `loadMore`, `hasMore`, `isLoadingMore`)
-- [ ] Create single post view with comments
-- [ ] Add PostHog tracking for feed events
+- [x] Create single post view with comments (`src/app/(app)/social/post/[postId].tsx`, `src/services/commentService.ts`, `src/hooks/useComments.ts`, `src/components/feed/CommentsList.tsx`, `src/components/feed/CommentInput.tsx`)
+- [x] Add PostHog tracking for feed events (`feed_viewed`, `post_opened`, `post_liked`, `post_unliked`, `comment_created`, `comment_deleted`, `profile_opened_from_feed`, `share_initiated`)
 
 ---
 
@@ -218,16 +218,16 @@ interface PostComposerProps {
 // 6. Navigate to feed or new post
 ```
 
-### Implementation Checklist
+### 1.3 Implementation Checklist
 
-- [ ] Create PostComposer modal/screen
-- [ ] Integrate expo-image-picker for media
-- [ ] Reuse image compression from `src/utils/imageCompression.ts`
-- [ ] Implement Storage upload with progress
-- [ ] Create post document in Firestore
-- [ ] Add validation (text length, media limits)
-- [ ] Show upload progress indicator
-- [ ] Handle errors gracefully
+- [x] Create PostComposer modal/screen (`src/components/feed/PostComposer.tsx`)
+- [x] Integrate expo-image-picker for media (images + video selection, camera support)
+- [x] Reuse image compression from `src/utils/imageCompression.ts` (uses `COMPRESSION_PRESETS.EVENT`)
+- [x] Implement Storage upload with progress (`src/services/feedService.ts` - `createPost`, `uploadMediaFile`)
+- [x] Create post document in Firestore (`createPost` writes to `posts` collection with author info, media URLs, timestamps)
+- [x] Add validation (text length, media limits) (`validatePost()` checks 500 char max, 4 images or 1 video, no mixed media)
+- [x] Show upload progress indicator (progress bar with file count and percentage during submission)
+- [x] Handle errors gracefully (`getErrorMessage()` maps Firebase errors to user-friendly messages)
 
 ---
 

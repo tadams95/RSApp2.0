@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   avatarPlaceholder: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 12,
     backgroundColor: GlobalStyles.colors.grey7,
     justifyContent: "center",
     alignItems: "center",
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 12,
   },
   avatarInitial: {
     fontSize: 18,
