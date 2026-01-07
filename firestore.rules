@@ -310,9 +310,9 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAuthenticated()
         && isString(request.resource.data.followerId)
-        && isString(request.resource.data.followedId)
+        && isString(request.resource.data.followingId)
         && request.resource.data.followerId == request.auth.uid
-        && request.resource.data.followerId != request.resource.data.followedId
+        && request.resource.data.followerId != request.resource.data.followingId
         && (!request.resource.data.keys().hasAny(['createdAt']) || isTimestamp(request.resource.data.createdAt));
       allow delete: if isAuthenticated() && resource.data.followerId == request.auth.uid;
     }

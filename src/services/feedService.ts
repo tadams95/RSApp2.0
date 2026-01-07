@@ -31,6 +31,7 @@ export interface Post {
   userDisplayName: string;
   usernameLower?: string;
   userProfilePicture?: string;
+  userVerified?: boolean; // Verified badge
   // Content
   content: string;
   mediaUrls?: string[];
@@ -181,8 +182,8 @@ export async function getUserPosts(
 ): Promise<Post[]> {
   const postsQuery = query(
     collection(db, POSTS_COLLECTION),
-    where("authorId", "==", userId),
-    orderBy("createdAt", "desc"),
+    where("userId", "==", userId),
+    orderBy("timestamp", "desc"),
     limit(limitCount)
   );
 
@@ -269,11 +270,15 @@ export async function createPost(
     throw new Error("Must be logged in to create a post");
   }
 
-  // Get user data for author info
+  // Get user data from /customers collection
   const userData = await getUserData(currentUser.uid);
   if (!userData) {
     throw new Error("User data not found");
   }
+
+  // Also fetch from /profiles collection for social fields (displayName, verification, photo)
+  const profileDoc = await getDoc(doc(db, "profiles", currentUser.uid));
+  const profileData = profileDoc.exists() ? profileDoc.data() : null;
 
   // Generate a temporary post ID for storage paths
   const tempPostId = `${currentUser.uid}_${Date.now()}`;
@@ -313,16 +318,35 @@ export async function createPost(
   }
 
   // Create the post document in Firestore
+  // Use conditional spreading to omit null fields (Firestore rules reject null for typed fields)
+  // Prefer /profiles data for social fields, fall back to /customers data
+  const profilePicture =
+    profileData?.photoURL ||
+    profileData?.profilePicture ||
+    userData.profilePicture;
+  const displayName =
+    profileData?.displayName ||
+    userData.displayName ||
+    userData.name ||
+    userData.email ||
+    "Anonymous";
+  const username = profileData?.usernameLower || userData.username;
+  const isVerified =
+    profileData?.isVerified === true ||
+    userData.verificationStatus === "verified" ||
+    userData.verificationStatus === "artist";
+
   const postData = {
     // Author info
     userId: currentUser.uid,
-    userDisplayName: userData.name || userData.email || "Anonymous",
-    usernameLower: userData.username?.toLowerCase() || null,
-    userProfilePicture: userData.profilePicture || null,
+    userDisplayName: displayName,
+    ...(username && { usernameLower: username.toLowerCase() }),
+    ...(profilePicture && { userProfilePicture: profilePicture }),
+    userVerified: isVerified,
     // Content
     content: input.content.trim(),
-    mediaUrls: mediaUrls.length > 0 ? mediaUrls : null,
-    mediaTypes: mediaTypes.length > 0 ? mediaTypes : null,
+    ...(mediaUrls.length > 0 && { mediaUrls }),
+    ...(mediaTypes.length > 0 && { mediaTypes }),
     // Visibility
     isPublic: input.isPublic,
     // Engagement counts (start at 0)

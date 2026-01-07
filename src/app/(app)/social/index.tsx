@@ -34,16 +34,6 @@ export default function SocialFeedScreen() {
   const { posts, isLoading, error, refetch, loadMore, hasMore, isLoadingMore } =
     useFeed("forYou");
 
-  // Debug: Log feed state
-  useEffect(() => {
-    console.log("[Feed Debug] isLoading:", isLoading);
-    console.log("[Feed Debug] error:", error?.message);
-    console.log("[Feed Debug] posts count:", posts.length);
-    if (posts.length > 0) {
-      console.log("[Feed Debug] first post:", posts[0].id);
-    }
-  }, [isLoading, error, posts]);
-
   // Track screen view with feed_viewed event
   useScreenTracking("Social Feed", {
     post_count: posts.length,

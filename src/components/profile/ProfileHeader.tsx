@@ -38,7 +38,7 @@ export default function ProfileHeader({
         <MaterialCommunityIcons
           name="check-decagram"
           size={18}
-          color="#1DA1F2"
+          color={GlobalStyles.colors.redVivid5}
           style={styles.verifiedBadge}
         />
       );
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: 12,
     borderWidth: 3,
     borderColor: GlobalStyles.colors.grey8,
   },
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     backgroundColor: GlobalStyles.colors.redVivid5,
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,

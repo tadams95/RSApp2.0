@@ -9,6 +9,16 @@ import { ImageWithFallback } from "../ui";
 import { MediaGrid } from "./MediaGrid";
 import { PostActions } from "./PostActions";
 
+// Verification badge component
+const VerifiedBadge = () => (
+  <MaterialCommunityIcons
+    name="check-decagram"
+    size={14}
+    color={GlobalStyles.colors.redVivid5}
+    style={{ marginLeft: 4 }}
+  />
+);
+
 interface PostCardProps {
   post: Post;
   isLiked?: boolean;
@@ -38,6 +48,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     userDisplayName,
     usernameLower,
     userProfilePicture,
+    userVerified,
     content,
     mediaUrls,
     mediaTypes,
@@ -117,9 +128,12 @@ export const PostCard: React.FC<PostCardProps> = ({
             onPress={handleProfilePress}
             hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}
           >
-            <Text style={styles.displayName} numberOfLines={1}>
-              {userDisplayName}
-            </Text>
+            <View style={styles.nameRow}>
+              <Text style={styles.displayName} numberOfLines={1}>
+                {userDisplayName}
+              </Text>
+              {userVerified && <VerifiedBadge />}
+            </View>
             {usernameLower && (
               <Text style={styles.username} numberOfLines={1}>
                 @{usernameLower}
@@ -212,16 +226,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   userInfo: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "column",
     flex: 1,
     marginRight: 4,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   displayName: {
     fontSize: 15,
     fontWeight: "700",
     color: "#fff",
-    marginRight: 4,
   },
   verifiedBadge: {
     marginRight: 4,

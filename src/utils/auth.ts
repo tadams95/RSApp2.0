@@ -60,6 +60,12 @@ export interface UserData {
   };
   isPublic?: boolean; // profile visibility, defaults to true
   verificationStatus?: "none" | "verified" | "artist";
+  // Alternative verification field from /profiles collection
+  isVerified?: boolean;
+  // Alternative photo field from /profiles collection
+  photoURL?: string;
+  // Alternative name field
+  name?: string;
   stats?: {
     eventsAttended: number;
     postsCount: number;
@@ -113,6 +119,15 @@ export async function createUser(
         stripeCustomerId: "",
         isAdmin: false,
         migratedFromRTDB: false,
+        // Initialize social profile fields
+        isPublic: true,
+        verificationStatus: "none",
+        stats: {
+          eventsAttended: 0,
+          postsCount: 0,
+          followersCount: 0,
+          followingCount: 0,
+        },
       };
 
       // Save to both databases in parallel using Firebase SDK with retry logic

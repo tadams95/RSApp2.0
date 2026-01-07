@@ -16,6 +16,16 @@ import { auth } from "../../firebase/firebase";
 import { Comment } from "../../services/commentService";
 import { ImageWithFallback } from "../ui";
 
+// Verification badge component
+const VerifiedBadge = () => (
+  <MaterialCommunityIcons
+    name="check-decagram"
+    size={12}
+    color={GlobalStyles.colors.redVivid5}
+    style={{ marginLeft: 4 }}
+  />
+);
+
 interface CommentsListProps {
   comments: Comment[];
   isLoading: boolean;
@@ -97,8 +107,12 @@ const CommentItem: React.FC<{
 
       <View style={styles.commentContent}>
         <View style={styles.commentHeader}>
-          <TouchableOpacity onPress={() => onProfilePress?.(comment.userId)}>
+          <TouchableOpacity
+            onPress={() => onProfilePress?.(comment.userId)}
+            style={styles.nameRow}
+          >
             <Text style={styles.userName}>{comment.userDisplayName}</Text>
+            {comment.userVerified && <VerifiedBadge />}
           </TouchableOpacity>
           <Text style={styles.timestamp}>{getTimeAgo()}</Text>
         </View>
@@ -230,6 +244,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 13,
     fontWeight: "600",
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   timestamp: {
     color: GlobalStyles.colors.grey5,

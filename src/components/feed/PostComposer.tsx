@@ -544,6 +544,7 @@ export function PostComposer({
               value={content}
               onChangeText={setContent}
               autoFocus
+              autoCapitalize="none"
             />
 
             {/* Media Preview */}

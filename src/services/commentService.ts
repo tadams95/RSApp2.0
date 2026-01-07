@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   DocumentData,
+  getDoc,
   getDocs,
   limit,
   onSnapshot,
@@ -17,6 +18,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { auth, db } from "../firebase/firebase";
+import { getUserData } from "../utils/auth";
 
 const COMMENTS_COLLECTION = "postComments";
 const PAGE_SIZE = 20;
@@ -27,6 +29,7 @@ export interface Comment {
   userId: string;
   userDisplayName: string;
   userProfilePicture?: string;
+  userVerified?: boolean; // Verified badge
   content: string;
   likeCount: number;
   createdAt: Timestamp;
@@ -125,11 +128,36 @@ export async function addComment(
     throw new Error("Comment cannot be empty");
   }
 
+  // Get user data from /customers collection
+  // Note: Support both /customers and /profiles collection field names
+  const userData = await getUserData(currentUser.uid);
+
+  // Also fetch from /profiles collection for social fields (displayName, verification, photo)
+  const profileDoc = await getDoc(doc(db, "profiles", currentUser.uid));
+  const profileData = profileDoc.exists() ? profileDoc.data() : null;
+
+  // Prefer /profiles data for social fields, fall back to /customers data
+  const profilePicture =
+    profileData?.photoURL ||
+    profileData?.profilePicture ||
+    userData?.profilePicture ||
+    currentUser.photoURL;
+  const displayName =
+    profileData?.displayName ||
+    userData?.displayName ||
+    currentUser.displayName ||
+    "Anonymous";
+  const isVerified =
+    profileData?.isVerified === true ||
+    userData?.verificationStatus === "verified" ||
+    userData?.verificationStatus === "artist";
+
   const commentData = {
     postId,
     userId: currentUser.uid,
-    userDisplayName: currentUser.displayName || "Anonymous",
-    userProfilePicture: currentUser.photoURL || null,
+    userDisplayName: displayName,
+    ...(profilePicture && { userProfilePicture: profilePicture }),
+    userVerified: isVerified,
     content: input.content.trim(),
     likeCount: 0,
     createdAt: serverTimestamp(),

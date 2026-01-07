@@ -284,14 +284,14 @@ export async function followUser(targetUserId: string) {
 }
 ```
 
-### Implementation Checklist
+### 1.4 Implementation Checklist
 
-- [ ] Implement like/unlike with optimistic UI
-- [ ] Build comments list with pagination
-- [ ] Add comment creation
-- [ ] Implement follow/unfollow
-- [ ] Update follower/following counts
-- [ ] Add notification triggers (prep for Phase 3)
+- [x] Implement like/unlike with optimistic UI (`src/hooks/usePostInteractions.ts` - `useLike` hook with rollback, standalone `likePost`/`unlikePost`)
+- [x] Build comments list with pagination (`src/services/commentService.ts` - `getComments` with cursor, `src/components/feed/CommentsList.tsx`)
+- [x] Add comment creation (`src/services/commentService.ts` - `addComment`, `src/components/feed/CommentInput.tsx`, `useComments` hook)
+- [x] Implement follow/unfollow (`src/services/followService.ts` - `followUser`/`unfollowUser` with optimistic updates in `FollowButton.tsx`)
+- [x] Update follower/following counts (`followService.ts` uses `increment()` to atomically update `stats.followersCount`/`stats.followingCount`)
+- [x] Add notification triggers (prep for Phase 3) (`functions/notifications.js` - `onFollowCreateNotify`, `post_liked`, `comment_added` triggers exist)
 
 ---
 
@@ -356,15 +356,15 @@ Fields: postId (ASC), createdAt (ASC)
 
 ## Success Criteria
 
-- [ ] Users can view/edit their enhanced profile
-- [ ] Users can view other users' public profiles
-- [ ] Users can follow/unfollow other users
-- [ ] Social feed displays posts from followed users
-- [ ] Users can create posts with text and images
-- [ ] Users can like, comment on posts
-- [ ] Feed supports infinite scroll
-- [ ] Real-time updates for new posts
-- [ ] All interactions tracked in PostHog
+- [x] Users can view/edit their enhanced profile (`src/app/(app)/profile/[userId].tsx`, `src/components/modals/EditProfile.tsx`)
+- [x] Users can view other users' public profiles (`UserProfileView.tsx` with self/other mode detection)
+- [x] Users can follow/unfollow other users (`followService.ts`, `FollowButton.tsx` with optimistic updates)
+- [x] Social feed displays posts from followed users (`subscribeToFollowingFeed` in `feedService.ts`)
+- [x] Users can create posts with text and images (`PostComposer.tsx`, `createPost` with Storage upload)
+- [x] Users can like, comment on posts (`usePostInteractions.ts`, `commentService.ts`, `useComments.ts`)
+- [x] Feed supports infinite scroll (`useFeed.ts` - `loadMore`, `hasMore`, `isLoadingMore`)
+- [x] Real-time updates for new posts (`subscribeToForYouFeed` uses Firestore `onSnapshot`)
+- [x] All interactions tracked in PostHog (`feed_viewed`, `post_liked`, `post_unliked`, `comment_created`, `user_followed`, `user_unfollowed`, etc.)
 
 ---
 
