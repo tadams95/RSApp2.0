@@ -332,11 +332,6 @@ export default function UserProfileView({
           <FollowButton targetUserId={userId} />
         </View>
       )}
-
-      {/* Posts Section Header */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Posts</Text>
-      </View>
     </View>
   );
 
@@ -455,8 +450,8 @@ const styles = StyleSheet.create({
     color: GlobalStyles.colors.grey4,
   },
   sectionHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    // paddingHorizontal: 16,
+    // paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: GlobalStyles.colors.grey8,
   },

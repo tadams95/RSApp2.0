@@ -32,9 +32,10 @@ export interface Comment {
   userVerified?: boolean; // Verified badge
   content: string;
   likeCount: number;
-  createdAt: Timestamp;
+  timestamp: Timestamp;
+  createdAt?: Timestamp; // Alias for display (mapped from timestamp)
   // Optional: for nested replies (1 level deep)
-  parentCommentId?: string;
+  parentId?: string;
 }
 
 export interface CommentInput {
@@ -53,17 +54,21 @@ export function subscribeToComments(
   const commentsQuery = query(
     collection(db, COMMENTS_COLLECTION),
     where("postId", "==", postId),
-    orderBy("createdAt", "asc"),
+    orderBy("timestamp", "asc"),
     limit(PAGE_SIZE)
   );
 
   return onSnapshot(
     commentsQuery,
     (snapshot) => {
-      const comments: Comment[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Comment[];
+      const comments: Comment[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.timestamp, // Map timestamp to createdAt for display
+        };
+      }) as Comment[];
       onUpdate(comments);
     },
     (error) => {
@@ -86,7 +91,7 @@ export async function getComments(
   let commentsQuery = query(
     collection(db, COMMENTS_COLLECTION),
     where("postId", "==", postId),
-    orderBy("createdAt", "asc"),
+    orderBy("timestamp", "asc"),
     limit(PAGE_SIZE)
   );
 
@@ -94,17 +99,21 @@ export async function getComments(
     commentsQuery = query(
       collection(db, COMMENTS_COLLECTION),
       where("postId", "==", postId),
-      orderBy("createdAt", "asc"),
+      orderBy("timestamp", "asc"),
       startAfter(lastDoc),
       limit(PAGE_SIZE)
     );
   }
 
   const snapshot = await getDocs(commentsQuery);
-  const comments: Comment[] = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Comment[];
+  const comments: Comment[] = snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      createdAt: data.timestamp, // Map timestamp to createdAt for display
+    };
+  }) as Comment[];
 
   const newLastDoc =
     snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
@@ -160,8 +169,8 @@ export async function addComment(
     userVerified: isVerified,
     content: input.content.trim(),
     likeCount: 0,
-    createdAt: serverTimestamp(),
-    ...(input.parentCommentId && { parentCommentId: input.parentCommentId }),
+    timestamp: serverTimestamp(),
+    ...(input.parentCommentId && { parentId: input.parentCommentId }),
   };
 
   const docRef = await addDoc(collection(db, COMMENTS_COLLECTION), commentData);
