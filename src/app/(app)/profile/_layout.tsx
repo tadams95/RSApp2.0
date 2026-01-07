@@ -17,7 +17,8 @@ export default function ProfileLayout() {
       <Stack.Screen
         name="[userId]"
         options={{
-          title: "Profile",
+          headerTitle: "",
+          headerShadowVisible: false,
         }}
       />
     </Stack>

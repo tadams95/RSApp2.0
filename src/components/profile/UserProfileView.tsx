@@ -120,6 +120,18 @@ async function fetchUserProfile(userId: string): Promise<UserData | null> {
     if (docSnapshot.exists()) {
       const data = docSnapshot.data();
 
+      // Also fetch from /profiles to get profileSongUrl and other public fields
+      let profileData = {};
+      try {
+        const profileRef = doc(db, "profiles", userId);
+        const profileSnapshot = await getDoc(profileRef);
+        if (profileSnapshot.exists()) {
+          profileData = profileSnapshot.data();
+        }
+      } catch (error) {
+        console.log("Could not fetch profile data:", error);
+      }
+
       // Update stored stats with computed values (keeps them in sync)
       try {
         await updateDoc(userDocRef, {
@@ -130,8 +142,12 @@ async function fetchUserProfile(userId: string): Promise<UserData | null> {
         console.log("Could not update stats field:", error);
       }
 
+      // Merge: customers data takes priority, but include profileSongUrl from profiles
       return {
+        ...profileData,
         ...data,
+        profileSongUrl:
+          data.profileSongUrl || (profileData as any).profileSongUrl,
         userId,
         stats: computedStats,
       } as UserData;

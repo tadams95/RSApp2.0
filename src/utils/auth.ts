@@ -66,6 +66,8 @@ export interface UserData {
   photoURL?: string;
   // Alternative name field
   name?: string;
+  // Profile song (MySpace vibes 🎵)
+  profileSongUrl?: string;
   stats?: {
     eventsAttended: number;
     postsCount: number;

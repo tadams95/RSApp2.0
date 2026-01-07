@@ -10,6 +10,7 @@ import {
 import { GlobalStyles } from "../../constants/styles";
 import { UserData } from "../../utils/auth";
 import { ImageWithFallback } from "../ui";
+import ProfileSongCard from "./ProfileSongCard";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -33,7 +34,11 @@ export default function ProfileHeader({
       : null;
 
   const getVerificationBadge = () => {
-    if (profile?.verificationStatus === "verified") {
+    // Check both isVerified (boolean) and verificationStatus (string) for compatibility
+    if (
+      profile?.isVerified === true ||
+      profile?.verificationStatus === "verified"
+    ) {
       return (
         <MaterialCommunityIcons
           name="check-decagram"
@@ -58,57 +63,70 @@ export default function ProfileHeader({
 
   return (
     <View style={styles.container}>
-      {/* Profile Picture */}
-      <View style={styles.avatarContainer}>
-        <ImageWithFallback
-          source={
-            profile?.profilePicture
-              ? { uri: profile.profilePicture }
-              : require("../../assets/user.png")
-          }
-          fallbackSource={require("../../assets/user.png")}
-          style={styles.avatar}
-          resizeMode="cover"
-        />
-        {isOwnProfile && onEditPress && (
-          <TouchableOpacity
-            style={styles.editAvatarButton}
-            onPress={onEditPress}
-          >
-            <MaterialCommunityIcons name="pencil" size={16} color="#fff" />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Name and Username */}
-      <View style={styles.nameContainer}>
-        <View style={styles.displayNameRow}>
-          <Text style={styles.displayName}>{displayName}</Text>
-          {getVerificationBadge()}
-        </View>
-        {username && <Text style={styles.username}>{username}</Text>}
-      </View>
-
-      {/* Bio */}
-      {bio && <Text style={styles.bio}>{bio}</Text>}
-
-      {/* Location */}
-      {location && (
-        <View style={styles.locationRow}>
-          <MaterialCommunityIcons
-            name="map-marker-outline"
-            size={14}
-            color={GlobalStyles.colors.grey4}
+      {/* Top Section: Avatar + Info */}
+      <View style={styles.topSection}>
+        {/* Profile Picture */}
+        <View style={styles.avatarContainer}>
+          <ImageWithFallback
+            source={
+              profile?.profilePicture
+                ? { uri: profile.profilePicture }
+                : require("../../assets/user.png")
+            }
+            fallbackSource={require("../../assets/user.png")}
+            style={styles.avatar}
+            resizeMode="cover"
           />
-          <Text style={styles.location}>{location}</Text>
+          {isOwnProfile && onEditPress && (
+            <TouchableOpacity
+              style={styles.editAvatarButton}
+              onPress={onEditPress}
+            >
+              <MaterialCommunityIcons name="pencil" size={16} color="#fff" />
+            </TouchableOpacity>
+          )}
         </View>
-      )}
 
-      {/* Edit Profile Button (own profile only) */}
-      {isOwnProfile && onEditPress && (
-        <TouchableOpacity style={styles.editButton} onPress={onEditPress}>
-          <Text style={styles.editButtonText}>Edit Profile</Text>
-        </TouchableOpacity>
+        {/* Info beside avatar */}
+        <View style={styles.infoSection}>
+          {/* Name and Username */}
+          <View style={styles.nameContainer}>
+            <View style={styles.displayNameRow}>
+              <Text style={styles.displayName}>{displayName}</Text>
+              {getVerificationBadge()}
+            </View>
+            {username && <Text style={styles.username}>{username}</Text>}
+          </View>
+
+          {/* Bio */}
+          {bio && <Text style={styles.bio}>{bio}</Text>}
+
+          {/* Location */}
+          {location && (
+            <View style={styles.locationRow}>
+              <MaterialCommunityIcons
+                name="map-marker-outline"
+                size={14}
+                color={GlobalStyles.colors.grey4}
+              />
+              <Text style={styles.location}>{location}</Text>
+            </View>
+          )}
+
+          {/* Edit Profile Button (own profile only) */}
+          {isOwnProfile && onEditPress && (
+            <TouchableOpacity style={styles.editButton} onPress={onEditPress}>
+              <Text style={styles.editButtonText}>Edit Profile</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Profile Song Section (full width, below profile info) */}
+      {profile?.profileSongUrl && (
+        <View style={styles.songSection}>
+          <ProfileSongCard songUrl={profile.profileSongUrl} />
+        </View>
       )}
     </View>
   );
@@ -116,45 +134,51 @@ export default function ProfileHeader({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  topSection: {
+    flexDirection: "row",
+    alignItems: "stretch",
   },
   avatarContainer: {
     position: "relative",
-    marginBottom: 12,
+    marginRight: 14,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 12,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: GlobalStyles.colors.grey8,
   },
   editAvatarButton: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
+    bottom: -4,
+    right: -4,
     backgroundColor: GlobalStyles.colors.redVivid5,
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#000",
   },
+  infoSection: {
+    flex: 1,
+    justifyContent: "space-between",
+  },
   nameContainer: {
-    alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 2,
   },
   displayNameRow: {
     flexDirection: "row",
     alignItems: "center",
   },
   displayName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#fff",
   },
@@ -167,34 +191,36 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   bio: {
-    fontSize: 14,
-    color: GlobalStyles.colors.grey2,
-    textAlign: "center",
-    marginBottom: 8,
-    paddingHorizontal: 20,
-    lineHeight: 20,
+    fontSize: 13,
+    color: GlobalStyles.colors.grey3,
+    marginTop: 4,
+    lineHeight: 18,
   },
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginTop: 4,
   },
   location: {
-    fontSize: 13,
+    fontSize: 12,
     color: GlobalStyles.colors.grey4,
     marginLeft: 4,
   },
   editButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 24,
-    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: GlobalStyles.colors.grey6,
-    marginTop: 8,
+    marginTop: 6,
+    alignSelf: "flex-start",
   },
   editButtonText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
+  },
+  songSection: {
+    marginTop: 14,
   },
 });
