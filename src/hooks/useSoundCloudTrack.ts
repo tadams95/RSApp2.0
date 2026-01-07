@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   fetchSoundCloudTrackInfo,
   isValidSoundCloudUrl,
+  SoundCloudErrorType,
   SoundCloudTrackInfo,
 } from "../utils/soundcloud";
 
@@ -10,7 +11,7 @@ import {
  *
  * Usage:
  * ```tsx
- * const { trackInfo, isLoading, error, refetch } = useSoundCloudTrack(songUrl);
+ * const { trackInfo, isLoading, error, errorType, refetch } = useSoundCloudTrack(songUrl);
  * ```
  */
 
@@ -18,6 +19,7 @@ export interface UseSoundCloudTrackResult {
   trackInfo: SoundCloudTrackInfo | null;
   isLoading: boolean;
   error: string | null;
+  errorType: SoundCloudErrorType | null;
   refetch: () => void;
 }
 
@@ -27,34 +29,47 @@ export function useSoundCloudTrack(
   const [trackInfo, setTrackInfo] = useState<SoundCloudTrackInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<SoundCloudErrorType | null>(null);
 
   const fetchTrack = useCallback(async () => {
     // Reset state
     setError(null);
+    setErrorType(null);
 
     // Validate URL
-    if (!songUrl || !isValidSoundCloudUrl(songUrl)) {
+    if (!songUrl) {
       setTrackInfo(null);
       setIsLoading(false);
+      return;
+    }
+
+    if (!isValidSoundCloudUrl(songUrl)) {
+      setTrackInfo(null);
+      setIsLoading(false);
+      setError("Invalid SoundCloud URL");
+      setErrorType("invalid_url");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const info = await fetchSoundCloudTrackInfo(songUrl);
+      const result = await fetchSoundCloudTrackInfo(songUrl);
 
-      if (info) {
-        setTrackInfo(info);
+      if (result.info) {
+        setTrackInfo(result.info);
         setError(null);
+        setErrorType(null);
       } else {
         setTrackInfo(null);
-        setError("Could not load track info");
+        setError(result.error || "Could not load track info");
+        setErrorType(result.errorType || "unknown");
       }
     } catch (err) {
       console.error("[useSoundCloudTrack] Error:", err);
       setTrackInfo(null);
       setError("Failed to fetch track info");
+      setErrorType("unknown");
     } finally {
       setIsLoading(false);
     }
@@ -74,6 +89,7 @@ export function useSoundCloudTrack(
     trackInfo,
     isLoading,
     error,
+    errorType,
     refetch,
   };
 }

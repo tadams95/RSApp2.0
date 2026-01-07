@@ -18,12 +18,16 @@ interface ProfileHeaderProps {
   profile: UserData | null;
   isOwnProfile: boolean;
   onEditPress?: () => void;
+  onFollowersPress?: () => void;
+  onFollowingPress?: () => void;
 }
 
 export default function ProfileHeader({
   profile,
   isOwnProfile,
   onEditPress,
+  onFollowersPress,
+  onFollowingPress,
 }: ProfileHeaderProps) {
   const displayName = profile?.displayName || "User";
   const username = profile?.username ? `@${profile.username}` : null;
@@ -113,12 +117,33 @@ export default function ProfileHeader({
             </View>
           )}
 
-          {/* Edit Profile Button (own profile only) */}
-          {isOwnProfile && onEditPress && (
-            <TouchableOpacity style={styles.editButton} onPress={onEditPress}>
-              <Text style={styles.editButtonText}>Edit Profile</Text>
-            </TouchableOpacity>
-          )}
+          {/* Edit Profile Button + Stats Row */}
+          <View style={styles.actionRow}>
+            {isOwnProfile && onEditPress && (
+              <TouchableOpacity style={styles.editButton} onPress={onEditPress}>
+                <Text style={styles.editButtonText}>Edit Profile</Text>
+              </TouchableOpacity>
+            )}
+            <View style={styles.statsRow}>
+              <TouchableOpacity onPress={onFollowingPress} activeOpacity={0.7}>
+                <Text style={styles.statsText}>
+                  <Text style={styles.statsNumber}>
+                    {profile?.stats?.followingCount ?? 0}
+                  </Text>
+                  {" Following"}
+                </Text>
+              </TouchableOpacity>
+              <Text style={styles.statsDot}>·</Text>
+              <TouchableOpacity onPress={onFollowersPress} activeOpacity={0.7}>
+                <Text style={styles.statsText}>
+                  <Text style={styles.statsNumber}>
+                    {profile?.stats?.followersCount ?? 0}
+                  </Text>
+                  {" Followers"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
 
@@ -155,8 +180,8 @@ const styles = StyleSheet.create({
   },
   editAvatarButton: {
     position: "absolute",
-    bottom: -4,
-    right: -4,
+    bottom: -1,
+    right: -1,
     backgroundColor: GlobalStyles.colors.redVivid5,
     width: 28,
     height: 28,
@@ -168,10 +193,10 @@ const styles = StyleSheet.create({
   },
   infoSection: {
     flex: 1,
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
   },
   nameContainer: {
-    marginBottom: 2,
+    marginBottom: 0,
   },
   displayNameRow: {
     flexDirection: "row",
@@ -188,18 +213,18 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 14,
     color: GlobalStyles.colors.grey4,
-    marginTop: 2,
+    marginTop: 1,
   },
   bio: {
     fontSize: 13,
     color: GlobalStyles.colors.grey3,
-    marginTop: 4,
+    marginTop: 6,
     lineHeight: 18,
   },
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 6,
   },
   location: {
     fontSize: 12,
@@ -207,18 +232,39 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   editButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 16,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: GlobalStyles.colors.grey6,
-    marginTop: 6,
-    alignSelf: "flex-start",
   },
   editButtonText: {
     color: "#fff",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  statsText: {
+    fontSize: 13,
+    color: GlobalStyles.colors.grey4,
+  },
+  statsNumber: {
+    fontWeight: "600",
+    color: "#fff",
+  },
+  statsDot: {
+    color: GlobalStyles.colors.grey5,
+    marginHorizontal: 6,
+    fontSize: 13,
   },
   songSection: {
     marginTop: 14,

@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { doc, getFirestore, updateDoc } from "firebase/firestore";
+import { doc, getDoc, getFirestore, updateDoc } from "firebase/firestore";
 import {
   getDownloadURL,
   getStorage,
@@ -127,6 +127,27 @@ export default function AccountScreen() {
     is_loading_profile: isLoadingProfile,
   });
 
+  // State for profile song URL (stored in /profiles collection)
+  const [profileSongUrl, setProfileSongUrl] = useState<string | null>(null);
+
+  // Fetch profileSongUrl from /profiles collection
+  useEffect(() => {
+    async function fetchProfileSongUrl() {
+      if (!localId) return;
+      try {
+        const profileRef = doc(db, "profiles", localId);
+        const profileSnapshot = await getDoc(profileRef);
+        if (profileSnapshot.exists()) {
+          const data = profileSnapshot.data();
+          setProfileSongUrl(data.profileSongUrl || null);
+        }
+      } catch (error) {
+        console.log("Could not fetch profile song URL:", error);
+      }
+    }
+    fetchProfileSongUrl();
+  }, [localId, db]);
+
   // Update Redux and local state when profile data changes
   useEffect(() => {
     if (userProfile) {
@@ -155,9 +176,22 @@ export default function AccountScreen() {
     updateCachedProfile,
   } = useOfflineProfile(currentProfile);
 
-  const handleProfileUpdated = useCallback(() => {
+  const handleProfileUpdated = useCallback(async () => {
     refetchProfile();
-  }, [refetchProfile]);
+    // Also refetch profile song URL after profile update
+    if (localId) {
+      try {
+        const profileRef = doc(db, "profiles", localId);
+        const profileSnapshot = await getDoc(profileRef);
+        if (profileSnapshot.exists()) {
+          const data = profileSnapshot.data();
+          setProfileSongUrl(data.profileSongUrl || null);
+        }
+      } catch (error) {
+        console.log("Could not refetch profile song URL:", error);
+      }
+    }
+  }, [refetchProfile, localId, db]);
 
   // Retry the last failed upload
   const retryUpload = useCallback(async () => {
@@ -672,6 +706,7 @@ export default function AccountScreen() {
                         lastName: userProfile?.lastName || "",
                         email: userProfile?.email || userEmail || "",
                         phoneNumber: userProfile?.phoneNumber || "",
+                        profileSongUrl: profileSongUrl,
                       }}
                     />
                   </EditProfileErrorBoundary>

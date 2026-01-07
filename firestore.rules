@@ -68,12 +68,13 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if (isCurrentUser(userId) || isAdmin())
         && (isAdmin() || hasOnlyKeys(request.resource.data, [
-          'displayName', 'photoURL', 'bio', 'usernameLower', 'profilePicture'
+          'displayName', 'photoURL', 'bio', 'usernameLower', 'profilePicture', 'profileSongUrl'
         ]))
         && (!request.resource.data.keys().hasAny(['displayName']) || isString(request.resource.data.displayName))
         && (!request.resource.data.keys().hasAny(['photoURL']) || isString(request.resource.data.photoURL))
         && (!request.resource.data.keys().hasAny(['bio']) || isMaxLen500(request.resource.data.bio))
-        && (!request.resource.data.keys().hasAny(['usernameLower']) || isString(request.resource.data.usernameLower));
+        && (!request.resource.data.keys().hasAny(['usernameLower']) || isString(request.resource.data.usernameLower))
+        && (!request.resource.data.keys().hasAny(['profileSongUrl']) || request.resource.data.profileSongUrl == null || isString(request.resource.data.profileSongUrl));
       allow delete: if isCurrentUser(userId) || isAdmin();
     }
 

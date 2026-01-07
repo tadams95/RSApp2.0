@@ -7,6 +7,13 @@
 // Types
 // ============================================
 
+export type SoundCloudErrorType =
+  | "invalid_url"
+  | "private"
+  | "deleted"
+  | "network"
+  | "unknown";
+
 export interface SoundCloudTrackInfo {
   title: string;
   artist: string;
@@ -15,6 +22,12 @@ export interface SoundCloudTrackInfo {
   description: string | null;
   embedUrl: string; // URL for the widget iframe
   originalUrl: string;
+}
+
+export interface SoundCloudFetchResult {
+  info: SoundCloudTrackInfo | null;
+  error: string | null;
+  errorType: SoundCloudErrorType | null;
 }
 
 export interface OEmbedResponse {
@@ -117,25 +130,44 @@ const OEMBED_ENDPOINT = "https://soundcloud.com/oembed";
 
 // Simple in-memory cache to avoid repeated API calls
 const trackInfoCache = new Map<string, SoundCloudTrackInfo>();
+// Cache for failed fetches (to avoid repeated failed requests)
+const errorCache = new Map<
+  string,
+  { error: string; errorType: SoundCloudErrorType }
+>();
 
 /**
  * Fetch track info from SoundCloud oEmbed API
- * Returns cached result if available
+ * Returns result object with info or error details
  */
 export async function fetchSoundCloudTrackInfo(
   url: string
-): Promise<SoundCloudTrackInfo | null> {
+): Promise<SoundCloudFetchResult> {
   if (!isValidSoundCloudUrl(url)) {
     console.warn("[SoundCloud] Invalid URL:", url);
-    return null;
+    return {
+      info: null,
+      error: "Invalid SoundCloud URL",
+      errorType: "invalid_url",
+    };
   }
 
   const normalizedUrl = normalizeSoundCloudUrl(url);
 
-  // Check cache first
+  // Check success cache first
   const cached = trackInfoCache.get(normalizedUrl);
   if (cached) {
-    return cached;
+    return { info: cached, error: null, errorType: null };
+  }
+
+  // Check error cache (don't retry known failures too quickly)
+  const cachedError = errorCache.get(normalizedUrl);
+  if (cachedError) {
+    return {
+      info: null,
+      error: cachedError.error,
+      errorType: cachedError.errorType,
+    };
   }
 
   try {
@@ -145,8 +177,33 @@ export async function fetchSoundCloudTrackInfo(
     const response = await fetch(oembedUrl);
 
     if (!response.ok) {
-      console.warn("[SoundCloud] oEmbed API error:", response.status);
-      return null;
+      let errorType: SoundCloudErrorType = "unknown";
+      let errorMessage = "Could not load track";
+
+      // SoundCloud returns 403 for private tracks, 404 for deleted/non-existent
+      if (response.status === 403) {
+        errorType = "private";
+        errorMessage = "This track is private";
+      } else if (response.status === 404) {
+        errorType = "deleted";
+        errorMessage = "Track not found or deleted";
+      } else if (response.status >= 500) {
+        errorType = "network";
+        errorMessage = "SoundCloud is temporarily unavailable";
+      }
+
+      console.warn(
+        "[SoundCloud] oEmbed API error:",
+        response.status,
+        errorType
+      );
+
+      // Cache the error (but only for a shorter time for network errors)
+      if (errorType !== "network") {
+        errorCache.set(normalizedUrl, { error: errorMessage, errorType });
+      }
+
+      return { info: null, error: errorMessage, errorType };
     }
 
     const data: OEmbedResponse = await response.json();
@@ -174,10 +231,20 @@ export async function fetchSoundCloudTrackInfo(
     // Cache the result
     trackInfoCache.set(normalizedUrl, trackInfo);
 
-    return trackInfo;
+    return { info: trackInfo, error: null, errorType: null };
   } catch (error) {
     console.error("[SoundCloud] Error fetching track info:", error);
-    return null;
+
+    // Network/fetch errors
+    const isNetworkError =
+      error instanceof TypeError &&
+      (error.message.includes("network") || error.message.includes("fetch"));
+
+    return {
+      info: null,
+      error: isNetworkError ? "Network error" : "Failed to load track",
+      errorType: isNetworkError ? "network" : "unknown",
+    };
   }
 }
 
@@ -243,10 +310,18 @@ function escapeRegex(str: string): string {
 // ============================================
 
 /**
- * Clear the track info cache
+ * Clear the track info cache (both success and error caches)
  */
 export function clearSoundCloudCache(): void {
   trackInfoCache.clear();
+  errorCache.clear();
+}
+
+/**
+ * Clear only the error cache (to retry failed fetches)
+ */
+export function clearSoundCloudErrorCache(): void {
+  errorCache.clear();
 }
 
 /**
@@ -254,4 +329,11 @@ export function clearSoundCloudCache(): void {
  */
 export function getSoundCloudCacheSize(): number {
   return trackInfoCache.size;
+}
+
+/**
+ * Get error cache size (for debugging)
+ */
+export function getSoundCloudErrorCacheSize(): number {
+  return errorCache.size;
 }

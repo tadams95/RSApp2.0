@@ -2,10 +2,8 @@ import {
   deleteDoc,
   doc,
   getDoc,
-  increment,
   serverTimestamp,
   setDoc,
-  updateDoc,
 } from "firebase/firestore";
 import { useCallback, useState } from "react";
 import { auth, db } from "../firebase/firebase";
@@ -70,22 +68,14 @@ export function useLike(
 
     try {
       if (wasLiked) {
-        // Unlike: delete the like document
+        // Unlike: delete the like document (Cloud Function handles counter)
         await deleteDoc(likeRef);
-        // Decrement counter on post
-        await updateDoc(postRef, {
-          likeCount: increment(-1),
-        });
       } else {
-        // Like: create like document
+        // Like: create like document (Cloud Function handles counter)
         await setDoc(likeRef, {
           postId,
           userId: currentUser.uid,
-          createdAt: serverTimestamp(),
-        });
-        // Increment counter on post
-        await updateDoc(postRef, {
-          likeCount: increment(1),
+          timestamp: serverTimestamp(),
         });
       }
     } catch (error) {
@@ -129,11 +119,7 @@ export async function likePost(postId: string): Promise<boolean> {
   await setDoc(likeRef, {
     postId,
     userId: currentUser.uid,
-    createdAt: serverTimestamp(),
-  });
-
-  await updateDoc(postRef, {
-    likeCount: increment(1),
+    timestamp: serverTimestamp(),
   });
 
   return true;
@@ -159,10 +145,6 @@ export async function unlikePost(postId: string): Promise<boolean> {
   }
 
   await deleteDoc(likeRef);
-
-  await updateDoc(postRef, {
-    likeCount: increment(-1),
-  });
 
   return true;
 }

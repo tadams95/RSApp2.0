@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -10,12 +11,17 @@ import {
   View,
 } from "react-native";
 
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { doc, getFirestore, setDoc } from "firebase/firestore";
 import { useSelector } from "react-redux";
+import { GlobalStyles } from "../../constants/styles";
 import useProfileUpdateErrorHandler from "../../hooks/useProfileUpdateErrorHandler";
+import { useSoundCloudTrack } from "../../hooks/useSoundCloudTrack";
 import { NotificationManager } from "../../services/notificationManager";
 import { selectLocalId } from "../../store/redux/userSlice";
 import { updateUserData } from "../../utils/auth";
+import { isValidSoundCloudUrl } from "../../utils/soundcloud";
 import ProfileUpdateErrorNotice from "../ProfileUpdateErrorNotice";
 import {
   formatPhoneNumberInput,
@@ -33,6 +39,7 @@ interface EditProfileProps {
     lastName?: string;
     email?: string;
     phoneNumber?: string;
+    profileSongUrl?: string | null;
   };
 }
 
@@ -50,6 +57,7 @@ interface FormErrors {
   lastName?: string;
   email?: string;
   phoneNumber?: string;
+  profileSongUrl?: string;
 }
 
 const EditProfile: React.FC<EditProfileProps> = ({
@@ -62,9 +70,17 @@ const EditProfile: React.FC<EditProfileProps> = ({
   const [lastName, setLastName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
+  const [profileSongUrl, setProfileSongUrl] = useState<string>("");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formState, setFormState] = useState<UserDataUpdate>({});
+
+  // SoundCloud track preview for profile song
+  const {
+    trackInfo: songPreview,
+    isLoading: songLoading,
+    error: songError,
+  } = useSoundCloudTrack(profileSongUrl.trim() || null);
 
   // Get profile update error handler
   const {
@@ -91,6 +107,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
       setLastName(initialData.lastName || "");
       setEmail(initialData.email || "");
       setPhoneNumber(initialData.phoneNumber || "");
+      setProfileSongUrl(initialData.profileSongUrl || "");
     }
   }, [initialData]);
 
@@ -139,9 +156,36 @@ const EditProfile: React.FC<EditProfileProps> = ({
           error = phoneValidation.errorMessage;
         }
         break;
+      case "profileSongUrl":
+        // Only validate if URL is provided
+        if (value.trim() && !isValidSoundCloudUrl(value.trim())) {
+          error = "Please enter a valid SoundCloud URL";
+        }
+        break;
     }
 
     setFormErrors((prev) => ({ ...prev, [field]: error }));
+  };
+
+  /**
+   * Handle profile song URL change
+   */
+  const handleProfileSongChange = (text: string) => {
+    setProfileSongUrl(text);
+    // Debounce validation slightly by clearing error immediately
+    if (!text.trim()) {
+      setFormErrors((prev) => ({ ...prev, profileSongUrl: "" }));
+    } else {
+      validateField("profileSongUrl", text);
+    }
+  };
+
+  /**
+   * Clear the profile song URL
+   */
+  const clearProfileSong = () => {
+    setProfileSongUrl("");
+    setFormErrors((prev) => ({ ...prev, profileSongUrl: "" }));
   };
 
   /**
@@ -161,6 +205,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
     setLastName("");
     setEmail("");
     setPhoneNumber("");
+    setProfileSongUrl("");
     setFormErrors({});
     clearErrors();
     onCancel();
@@ -174,6 +219,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
     setLastName("");
     setEmail("");
     setPhoneNumber("");
+    setProfileSongUrl("");
     setFormErrors({});
     clearErrors();
   };
@@ -216,6 +262,12 @@ const EditProfile: React.FC<EditProfileProps> = ({
         errors.phoneNumber = phoneValidation.errorMessage;
         isValid = false;
       }
+    }
+
+    // Validate profile song URL if provided
+    if (profileSongUrl.trim() && !isValidSoundCloudUrl(profileSongUrl.trim())) {
+      errors.profileSongUrl = "Please enter a valid SoundCloud URL";
+      isValid = false;
     }
 
     setFormErrors(errors);
@@ -268,8 +320,13 @@ const EditProfile: React.FC<EditProfileProps> = ({
       updatedUserData.phoneNumber = phoneNumber || undefined;
     }
 
+    // Check if profile song URL changed
+    const initialSongUrl = initialData?.profileSongUrl || "";
+    const newSongUrl = profileSongUrl.trim();
+    const profileSongChanged = newSongUrl !== initialSongUrl;
+
     // Only update if there are changes to make
-    if (Object.keys(updatedUserData).length === 0) {
+    if (Object.keys(updatedUserData).length === 0 && !profileSongChanged) {
       console.warn("No changes to update");
       setIsSubmitting(false);
       onCancel();
@@ -278,15 +335,35 @@ const EditProfile: React.FC<EditProfileProps> = ({
 
     try {
       // Update user data in both Firestore and RTDB using existing utility
-      const result = await updateUserData(userId, updatedUserData);
+      if (Object.keys(updatedUserData).length > 0) {
+        const result = await updateUserData(userId, updatedUserData);
 
-      if (!result.success) {
-        throw new Error(result.message || "Failed to update profile");
+        if (!result.success) {
+          throw new Error(result.message || "Failed to update profile");
+        }
+      }
+
+      // Update profile song URL in /profiles collection if changed
+      if (profileSongChanged) {
+        const db = getFirestore();
+        const profileRef = doc(db, "profiles", userId);
+        await setDoc(
+          profileRef,
+          {
+            profileSongUrl: newSongUrl || null,
+            updatedAt: new Date(),
+          },
+          { merge: true }
+        );
+        console.log("Profile song URL updated successfully");
       }
 
       // Send profile update confirmation notification
       try {
-        const changedFields = Object.keys(updatedUserData);
+        const changedFields = [
+          ...Object.keys(updatedUserData),
+          ...(profileSongChanged ? ["profileSongUrl"] : []),
+        ];
         const updateType = changedFields.some(
           (field) => field === "email" || field === "phoneNumber"
         )
@@ -416,6 +493,90 @@ const EditProfile: React.FC<EditProfileProps> = ({
           {formErrors.phoneNumber ? (
             <Text style={styles.errorText}>{formErrors.phoneNumber}</Text>
           ) : null}
+
+          {/* Profile Song Section */}
+          <View style={styles.profileSongSection}>
+            <View style={styles.profileSongHeader}>
+              <MaterialCommunityIcons
+                name="music-note"
+                size={20}
+                color={GlobalStyles.colors.accent}
+              />
+              <Text style={styles.subtitle}>Profile Song</Text>
+            </View>
+            <Text style={styles.profileSongHint}>
+              Add a SoundCloud track to display on your profile
+            </Text>
+            <View style={styles.profileSongInputContainer}>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.profileSongInput,
+                  formErrors.profileSongUrl && styles.inputError,
+                ]}
+                placeholder="https://soundcloud.com/artist/track"
+                placeholderTextColor="#666"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={profileSongUrl}
+                onChangeText={handleProfileSongChange}
+                accessibilityLabel="Profile Song URL input"
+                accessibilityHint="Enter a SoundCloud URL for your profile song"
+              />
+              {profileSongUrl.trim() !== "" && (
+                <Pressable
+                  onPress={clearProfileSong}
+                  style={styles.clearSongButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear profile song"
+                >
+                  <MaterialCommunityIcons
+                    name="close-circle"
+                    size={24}
+                    color="#888"
+                  />
+                </Pressable>
+              )}
+            </View>
+            {formErrors.profileSongUrl ? (
+              <Text style={styles.errorText}>{formErrors.profileSongUrl}</Text>
+            ) : null}
+
+            {/* Song Preview */}
+            {songLoading && (
+              <View style={styles.songPreviewContainer}>
+                <ActivityIndicator
+                  size="small"
+                  color={GlobalStyles.colors.accent}
+                />
+                <Text style={styles.songPreviewText}>Loading preview...</Text>
+              </View>
+            )}
+            {songPreview && !songLoading && (
+              <View style={styles.songPreviewContainer}>
+                <MaterialCommunityIcons
+                  name="check-circle"
+                  size={20}
+                  color={GlobalStyles.colors.success || "#4CAF50"}
+                />
+                <Text style={styles.songPreviewText} numberOfLines={1}>
+                  {songPreview.title}
+                </Text>
+              </View>
+            )}
+            {songError && !songLoading && profileSongUrl.trim() !== "" && (
+              <View style={styles.songPreviewContainer}>
+                <MaterialCommunityIcons
+                  name="alert-circle"
+                  size={20}
+                  color="#FF6B6B"
+                />
+                <Text style={styles.songErrorText}>
+                  Unable to load track preview
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Tab Container */}
@@ -536,6 +697,59 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
     textTransform: "uppercase",
+  },
+  // Profile Song styles
+  profileSongSection: {
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  profileSongHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  profileSongHint: {
+    fontFamily,
+    fontSize: 12,
+    color: "#888",
+    marginBottom: 12,
+  },
+  profileSongInputContainer: {
+    position: "relative",
+    width: "100%",
+  },
+  profileSongInput: {
+    paddingRight: 44, // Make room for the clear button
+  },
+  clearSongButton: {
+    position: "absolute",
+    right: 12,
+    top: 12,
+    padding: 4,
+  },
+  songPreviewContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 8,
+    marginTop: -8,
+    marginBottom: 8,
+  },
+  songPreviewText: {
+    fontFamily,
+    fontSize: 14,
+    color: "#ccc",
+    flex: 1,
+  },
+  songErrorText: {
+    fontFamily,
+    fontSize: 14,
+    color: "#FF6B6B",
+    flex: 1,
   },
 });
 

@@ -172,21 +172,21 @@ Profile song card visible (idle state)
 
 ### Phase 5: Polish & Edge Cases
 
-- [ ] Smooth animations (play/pause transitions)
-- [ ] Handle invalid/broken SoundCloud URLs gracefully
-- [ ] Handle private tracks (show "Private Track" state)
-- [ ] Handle deleted tracks
-- [ ] Test with various URL formats
-- [ ] Accessibility: VoiceOver/TalkBack labels
-- [ ] Analytics: track song plays
+- [x] Smooth animations (play/pause transitions)
+- [x] Handle invalid/broken SoundCloud URLs gracefully
+- [x] Handle private tracks (show "Private Track" state)
+- [x] Handle deleted tracks
+- [x] Test with various URL formats
+- [x] Accessibility: VoiceOver/TalkBack labels
+- [x] Analytics: track song plays
 
 ### Phase 6: Edit Capability
 
-- [ ] Add "Profile Song" section to EditProfile modal
-- [ ] SoundCloud URL input field with validation
-- [ ] Preview player before confirming (fetch metadata, show card)
-- [ ] Clear/remove song option
-- [ ] Save to `/profiles/{userId}.profileSongUrl`
+- [x] Add "Profile Song" section to EditProfile modal
+- [x] SoundCloud URL input field with validation
+- [x] Preview player before confirming (fetch metadata, show card)
+- [x] Clear/remove song option
+- [x] Save to `/profiles/{userId}.profileSongUrl`
 
 ---
 

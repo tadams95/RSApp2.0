@@ -15,6 +15,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   RefreshControl,
   StyleSheet,
   Text,
@@ -28,7 +29,6 @@ import { PostCard } from "../feed";
 import { EditProfile } from "../modals";
 import FollowButton from "./FollowButton";
 import ProfileHeader from "./ProfileHeader";
-import ProfileStats from "./ProfileStats";
 
 interface UserProfileViewProps {
   userId: string;
@@ -318,6 +318,12 @@ export default function UserProfileView({
         profile={profile}
         isOwnProfile={isOwnProfile}
         onEditPress={isOwnProfile ? handleEditPress : undefined}
+        onFollowersPress={() => {
+          // TODO: Navigate to followers list
+        }}
+        onFollowingPress={() => {
+          // TODO: Navigate to following list
+        }}
       />
 
       {/* Follow Button (for other profiles only) */}
@@ -326,17 +332,6 @@ export default function UserProfileView({
           <FollowButton targetUserId={userId} />
         </View>
       )}
-
-      {/* Profile Stats */}
-      <ProfileStats
-        profile={profile}
-        onFollowersPress={() => {
-          // TODO: Navigate to followers list
-        }}
-        onFollowingPress={() => {
-          // TODO: Navigate to following list
-        }}
-      />
 
       {/* Posts Section Header */}
       <View style={styles.sectionHeader}>
@@ -393,17 +388,27 @@ export default function UserProfileView({
       />
 
       {/* Edit Profile Modal (own profile only) */}
-      {isOwnProfile && showEditModal && (
-        <EditProfile
-          onProfileUpdated={handleProfileUpdated}
-          onCancel={handleEditClose}
-          initialData={{
-            firstName: profile.firstName,
-            lastName: profile.lastName,
-            email: profile.email,
-            phoneNumber: profile.phoneNumber,
-          }}
-        />
+      {isOwnProfile && (
+        <Modal
+          visible={showEditModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={handleEditClose}
+        >
+          <View style={styles.modalContainer}>
+            <EditProfile
+              onProfileUpdated={handleProfileUpdated}
+              onCancel={handleEditClose}
+              initialData={{
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                email: profile.email,
+                phoneNumber: profile.phoneNumber,
+                profileSongUrl: profile.profileSongUrl,
+              }}
+            />
+          </View>
+        </Modal>
       )}
     </View>
   );
@@ -469,5 +474,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: GlobalStyles.colors.grey5,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    paddingTop: 20,
   },
 });
