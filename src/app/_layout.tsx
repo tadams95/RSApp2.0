@@ -1,6 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { Slot, SplashScreen } from "expo-router";
+import * as Linking from "expo-linking";
+import { router, Slot, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as Updates from "expo-updates";
 import React, { useEffect, useState } from "react";
@@ -167,6 +168,52 @@ export default function RootLayout() {
   useEffect(() => {
     // Initialize offline cart sync when app starts
     initializeOfflineCartSync();
+  }, []);
+
+  // Deep link handler for transfer claim URLs
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      try {
+        const parsed = Linking.parse(event.url);
+        console.log("Deep link received:", parsed);
+
+        // Handle transfer claim URLs
+        // ragestate://transfer/{transferId}?token={claimToken}
+        // OR web: https://ragestate.com/claim-ticket?t={claimToken}
+        if (
+          parsed.path?.includes("transfer") ||
+          parsed.path?.includes("claim-ticket") ||
+          parsed.path?.includes("claim")
+        ) {
+          const transferId = parsed.queryParams?.id as string | undefined;
+          const token = (parsed.queryParams?.token || parsed.queryParams?.t) as
+            | string
+            | undefined;
+
+          if (token) {
+            // Navigate to claim screen with token
+            router.push({
+              pathname: "/(app)/transfer/claim",
+              params: { token, transferId: transferId || "" },
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error handling deep link:", error);
+      }
+    };
+
+    // Listen for deep links while app is open
+    const subscription = Linking.addEventListener("url", handleDeepLink);
+
+    // Check if app was opened from a deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink({ url });
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
 
   if (showSplash) {

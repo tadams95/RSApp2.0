@@ -355,7 +355,7 @@ export async function resendTransferEmail(transferId: string): Promise<void> {
   }
 
   try {
-    // Re-call transfer-ticket endpoint with the same transfer to resend email
+    // Call resend-transfer-email endpoint
     const response = await fetch(`${FUNCTIONS_URL}/resend-transfer-email`, {
       method: "POST",
       headers: {
@@ -363,7 +363,7 @@ export async function resendTransferEmail(transferId: string): Promise<void> {
       },
       body: JSON.stringify({
         transferId,
-        userId: user.uid,
+        senderUserId: user.uid,
       }),
     });
 

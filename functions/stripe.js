@@ -1,44 +1,48 @@
 /* eslint-disable */
-'use strict';
+"use strict";
 
-const { onRequest, onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onSchedule } = require('firebase-functions/v2/scheduler');
-const { defineSecret } = require('firebase-functions/params');
-const logger = require('firebase-functions/logger');
-const express = require('express');
-const cors = require('cors');
-const { admin, db } = require('./admin');
-const { createShopifyOrder, isShopifyConfigured } = require('./shopifyAdmin');
-const { checkRateLimit } = require('./rateLimit');
-const { sendEmail, sendBulkEmail } = require('./sesEmail');
+const {
+  onRequest,
+  onCall,
+  HttpsError,
+} = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { defineSecret } = require("firebase-functions/params");
+const logger = require("firebase-functions/logger");
+const express = require("express");
+const cors = require("cors");
+const { admin, db } = require("./admin");
+const { createShopifyOrder, isShopifyConfigured } = require("./shopifyAdmin");
+const { checkRateLimit } = require("./rateLimit");
+const { sendEmail, sendBulkEmail } = require("./sesEmail");
 const {
   isPrintifyConfigured,
   createOrder: createPrintifyOrder,
   findByVariantSku,
   createWebhook: createPrintifyWebhook,
   getWebhooks: getPrintifyWebhooks,
-} = require('./printify');
-const { runDailyAggregation } = require('./analytics');
+} = require("./printify");
+const { runDailyAggregation } = require("./analytics");
 
 // Secret Manager: define secrets. Also support process.env for local dev.
-const STRIPE_SECRET = defineSecret('STRIPE_SECRET');
-const PROXY_KEY = defineSecret('PROXY_KEY');
-const SHOPIFY_ADMIN_ACCESS_TOKEN = defineSecret('SHOPIFY_ADMIN_ACCESS_TOKEN');
-const SHOPIFY_SHOP_NAME = defineSecret('SHOPIFY_SHOP_NAME');
+const STRIPE_SECRET = defineSecret("STRIPE_SECRET");
+const PROXY_KEY = defineSecret("PROXY_KEY");
+const SHOPIFY_ADMIN_ACCESS_TOKEN = defineSecret("SHOPIFY_ADMIN_ACCESS_TOKEN");
+const SHOPIFY_SHOP_NAME = defineSecret("SHOPIFY_SHOP_NAME");
 // AWS SES secrets for ticket transfer emails
-const AWS_ACCESS_KEY_ID = defineSecret('AWS_ACCESS_KEY_ID');
-const AWS_SECRET_ACCESS_KEY = defineSecret('AWS_SECRET_ACCESS_KEY');
-const AWS_SES_REGION = defineSecret('AWS_SES_REGION');
+const AWS_ACCESS_KEY_ID = defineSecret("AWS_ACCESS_KEY_ID");
+const AWS_SECRET_ACCESS_KEY = defineSecret("AWS_SECRET_ACCESS_KEY");
+const AWS_SES_REGION = defineSecret("AWS_SES_REGION");
 // Printify fulfillment secrets
-const PRINTIFY_API_TOKEN = defineSecret('PRINTIFY_API_TOKEN');
-const PRINTIFY_SHOP_ID = defineSecret('PRINTIFY_SHOP_ID');
-const PRINTIFY_WEBHOOK_SECRET = defineSecret('PRINTIFY_WEBHOOK_SECRET');
+const PRINTIFY_API_TOKEN = defineSecret("PRINTIFY_API_TOKEN");
+const PRINTIFY_SHOP_ID = defineSecret("PRINTIFY_SHOP_ID");
+const PRINTIFY_WEBHOOK_SECRET = defineSecret("PRINTIFY_WEBHOOK_SECRET");
 let stripeClient;
 function getStripe() {
   const key = STRIPE_SECRET.value() || process.env.STRIPE_SECRET;
   if (!key) return null;
   if (!stripeClient || stripeClient._apiKey !== key) {
-    stripeClient = require('stripe')(key);
+    stripeClient = require("stripe")(key);
     stripeClient._apiKey = key;
   }
   return stripeClient;
@@ -47,21 +51,27 @@ function getStripe() {
 // Metrics helper: increment per-event counters without failing the main path
 async function incrementEventMetrics(eventId, increments) {
   try {
-    if (!eventId || typeof eventId !== 'string') return;
-    const ref = db.collection('metrics').doc('events').collection('events').doc(eventId);
+    if (!eventId || typeof eventId !== "string") return;
+    const ref = db
+      .collection("metrics")
+      .doc("events")
+      .collection("events")
+      .doc(eventId);
     const payload = Object.assign(
       { lastUpdated: admin.firestore.FieldValue.serverTimestamp() },
       Object.fromEntries(
         Object.entries(increments || {}).map(([k, v]) => [
           k,
           admin.firestore.FieldValue.increment(v),
-        ]),
-      ),
+        ])
+      )
     );
     await ref.set(payload, { merge: true });
   } catch (e) {
     try {
-      logger.warn('incrementEventMetrics failed (non-fatal)', { message: e?.message });
+      logger.warn("incrementEventMetrics failed (non-fatal)", {
+        message: e?.message,
+      });
     } catch (_e) {}
   }
 }
@@ -79,40 +89,49 @@ async function createTransferNotification({
   title,
   body,
   data = {},
-  link = '/',
+  link = "/",
   sendPush = true,
 }) {
   if (!uid) return null;
   try {
-    const notifRef = db.collection('users').doc(uid).collection('notifications').doc();
+    const notifRef = db
+      .collection("users")
+      .doc(uid)
+      .collection("notifications")
+      .doc();
     const payload = {
       type,
       title,
       body,
       data,
       link,
-      deepLink: `ragestate://${link.replace(/^\//, '')}`,
+      deepLink: `ragestate://${link.replace(/^\//, "")}`,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       seenAt: null,
       read: false,
       sendPush,
       pushSentAt: null,
-      pushStatus: 'pending',
+      pushStatus: "pending",
     };
     await db.runTransaction(async (tx) => {
       tx.set(notifRef, payload);
       // Increment unread counter
-      const userRef = db.collection('users').doc(uid);
+      const userRef = db.collection("users").doc(uid);
       const userSnap = await tx.get(userRef);
       const current =
-        userSnap.exists && typeof userSnap.data().unreadNotifications === 'number'
+        userSnap.exists &&
+        typeof userSnap.data().unreadNotifications === "number"
           ? userSnap.data().unreadNotifications
           : 0;
       tx.update(userRef, { unreadNotifications: current + 1 });
     });
     return notifRef.id;
   } catch (err) {
-    logger.warn('createTransferNotification failed (non-fatal)', { uid, type, error: String(err) });
+    logger.warn("createTransferNotification failed (non-fatal)", {
+      uid,
+      type,
+      error: String(err),
+    });
     return null;
   }
 }
@@ -122,17 +141,17 @@ const app = express();
 const corsMiddleware = cors({ origin: true });
 app.use(corsMiddleware);
 // Respond to preflight requests so the browser receives CORS headers
-app.options('*', corsMiddleware);
+app.options("*", corsMiddleware);
 app.use(express.json());
 
 // Lightweight request logger to help debug routing vs. handler logic
 app.use((req, _res, next) => {
   try {
-    logger.info('incoming request', {
+    logger.info("incoming request", {
       method: req.method,
       path: req.path,
-      origin: req.get('origin') || '',
-      ua: req.get('user-agent') || '',
+      origin: req.get("origin") || "",
+      ua: req.get("user-agent") || "",
     });
   } catch (_e) {
     // no-op
@@ -140,20 +159,22 @@ app.use((req, _res, next) => {
   next();
 });
 
-app.get('/health', (_req, res) => {
-  const configured = Boolean(STRIPE_SECRET.value() || process.env.STRIPE_SECRET);
+app.get("/health", (_req, res) => {
+  const configured = Boolean(
+    STRIPE_SECRET.value() || process.env.STRIPE_SECRET
+  );
   res.json({ ok: true, stripeConfigured: configured });
 });
 
 // Test endpoint to verify Shopify Admin API connection
-app.get('/test-shopify', async (req, res) => {
+app.get("/test-shopify", async (req, res) => {
   try {
     // Check proxy key for security
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
@@ -164,34 +185,34 @@ app.get('/test-shopify', async (req, res) => {
         ok: false,
         shopifyConfigured: false,
         message:
-          'Shopify Admin API not configured. Set SHOPIFY_ADMIN_ACCESS_TOKEN and SHOPIFY_SHOP_NAME secrets.',
+          "Shopify Admin API not configured. Set SHOPIFY_ADMIN_ACCESS_TOKEN and SHOPIFY_SHOP_NAME secrets.",
       });
     }
 
     // Try to fetch shop info to verify the connection
     const shopName = process.env.SHOPIFY_SHOP_NAME;
     const accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
-    const apiVersion = '2024-10';
+    const apiVersion = "2024-10";
 
     const response = await fetch(
       `https://${shopName}.myshopify.com/admin/api/${apiVersion}/shop.json`,
       {
         headers: {
-          'X-Shopify-Access-Token': accessToken,
+          "X-Shopify-Access-Token": accessToken,
         },
-      },
+      }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error('[Shopify] Test connection failed', {
+      logger.error("[Shopify] Test connection failed", {
         status: response.status,
         error: errorText,
       });
       return res.json({
         ok: false,
         shopifyConfigured: true,
-        connectionTest: 'failed',
+        connectionTest: "failed",
         status: response.status,
         error: errorText,
       });
@@ -200,7 +221,7 @@ app.get('/test-shopify', async (req, res) => {
     const data = await response.json();
     const shop = data.shop;
 
-    logger.info('[Shopify] Test connection successful', {
+    logger.info("[Shopify] Test connection successful", {
       shopName: shop.name,
       domain: shop.domain,
     });
@@ -208,7 +229,7 @@ app.get('/test-shopify', async (req, res) => {
     return res.json({
       ok: true,
       shopifyConfigured: true,
-      connectionTest: 'passed',
+      connectionTest: "passed",
       shop: {
         name: shop.name,
         email: shop.email,
@@ -218,7 +239,9 @@ app.get('/test-shopify', async (req, res) => {
       },
     });
   } catch (error) {
-    logger.error('[Shopify] Test connection exception', { error: error.message });
+    logger.error("[Shopify] Test connection exception", {
+      error: error.message,
+    });
     return res.status(500).json({
       ok: false,
       error: error.message,
@@ -227,14 +250,14 @@ app.get('/test-shopify', async (req, res) => {
 });
 
 // Test endpoint to create a DRAFT order in Shopify (safe - doesn't affect inventory)
-app.post('/test-shopify-draft-order', async (req, res) => {
+app.post("/test-shopify-draft-order", async (req, res) => {
   try {
     // Check proxy key for security
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
@@ -244,65 +267,65 @@ app.post('/test-shopify-draft-order', async (req, res) => {
     if (!shopName || !accessToken) {
       return res.json({
         ok: false,
-        error: 'Shopify not configured',
+        error: "Shopify not configured",
       });
     }
 
-    const apiVersion = '2024-10';
+    const apiVersion = "2024-10";
 
     // Create a simple draft order with a custom line item (no real product needed)
     const draftOrderPayload = {
       draft_order: {
         line_items: [
           {
-            title: 'TEST ITEM - Delete This Order',
-            price: '0.01',
+            title: "TEST ITEM - Delete This Order",
+            price: "0.01",
             quantity: 1,
             requires_shipping: true,
           },
         ],
         customer: {
-          email: 'test@ragestate.com',
-          first_name: 'Test',
-          last_name: 'Order',
+          email: "test@ragestate.com",
+          first_name: "Test",
+          last_name: "Order",
         },
         shipping_address: {
-          first_name: 'Test',
-          last_name: 'Order',
-          address1: '123 Test Street',
-          city: 'Los Angeles',
-          province: 'CA',
-          zip: '90001',
-          country: 'US',
+          first_name: "Test",
+          last_name: "Order",
+          address1: "123 Test Street",
+          city: "Los Angeles",
+          province: "CA",
+          zip: "90001",
+          country: "US",
         },
-        note: 'TEST DRAFT ORDER - Safe to delete. Created by RAGESTATE integration test.',
-        tags: 'test, auto-delete, ragestate-integration-test',
+        note: "TEST DRAFT ORDER - Safe to delete. Created by RAGESTATE integration test.",
+        tags: "test, auto-delete, ragestate-integration-test",
       },
     };
 
-    logger.info('[Shopify] Creating test draft order');
+    logger.info("[Shopify] Creating test draft order");
 
     const response = await fetch(
       `https://${shopName}.myshopify.com/admin/api/${apiVersion}/draft_orders.json`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': accessToken,
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": accessToken,
         },
         body: JSON.stringify(draftOrderPayload),
-      },
+      }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error('[Shopify] Draft order creation failed', {
+      logger.error("[Shopify] Draft order creation failed", {
         status: response.status,
         error: errorText,
       });
       return res.json({
         ok: false,
-        error: 'Failed to create draft order',
+        error: "Failed to create draft order",
         status: response.status,
         details: errorText,
       });
@@ -311,14 +334,15 @@ app.post('/test-shopify-draft-order', async (req, res) => {
     const data = await response.json();
     const draftOrder = data.draft_order;
 
-    logger.info('[Shopify] Test draft order created successfully', {
+    logger.info("[Shopify] Test draft order created successfully", {
       draftOrderId: draftOrder.id,
       name: draftOrder.name,
     });
 
     return res.json({
       ok: true,
-      message: 'Draft order created successfully! Check your Shopify Admin > Orders > Drafts',
+      message:
+        "Draft order created successfully! Check your Shopify Admin > Orders > Drafts",
       draftOrder: {
         id: draftOrder.id,
         name: draftOrder.name,
@@ -327,10 +351,12 @@ app.post('/test-shopify-draft-order', async (req, res) => {
         created_at: draftOrder.created_at,
         admin_url: `https://${shopName}.myshopify.com/admin/draft_orders/${draftOrder.id}`,
       },
-      note: 'This is a TEST draft order. You can safely delete it from Shopify Admin.',
+      note: "This is a TEST draft order. You can safely delete it from Shopify Admin.",
     });
   } catch (error) {
-    logger.error('[Shopify] Draft order test exception', { error: error.message });
+    logger.error("[Shopify] Draft order test exception", {
+      error: error.message,
+    });
     return res.status(500).json({
       ok: false,
       error: error.message,
@@ -339,21 +365,21 @@ app.post('/test-shopify-draft-order', async (req, res) => {
 });
 
 // Example placeholder; add endpoints when Stripe is reactivated
-app.post('/create-payment-intent', async (req, res) => {
+app.post("/create-payment-intent", async (req, res) => {
   try {
     const stripe = getStripe();
-    if (!stripe) return res.status(503).json({ error: 'Stripe disabled' });
+    if (!stripe) return res.status(503).json({ error: "Stripe disabled" });
     // Enforce that requests come via our Next.js proxy when configured
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
     const {
       amount,
-      currency = 'usd',
+      currency = "usd",
       customerEmail,
       name,
       firebaseId,
@@ -362,20 +388,28 @@ app.post('/create-payment-intent', async (req, res) => {
     } = req.body || {};
 
     // Basic input validation (server-side)
-    const parsedAmount = Number.isFinite(amount) ? Math.floor(Number(amount)) : 0;
+    const parsedAmount = Number.isFinite(amount)
+      ? Math.floor(Number(amount))
+      : 0;
     const MIN_AMOUNT = 50; // 50 cents
     if (!parsedAmount || parsedAmount < MIN_AMOUNT) {
-      return res.status(400).json({ error: 'Invalid amount' });
+      return res.status(400).json({ error: "Invalid amount" });
     }
 
     // Validate and apply promo code if provided
     let finalAmount = parsedAmount;
     let promoValidation = null;
-    if (promoCode && typeof promoCode === 'string' && promoCode.trim()) {
-      promoValidation = await validatePromoCodeInternal(promoCode.trim(), parsedAmount);
+    if (promoCode && typeof promoCode === "string" && promoCode.trim()) {
+      promoValidation = await validatePromoCodeInternal(
+        promoCode.trim(),
+        parsedAmount
+      );
       if (promoValidation.valid) {
-        finalAmount = Math.max(MIN_AMOUNT, parsedAmount - promoValidation.discountAmount);
-        logger.info('Promo code applied to payment intent', {
+        finalAmount = Math.max(
+          MIN_AMOUNT,
+          parsedAmount - promoValidation.discountAmount
+        );
+        logger.info("Promo code applied to payment intent", {
           originalAmount: parsedAmount,
           discountAmount: promoValidation.discountAmount,
           finalAmount,
@@ -384,13 +418,13 @@ app.post('/create-payment-intent', async (req, res) => {
       } else {
         // Promo code invalid - return error so client can handle
         return res.status(400).json({
-          error: 'Invalid promo code',
+          error: "Invalid promo code",
           promoError: promoValidation.message,
         });
       }
     }
 
-    const idempotencyKey = req.get('x-idempotency-key') || undefined;
+    const idempotencyKey = req.get("x-idempotency-key") || undefined;
 
     const pi = await stripe.paymentIntents.create(
       {
@@ -398,20 +432,20 @@ app.post('/create-payment-intent', async (req, res) => {
         currency,
         automatic_payment_methods: { enabled: true },
         metadata: {
-          firebaseId: firebaseId || '',
-          email: customerEmail || '',
-          name: name || '',
-          cartSize: Array.isArray(cartItems) ? String(cartItems.length) : '0',
+          firebaseId: firebaseId || "",
+          email: customerEmail || "",
+          name: name || "",
+          cartSize: Array.isArray(cartItems) ? String(cartItems.length) : "0",
           // Store promo info for finalize-order to use
-          promoCode: promoValidation?.promoId || '',
-          promoCollection: promoValidation?.promoCollection || '',
+          promoCode: promoValidation?.promoId || "",
+          promoCollection: promoValidation?.promoCollection || "",
           promoDiscountAmount: promoValidation?.discountAmount
             ? String(promoValidation.discountAmount)
-            : '',
-          originalAmount: promoValidation?.valid ? String(parsedAmount) : '',
+            : "",
+          originalAmount: promoValidation?.valid ? String(parsedAmount) : "",
         },
       },
-      idempotencyKey ? { idempotencyKey } : undefined,
+      idempotencyKey ? { idempotencyKey } : undefined
     );
 
     // Return client secret plus promo info for UI
@@ -429,71 +463,81 @@ app.post('/create-payment-intent', async (req, res) => {
     }
     res.json(response);
   } catch (err) {
-    logger.error('create-payment-intent error', err);
-    res.status(500).json({ error: 'Failed to create payment intent' });
+    logger.error("create-payment-intent error", err);
+    res.status(500).json({ error: "Failed to create payment intent" });
   }
 });
 
 // HTTPS endpoint to create (or reuse) a Stripe customer, gated by PROXY_KEY
-app.post('/create-customer', async (req, res) => {
+app.post("/create-customer", async (req, res) => {
   try {
     const stripe = getStripe();
-    if (!stripe) return res.status(503).json({ error: 'Stripe disabled' });
+    if (!stripe) return res.status(503).json({ error: "Stripe disabled" });
 
     // Enforce that requests come via our Next.js proxy when configured
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
     const { uid, email, name } = req.body || {};
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({ error: 'Email required' });
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ error: "Email required" });
     }
 
     // If we have a uid, reuse existing mapping from Firestore if present
-    let existingId = '';
-    if (uid && typeof uid === 'string' && uid.trim()) {
+    let existingId = "";
+    if (uid && typeof uid === "string" && uid.trim()) {
       try {
-        const custRef = db.collection('customers').doc(uid);
+        const custRef = db.collection("customers").doc(uid);
         const snap = await custRef.get();
         if (snap.exists && snap.data() && snap.data().stripeCustomerId) {
           existingId = snap.data().stripeCustomerId;
         }
       } catch (e) {
-        logger.warn('Firestore read failed when checking existing customer (non-fatal)', e);
+        logger.warn(
+          "Firestore read failed when checking existing customer (non-fatal)",
+          e
+        );
       }
     }
 
     if (existingId) {
       const description =
-        uid && String(uid).trim() ? `${email} — ${uid}` : `${email} — ${existingId}`;
+        uid && String(uid).trim()
+          ? `${email} — ${uid}`
+          : `${email} — ${existingId}`;
       // Best-effort enrich existing mapping and Stripe record
       try {
         await stripe.customers.update(existingId, {
           description,
           metadata: Object.assign({}, uid ? { uid } : {}, {
-            app: 'ragestate',
-            source: 'firebase-functions-v2',
+            app: "ragestate",
+            source: "firebase-functions-v2",
           }),
         });
       } catch (e) {
-        logger.warn('Stripe customer update (reuse) failed (non-fatal)', e);
+        logger.warn("Stripe customer update (reuse) failed (non-fatal)", e);
       }
-      if (uid && typeof uid === 'string' && uid.trim()) {
+      if (uid && typeof uid === "string" && uid.trim()) {
         try {
           await db
-            .collection('customers')
+            .collection("customers")
             .doc(uid)
             .set(
-              { email, name, description, lastUpdated: new Date().toISOString() },
-              { merge: true },
+              {
+                email,
+                name,
+                description,
+                lastUpdated: new Date().toISOString(),
+              },
+              { merge: true }
             );
         } catch (e) {
-          logger.warn('Failed to update customer doc on reuse (non-fatal)', e);
+          logger.warn("Failed to update customer doc on reuse (non-fatal)", e);
         }
       }
       return res.json({ id: existingId, ok: true, reused: true, description });
@@ -508,24 +552,29 @@ app.post('/create-customer', async (req, res) => {
 
     // Add a helpful description and enrich metadata (uid/app/source). Include uid if available, else customer id.
     const description =
-      uid && String(uid).trim() ? `${email} — ${uid}` : `${email} — ${customer.id}`;
+      uid && String(uid).trim()
+        ? `${email} — ${uid}`
+        : `${email} — ${customer.id}`;
     try {
       await stripe.customers.update(customer.id, {
         description,
         metadata: Object.assign({}, uid ? { uid } : {}, {
-          app: 'ragestate',
-          source: 'firebase-functions-v2',
+          app: "ragestate",
+          source: "firebase-functions-v2",
         }),
       });
     } catch (e) {
-      logger.warn('Stripe customer update (description/metadata) failed (non-fatal)', e);
+      logger.warn(
+        "Stripe customer update (description/metadata) failed (non-fatal)",
+        e
+      );
     }
 
     // Persist mapping in Firestore (and best-effort RTDB) when uid is available
-    if (uid && typeof uid === 'string' && uid.trim()) {
+    if (uid && typeof uid === "string" && uid.trim()) {
       try {
         await Promise.all([
-          db.collection('customers').doc(uid).set(
+          db.collection("customers").doc(uid).set(
             {
               stripeCustomerId: customer.id,
               email,
@@ -534,25 +583,28 @@ app.post('/create-customer', async (req, res) => {
               createdAt: new Date().toISOString(),
               lastUpdated: new Date().toISOString(),
             },
-            { merge: true },
+            { merge: true }
           ),
           (async () => {
             try {
-              await admin.database().ref(`users/${uid}/stripeCustomerId`).set(customer.id);
+              await admin
+                .database()
+                .ref(`users/${uid}/stripeCustomerId`)
+                .set(customer.id);
             } catch (e) {
-              logger.warn('RTDB write failed (non-fatal)', e);
+              logger.warn("RTDB write failed (non-fatal)", e);
             }
           })(),
         ]);
       } catch (e) {
-        logger.warn('Failed to persist Stripe customer mapping (non-fatal)', e);
+        logger.warn("Failed to persist Stripe customer mapping (non-fatal)", e);
       }
     }
 
     return res.json({ id: customer.id, ok: true, description });
   } catch (err) {
-    logger.error('create-customer error', err);
-    res.status(500).json({ error: 'Failed to create customer' });
+    logger.error("create-customer error", err);
+    res.status(500).json({ error: "Failed to create customer" });
   }
 });
 
@@ -572,10 +624,13 @@ app.post('/create-customer', async (req, res) => {
  * @returns {boolean} - True if this is a Shopify merchandise item
  */
 function isShopifyMerchandise(productId, item) {
-  if (!productId || typeof productId !== 'string') return false;
+  if (!productId || typeof productId !== "string") return false;
 
   // Check for Shopify GID format (e.g., 'gid://shopify/Product/12345678901')
-  if (productId.includes('gid://shopify') || productId.toLowerCase().includes('shopify')) {
+  if (
+    productId.includes("gid://shopify") ||
+    productId.toLowerCase().includes("shopify")
+  ) {
     return true;
   }
 
@@ -596,11 +651,14 @@ function isShopifyMerchandise(productId, item) {
       return false;
     }
     // If it has a variantId (Shopify variant), it's merchandise
-    if (item.variantId && String(item.variantId).includes('gid://shopify')) {
+    if (item.variantId && String(item.variantId).includes("gid://shopify")) {
       return true;
     }
     // If it has size/color selections typical of apparel, likely merchandise
-    if ((item.selectedSize || item.size) && (item.selectedColor || item.color)) {
+    if (
+      (item.selectedSize || item.size) &&
+      (item.selectedColor || item.color)
+    ) {
       // Could be merchandise, but need to verify it's not an event
       // Events typically don't have both size AND color
     }
@@ -625,7 +683,7 @@ function categorizeCartItems(items) {
   const merchandiseItems = [];
 
   for (const item of items) {
-    const productId = String(item?.productId || '').trim();
+    const productId = String(item?.productId || "").trim();
     if (!productId) continue;
 
     if (isShopifyMerchandise(productId, item)) {
@@ -646,40 +704,42 @@ function categorizeCartItems(items) {
  * @returns {Object} Validation result
  */
 async function validatePromoCodeInternal(code, cartTotalCents) {
-  if (!code || typeof code !== 'string') {
-    return { valid: false, message: 'Promo code is required' };
+  if (!code || typeof code !== "string") {
+    return { valid: false, message: "Promo code is required" };
   }
 
   const codeLower = code.trim().toLowerCase();
   if (!codeLower) {
-    return { valid: false, message: 'Promo code is required' };
+    return { valid: false, message: "Promo code is required" };
   }
 
   // Look up promo code - try new collection first, fall back to legacy
-  let promoDoc = await db.collection('promoCodes').doc(codeLower).get();
-  let collectionUsed = 'promoCodes';
+  let promoDoc = await db.collection("promoCodes").doc(codeLower).get();
+  let collectionUsed = "promoCodes";
 
   if (!promoDoc.exists) {
-    promoDoc = await db.collection('promoterCodes').doc(codeLower).get();
-    collectionUsed = 'promoterCodes';
+    promoDoc = await db.collection("promoterCodes").doc(codeLower).get();
+    collectionUsed = "promoterCodes";
   }
 
   if (!promoDoc.exists) {
-    return { valid: false, message: 'Invalid promo code' };
+    return { valid: false, message: "Invalid promo code" };
   }
 
   const promo = promoDoc.data();
 
   // Check if active
   if (promo.active === false) {
-    return { valid: false, message: 'This promo code is no longer active' };
+    return { valid: false, message: "This promo code is no longer active" };
   }
 
   // Check expiration
   if (promo.expiresAt) {
-    const expiresAt = promo.expiresAt.toDate ? promo.expiresAt.toDate() : new Date(promo.expiresAt);
+    const expiresAt = promo.expiresAt.toDate
+      ? promo.expiresAt.toDate()
+      : new Date(promo.expiresAt);
     if (expiresAt < new Date()) {
-      return { valid: false, message: 'This promo code has expired' };
+      return { valid: false, message: "This promo code has expired" };
     }
   }
 
@@ -687,24 +747,30 @@ async function validatePromoCodeInternal(code, cartTotalCents) {
   const currentUses = promo.currentUses || 0;
   const maxUses = promo.maxUses;
   if (maxUses !== null && maxUses !== undefined && currentUses >= maxUses) {
-    return { valid: false, message: 'This promo code has reached its usage limit' };
+    return {
+      valid: false,
+      message: "This promo code has reached its usage limit",
+    };
   }
 
   // Check minimum purchase
   const minPurchase = promo.minPurchase || 0;
   if (cartTotalCents < minPurchase) {
     const minDollars = (minPurchase / 100).toFixed(2);
-    return { valid: false, message: `Minimum purchase of $${minDollars} required` };
+    return {
+      valid: false,
+      message: `Minimum purchase of $${minDollars} required`,
+    };
   }
 
   // Calculate discount amount
   let discountAmount = 0;
-  const type = promo.type || 'percentage';
+  const type = promo.type || "percentage";
   const value = promo.value || 0;
 
-  if (type === 'percentage') {
+  if (type === "percentage") {
     discountAmount = Math.round(cartTotalCents * (value / 100));
-  } else if (type === 'fixed') {
+  } else if (type === "fixed") {
     discountAmount = Math.min(value, cartTotalCents);
   }
 
@@ -736,7 +802,10 @@ async function incrementPromoCodeUsage(promoId, promoCollection, orderNumber) {
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(promoRef);
       if (!snap.exists) {
-        logger.warn('Promo code not found for usage increment', { promoId, promoCollection });
+        logger.warn("Promo code not found for usage increment", {
+          promoId,
+          promoCollection,
+        });
         return;
       }
       const data = snap.data() || {};
@@ -747,9 +816,13 @@ async function incrementPromoCodeUsage(promoId, promoCollection, orderNumber) {
         lastOrderNumber: orderNumber,
       });
     });
-    logger.info('Promo code usage incremented', { promoId, promoCollection, orderNumber });
+    logger.info("Promo code usage incremented", {
+      promoId,
+      promoCollection,
+      orderNumber,
+    });
   } catch (e) {
-    logger.warn('Promo code usage increment failed (non-fatal)', {
+    logger.warn("Promo code usage increment failed (non-fatal)", {
       promoId,
       promoCollection,
       error: e?.message,
@@ -763,7 +836,7 @@ async function incrementPromoCodeUsage(promoId, promoCollection, orderNumber) {
  * Input: { code, cartTotal }
  * Returns: { valid, discountAmount, displayCode, message }
  */
-app.post('/validate-promo-code', async (req, res) => {
+app.post("/validate-promo-code", async (req, res) => {
   try {
     const { code, cartTotal } = req.body;
     const cartTotalCents = parseInt(cartTotal, 10) || 0;
@@ -779,7 +852,7 @@ app.post('/validate-promo-code', async (req, res) => {
       });
     }
 
-    logger.info('Promo code validated via endpoint', {
+    logger.info("Promo code validated via endpoint", {
       code: result.promoId,
       collection: result.promoCollection,
       type: result.type,
@@ -790,28 +863,31 @@ app.post('/validate-promo-code', async (req, res) => {
 
     return res.json(result);
   } catch (err) {
-    logger.error('Promo code validation error', { error: err.message, stack: err.stack });
+    logger.error("Promo code validation error", {
+      error: err.message,
+      stack: err.stack,
+    });
     return res.status(500).json({
       valid: false,
       discountAmount: 0,
       displayCode: null,
-      message: 'Error validating promo code',
+      message: "Error validating promo code",
     });
   }
 });
 
 // Finalize order: verify payment succeeded, then create tickets (ragers) and/or merchandise orders
 // FIX: Now properly handles both event tickets AND merchandise items separately
-app.post('/finalize-order', async (req, res) => {
+app.post("/finalize-order", async (req, res) => {
   try {
     const stripe = getStripe();
-    if (!stripe) return res.status(503).json({ error: 'Stripe disabled' });
+    if (!stripe) return res.status(503).json({ error: "Stripe disabled" });
 
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
@@ -825,19 +901,21 @@ app.post('/finalize-order', async (req, res) => {
       appliedPromoCode,
     } = req.body || {};
     if (!paymentIntentId || !firebaseId) {
-      return res.status(400).json({ error: 'paymentIntentId and firebaseId are required' });
+      return res
+        .status(400)
+        .json({ error: "paymentIntentId and firebaseId are required" });
     }
 
     let pi;
     try {
       pi = await stripe.paymentIntents.retrieve(paymentIntentId);
     } catch (e) {
-      logger.error('Failed to retrieve PaymentIntent', e);
-      return res.status(400).json({ error: 'Invalid paymentIntentId' });
+      logger.error("Failed to retrieve PaymentIntent", e);
+      return res.status(400).json({ error: "Invalid paymentIntentId" });
     }
 
-    if (!pi || pi.status !== 'succeeded') {
-      return res.status(409).json({ error: 'Payment not in succeeded state' });
+    if (!pi || pi.status !== "succeeded") {
+      return res.status(409).json({ error: "Payment not in succeeded state" });
     }
 
     if (
@@ -845,11 +923,13 @@ app.post('/finalize-order', async (req, res) => {
       pi.metadata.firebaseId &&
       String(pi.metadata.firebaseId) !== String(firebaseId)
     ) {
-      return res.status(403).json({ error: 'Payment does not belong to this user' });
+      return res
+        .status(403)
+        .json({ error: "Payment does not belong to this user" });
     }
 
     // Idempotency guard: ensure we only fulfill once per PaymentIntent
-    const fulfillRef = db.collection('fulfillments').doc(pi.id);
+    const fulfillRef = db.collection("fulfillments").doc(pi.id);
     let alreadyFulfilled = false;
     let existingFulfillment = null;
     await db.runTransaction(async (tx) => {
@@ -863,10 +943,10 @@ app.post('/finalize-order', async (req, res) => {
       const derivedEmail =
         (userEmail && String(userEmail).trim()) ||
         (pi.receipt_email && String(pi.receipt_email).trim()) ||
-        (pi.metadata && String(pi.metadata.email || '').trim()) ||
-        '';
+        (pi.metadata && String(pi.metadata.email || "").trim()) ||
+        "";
       tx.set(fulfillRef, {
-        status: 'processing',
+        status: "processing",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         firebaseId,
         userEmail: derivedEmail,
@@ -883,7 +963,7 @@ app.post('/finalize-order', async (req, res) => {
       return res.json({
         ok: true,
         idempotent: true,
-        message: 'Already fulfilled',
+        message: "Already fulfilled",
         orderNumber,
         createdTickets,
         createdMerchOrders,
@@ -898,7 +978,7 @@ app.post('/finalize-order', async (req, res) => {
     // Reference: MERCH_CHECKOUT_FIXES.md - Issue #1: finalize-order treats all items as events
     const { eventItems, merchandiseItems } = categorizeCartItems(items);
 
-    logger.info('Finalize-order: received and categorized items', {
+    logger.info("Finalize-order: received and categorized items", {
       totalCount: items.length,
       eventCount: eventItems.length,
       merchandiseCount: merchandiseItems.length,
@@ -916,40 +996,47 @@ app.post('/finalize-order', async (req, res) => {
     const created = [];
     const merchOrdersCreated = [];
     const errors = [];
-    const crypto = require('crypto');
-    const generateTicketToken = () => crypto.randomBytes(16).toString('hex');
+    const crypto = require("crypto");
+    const generateTicketToken = () => crypto.randomBytes(16).toString("hex");
 
     // ============================================================================
     // PROCESS EVENT TICKETS
     // This is the original working flow - only process items identified as events
     // ============================================================================
     for (const item of eventItems) {
-      const eventId = String(item?.productId || '').trim();
+      const eventId = String(item?.productId || "").trim();
       const qty = Math.max(1, parseInt(item.quantity || 1, 10));
       if (!eventId) continue;
 
-      const eventRef = db.collection('events').doc(eventId);
-      logger.info('Finalize-order: processing EVENT ticket', { eventId, qty, orderNumber });
+      const eventRef = db.collection("events").doc(eventId);
+      logger.info("Finalize-order: processing EVENT ticket", {
+        eventId,
+        qty,
+        orderNumber,
+      });
       try {
         await db.runTransaction(async (tx) => {
           const snap = await tx.get(eventRef);
           if (!snap.exists) {
             // FIX: This should only happen for actual event items now
             // If we get here, it means our categorization might have a false negative
-            throw new Error(`Event ${eventId} not found - item may have been miscategorized`);
+            throw new Error(
+              `Event ${eventId} not found - item may have been miscategorized`
+            );
           }
           const data = snap.data() || {};
-          const currentQty = typeof data.quantity === 'number' ? data.quantity : 0;
+          const currentQty =
+            typeof data.quantity === "number" ? data.quantity : 0;
           const newQty = Math.max(0, currentQty - qty);
           tx.update(eventRef, { quantity: newQty });
 
-          const ragersRef = eventRef.collection('ragers');
+          const ragersRef = eventRef.collection("ragers");
           const token = generateTicketToken();
           const rager = {
             active: true,
-            email: userEmail || pi.receipt_email || '',
+            email: userEmail || pi.receipt_email || "",
             firebaseId: firebaseId,
-            owner: userName || '',
+            owner: userName || "",
             purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
             orderNumber,
             ticketQuantity: qty,
@@ -960,7 +1047,7 @@ app.post('/finalize-order', async (req, res) => {
           const ragerDoc = ragersRef.doc();
           tx.set(ragerDoc, rager);
           // Map token → eventId/ragerId for fast lookup during scanning
-          const mapRef = db.collection('ticketTokens').doc(token);
+          const mapRef = db.collection("ticketTokens").doc(token);
           tx.set(mapRef, {
             eventId,
             ragerId: ragerDoc.id,
@@ -968,9 +1055,9 @@ app.post('/finalize-order', async (req, res) => {
           });
           // Update event-user summary totals (userId-first model)
           const summaryRef = db
-            .collection('eventUsers')
+            .collection("eventUsers")
             .doc(eventId)
-            .collection('users')
+            .collection("users")
             .doc(firebaseId);
           tx.set(
             summaryRef,
@@ -978,21 +1065,33 @@ app.post('/finalize-order', async (req, res) => {
               totalTickets: admin.firestore.FieldValue.increment(qty),
               lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
             },
-            { merge: true },
+            { merge: true }
           );
-          created.push({ type: 'event', eventId, ragerId: ragerDoc.id, qty, newQty });
+          created.push({
+            type: "event",
+            eventId,
+            ragerId: ragerDoc.id,
+            qty,
+            newQty,
+          });
         });
-        logger.info('Finalize-order: EVENT ticket created successfully', { eventId, qty });
+        logger.info("Finalize-order: EVENT ticket created successfully", {
+          eventId,
+          qty,
+        });
       } catch (e) {
         // FIX: Log as ERROR not warn for event ticket failures (these are critical)
-        logger.error(`Finalize order: FAILED to create event ticket for eventId=${eventId}`, {
-          message: e?.message,
-          orderNumber,
-        });
+        logger.error(
+          `Finalize order: FAILED to create event ticket for eventId=${eventId}`,
+          {
+            message: e?.message,
+            orderNumber,
+          }
+        );
         errors.push({
-          type: 'event',
+          type: "event",
           productId: eventId,
-          error: e?.message || 'Unknown error',
+          error: e?.message || "Unknown error",
         });
       }
     }
@@ -1007,11 +1106,11 @@ app.post('/finalize-order', async (req, res) => {
     const merchItemsForShopify = [];
 
     for (const item of merchandiseItems) {
-      const productId = String(item?.productId || '').trim();
+      const productId = String(item?.productId || "").trim();
       const qty = Math.max(1, parseInt(item.quantity || 1, 10));
       if (!productId) continue;
 
-      logger.info('Finalize-order: processing MERCHANDISE item', {
+      logger.info("Finalize-order: processing MERCHANDISE item", {
         productId,
         variantId: item.variantId,
         title: item.title,
@@ -1023,13 +1122,13 @@ app.post('/finalize-order', async (req, res) => {
         // Build shipping address object
         const shippingAddr = addressDetails
           ? {
-              name: addressDetails.name || userName || '',
-              line1: addressDetails.address?.line1 || '',
-              line2: addressDetails.address?.line2 || '',
-              city: addressDetails.address?.city || '',
-              state: addressDetails.address?.state || '',
-              postalCode: addressDetails.address?.postal_code || '',
-              country: addressDetails.address?.country || 'US',
+              name: addressDetails.name || userName || "",
+              line1: addressDetails.address?.line1 || "",
+              line2: addressDetails.address?.line2 || "",
+              city: addressDetails.address?.city || "",
+              state: addressDetails.address?.state || "",
+              postalCode: addressDetails.address?.postal_code || "",
+              country: addressDetails.address?.country || "US",
             }
           : null;
 
@@ -1046,11 +1145,11 @@ app.post('/finalize-order', async (req, res) => {
           title: item.title || item.name || productId,
           quantity: qty,
           price:
-            typeof item.price === 'number'
+            typeof item.price === "number"
               ? item.price
-              : typeof item.price === 'string'
-                ? parseFloat(item.price)
-                : null,
+              : typeof item.price === "string"
+              ? parseFloat(item.price)
+              : null,
           productImageSrc: item.productImageSrc || item.imageSrc || null,
 
           // Variant details
@@ -1058,15 +1157,15 @@ app.post('/finalize-order', async (req, res) => {
           size: item.size || item.selectedSize || null,
 
           // Customer info
-          customerEmail: userEmail || pi.receipt_email || '',
-          customerName: userName || '',
+          customerEmail: userEmail || pi.receipt_email || "",
+          customerName: userName || "",
 
           // Shipping address (critical for physical items)
           shippingAddress: shippingAddr,
 
           // Status tracking
-          status: 'pending_fulfillment',
-          fulfillmentStatus: 'unfulfilled',
+          status: "pending_fulfillment",
+          fulfillmentStatus: "unfulfilled",
           shopifyOrderId: null,
           shopifyOrderNumber: null,
 
@@ -1076,7 +1175,7 @@ app.post('/finalize-order', async (req, res) => {
         };
 
         // Store in merchandiseOrders collection
-        const merchRef = db.collection('merchandiseOrders').doc();
+        const merchRef = db.collection("merchandiseOrders").doc();
         await merchRef.set(merchOrderDoc);
 
         // Collect for Shopify batch order
@@ -1090,7 +1189,7 @@ app.post('/finalize-order', async (req, res) => {
         });
 
         merchOrdersCreated.push({
-          type: 'merchandise',
+          type: "merchandise",
           orderId: merchRef.id,
           productId,
           variantId: item.variantId || null,
@@ -1098,7 +1197,7 @@ app.post('/finalize-order', async (req, res) => {
           qty,
         });
 
-        logger.info('Finalize-order: MERCHANDISE order created successfully', {
+        logger.info("Finalize-order: MERCHANDISE order created successfully", {
           orderId: merchRef.id,
           productId,
           qty,
@@ -1112,12 +1211,12 @@ app.post('/finalize-order', async (req, res) => {
             message: e?.message,
             orderNumber,
             productId,
-          },
+          }
         );
         errors.push({
-          type: 'merchandise',
+          type: "merchandise",
           productId,
-          error: e?.message || 'Unknown error',
+          error: e?.message || "Unknown error",
         });
       }
     }
@@ -1129,7 +1228,7 @@ app.post('/finalize-order', async (req, res) => {
     let printifyOrderResult = null;
     if (merchItemsForShopify.length > 0) {
       const printifyConfigured = isPrintifyConfigured();
-      logger.info('Finalize-order: Processing merchandise fulfillment', {
+      logger.info("Finalize-order: Processing merchandise fulfillment", {
         orderNumber,
         itemCount: merchItemsForShopify.length,
         printifyConfigured,
@@ -1161,14 +1260,17 @@ app.post('/finalize-order', async (req, res) => {
                 if (skuResult) {
                   printifyProductId = skuResult.productId;
                   printifyVariantId = skuResult.variantId;
-                  logger.info('Finalize-order: Found Printify product by SKU', {
+                  logger.info("Finalize-order: Found Printify product by SKU", {
                     sku,
                     printifyProductId,
                     printifyVariantId,
                   });
                 }
               } catch (skuErr) {
-                logger.warn('Finalize-order: SKU lookup failed', { sku, error: skuErr?.message });
+                logger.warn("Finalize-order: SKU lookup failed", {
+                  sku,
+                  error: skuErr?.message,
+                });
               }
             }
 
@@ -1183,7 +1285,7 @@ app.post('/finalize-order', async (req, res) => {
               skuLookupErrors.push({
                 productId: merchItem.productId,
                 title: merchItem.title,
-                reason: 'No Printify mapping found',
+                reason: "No Printify mapping found",
               });
             }
           }
@@ -1191,15 +1293,15 @@ app.post('/finalize-order', async (req, res) => {
           if (printifyLineItems.length > 0) {
             // Build shipping address for Printify
             const printifyShippingAddress = {
-              name: addressDetails.name || userName || '',
-              email: userEmail || pi.receipt_email || '',
-              phone: addressDetails.phone || '',
-              line1: addressDetails.address?.line1 || '',
-              line2: addressDetails.address?.line2 || '',
-              city: addressDetails.address?.city || '',
-              state: addressDetails.address?.state || '',
-              postalCode: addressDetails.address?.postal_code || '',
-              country: addressDetails.address?.country || 'US',
+              name: addressDetails.name || userName || "",
+              email: userEmail || pi.receipt_email || "",
+              phone: addressDetails.phone || "",
+              line1: addressDetails.address?.line1 || "",
+              line2: addressDetails.address?.line2 || "",
+              city: addressDetails.address?.city || "",
+              state: addressDetails.address?.state || "",
+              postalCode: addressDetails.address?.postal_code || "",
+              country: addressDetails.address?.country || "US",
             };
 
             // Create Printify order
@@ -1214,18 +1316,20 @@ app.post('/finalize-order', async (req, res) => {
               // Update all merchandise orders with Printify order info
               const batch = db.batch();
               for (const lineItem of printifyLineItems) {
-                const merchDocRef = db.collection('merchandiseOrders').doc(lineItem.firestoreId);
+                const merchDocRef = db
+                  .collection("merchandiseOrders")
+                  .doc(lineItem.firestoreId);
                 batch.update(merchDocRef, {
                   printifyOrderId: printifyOrderResult.id,
-                  printifyStatus: printifyOrderResult.status || 'pending',
-                  fulfillmentProvider: 'printify',
-                  status: 'sent_to_printify',
+                  printifyStatus: printifyOrderResult.status || "pending",
+                  fulfillmentProvider: "printify",
+                  status: "sent_to_printify",
                   updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
               }
               await batch.commit();
 
-              logger.info('Finalize-order: Printify order created and linked', {
+              logger.info("Finalize-order: Printify order created and linked", {
                 orderNumber,
                 printifyOrderId: printifyOrderResult.id,
                 itemCount: printifyLineItems.length,
@@ -1233,15 +1337,18 @@ app.post('/finalize-order', async (req, res) => {
               });
             }
           } else {
-            logger.warn('Finalize-order: No items could be mapped to Printify', {
-              orderNumber,
-              skuLookupErrors,
-            });
+            logger.warn(
+              "Finalize-order: No items could be mapped to Printify",
+              {
+                orderNumber,
+                skuLookupErrors,
+              }
+            );
           }
 
           // Log items that couldn't be mapped (need manual fulfillment or SKU sync)
           if (skuLookupErrors.length > 0) {
-            logger.warn('Finalize-order: Some items lack Printify mapping', {
+            logger.warn("Finalize-order: Some items lack Printify mapping", {
               orderNumber,
               unmappedCount: skuLookupErrors.length,
               items: skuLookupErrors,
@@ -1249,19 +1356,24 @@ app.post('/finalize-order', async (req, res) => {
           }
         } catch (printifyError) {
           // Non-fatal: Printify failed but Firestore orders exist for manual fulfillment
-          logger.error('Finalize-order: Printify order creation failed', {
+          logger.error("Finalize-order: Printify order creation failed", {
             orderNumber,
             error: printifyError?.message,
             stack: printifyError?.stack,
           });
         }
       } else if (!addressDetails) {
-        logger.warn('Finalize-order: No shipping address for merchandise', { orderNumber });
-      } else {
-        logger.info('Finalize-order: Printify not configured, orders saved to Firestore only', {
+        logger.warn("Finalize-order: No shipping address for merchandise", {
           orderNumber,
-          itemCount: merchItemsForShopify.length,
         });
+      } else {
+        logger.info(
+          "Finalize-order: Printify not configured, orders saved to Firestore only",
+          {
+            orderNumber,
+            itemCount: merchItemsForShopify.length,
+          }
+        );
       }
 
       // Legacy: Attempt Shopify order if configured (fallback/parallel)
@@ -1270,18 +1382,18 @@ app.post('/finalize-order', async (req, res) => {
         try {
           const shopifyResult = await createShopifyOrder({
             items: merchItemsForShopify,
-            email: userEmail || pi.receipt_email || '',
+            email: userEmail || pi.receipt_email || "",
             orderNumber: orderNumber,
-            customerName: userName || '',
+            customerName: userName || "",
             shippingAddress: addressDetails
               ? {
-                  name: addressDetails.name || userName || '',
-                  line1: addressDetails.address?.line1 || '',
-                  line2: addressDetails.address?.line2 || '',
-                  city: addressDetails.address?.city || '',
-                  state: addressDetails.address?.state || '',
-                  postalCode: addressDetails.address?.postal_code || '',
-                  country: addressDetails.address?.country || 'US',
+                  name: addressDetails.name || userName || "",
+                  line1: addressDetails.address?.line1 || "",
+                  line2: addressDetails.address?.line2 || "",
+                  city: addressDetails.address?.city || "",
+                  state: addressDetails.address?.state || "",
+                  postalCode: addressDetails.address?.postal_code || "",
+                  country: addressDetails.address?.country || "US",
                 }
               : null,
           });
@@ -1289,7 +1401,9 @@ app.post('/finalize-order', async (req, res) => {
           if (shopifyResult && shopifyResult.success) {
             const batch = db.batch();
             for (const merchItem of merchItemsForShopify) {
-              const merchDocRef = db.collection('merchandiseOrders').doc(merchItem.firestoreId);
+              const merchDocRef = db
+                .collection("merchandiseOrders")
+                .doc(merchItem.firestoreId);
               batch.update(merchDocRef, {
                 shopifyOrderId: shopifyResult.shopifyOrderId,
                 shopifyOrderNumber: shopifyResult.shopifyOrderNumber,
@@ -1299,7 +1413,7 @@ app.post('/finalize-order', async (req, res) => {
             await batch.commit();
           }
         } catch (shopifyError) {
-          logger.warn('Finalize-order: Shopify fallback failed (non-fatal)', {
+          logger.warn("Finalize-order: Shopify fallback failed (non-fatal)", {
             error: shopifyError?.message,
           });
         }
@@ -1312,7 +1426,7 @@ app.post('/finalize-order', async (req, res) => {
     const totalItemsExpected = eventItems.length + merchandiseItems.length;
 
     if (totalItemsExpected > 0 && totalItemsProcessed === 0) {
-      logger.error('Finalize-order: ALL items failed to process', {
+      logger.error("Finalize-order: ALL items failed to process", {
         orderNumber,
         errors,
         eventCount: eventItems.length,
@@ -1322,24 +1436,24 @@ app.post('/finalize-order', async (req, res) => {
       try {
         await fulfillRef.set(
           {
-            status: 'failed',
+            status: "failed",
             failedAt: admin.firestore.FieldValue.serverTimestamp(),
             errors,
             orderNumber,
           },
-          { merge: true },
+          { merge: true }
         );
       } catch (_) {}
       return res.status(500).json({
         ok: false,
-        error: 'Failed to process any items in the order',
+        error: "Failed to process any items in the order",
         orderNumber,
         errors,
       });
     }
 
     // Build purchase payloads (server-side mirror of client SaveToFirestore)
-    const amountTotal = typeof pi.amount === 'number' ? pi.amount : 0;
+    const amountTotal = typeof pi.amount === "number" ? pi.amount : 0;
     const amountStr = (amountTotal / 100).toFixed(2);
 
     // FIX: Add itemType to each item for better tracking
@@ -1348,18 +1462,18 @@ app.post('/finalize-order', async (req, res) => {
       productId: i.productId,
       title: i.title || i.name || i.productId,
       price:
-        typeof i.price === 'number'
+        typeof i.price === "number"
           ? i.price
-          : typeof i.price === 'string'
-            ? parseFloat(i.price)
-            : null,
+          : typeof i.price === "string"
+          ? parseFloat(i.price)
+          : null,
       quantity: Math.max(1, parseInt(i.quantity || 1, 10)),
       productImageSrc: i.productImageSrc || i.imageSrc || null,
       color: i.color || i.selectedColor || null,
       size: i.size || i.selectedSize || null,
       eventDetails: i.eventDetails || null,
       // FIX: Add item type for tracking
-      itemType: isShopifyMerchandise(i.productId, i) ? 'merchandise' : 'event',
+      itemType: isShopifyMerchandise(i.productId, i) ? "merchandise" : "event",
       variantId: i.variantId || null,
     }));
 
@@ -1367,12 +1481,16 @@ app.post('/finalize-order', async (req, res) => {
     const hasEventItems = eventItems.length > 0;
     const hasMerchandiseItems = merchandiseItems.length > 0;
     const itemTypes = [];
-    if (hasEventItems) itemTypes.push('event');
-    if (hasMerchandiseItems) itemTypes.push('merchandise');
+    if (hasEventItems) itemTypes.push("event");
+    if (hasMerchandiseItems) itemTypes.push("merchandise");
 
     const purchaseDoc = {
       addressDetails: addressDetails || null,
-      customerEmail: userEmail || pi.receipt_email || (pi.metadata && pi.metadata.email) || null,
+      customerEmail:
+        userEmail ||
+        pi.receipt_email ||
+        (pi.metadata && pi.metadata.email) ||
+        null,
       customerId: firebaseId,
       customerName: userName || (pi.metadata && pi.metadata.name) || null,
       itemCount: sanitizedItems.length,
@@ -1380,12 +1498,15 @@ app.post('/finalize-order', async (req, res) => {
       orderDate: admin.firestore.FieldValue.serverTimestamp(),
       orderNumber,
       paymentIntentId: pi.id,
-      status: 'completed',
+      status: "completed",
       totalAmount: amountStr,
-      currency: pi.currency || 'usd',
+      currency: pi.currency || "usd",
       discountAmount:
-        appliedPromoCode && appliedPromoCode.discountValue ? appliedPromoCode.discountValue : 0,
-      promoCodeUsed: appliedPromoCode && appliedPromoCode.id ? appliedPromoCode.id : null,
+        appliedPromoCode && appliedPromoCode.discountValue
+          ? appliedPromoCode.discountValue
+          : 0,
+      promoCodeUsed:
+        appliedPromoCode && appliedPromoCode.id ? appliedPromoCode.id : null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       // FIX: Add item type tracking for easier filtering/reporting
       itemTypes,
@@ -1396,24 +1517,25 @@ app.post('/finalize-order', async (req, res) => {
       // Fulfillment tracking
       printifyOrderId: printifyOrderResult?.id || null,
       fulfillmentProvider: printifyOrderResult?.id
-        ? 'printify'
+        ? "printify"
         : hasMerchandiseItems
-          ? 'manual'
-          : null,
+        ? "manual"
+        : null,
       // Stripe payment details for reference
       stripePaymentMethod: pi.payment_method_types?.[0] || null,
-      stripeLast4: pi.charges?.data?.[0]?.payment_method_details?.card?.last4 || null,
+      stripeLast4:
+        pi.charges?.data?.[0]?.payment_method_details?.card?.last4 || null,
     };
 
     // Write purchases in both collections
     try {
-      const purchaseRef = db.collection('purchases').doc(orderNumber);
+      const purchaseRef = db.collection("purchases").doc(orderNumber);
       await purchaseRef.set(purchaseDoc, { merge: true });
 
       const userPurchaseRef = db
-        .collection('customers')
+        .collection("customers")
         .doc(firebaseId)
-        .collection('purchases')
+        .collection("purchases")
         .doc(orderNumber);
       await userPurchaseRef.set(
         Object.assign({}, purchaseDoc, {
@@ -1425,20 +1547,22 @@ app.post('/finalize-order', async (req, res) => {
           cartItems: sanitizedItems,
           total: amountStr,
         }),
-        { merge: true },
+        { merge: true }
       );
     } catch (e) {
-      logger.warn('Failed to write purchase documents', e);
+      logger.warn("Failed to write purchase documents", e);
     }
 
     // If promo code applied, update its usage counters (best-effort)
     // Support both client-provided appliedPromoCode and PI metadata (for server-side validation)
     const promoId =
-      (appliedPromoCode && appliedPromoCode.id) || (pi.metadata && pi.metadata.promoCode) || null;
+      (appliedPromoCode && appliedPromoCode.id) ||
+      (pi.metadata && pi.metadata.promoCode) ||
+      null;
     const promoCollection =
       (appliedPromoCode && appliedPromoCode.collection) ||
       (pi.metadata && pi.metadata.promoCollection) ||
-      'promoCodes'; // Default to new collection
+      "promoCodes"; // Default to new collection
 
     if (promoId) {
       await incrementPromoCodeUsage(promoId, promoCollection, orderNumber);
@@ -1447,7 +1571,7 @@ app.post('/finalize-order', async (req, res) => {
     try {
       await fulfillRef.set(
         {
-          status: 'completed',
+          status: "completed",
           completedAt: admin.firestore.FieldValue.serverTimestamp(),
           createdTickets: created.length,
           // FIX: Include merchandise order info in fulfillment
@@ -1466,27 +1590,30 @@ app.post('/finalize-order', async (req, res) => {
           printifyOrderId: printifyOrderResult?.id || null,
           printifyStatus: printifyOrderResult?.status || null,
           fulfillmentProvider: printifyOrderResult?.id
-            ? 'printify'
+            ? "printify"
             : hasMerchandiseItems
-              ? 'manual'
-              : null,
+            ? "manual"
+            : null,
           // backfill summary fields for triggers
-          email: (userEmail && String(userEmail).trim()) || pi.receipt_email || '',
+          email:
+            (userEmail && String(userEmail).trim()) || pi.receipt_email || "",
           items: items.map((i) => ({
             title: i.title || i.productId,
             productId: i.productId,
             quantity: Math.max(1, parseInt(i.quantity || 1, 10)),
-            itemType: isShopifyMerchandise(i.productId, i) ? 'merchandise' : 'event',
+            itemType: isShopifyMerchandise(i.productId, i)
+              ? "merchandise"
+              : "event",
           })),
         },
-        { merge: true },
+        { merge: true }
       );
     } catch (e) {
-      logger.warn('Failed to update fulfillments record', e);
+      logger.warn("Failed to update fulfillments record", e);
     }
 
     // FIX: Enhanced logging with merchandise info
-    logger.info('Finalize-order: completed', {
+    logger.info("Finalize-order: completed", {
       orderNumber,
       createdTickets: created.length,
       createdMerchOrders: merchOrdersCreated.length,
@@ -1506,38 +1633,42 @@ app.post('/finalize-order', async (req, res) => {
       itemTypes,
       printifyOrderId: printifyOrderResult?.id || null,
       // Include partial failure info if some items failed
-      partialFailure: errors.length > 0 ? { count: errors.length, errors } : null,
+      partialFailure:
+        errors.length > 0 ? { count: errors.length, errors } : null,
     });
   } catch (err) {
-    logger.error('finalize-order error', err);
-    res.status(500).json({ error: 'Failed to finalize order' });
+    logger.error("finalize-order error", err);
+    res.status(500).json({ error: "Failed to finalize order" });
   }
 });
 
 // Test utility: create a completed fulfillment to trigger email
-app.post('/test-send-purchase-email', async (req, res) => {
+app.post("/test-send-purchase-email", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
     const { email, piId, items } = req.body || {};
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({ error: 'email is required' });
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ error: "email is required" });
     }
 
-    const id = piId && String(piId).trim() ? String(piId).trim() : `test-${Date.now()}`;
+    const id =
+      piId && String(piId).trim() ? String(piId).trim() : `test-${Date.now()}`;
     const payloadItems =
-      Array.isArray(items) && items.length ? items : [{ title: 'Test Ticket', quantity: 1 }];
+      Array.isArray(items) && items.length
+        ? items
+        : [{ title: "Test Ticket", quantity: 1 }];
 
-    const fulfillRef = db.collection('fulfillments').doc(id);
+    const fulfillRef = db.collection("fulfillments").doc(id);
     const cleanedItems = payloadItems.map((i) => {
       const base = {
-        title: i.title || i.name || 'Item',
+        title: i.title || i.name || "Item",
         quantity: Math.max(1, parseInt(i.quantity || 1, 10)),
       };
       if (i.productId) base.productId = i.productId;
@@ -1546,23 +1677,23 @@ app.post('/test-send-purchase-email', async (req, res) => {
 
     await fulfillRef.set(
       {
-        status: 'completed',
+        status: "completed",
         email,
         items: cleanedItems,
         orderNumber: `ORDER-TEST-${Date.now()}`,
         amount: 500,
-        currency: 'usd',
+        currency: "usd",
         completedAt: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       },
-      { merge: true },
+      { merge: true }
     );
 
-    logger.info('Test fulfillment created for email trigger', { id, email });
+    logger.info("Test fulfillment created for email trigger", { id, email });
     return res.json({ ok: true, id });
   } catch (err) {
-    logger.error('test-send-purchase-email error', err);
-    return res.status(500).json({ error: 'Failed to create test fulfillment' });
+    logger.error("test-send-purchase-email error", err);
+    return res.status(500).json({ error: "Failed to create test fulfillment" });
   }
 });
 
@@ -1574,42 +1705,45 @@ app.post('/test-send-purchase-email', async (req, res) => {
  * Preview a transfer without claiming it
  * Used by the claim page to show ticket details before claiming
  */
-app.get('/transfer-preview', async (req, res) => {
+app.get("/transfer-preview", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
     const token = req.query.t;
     if (!token) {
-      return res.status(400).json({ error: 'Missing token parameter' });
+      return res.status(400).json({ error: "Missing token parameter" });
     }
 
-    const crypto = require('crypto');
-    const hashToken = (t) => crypto.createHash('sha256').update(t).digest('hex');
+    const crypto = require("crypto");
+    const hashToken = (t) =>
+      crypto.createHash("sha256").update(t).digest("hex");
     const claimTokenHash = hashToken(token);
 
     // Find transfer by token hash
     const transfersQuery = await db
-      .collection('ticketTransfers')
-      .where('claimTokenHash', '==', claimTokenHash)
+      .collection("ticketTransfers")
+      .where("claimTokenHash", "==", claimTokenHash)
       .limit(1)
       .get();
 
     if (transfersQuery.empty) {
-      return res.status(404).json({ error: 'Transfer not found' });
+      return res.status(404).json({ error: "Transfer not found" });
     }
 
     const transferDoc = transfersQuery.docs[0];
     const transferData = transferDoc.data();
 
     // Check if already claimed
-    if (transferData.status === 'claimed') {
-      return res.status(404).json({ error: 'Transfer has already been claimed' });
+    if (transferData.status === "claimed") {
+      return res
+        .status(404)
+        .json({ error: "Transfer has already been claimed" });
     }
 
     // Check expiration
@@ -1617,7 +1751,7 @@ app.get('/transfer-preview', async (req, res) => {
       ? transferData.expiresAt.toDate()
       : new Date(transferData.expiresAt);
     if (expiresAt < new Date()) {
-      return res.status(410).json({ error: 'Transfer link has expired' });
+      return res.status(410).json({ error: "Transfer link has expired" });
     }
 
     // Return preview data (don't expose sensitive fields)
@@ -1630,8 +1764,8 @@ app.get('/transfer-preview', async (req, res) => {
       expiresAt: transferData.expiresAt,
     });
   } catch (err) {
-    logger.error('transfer-preview error', { error: String(err) });
-    return res.status(500).json({ error: 'Failed to get transfer preview' });
+    logger.error("transfer-preview error", { error: String(err) });
+    return res.status(500).json({ error: "Failed to get transfer preview" });
   }
 });
 
@@ -1639,13 +1773,13 @@ app.get('/transfer-preview', async (req, res) => {
  * Transfer a ticket to another user via email or username
  * Creates a pending transfer with a secure claim token
  */
-app.post('/transfer-ticket', async (req, res) => {
+app.post("/transfer-ticket", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
@@ -1663,34 +1797,43 @@ app.post('/transfer-ticket', async (req, res) => {
     if (!ragerId || !eventId || !senderUserId) {
       return res
         .status(400)
-        .json({ error: 'Missing required fields: ragerId, eventId, senderUserId' });
+        .json({
+          error: "Missing required fields: ragerId, eventId, senderUserId",
+        });
     }
 
     if (!recipientEmail && !recipientUsername) {
       return res
         .status(400)
-        .json({ error: 'Must provide either recipientEmail or recipientUsername' });
+        .json({
+          error: "Must provide either recipientEmail or recipientUsername",
+        });
     }
 
     // Variables to hold resolved recipient info
     let resolvedEmail = recipientEmail?.toLowerCase();
-    let resolvedUsername = recipientUsername?.toLowerCase()?.replace(/^@/, ''); // Strip @ prefix
+    let resolvedUsername = recipientUsername?.toLowerCase()?.replace(/^@/, ""); // Strip @ prefix
     let resolvedUserId = null;
     let resolvedDisplayName = null;
 
     // If username provided, resolve it to uid and email
     if (recipientUsername) {
-      const usernameDoc = await db.collection('usernames').doc(resolvedUsername).get();
+      const usernameDoc = await db
+        .collection("usernames")
+        .doc(resolvedUsername)
+        .get();
       if (!usernameDoc.exists) {
-        return res.status(404).json({ error: `Username @${resolvedUsername} not found` });
+        return res
+          .status(404)
+          .json({ error: `Username @${resolvedUsername} not found` });
       }
       const { uid } = usernameDoc.data();
       resolvedUserId = uid;
 
       // Fetch profile/customer for email
       const [profileSnap, customerSnap] = await Promise.all([
-        db.collection('profiles').doc(uid).get(),
-        db.collection('customers').doc(uid).get(),
+        db.collection("profiles").doc(uid).get(),
+        db.collection("customers").doc(uid).get(),
       ]);
 
       const profileData = profileSnap.data() || {};
@@ -1702,84 +1845,99 @@ app.post('/transfer-ticket', async (req, res) => {
       if (!resolvedEmail) {
         return res
           .status(400)
-          .json({ error: `User @${resolvedUsername} does not have an email on file` });
+          .json({
+            error: `User @${resolvedUsername} does not have an email on file`,
+          });
       }
     }
 
     // Validate email format (for both direct email and resolved from username)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(resolvedEmail)) {
-      return res.status(400).json({ error: 'Invalid recipient email format' });
+      return res.status(400).json({ error: "Invalid recipient email format" });
     }
 
     // Cannot transfer to self (check both email and uid)
     if (senderEmail && resolvedEmail === senderEmail.toLowerCase()) {
-      return res.status(400).json({ error: 'Cannot transfer ticket to yourself' });
+      return res
+        .status(400)
+        .json({ error: "Cannot transfer ticket to yourself" });
     }
     if (resolvedUserId && resolvedUserId === senderUserId) {
-      return res.status(400).json({ error: 'Cannot transfer ticket to yourself' });
+      return res
+        .status(400)
+        .json({ error: "Cannot transfer ticket to yourself" });
     }
 
     // Rate limit: 10 transfers per hour per user
     const rateLimitKey = `transfer:${senderUserId}`;
     const rateLimitResult = await checkRateLimit(rateLimitKey, 10, 3600);
     if (!rateLimitResult.allowed) {
-      return res.status(429).json({ error: 'Transfer rate limit exceeded. Try again later.' });
+      return res
+        .status(429)
+        .json({ error: "Transfer rate limit exceeded. Try again later." });
     }
 
-    const crypto = require('crypto');
-    const generateClaimToken = () => crypto.randomBytes(24).toString('hex');
-    const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+    const crypto = require("crypto");
+    const generateClaimToken = () => crypto.randomBytes(24).toString("hex");
+    const hashToken = (token) =>
+      crypto.createHash("sha256").update(token).digest("hex");
 
     // Atomic transaction
     const result = await db.runTransaction(async (t) => {
       // 1. Fetch the rager (ticket)
-      const ragerRef = db.collection('events').doc(eventId).collection('ragers').doc(ragerId);
+      const ragerRef = db
+        .collection("events")
+        .doc(eventId)
+        .collection("ragers")
+        .doc(ragerId);
       const ragerSnap = await t.get(ragerRef);
 
       if (!ragerSnap.exists) {
-        throw new Error('Ticket not found');
+        throw new Error("Ticket not found");
       }
 
       const ragerData = ragerSnap.data();
 
       // 2. Verify ownership
       if (ragerData.firebaseId !== senderUserId) {
-        throw new Error('You do not own this ticket');
+        throw new Error("You do not own this ticket");
       }
 
       // 3. Verify ticket is active and not already transferred
       if (ragerData.active === false) {
-        throw new Error('Ticket is not active');
+        throw new Error("Ticket is not active");
       }
       if (ragerData.transferredTo) {
-        throw new Error('Ticket has already been transferred');
+        throw new Error("Ticket has already been transferred");
       }
 
       // 4. Verify ticket hasn't been used
       const usedCount = ragerData.usedCount || 0;
       if (usedCount > 0) {
-        throw new Error('Cannot transfer a ticket that has been used');
+        throw new Error("Cannot transfer a ticket that has been used");
       }
 
       // 5. Fetch event to verify it hasn't passed
-      const eventRef = db.collection('events').doc(eventId);
+      const eventRef = db.collection("events").doc(eventId);
       const eventSnap = await t.get(eventRef);
       if (!eventSnap.exists) {
-        throw new Error('Event not found');
+        throw new Error("Event not found");
       }
       const eventData = eventSnap.data();
-      const eventDate = eventData.date?.toDate ? eventData.date.toDate() : new Date(eventData.date);
+      const eventDate = eventData.date?.toDate
+        ? eventData.date.toDate()
+        : new Date(eventData.date);
       if (eventDate < new Date()) {
-        throw new Error('Cannot transfer tickets for past events');
+        throw new Error("Cannot transfer tickets for past events");
       }
 
       // 6. If we haven't resolved user from username, check by email
       let recipientUserId = resolvedUserId;
       if (!recipientUserId) {
         const customersQuery = await db
-          .collection('customers')
-          .where('email', '==', resolvedEmail)
+          .collection("customers")
+          .where("email", "==", resolvedEmail)
           .limit(1)
           .get();
         if (!customersQuery.empty) {
@@ -1792,7 +1950,7 @@ app.post('/transfer-ticket', async (req, res) => {
       const claimTokenHash = hashToken(claimToken);
 
       // 8. Create transfer doc
-      const transferRef = db.collection('ticketTransfers').doc();
+      const transferRef = db.collection("ticketTransfers").doc();
       const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours
 
       t.set(transferRef, {
@@ -1804,11 +1962,11 @@ app.post('/transfer-ticket', async (req, res) => {
         toUsername: resolvedUsername || null,
         toDisplayName: resolvedDisplayName || null,
         eventId,
-        eventName: eventData.name || eventData.title || 'Event',
+        eventName: eventData.name || eventData.title || "Event",
         eventDate: eventData.date || null,
         ragerId,
         ticketQuantity: ragerData.ticketQuantity || 1,
-        status: 'pending',
+        status: "pending",
         claimTokenHash,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
@@ -1816,7 +1974,9 @@ app.post('/transfer-ticket', async (req, res) => {
 
       // 9. Mark original rager as pending transfer (but still active until claimed)
       t.update(ragerRef, {
-        pendingTransferTo: resolvedUsername ? `@${resolvedUsername}` : resolvedEmail,
+        pendingTransferTo: resolvedUsername
+          ? `@${resolvedUsername}`
+          : resolvedEmail,
         pendingTransferId: transferRef.id,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
@@ -1824,7 +1984,7 @@ app.post('/transfer-ticket', async (req, res) => {
       return {
         transferId: transferRef.id,
         claimToken,
-        eventName: eventData.name || eventData.title || 'Event',
+        eventName: eventData.name || eventData.title || "Event",
         eventDate,
         ticketQuantity: ragerData.ticketQuantity || 1,
         recipientUserId,
@@ -1838,24 +1998,28 @@ app.post('/transfer-ticket', async (req, res) => {
     try {
       process.env.AWS_ACCESS_KEY_ID = AWS_ACCESS_KEY_ID.value();
       process.env.AWS_SECRET_ACCESS_KEY = AWS_SECRET_ACCESS_KEY.value();
-      process.env.AWS_SES_REGION = AWS_SES_REGION.value() || 'us-east-1';
+      process.env.AWS_SES_REGION = AWS_SES_REGION.value() || "us-east-1";
 
       const claimUrl = `https://ragestate.com/claim-ticket?t=${result.claimToken}`;
       const eventDateStr = result.eventDate?.toDate
-        ? result.eventDate.toDate().toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
+        ? result.eventDate.toDate().toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
           })
-        : '';
+        : "";
 
       await sendEmail({
         to: result.recipientEmail,
-        from: 'RAGESTATE <support@ragestate.com>',
-        replyTo: 'support@ragestate.com',
-        subject: `🎫 ${senderName || 'Someone'} sent you a ticket!`,
-        text: `${senderName || 'A RAGESTATE user'} sent you a ticket for ${result.eventName}${eventDateStr ? ` on ${eventDateStr}` : ''}!\n\nClaim your ticket: ${claimUrl}\n\nThis link expires in 72 hours.`,
+        from: "RAGESTATE <support@ragestate.com>",
+        replyTo: "support@ragestate.com",
+        subject: `🎫 ${senderName || "Someone"} sent you a ticket!`,
+        text: `${senderName || "A RAGESTATE user"} sent you a ticket for ${
+          result.eventName
+        }${
+          eventDateStr ? ` on ${eventDateStr}` : ""
+        }!\n\nClaim your ticket: ${claimUrl}\n\nThis link expires in 72 hours.`,
         html: `
           <div style="background:#f6f6f6;padding:24px 0">
             <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #eee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
@@ -1866,12 +2030,22 @@ app.post('/transfer-ticket', async (req, res) => {
               <div style="padding:24px">
                 <h2 style="margin:0 0 16px;font-size:22px;color:#111;text-align:center">🎫 You've received a ticket!</h2>
                 <p style="margin:0 0 12px;color:#111;font-size:16px;line-height:24px;text-align:center">
-                  <b>${senderName || 'A RAGESTATE user'}</b> sent you a ticket for:
+                  <b>${
+                    senderName || "A RAGESTATE user"
+                  }</b> sent you a ticket for:
                 </p>
                 <div style="background:#f9f9f9;border-radius:8px;padding:16px;margin:16px 0;text-align:center">
-                  <p style="margin:0 0 4px;font-size:18px;font-weight:bold;color:#111">${result.eventName}</p>
-                  ${eventDateStr ? `<p style="margin:0;font-size:14px;color:#666">${eventDateStr}</p>` : ''}
-                  <p style="margin:8px 0 0;font-size:14px;color:#666">${result.ticketQuantity} ticket${result.ticketQuantity > 1 ? 's' : ''}</p>
+                  <p style="margin:0 0 4px;font-size:18px;font-weight:bold;color:#111">${
+                    result.eventName
+                  }</p>
+                  ${
+                    eventDateStr
+                      ? `<p style="margin:0;font-size:14px;color:#666">${eventDateStr}</p>`
+                      : ""
+                  }
+                  <p style="margin:8px 0 0;font-size:14px;color:#666">${
+                    result.ticketQuantity
+                  } ticket${result.ticketQuantity > 1 ? "s" : ""}</p>
                 </div>
                 <div style="text-align:center;margin:24px 0">
                   <a href="${claimUrl}" style="display:inline-block;background:#E12D39;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-size:16px;font-weight:bold">Claim Your Ticket</a>
@@ -1890,11 +2064,11 @@ app.post('/transfer-ticket', async (req, res) => {
       });
 
       // Update transfer with email sent status
-      await db.collection('ticketTransfers').doc(result.transferId).update({
+      await db.collection("ticketTransfers").doc(result.transferId).update({
         emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     } catch (emailErr) {
-      logger.error('Failed to send transfer claim email', {
+      logger.error("Failed to send transfer claim email", {
         error: String(emailErr),
         transferId: result.transferId,
       });
@@ -1909,8 +2083,8 @@ app.post('/transfer-ticket', async (req, res) => {
     // Send in-app notification to sender (transfer initiated)
     await createTransferNotification({
       uid: senderUserId,
-      type: 'ticket_transfer_sent',
-      title: 'Ticket Transfer Sent',
+      type: "ticket_transfer_sent",
+      title: "Ticket Transfer Sent",
       body: `Your ticket for ${result.eventName} was sent to ${recipientDisplay}`,
       data: {
         eventId,
@@ -1919,16 +2093,18 @@ app.post('/transfer-ticket', async (req, res) => {
         recipientUsername: result.recipientUsername,
         transferId: result.transferId,
       },
-      link: '/account?tab=tickets',
+      link: "/account?tab=tickets",
     });
 
     // If recipient has an account, notify them too
     if (result.recipientUserId) {
       await createTransferNotification({
         uid: result.recipientUserId,
-        type: 'ticket_transfer_received',
-        title: '🎫 You received a ticket!',
-        body: `${senderName || 'Someone'} sent you a ticket for ${result.eventName}`,
+        type: "ticket_transfer_received",
+        title: "🎫 You received a ticket!",
+        body: `${senderName || "Someone"} sent you a ticket for ${
+          result.eventName
+        }`,
         data: {
           eventId,
           eventName: result.eventName,
@@ -1936,11 +2112,11 @@ app.post('/transfer-ticket', async (req, res) => {
           fromName: senderName || null,
           transferId: result.transferId,
         },
-        link: '/account?tab=tickets',
+        link: "/account?tab=tickets",
       });
     }
 
-    logger.info('Ticket transfer initiated', {
+    logger.info("Ticket transfer initiated", {
       transferId: result.transferId,
       eventId,
       ragerId,
@@ -1957,8 +2133,8 @@ app.post('/transfer-ticket', async (req, res) => {
       recipientDisplayName: result.recipientDisplayName || null,
     });
   } catch (err) {
-    logger.error('transfer-ticket error', { error: String(err) });
-    const message = err.message || 'Failed to transfer ticket';
+    logger.error("transfer-ticket error", { error: String(err) });
+    const message = err.message || "Failed to transfer ticket";
     return res.status(400).json({ error: message });
   }
 });
@@ -1967,58 +2143,62 @@ app.post('/transfer-ticket', async (req, res) => {
  * Cancel a pending ticket transfer (sender only, or admin override)
  * Restores the original ticket to active state
  */
-app.post('/cancel-transfer', async (req, res) => {
+app.post("/cancel-transfer", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
     const { transferId, senderUserId, isAdmin } = req.body || {};
 
     if (!transferId) {
-      return res.status(400).json({ error: 'Missing required field: transferId' });
+      return res
+        .status(400)
+        .json({ error: "Missing required field: transferId" });
     }
 
     // Non-admin requests require senderUserId
     if (!isAdmin && !senderUserId) {
-      return res.status(400).json({ error: 'Missing required field: senderUserId' });
+      return res
+        .status(400)
+        .json({ error: "Missing required field: senderUserId" });
     }
 
     // Atomic transaction to cancel transfer
     const result = await db.runTransaction(async (t) => {
       // 1. Fetch the transfer
-      const transferRef = db.collection('ticketTransfers').doc(transferId);
+      const transferRef = db.collection("ticketTransfers").doc(transferId);
       const transferSnap = await t.get(transferRef);
 
       if (!transferSnap.exists) {
-        throw new Error('Transfer not found');
+        throw new Error("Transfer not found");
       }
 
       const transferData = transferSnap.data();
 
       // 2. Verify sender owns this transfer (skip if admin)
       if (!isAdmin && transferData.fromUserId !== senderUserId) {
-        throw new Error('You cannot cancel this transfer');
+        throw new Error("You cannot cancel this transfer");
       }
 
       // 3. Verify transfer is still pending
-      if (transferData.status !== 'pending') {
+      if (transferData.status !== "pending") {
         throw new Error(
-          transferData.status === 'claimed'
-            ? 'Transfer has already been claimed'
-            : `Transfer is ${transferData.status}`,
+          transferData.status === "claimed"
+            ? "Transfer has already been claimed"
+            : `Transfer is ${transferData.status}`
         );
       }
 
       // 4. Restore original rager
       const ragerRef = db
-        .collection('events')
+        .collection("events")
         .doc(transferData.eventId)
-        .collection('ragers')
+        .collection("ragers")
         .doc(transferData.ragerId);
       const ragerSnap = await t.get(ragerRef);
 
@@ -2032,7 +2212,7 @@ app.post('/cancel-transfer', async (req, res) => {
 
       // 5. Update transfer status
       const updateData = {
-        status: 'cancelled',
+        status: "cancelled",
         cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
       };
       if (isAdmin) {
@@ -2054,15 +2234,15 @@ app.post('/cancel-transfer', async (req, res) => {
     if (result.recipientUserId) {
       await createTransferNotification({
         uid: result.recipientUserId,
-        type: 'ticket_transfer_cancelled',
-        title: 'Transfer Cancelled',
+        type: "ticket_transfer_cancelled",
+        title: "Transfer Cancelled",
         body: `The ticket transfer for ${result.eventName} was cancelled`,
         data: {
           eventId: result.eventId,
           eventName: result.eventName,
           transferId,
         },
-        link: '/account?tab=tickets',
+        link: "/account?tab=tickets",
       });
     }
 
@@ -2070,29 +2250,212 @@ app.post('/cancel-transfer', async (req, res) => {
     if (isAdmin && result.senderUserId) {
       await createTransferNotification({
         uid: result.senderUserId,
-        type: 'ticket_transfer_cancelled',
-        title: 'Transfer Cancelled by Support',
+        type: "ticket_transfer_cancelled",
+        title: "Transfer Cancelled by Support",
         body: `Your ticket transfer for ${result.eventName} was cancelled and your ticket has been restored`,
         data: {
           eventId: result.eventId,
           eventName: result.eventName,
           transferId,
         },
-        link: '/account?tab=tickets',
+        link: "/account?tab=tickets",
       });
     }
 
-    logger.info('Ticket transfer cancelled', {
+    logger.info("Ticket transfer cancelled", {
       transferId,
       eventId: result.eventId,
       fromUserId: result.senderUserId,
       isAdmin: !!isAdmin,
     });
 
-    return res.json({ ok: true, message: 'Transfer cancelled successfully' });
+    return res.json({ ok: true, message: "Transfer cancelled successfully" });
   } catch (err) {
-    logger.error('cancel-transfer error', { error: String(err) });
-    const message = err.message || 'Failed to cancel transfer';
+    logger.error("cancel-transfer error", { error: String(err) });
+    const message = err.message || "Failed to cancel transfer";
+    return res.status(400).json({ error: message });
+  }
+});
+
+/**
+ * Resend the claim email for a pending transfer
+ * Only the sender can resend; limited to once per 5 minutes
+ */
+app.post("/resend-transfer-email", async (req, res) => {
+  try {
+    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
+    if (expectedProxyKey) {
+      const provided = req.get("x-proxy-key");
+      if (!provided || provided !== expectedProxyKey) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    }
+
+    const { transferId, senderUserId } = req.body || {};
+
+    if (!transferId) {
+      return res
+        .status(400)
+        .json({ error: "Missing required field: transferId" });
+    }
+    if (!senderUserId) {
+      return res
+        .status(400)
+        .json({ error: "Missing required field: senderUserId" });
+    }
+
+    // Fetch the transfer
+    const transferRef = db.collection("ticketTransfers").doc(transferId);
+    const transferSnap = await transferRef.get();
+
+    if (!transferSnap.exists) {
+      return res.status(404).json({ error: "Transfer not found" });
+    }
+
+    const transferData = transferSnap.data();
+
+    // Verify sender owns this transfer
+    if (transferData.fromUserId !== senderUserId) {
+      return res
+        .status(403)
+        .json({ error: "You cannot resend email for this transfer" });
+    }
+
+    // Verify transfer is still pending
+    if (transferData.status !== "pending") {
+      return res.status(400).json({
+        error:
+          transferData.status === "claimed"
+            ? "Transfer has already been claimed"
+            : `Transfer is ${transferData.status}`,
+      });
+    }
+
+    // Check if expired
+    const expiresAt = transferData.expiresAt?.toDate
+      ? transferData.expiresAt.toDate()
+      : new Date(transferData.expiresAt);
+    if (expiresAt < new Date()) {
+      return res.status(410).json({ error: "Transfer has expired" });
+    }
+
+    // Rate limit: can only resend once per 5 minutes
+    const lastResendAt = transferData.lastResendAt?.toDate
+      ? transferData.lastResendAt.toDate()
+      : null;
+    if (lastResendAt) {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      if (lastResendAt > fiveMinutesAgo) {
+        const waitSeconds = Math.ceil(
+          (lastResendAt.getTime() + 5 * 60 * 1000 - Date.now()) / 1000
+        );
+        return res.status(429).json({
+          error: `Please wait ${waitSeconds} seconds before resending`,
+          retryAfter: waitSeconds,
+        });
+      }
+    }
+
+    // Must have a recipient email (email transfers only)
+    if (!transferData.toEmail) {
+      return res
+        .status(400)
+        .json({ error: "This transfer does not have an email recipient" });
+    }
+
+    // Generate a new claim token (invalidates old one)
+    const crypto = require("crypto");
+    const generateClaimToken = () => crypto.randomBytes(32).toString("hex");
+    const hashToken = (token) =>
+      crypto.createHash("sha256").update(token).digest("hex");
+
+    const newClaimToken = generateClaimToken();
+    const newClaimTokenHash = hashToken(newClaimToken);
+
+    // Update transfer with new token and resend timestamp
+    await transferRef.update({
+      claimTokenHash: newClaimTokenHash,
+      lastResendAt: admin.firestore.FieldValue.serverTimestamp(),
+      resendCount: admin.firestore.FieldValue.increment(1),
+    });
+
+    // Send the email
+    process.env.AWS_ACCESS_KEY_ID = AWS_ACCESS_KEY_ID.value();
+    process.env.AWS_SECRET_ACCESS_KEY = AWS_SECRET_ACCESS_KEY.value();
+    process.env.AWS_SES_REGION = AWS_SES_REGION.value() || "us-east-1";
+
+    const claimUrl = `https://ragestate.com/claim-ticket?t=${newClaimToken}`;
+    const senderName = transferData.fromName || "Someone";
+    const eventDateStr = transferData.eventDate?.toDate
+      ? transferData.eventDate.toDate().toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "";
+
+    await sendEmail({
+      to: transferData.toEmail,
+      from: "RAGESTATE <support@ragestate.com>",
+      replyTo: "support@ragestate.com",
+      subject: `🎫 Reminder: ${senderName} sent you a ticket!`,
+      text: `${senderName} sent you a ticket for ${transferData.eventName}${
+        eventDateStr ? ` on ${eventDateStr}` : ""
+      }!\n\nClaim your ticket: ${claimUrl}\n\nThis link expires in ${Math.ceil(
+        (expiresAt - Date.now()) / (60 * 60 * 1000)
+      )} hours.`,
+      html: `
+        <div style="background:#f6f6f6;padding:24px 0">
+          <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #eee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+            <div style="padding:16px 24px;background:#000;color:#fff;text-align:center">
+              <img src="https://firebasestorage.googleapis.com/v0/b/ragestate-app.appspot.com/o/RSLogo2.png?alt=media&token=d13ebc08-9d8d-4367-99ec-ace3627132d2" alt="RAGESTATE" width="120" style="display:inline-block;border:0;outline:none;text-decoration:none;height:auto" />
+            </div>
+            <div style="height:3px;background:#E12D39"></div>
+            <div style="padding:24px">
+              <h2 style="margin:0 0 16px;font-size:22px;color:#111;text-align:center">🎫 Reminder: You've received a ticket!</h2>
+              <p style="margin:0 0 12px;color:#111;font-size:16px;line-height:24px;text-align:center">
+                <b>${senderName}</b> sent you a ticket for:
+              </p>
+              <div style="background:#f9f9f9;border-radius:8px;padding:16px;margin:16px 0;text-align:center">
+                <p style="margin:0 0 4px;font-size:18px;font-weight:bold;color:#111">${
+                  transferData.eventName
+                }</p>
+                ${
+                  eventDateStr
+                    ? `<p style="margin:0;font-size:14px;color:#666">${eventDateStr}</p>`
+                    : ""
+                }
+                <p style="margin:8px 0 0;font-size:14px;color:#666">${
+                  transferData.ticketQuantity || 1
+                } ticket${(transferData.ticketQuantity || 1) > 1 ? "s" : ""}</p>
+              </div>
+              <div style="text-align:center;margin:24px 0">
+                <a href="${claimUrl}" style="display:inline-block;background:#E12D39;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-size:16px;font-weight:bold">Claim Your Ticket</a>
+              </div>
+              <p style="margin:16px 0 0;color:#6b7280;font-size:12px;line-height:18px;text-align:center">
+                This is a reminder email. The link expires soon. If you didn't expect this ticket, you can ignore this email.
+              </p>
+            </div>
+            <div style="padding:16px 24px;border-top:1px solid #eee;color:#6b7280;font-size:12px;line-height:18px;text-align:center">
+              <p style="margin:0">RAGESTATE — Your ticket to the next level</p>
+            </div>
+          </div>
+        </div>
+      `,
+      region: process.env.AWS_SES_REGION,
+    });
+
+    logger.info("Transfer claim email resent", {
+      transferId,
+      toEmail: transferData.toEmail,
+      fromUserId: senderUserId,
+    });
+
+    return res.json({ ok: true, message: "Email resent successfully" });
+  } catch (err) {
+    logger.error("resend-transfer-email error", { error: String(err) });
+    const message = err.message || "Failed to resend email";
     return res.status(400).json({ error: message });
   }
 });
@@ -2100,36 +2463,42 @@ app.post('/cancel-transfer', async (req, res) => {
 /**
  * Claim a transferred ticket using the claim token
  */
-app.post('/claim-ticket', async (req, res) => {
+app.post("/claim-ticket", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
-    const { claimToken, claimerUserId, claimerEmail, claimerName } = req.body || {};
+    const { claimToken, claimerUserId, claimerEmail, claimerName } =
+      req.body || {};
 
     if (!claimToken || !claimerUserId) {
-      return res.status(400).json({ error: 'Missing required fields: claimToken, claimerUserId' });
+      return res
+        .status(400)
+        .json({ error: "Missing required fields: claimToken, claimerUserId" });
     }
 
-    const crypto = require('crypto');
-    const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+    const crypto = require("crypto");
+    const hashToken = (token) =>
+      crypto.createHash("sha256").update(token).digest("hex");
     const claimTokenHash = hashToken(claimToken);
 
     // Find transfer by token hash
     const transfersQuery = await db
-      .collection('ticketTransfers')
-      .where('claimTokenHash', '==', claimTokenHash)
-      .where('status', '==', 'pending')
+      .collection("ticketTransfers")
+      .where("claimTokenHash", "==", claimTokenHash)
+      .where("status", "==", "pending")
       .limit(1)
       .get();
 
     if (transfersQuery.empty) {
-      return res.status(404).json({ error: 'Transfer not found or already claimed' });
+      return res
+        .status(404)
+        .json({ error: "Transfer not found or already claimed" });
     }
 
     const transferDoc = transfersQuery.docs[0];
@@ -2140,56 +2509,64 @@ app.post('/claim-ticket', async (req, res) => {
       ? transferData.expiresAt.toDate()
       : new Date(transferData.expiresAt);
     if (expiresAt < new Date()) {
-      return res.status(410).json({ error: 'Transfer link has expired' });
+      return res.status(410).json({ error: "Transfer link has expired" });
     }
 
     // Verify claimer matches recipient (by uid or email)
-    const claimerEmailLower = (claimerEmail || '').toLowerCase();
+    const claimerEmailLower = (claimerEmail || "").toLowerCase();
     if (transferData.toUserId && transferData.toUserId !== claimerUserId) {
       // If transfer was to a specific user, must be that user
       if (transferData.toEmail !== claimerEmailLower) {
-        return res.status(403).json({ error: 'This ticket was sent to someone else' });
+        return res
+          .status(403)
+          .json({ error: "This ticket was sent to someone else" });
       }
     } else if (transferData.toEmail !== claimerEmailLower) {
       // Otherwise check email match
-      return res.status(403).json({ error: 'This ticket was sent to a different email address' });
+      return res
+        .status(403)
+        .json({ error: "This ticket was sent to a different email address" });
     }
 
-    const generateTicketToken = () => crypto.randomBytes(16).toString('hex');
+    const generateTicketToken = () => crypto.randomBytes(16).toString("hex");
 
     // Atomic transaction to claim ticket
     const result = await db.runTransaction(async (t) => {
       // Re-fetch transfer in transaction
-      const transferRef = db.collection('ticketTransfers').doc(transferDoc.id);
+      const transferRef = db.collection("ticketTransfers").doc(transferDoc.id);
       const transferSnap = await t.get(transferRef);
       const transfer = transferSnap.data();
 
-      if (transfer.status !== 'pending') {
-        throw new Error('Transfer is no longer pending');
+      if (transfer.status !== "pending") {
+        throw new Error("Transfer is no longer pending");
       }
 
       // Fetch original rager
       const originalRagerRef = db
-        .collection('events')
+        .collection("events")
         .doc(transfer.eventId)
-        .collection('ragers')
+        .collection("ragers")
         .doc(transfer.ragerId);
       const originalRagerSnap = await t.get(originalRagerRef);
 
       if (!originalRagerSnap.exists) {
-        throw new Error('Original ticket not found');
+        throw new Error("Original ticket not found");
       }
 
       const originalRager = originalRagerSnap.data();
 
       // Create new rager for recipient
-      const newRagerRef = db.collection('events').doc(transfer.eventId).collection('ragers').doc();
+      const newRagerRef = db
+        .collection("events")
+        .doc(transfer.eventId)
+        .collection("ragers")
+        .doc();
       const newTicketToken = generateTicketToken();
 
       t.set(newRagerRef, {
         firebaseId: claimerUserId,
         email: claimerEmailLower,
-        name: claimerName || originalRager.name || '',
+        name: claimerName || originalRager.name || "",
         ticketQuantity: originalRager.ticketQuantity || 1,
         usedCount: 0,
         active: true,
@@ -2200,7 +2577,7 @@ app.post('/claim-ticket', async (req, res) => {
       });
 
       // Create ticketToken lookup
-      const tokenRef = db.collection('ticketTokens').doc(newTicketToken);
+      const tokenRef = db.collection("ticketTokens").doc(newTicketToken);
       t.set(tokenRef, {
         eventId: transfer.eventId,
         ragerId: newRagerRef.id,
@@ -2218,13 +2595,15 @@ app.post('/claim-ticket', async (req, res) => {
 
       // Invalidate old ticketToken lookup if exists
       if (originalRager.ticketToken) {
-        const oldTokenRef = db.collection('ticketTokens').doc(originalRager.ticketToken);
+        const oldTokenRef = db
+          .collection("ticketTokens")
+          .doc(originalRager.ticketToken);
         t.delete(oldTokenRef);
       }
 
       // Update transfer status
       t.update(transferRef, {
-        status: 'claimed',
+        status: "claimed",
         claimedAt: admin.firestore.FieldValue.serverTimestamp(),
         claimedByUserId: claimerUserId,
         newRagerId: newRagerRef.id,
@@ -2245,14 +2624,18 @@ app.post('/claim-ticket', async (req, res) => {
       if (transferData.fromEmail) {
         process.env.AWS_ACCESS_KEY_ID = AWS_ACCESS_KEY_ID.value();
         process.env.AWS_SECRET_ACCESS_KEY = AWS_SECRET_ACCESS_KEY.value();
-        process.env.AWS_SES_REGION = AWS_SES_REGION.value() || 'us-east-1';
+        process.env.AWS_SES_REGION = AWS_SES_REGION.value() || "us-east-1";
 
         await sendEmail({
           to: transferData.fromEmail,
-          from: 'RAGESTATE <support@ragestate.com>',
-          replyTo: 'support@ragestate.com',
+          from: "RAGESTATE <support@ragestate.com>",
+          replyTo: "support@ragestate.com",
           subject: `✅ Your ticket transfer was claimed`,
-          text: `${claimerName || claimerEmail || 'The recipient'} has claimed the ticket you sent for ${result.eventName}.\n\nView your tickets: https://ragestate.com/account`,
+          text: `${
+            claimerName || claimerEmail || "The recipient"
+          } has claimed the ticket you sent for ${
+            result.eventName
+          }.\n\nView your tickets: https://ragestate.com/account`,
           html: `
             <div style="background:#f6f6f6;padding:24px 0">
               <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #eee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
@@ -2263,7 +2646,11 @@ app.post('/claim-ticket', async (req, res) => {
                 <div style="padding:24px">
                   <h2 style="margin:0 0 16px;font-size:18px;color:#111">✅ Ticket Transfer Complete</h2>
                   <p style="margin:0 0 12px;color:#111;font-size:14px;line-height:20px">
-                    <b>${claimerName || claimerEmail || 'The recipient'}</b> has claimed the ticket you sent for <b>${result.eventName}</b>.
+                    <b>${
+                      claimerName || claimerEmail || "The recipient"
+                    }</b> has claimed the ticket you sent for <b>${
+            result.eventName
+          }</b>.
                   </p>
                   <div style="margin:16px 0">
                     <a href="https://ragestate.com/account" style="display:inline-block;background:#E12D39;color:#fff;text-decoration:none;padding:10px 14px;border-radius:6px;font-size:14px">View My Tickets</a>
@@ -2276,15 +2663,17 @@ app.post('/claim-ticket', async (req, res) => {
         });
       }
     } catch (emailErr) {
-      logger.warn('Failed to send claim confirmation email', { error: String(emailErr) });
+      logger.warn("Failed to send claim confirmation email", {
+        error: String(emailErr),
+      });
     }
 
     // Send in-app notifications for the claim
     // Notify the claimer
     await createTransferNotification({
       uid: claimerUserId,
-      type: 'ticket_transfer_claimed',
-      title: '🎫 Ticket Claimed!',
+      type: "ticket_transfer_claimed",
+      title: "🎫 Ticket Claimed!",
       body: `You've claimed a ticket for ${result.eventName}`,
       data: {
         eventId: result.eventId,
@@ -2292,27 +2681,29 @@ app.post('/claim-ticket', async (req, res) => {
         ragerId: result.newRagerId,
         fromUserId: result.fromUserId,
       },
-      link: '/account?tab=tickets',
+      link: "/account?tab=tickets",
     });
 
     // Notify the original sender
     if (result.fromUserId) {
       await createTransferNotification({
         uid: result.fromUserId,
-        type: 'ticket_transfer_claimed',
-        title: '✅ Transfer Complete',
-        body: `${claimerName || claimerEmail || 'The recipient'} claimed your ticket for ${result.eventName}`,
+        type: "ticket_transfer_claimed",
+        title: "✅ Transfer Complete",
+        body: `${
+          claimerName || claimerEmail || "The recipient"
+        } claimed your ticket for ${result.eventName}`,
         data: {
           eventId: result.eventId,
           eventName: result.eventName,
           claimerUserId,
           claimerName: claimerName || null,
         },
-        link: '/account?tab=tickets',
+        link: "/account?tab=tickets",
       });
     }
 
-    logger.info('Ticket transfer claimed', {
+    logger.info("Ticket transfer claimed", {
       transferId: transferDoc.id,
       newRagerId: result.newRagerId,
       eventId: result.eventId,
@@ -2327,20 +2718,20 @@ app.post('/claim-ticket', async (req, res) => {
       ticketQuantity: result.ticketQuantity,
     });
   } catch (err) {
-    logger.error('claim-ticket error', { error: String(err) });
-    const message = err.message || 'Failed to claim ticket';
+    logger.error("claim-ticket error", { error: String(err) });
+    const message = err.message || "Failed to claim ticket";
     return res.status(400).json({ error: message });
   }
 });
 
 // Admin utility: manually create a ticket + purchase for a user and event
-app.post('/manual-create-ticket', async (req, res) => {
+app.post("/manual-create-ticket", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
@@ -2359,44 +2750,48 @@ app.post('/manual-create-ticket', async (req, res) => {
       currency,
     } = req.body || {};
 
-    if (!uid) return res.status(400).json({ error: 'uid required' });
+    if (!uid) return res.status(400).json({ error: "uid required" });
 
     const quantity = Math.max(1, parseInt(qty || 1, 10));
     const amountCents = Math.max(0, parseInt(priceCents || 0, 10));
     const amountStr = (amountCents / 100).toFixed(2);
     const orderNumber = providedOrderNumber || generateOrderNumber();
-    const token = require('crypto').randomBytes(16).toString('hex');
+    const token = require("crypto").randomBytes(16).toString("hex");
     const nowTs = admin.firestore.FieldValue.serverTimestamp();
-    const cur = (currency || 'usd').toLowerCase();
+    const cur = (currency || "usd").toLowerCase();
 
     // Resolve eventId if not provided
-    let eventId = (rawEventId && String(rawEventId).trim()) || '';
+    let eventId = (rawEventId && String(rawEventId).trim()) || "";
     if (!eventId && eventName) {
       const snap = await db
-        .collection('events')
-        .where('name', '==', String(eventName))
+        .collection("events")
+        .where("name", "==", String(eventName))
         .limit(2)
         .get();
-      if (snap.empty) return res.status(404).json({ error: 'event not found by name' });
+      if (snap.empty)
+        return res.status(404).json({ error: "event not found by name" });
       if (snap.size > 1)
-        return res.status(409).json({ error: 'multiple events match name; pass eventId' });
+        return res
+          .status(409)
+          .json({ error: "multiple events match name; pass eventId" });
       eventId = snap.docs[0].id;
     }
-    if (!eventId) return res.status(400).json({ error: 'eventId or eventName required' });
+    if (!eventId)
+      return res.status(400).json({ error: "eventId or eventName required" });
 
-    const eventRef = db.collection('events').doc(eventId);
-    const ragersCol = eventRef.collection('ragers');
+    const eventRef = db.collection("events").doc(eventId);
+    const ragersCol = eventRef.collection("ragers");
     const ragerDoc = ragersCol.doc();
 
     // Resolve email/name from customers/{uid} if missing
-    let resolvedEmail = (email && String(email)) || '';
-    let resolvedName = (name && String(name)) || '';
+    let resolvedEmail = (email && String(email)) || "";
+    let resolvedName = (name && String(name)) || "";
     if (!resolvedEmail || !resolvedName) {
       try {
-        const cust = await db.collection('customers').doc(uid).get();
+        const cust = await db.collection("customers").doc(uid).get();
         const c = cust.exists ? cust.data() || {} : {};
-        if (!resolvedEmail) resolvedEmail = c.email || c.customerEmail || '';
-        if (!resolvedName) resolvedName = c.name || c.customerName || '';
+        if (!resolvedEmail) resolvedEmail = c.email || c.customerEmail || "";
+        if (!resolvedName) resolvedName = c.name || c.customerName || "";
       } catch (_e) {}
     }
 
@@ -2404,17 +2799,18 @@ app.post('/manual-create-ticket', async (req, res) => {
     try {
       await db.runTransaction(async (tx) => {
         const evt = await tx.get(eventRef);
-        if (!evt.exists) throw new Error('Event not found');
+        if (!evt.exists) throw new Error("Event not found");
         const data = evt.data() || {};
-        const currentQty = typeof data.quantity === 'number' ? data.quantity : 0;
+        const currentQty =
+          typeof data.quantity === "number" ? data.quantity : 0;
         const newQty = Math.max(0, currentQty - quantity);
         tx.update(eventRef, { quantity: newQty });
 
         const rager = {
           active: true,
-          email: resolvedEmail || '',
+          email: resolvedEmail || "",
           firebaseId: uid,
-          owner: resolvedName || '',
+          owner: resolvedName || "",
           purchaseDate: nowTs,
           orderNumber,
           ticketQuantity: quantity,
@@ -2423,25 +2819,33 @@ app.post('/manual-create-ticket', async (req, res) => {
           usedCount: 0,
         };
         tx.set(ragerDoc, rager);
-        tx.set(db.collection('ticketTokens').doc(token), {
+        tx.set(db.collection("ticketTokens").doc(token), {
           eventId,
           ragerId: ragerDoc.id,
           createdAt: nowTs,
         });
         // Update event-user summary totals (userId-first model)
-        const summaryRef = db.collection('eventUsers').doc(eventId).collection('users').doc(uid);
+        const summaryRef = db
+          .collection("eventUsers")
+          .doc(eventId)
+          .collection("users")
+          .doc(uid);
         tx.set(
           summaryRef,
           {
             totalTickets: admin.firestore.FieldValue.increment(quantity),
             lastUpdated: nowTs,
           },
-          { merge: true },
+          { merge: true }
         );
       });
     } catch (e) {
-      logger.error('manual-create-ticket transaction failed', { message: e?.message });
-      return res.status(500).json({ error: 'transaction failed', message: e?.message });
+      logger.error("manual-create-ticket transaction failed", {
+        message: e?.message,
+      });
+      return res
+        .status(500)
+        .json({ error: "transaction failed", message: e?.message });
     }
 
     const purchaseDoc = {
@@ -2465,7 +2869,7 @@ app.post('/manual-create-ticket', async (req, res) => {
       orderDate: nowTs,
       orderNumber,
       paymentIntentId: paymentIntentId || `pi_manual_${Date.now()}`,
-      status: 'completed',
+      status: "completed",
       totalAmount: amountStr,
       currency: cur,
       discountAmount: 0,
@@ -2474,11 +2878,14 @@ app.post('/manual-create-ticket', async (req, res) => {
     };
 
     try {
-      await db.collection('purchases').doc(orderNumber).set(purchaseDoc, { merge: true });
       await db
-        .collection('customers')
+        .collection("purchases")
+        .doc(orderNumber)
+        .set(purchaseDoc, { merge: true });
+      await db
+        .collection("customers")
         .doc(uid)
-        .collection('purchases')
+        .collection("purchases")
         .doc(orderNumber)
         .set(
           Object.assign({}, purchaseDoc, {
@@ -2489,102 +2896,130 @@ app.post('/manual-create-ticket', async (req, res) => {
             cartItems: purchaseDoc.items,
             total: amountStr,
           }),
-          { merge: true },
+          { merge: true }
         );
     } catch (e) {
-      logger.warn('manual-create-ticket: purchase writes failed', { message: e?.message });
+      logger.warn("manual-create-ticket: purchase writes failed", {
+        message: e?.message,
+      });
     }
 
     if (createFulfillment) {
       try {
         await db
-          .collection('fulfillments')
+          .collection("fulfillments")
           .doc(purchaseDoc.paymentIntentId)
           .set(
             {
-              status: 'completed',
+              status: "completed",
               completedAt: admin.firestore.FieldValue.serverTimestamp(),
               createdTickets: 1,
-              details: [{ eventId, ragerId: ragerDoc.id, qty: quantity, orderNumber }],
+              details: [
+                { eventId, ragerId: ragerDoc.id, qty: quantity, orderNumber },
+              ],
               orderNumber,
-              email: resolvedEmail || '',
-              items: [{ title: title || eventId, productId: eventId, quantity }],
+              email: resolvedEmail || "",
+              items: [
+                { title: title || eventId, productId: eventId, quantity },
+              ],
               amount: amountCents,
               currency: cur,
             },
-            { merge: true },
+            { merge: true }
           );
       } catch (e) {
-        logger.warn('manual-create-ticket: fulfillment write failed (non-fatal)', {
-          message: e?.message,
-        });
+        logger.warn(
+          "manual-create-ticket: fulfillment write failed (non-fatal)",
+          {
+            message: e?.message,
+          }
+        );
       }
     }
 
-    return res.json({ ok: true, orderNumber, eventId, qty: quantity, email: resolvedEmail });
+    return res.json({
+      ok: true,
+      orderNumber,
+      eventId,
+      qty: quantity,
+      email: resolvedEmail,
+    });
   } catch (err) {
-    logger.error('manual-create-ticket error', err);
-    return res.status(500).json({ error: 'Failed' });
+    logger.error("manual-create-ticket error", err);
+    return res.status(500).json({ error: "Failed" });
   }
 });
 
 // Scan ticket: atomically consume one use for a rager identified by ticketToken
-app.post('/scan-ticket', async (req, res) => {
+app.post("/scan-ticket", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
-    const { token, userId, scannerId, eventId: expectedEventId } = req.body || {};
+    const {
+      token,
+      userId,
+      scannerId,
+      eventId: expectedEventId,
+    } = req.body || {};
 
     let ragerRef;
-    let parentEventId = '';
+    let parentEventId = "";
 
-    if (token && typeof token === 'string') {
+    if (token && typeof token === "string") {
       // Fast lookup via token mapping
-      let eventIdFromMap = '';
-      let ragerIdFromMap = '';
+      let eventIdFromMap = "";
+      let ragerIdFromMap = "";
       try {
-        const mapSnap = await db.collection('ticketTokens').doc(token).get();
+        const mapSnap = await db.collection("ticketTokens").doc(token).get();
         if (!mapSnap.exists) {
           try {
-            logger.info('scan-ticket: token mapping not found', {
-              tokenPrefix: typeof token === 'string' ? token.slice(0, 8) : '',
-              tokenLength: typeof token === 'string' ? token.length : 0,
+            logger.info("scan-ticket: token mapping not found", {
+              tokenPrefix: typeof token === "string" ? token.slice(0, 8) : "",
+              tokenLength: typeof token === "string" ? token.length : 0,
             });
           } catch (_e) {}
           return res
             .status(404)
-            .json({ error: 'Ticket not found', message: 'No mapping for token' });
+            .json({
+              error: "Ticket not found",
+              message: "No mapping for token",
+            });
         }
         const m = mapSnap.data() || {};
-        eventIdFromMap = String(m.eventId || '');
-        ragerIdFromMap = String(m.ragerId || '');
+        eventIdFromMap = String(m.eventId || "");
+        ragerIdFromMap = String(m.ragerId || "");
         if (!eventIdFromMap || !ragerIdFromMap) {
           try {
-            logger.warn('scan-ticket: mapping incomplete', {
+            logger.warn("scan-ticket: mapping incomplete", {
               eventId: eventIdFromMap,
               ragerId: ragerIdFromMap,
             });
           } catch (_e) {}
           return res.status(404).json({
-            error: 'Ticket mapping incomplete',
-            message: 'Mapping missing eventId or ragerId',
+            error: "Ticket mapping incomplete",
+            message: "Mapping missing eventId or ragerId",
           });
         }
       } catch (e) {
-        logger.error('scan-ticket map lookup error', { message: e?.message, code: e?.code });
-        return res.status(500).json({ error: 'Lookup failed', message: e?.message, code: e?.code });
+        logger.error("scan-ticket map lookup error", {
+          message: e?.message,
+          code: e?.code,
+        });
+        return res
+          .status(500)
+          .json({ error: "Lookup failed", message: e?.message, code: e?.code });
       }
 
       ragerRef = db
-        .collection('events')
+        .collection("events")
         .doc(eventIdFromMap)
-        .collection('ragers')
+        .collection("ragers")
         .doc(ragerIdFromMap);
       parentEventId = eventIdFromMap;
 
@@ -2592,28 +3027,31 @@ app.post('/scan-ticket', async (req, res) => {
         try {
           await incrementEventMetrics(expectedEventId, { scanDenials: 1 });
         } catch (_e) {}
-        return res.status(409).json({ error: 'Wrong event for ticket' });
+        return res.status(409).json({ error: "Wrong event for ticket" });
       }
-    } else if (userId && typeof userId === 'string') {
+    } else if (userId && typeof userId === "string") {
       // Scan by firebaseId requires explicit eventId to avoid collection group indexes
-      if (!expectedEventId || typeof expectedEventId !== 'string') {
+      if (!expectedEventId || typeof expectedEventId !== "string") {
         return res.status(400).json({
-          error: 'eventId required',
-          message: 'Provide eventId when scanning by userId',
+          error: "eventId required",
+          message: "Provide eventId when scanning by userId",
         });
       }
 
       parentEventId = expectedEventId;
       try {
-        const ragersRef = db.collection('events').doc(parentEventId).collection('ragers');
-        const qs = await ragersRef.where('firebaseId', '==', userId).get();
+        const ragersRef = db
+          .collection("events")
+          .doc(parentEventId)
+          .collection("ragers");
+        const qs = await ragersRef.where("firebaseId", "==", userId).get();
         if (qs.empty) {
           try {
             await incrementEventMetrics(parentEventId, { scanDenials: 1 });
           } catch (_e) {}
           return res.status(404).json({
-            error: 'Ticket not found',
-            message: 'No rager found for user at event',
+            error: "Ticket not found",
+            message: "No rager found for user at event",
           });
         }
         // Deterministic selection: choose doc with greatest remaining; tiebreaker earliest purchaseDate then lexicographic id
@@ -2625,10 +3063,16 @@ app.post('/scan-ticket', async (req, res) => {
           return {
             doc: d,
             remaining,
-            purchaseDate: v.purchaseDate && v.purchaseDate.toMillis ? v.purchaseDate.toMillis() : 0,
+            purchaseDate:
+              v.purchaseDate && v.purchaseDate.toMillis
+                ? v.purchaseDate.toMillis()
+                : 0,
           };
         });
-        const remainingTotal = enriched.reduce((acc, e) => acc + e.remaining, 0);
+        const remainingTotal = enriched.reduce(
+          (acc, e) => acc + e.remaining,
+          0
+        );
         if (remainingTotal <= 0) {
           const first = enriched[0];
           try {
@@ -2636,38 +3080,51 @@ app.post('/scan-ticket', async (req, res) => {
           } catch (_e) {}
           return res
             .status(409)
-            .json({ error: 'Ticket already used', remaining: 0, remainingTotal: 0 });
+            .json({
+              error: "Ticket already used",
+              remaining: 0,
+              remainingTotal: 0,
+            });
         }
         enriched.sort((a, b) => {
           if (b.remaining !== a.remaining) return b.remaining - a.remaining;
-          if (a.purchaseDate !== b.purchaseDate) return a.purchaseDate - b.purchaseDate;
+          if (a.purchaseDate !== b.purchaseDate)
+            return a.purchaseDate - b.purchaseDate;
           return a.doc.id.localeCompare(b.doc.id);
         });
         ragerRef = enriched[0].doc.ref;
         // Stash for later response
         req.__remainingTotalBefore = remainingTotal;
       } catch (e) {
-        logger.error('scan-ticket query by userId failed', { message: e?.message, code: e?.code });
-        return res.status(500).json({ error: 'Lookup failed', message: e?.message, code: e?.code });
+        logger.error("scan-ticket query by userId failed", {
+          message: e?.message,
+          code: e?.code,
+        });
+        return res
+          .status(500)
+          .json({ error: "Lookup failed", message: e?.message, code: e?.code });
       }
     } else {
       return res.status(400).json({
-        error: 'input required',
-        message: 'Provide either token or userId in JSON body',
+        error: "input required",
+        message: "Provide either token or userId in JSON body",
       });
     }
 
     let result;
     await db.runTransaction(async (tx) => {
       const fresh = await tx.get(ragerRef);
-      if (!fresh.exists) throw new Error('Ticket missing');
+      if (!fresh.exists) throw new Error("Ticket missing");
       const data = fresh.data() || {};
       const quantity = Math.max(1, parseInt(data.ticketQuantity || 1, 10));
       const usedCount = Math.max(0, parseInt(data.usedCount || 0, 10));
-      const uidForSummary = data.firebaseId || userId || '';
+      const uidForSummary = data.firebaseId || userId || "";
       const active = data.active !== false && usedCount < quantity;
       if (!active) {
-        result = { status: 409, body: { error: 'Ticket already used', remaining: 0 } };
+        result = {
+          status: 409,
+          body: { error: "Ticket already used", remaining: 0 },
+        };
         return;
       }
       const nextUsed = usedCount + 1;
@@ -2677,7 +3134,7 @@ app.post('/scan-ticket', async (req, res) => {
         active: nextActive,
         lastScanAt: admin.firestore.FieldValue.serverTimestamp(),
       };
-      if (scannerId && typeof scannerId === 'string') {
+      if (scannerId && typeof scannerId === "string") {
         update.lastScannedBy = scannerId;
       }
       tx.update(ragerRef, update);
@@ -2685,9 +3142,9 @@ app.post('/scan-ticket', async (req, res) => {
       const eventIdForSummary = parentEventId;
       if (eventIdForSummary && uidForSummary) {
         const summaryRef = db
-          .collection('eventUsers')
+          .collection("eventUsers")
           .doc(eventIdForSummary)
-          .collection('users')
+          .collection("users")
           .doc(uidForSummary);
         tx.set(
           summaryRef,
@@ -2695,7 +3152,7 @@ app.post('/scan-ticket', async (req, res) => {
             usedCount: admin.firestore.FieldValue.increment(1),
             lastScanAt: admin.firestore.FieldValue.serverTimestamp(),
           },
-          { merge: true },
+          { merge: true }
         );
       }
       result = {
@@ -2706,16 +3163,16 @@ app.post('/scan-ticket', async (req, res) => {
           ragerId: ragerRef.id,
           remaining: Math.max(0, quantity - nextUsed),
           remainingTotal:
-            typeof req.__remainingTotalBefore === 'number'
+            typeof req.__remainingTotalBefore === "number"
               ? Math.max(0, req.__remainingTotalBefore - 1)
               : undefined,
-          status: nextActive ? 'active' : 'inactive',
+          status: nextActive ? "active" : "inactive",
         },
       };
     });
 
     if (!result) {
-      return res.status(500).json({ error: 'Unknown scan error' });
+      return res.status(500).json({ error: "Unknown scan error" });
     }
     try {
       if (result.status === 200) {
@@ -2726,37 +3183,48 @@ app.post('/scan-ticket', async (req, res) => {
     } catch (_e) {}
     return res.status(result.status).json(result.body);
   } catch (err) {
-    logger.error('scan-ticket error', {
+    logger.error("scan-ticket error", {
       message: err?.message,
       code: err?.code,
       stack: err?.stack,
     });
     return res
       .status(500)
-      .json({ error: 'Failed to scan ticket', message: err?.message, code: err?.code });
+      .json({
+        error: "Failed to scan ticket",
+        message: err?.message,
+        code: err?.code,
+      });
   }
 });
 
 // Preview tickets for a user at an event (no mutation)
-app.post('/scan-ticket/preview', async (req, res) => {
+app.post("/scan-ticket/preview", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
     const { userId, eventId } = req.body || {};
     if (!userId || !eventId) {
-      return res.status(400).json({ error: 'userId and eventId required' });
+      return res.status(400).json({ error: "userId and eventId required" });
     }
 
-    const ragersRef = db.collection('events').doc(eventId).collection('ragers');
-    const qs = await ragersRef.where('firebaseId', '==', userId).get();
+    const ragersRef = db.collection("events").doc(eventId).collection("ragers");
+    const qs = await ragersRef.where("firebaseId", "==", userId).get();
     if (qs.empty) {
-      return res.json({ ok: true, eventId, userId, remainingTotal: 0, items: [], next: null });
+      return res.json({
+        ok: true,
+        eventId,
+        userId,
+        remainingTotal: 0,
+        items: [],
+        next: null,
+      });
     }
 
     const items = qs.docs.map((d) => {
@@ -2764,7 +3232,10 @@ app.post('/scan-ticket/preview', async (req, res) => {
       const qty = Math.max(1, parseInt(v.ticketQuantity || 1, 10));
       const used = Math.max(0, parseInt(v.usedCount || 0, 10));
       const remaining = Math.max(0, qty - used);
-      const ts = v.purchaseDate && v.purchaseDate.toMillis ? v.purchaseDate.toMillis() : 0;
+      const ts =
+        v.purchaseDate && v.purchaseDate.toMillis
+          ? v.purchaseDate.toMillis()
+          : 0;
       return {
         ragerId: d.id,
         remaining,
@@ -2793,36 +3264,41 @@ app.post('/scan-ticket/preview', async (req, res) => {
 
     return res.json({ ok: true, eventId, userId, remainingTotal, items, next });
   } catch (err) {
-    logger.error('scan-ticket/preview error', { message: err?.message, code: err?.code });
-    return res.status(500).json({ error: 'Failed to preview tickets', message: err?.message });
+    logger.error("scan-ticket/preview error", {
+      message: err?.message,
+      code: err?.code,
+    });
+    return res
+      .status(500)
+      .json({ error: "Failed to preview tickets", message: err?.message });
   }
 });
 
 // Admin: backfill ticketToken/usedCount for an event's ragers and ensure token mapping
-app.post('/backfill-ticket-tokens', async (req, res) => {
+app.post("/backfill-ticket-tokens", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
     const { eventId, dryRun } = req.body || {};
-    if (!eventId || typeof eventId !== 'string') {
-      return res.status(400).json({ error: 'eventId required' });
+    if (!eventId || typeof eventId !== "string") {
+      return res.status(400).json({ error: "eventId required" });
     }
 
-    const eventRef = db.collection('events').doc(eventId);
-    const ragersRef = eventRef.collection('ragers');
+    const eventRef = db.collection("events").doc(eventId);
+    const ragersRef = eventRef.collection("ragers");
     const snap = await ragersRef.get();
     if (snap.empty) {
       return res.json({ ok: true, eventId, processed: 0, updated: 0 });
     }
 
-    const crypto = require('crypto');
-    const gen = () => crypto.randomBytes(16).toString('hex');
+    const crypto = require("crypto");
+    const gen = () => crypto.randomBytes(16).toString("hex");
 
     let processed = 0;
     let updated = 0;
@@ -2835,14 +3311,14 @@ app.post('/backfill-ticket-tokens', async (req, res) => {
       processed += 1;
       const data = doc.data() || {};
       const updates = {};
-      if (!data.ticketToken || typeof data.ticketToken !== 'string') {
+      if (!data.ticketToken || typeof data.ticketToken !== "string") {
         updates.ticketToken = gen();
       }
-      if (typeof data.usedCount !== 'number') {
+      if (typeof data.usedCount !== "number") {
         updates.usedCount = 0;
       }
       // If active is missing, derive from usedCount/ticketQuantity; else leave as-is
-      if (typeof data.active !== 'boolean') {
+      if (typeof data.active !== "boolean") {
         const qty = Math.max(1, parseInt(data.ticketQuantity || 1, 10));
         const used = Math.max(0, parseInt(data.usedCount || 0, 10));
         updates.active = used < qty;
@@ -2876,7 +3352,7 @@ app.post('/backfill-ticket-tokens', async (req, res) => {
 
       // Ensure token mapping exists
       if (needsMap && !dryRun) {
-        const mapRef = db.collection('ticketTokens').doc(finalToken);
+        const mapRef = db.collection("ticketTokens").doc(finalToken);
         batch.set(
           mapRef,
           {
@@ -2884,7 +3360,7 @@ app.post('/backfill-ticket-tokens', async (req, res) => {
             ragerId: doc.id,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
           },
-          { merge: true },
+          { merge: true }
         );
         mappingsCreated += 1;
         batchCount += 1;
@@ -2910,42 +3386,47 @@ app.post('/backfill-ticket-tokens', async (req, res) => {
       samples,
     });
   } catch (err) {
-    logger.error('backfill-ticket-tokens error', err);
-    return res.status(500).json({ error: 'Failed to backfill' });
+    logger.error("backfill-ticket-tokens error", err);
+    return res.status(500).json({ error: "Failed to backfill" });
   }
 });
 
 // Admin: register Printify webhooks for order status updates
 // Call once after deploy to set up webhook listeners
-app.post('/register-printify-webhooks', async (req, res) => {
+app.post("/register-printify-webhooks", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
     if (!isPrintifyConfigured()) {
-      return res.status(503).json({ error: 'Printify not configured' });
+      return res.status(503).json({ error: "Printify not configured" });
     }
 
     const { baseUrl, secret } = req.body || {};
     // Default to production URL if not provided
     const webhookBaseUrl =
-      baseUrl || 'https://us-central1-ragestate-app.cloudfunctions.net/printifyWebhook';
+      baseUrl ||
+      "https://us-central1-ragestate-app.cloudfunctions.net/printifyWebhook";
     const webhookSecret = secret || process.env.PRINTIFY_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
       return res.status(400).json({
-        error: 'Webhook secret required',
-        hint: 'Set PRINTIFY_WEBHOOK_SECRET or pass secret in body',
+        error: "Webhook secret required",
+        hint: "Set PRINTIFY_WEBHOOK_SECRET or pass secret in body",
       });
     }
 
     // Topics to register
-    const topics = ['order:shipment:created', 'order:shipment:delivered', 'order:updated'];
+    const topics = [
+      "order:shipment:created",
+      "order:shipment:delivered",
+      "order:updated",
+    ];
 
     // Check existing webhooks to avoid duplicates
     const existing = await getPrintifyWebhooks();
@@ -2954,7 +3435,7 @@ app.post('/register-printify-webhooks', async (req, res) => {
     const results = [];
     for (const topic of topics) {
       if (existingTopics.has(topic)) {
-        results.push({ topic, status: 'already_registered' });
+        results.push({ topic, status: "already_registered" });
         continue;
       }
 
@@ -2964,70 +3445,80 @@ app.post('/register-printify-webhooks', async (req, res) => {
           url: webhookBaseUrl,
           secret: webhookSecret,
         });
-        results.push({ topic, status: 'registered', id: webhook.id });
+        results.push({ topic, status: "registered", id: webhook.id });
       } catch (err) {
-        results.push({ topic, status: 'failed', error: err.message });
+        results.push({ topic, status: "failed", error: err.message });
       }
     }
 
-    logger.info('Printify webhooks registration', { results });
+    logger.info("Printify webhooks registration", { results });
     return res.json({ ok: true, webhookUrl: webhookBaseUrl, results });
   } catch (err) {
-    logger.error('register-printify-webhooks error', err);
-    return res.status(500).json({ error: 'Failed to register webhooks', message: err?.message });
+    logger.error("register-printify-webhooks error", err);
+    return res
+      .status(500)
+      .json({ error: "Failed to register webhooks", message: err?.message });
   }
 });
 
 // Admin: list registered Printify webhooks
-app.get('/printify-webhooks', async (req, res) => {
+app.get("/printify-webhooks", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
     if (!isPrintifyConfigured()) {
-      return res.status(503).json({ error: 'Printify not configured' });
+      return res.status(503).json({ error: "Printify not configured" });
     }
 
     const webhooks = await getPrintifyWebhooks();
     return res.json({ ok: true, webhooks: webhooks || [] });
   } catch (err) {
-    logger.error('get-printify-webhooks error', err);
-    return res.status(500).json({ error: 'Failed to get webhooks', message: err?.message });
+    logger.error("get-printify-webhooks error", err);
+    return res
+      .status(500)
+      .json({ error: "Failed to get webhooks", message: err?.message });
   }
 });
 
 // Admin: reconcile eventUsers summaries for a specific event from ragers
-app.post('/reconcile-event-users', async (req, res) => {
+app.post("/reconcile-event-users", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
     const { eventId, dryRun } = req.body || {};
-    if (!eventId || typeof eventId !== 'string') {
-      return res.status(400).json({ error: 'eventId required' });
+    if (!eventId || typeof eventId !== "string") {
+      return res.status(400).json({ error: "eventId required" });
     }
 
     // Gather per-user aggregates from ragers
-    const ragersRef = db.collection('events').doc(eventId).collection('ragers');
+    const ragersRef = db.collection("events").doc(eventId).collection("ragers");
     const snap = await ragersRef.get();
     if (snap.empty) {
-      return res.json({ ok: true, eventId, processedUsers: 0, updatedUsers: 0, dryRun: !!dryRun });
+      return res.json({
+        ok: true,
+        eventId,
+        processedUsers: 0,
+        updatedUsers: 0,
+        dryRun: !!dryRun,
+      });
     }
 
     const perUser = new Map();
     snap.docs.forEach((d) => {
       const v = d.data() || {};
-      const uid = String(v.firebaseId || '').trim();
+      const uid = String(v.firebaseId || "").trim();
       if (!uid) return;
       const qty = Math.max(1, parseInt(v.ticketQuantity || 1, 10));
       const used = Math.max(0, parseInt(v.usedCount || 0, 10));
@@ -3046,7 +3537,8 @@ app.post('/reconcile-event-users', async (req, res) => {
         lastScanAt &&
         lastScanAt.toMillis &&
         (!agg.lastScanAt ||
-          (agg.lastScanAt.toMillis && lastScanAt.toMillis() > agg.lastScanAt.toMillis()))
+          (agg.lastScanAt.toMillis &&
+            lastScanAt.toMillis() > agg.lastScanAt.toMillis()))
       ) {
         agg.lastScanAt = lastScanAt;
       }
@@ -3063,26 +3555,35 @@ app.post('/reconcile-event-users', async (req, res) => {
     // For each user, compare with existing summary and write if different
     for (const uid of users) {
       const target = perUser.get(uid);
-      const summaryRef = db.collection('eventUsers').doc(eventId).collection('users').doc(uid);
+      const summaryRef = db
+        .collection("eventUsers")
+        .doc(eventId)
+        .collection("users")
+        .doc(uid);
       let prevTotal = null;
       let prevUsed = null;
       try {
         const s = await summaryRef.get();
         if (s.exists) {
           const sd = s.data() || {};
-          prevTotal = typeof sd.totalTickets === 'number' ? sd.totalTickets : null;
-          prevUsed = typeof sd.usedCount === 'number' ? sd.usedCount : null;
+          prevTotal =
+            typeof sd.totalTickets === "number" ? sd.totalTickets : null;
+          prevUsed = typeof sd.usedCount === "number" ? sd.usedCount : null;
         }
       } catch (_e) {}
 
-      const needsUpdate = prevTotal !== target.totalTickets || prevUsed !== target.usedCount;
+      const needsUpdate =
+        prevTotal !== target.totalTickets || prevUsed !== target.usedCount;
       if (needsUpdate) {
         updatedUsers += 1;
         if (samples.length < 10) {
           samples.push({
             uid,
             prev: { totalTickets: prevTotal, usedCount: prevUsed },
-            next: { totalTickets: target.totalTickets, usedCount: target.usedCount },
+            next: {
+              totalTickets: target.totalTickets,
+              usedCount: target.usedCount,
+            },
           });
         }
         if (!dryRun) {
@@ -3111,35 +3612,56 @@ app.post('/reconcile-event-users', async (req, res) => {
     if (!dryRun) {
       try {
         const runId = `run-${Date.now()}`;
-        await db.collection('reconciliations').doc(eventId).collection('runs').doc(runId).set(
-          {
-            eventId,
-            processedUsers,
-            updatedUsers,
-            samples,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
+        await db
+          .collection("reconciliations")
+          .doc(eventId)
+          .collection("runs")
+          .doc(runId)
+          .set(
+            {
+              eventId,
+              processedUsers,
+              updatedUsers,
+              samples,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
       } catch (e) {
-        logger.warn('reconcile-event-users: failed to write audit record (non-fatal)', {
-          message: e?.message,
-        });
+        logger.warn(
+          "reconcile-event-users: failed to write audit record (non-fatal)",
+          {
+            message: e?.message,
+          }
+        );
       }
     }
 
-    logger.info('reconcile-event-users completed', { eventId, processedUsers, updatedUsers });
-    return res.json({ ok: true, eventId, processedUsers, updatedUsers, dryRun: !!dryRun, samples });
+    logger.info("reconcile-event-users completed", {
+      eventId,
+      processedUsers,
+      updatedUsers,
+    });
+    return res.json({
+      ok: true,
+      eventId,
+      processedUsers,
+      updatedUsers,
+      dryRun: !!dryRun,
+      samples,
+    });
   } catch (err) {
-    logger.error('reconcile-event-users error', err);
-    return res.status(500).json({ error: 'Failed to reconcile', message: err?.message });
+    logger.error("reconcile-event-users error", err);
+    return res
+      .status(500)
+      .json({ error: "Failed to reconcile", message: err?.message });
   }
 });
 
 function generateOrderNumber() {
-  const prefix = 'ORDER';
+  const prefix = "ORDER";
   const d = new Date();
-  const datePart = d.toISOString().slice(0, 10).replace(/-/g, '');
+  const datePart = d.toISOString().slice(0, 10).replace(/-/g, "");
   const rand = Math.floor(1000 + Math.random() * 9000);
   return `${prefix}-${datePart}-${rand}`;
 }
@@ -3147,43 +3669,49 @@ function generateOrderNumber() {
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN: SEND EMAIL CAMPAIGN
 // ─────────────────────────────────────────────────────────────────────────────
-app.post('/send-campaign', async (req, res) => {
+app.post("/send-campaign", async (req, res) => {
   try {
     // Verify proxy key (admin-only endpoint)
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
     const { subject, text, html, recipients } = req.body || {};
 
     // Validate inputs
-    if (!subject || typeof subject !== 'string') {
-      return res.status(400).json({ error: 'subject is required' });
+    if (!subject || typeof subject !== "string") {
+      return res.status(400).json({ error: "subject is required" });
     }
     if (!text && !html) {
-      return res.status(400).json({ error: 'text or html content is required' });
+      return res
+        .status(400)
+        .json({ error: "text or html content is required" });
     }
     if (!Array.isArray(recipients) || recipients.length === 0) {
-      return res.status(400).json({ error: 'recipients array is required' });
+      return res.status(400).json({ error: "recipients array is required" });
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const validRecipients = recipients.filter((r) => typeof r === 'string' && emailRegex.test(r));
+    const validRecipients = recipients.filter(
+      (r) => typeof r === "string" && emailRegex.test(r)
+    );
     if (validRecipients.length === 0) {
-      return res.status(400).json({ error: 'No valid email addresses provided' });
+      return res
+        .status(400)
+        .json({ error: "No valid email addresses provided" });
     }
 
     // Rate limit: max 1000 recipients per request
     if (validRecipients.length > 1000) {
-      return res.status(400).json({ error: 'Max 1000 recipients per request' });
+      return res.status(400).json({ error: "Max 1000 recipients per request" });
     }
 
-    logger.info('Sending campaign', {
+    logger.info("Sending campaign", {
       subject,
       recipientCount: validRecipients.length,
     });
@@ -3191,8 +3719,8 @@ app.post('/send-campaign', async (req, res) => {
     // Send via SES bulk email
     const results = await sendBulkEmail({
       recipients: validRecipients,
-      from: 'RAGESTATE <orders@ragestate.com>',
-      replyTo: 'support@ragestate.com',
+      from: "RAGESTATE <orders@ragestate.com>",
+      replyTo: "support@ragestate.com",
       subject,
       text,
       html,
@@ -3200,7 +3728,7 @@ app.post('/send-campaign', async (req, res) => {
 
     const messageIds = results.map((r) => r.messageId).filter(Boolean);
 
-    logger.info('Campaign sent successfully', {
+    logger.info("Campaign sent successfully", {
       subject,
       recipientCount: validRecipients.length,
       batches: results.length,
@@ -3213,19 +3741,24 @@ app.post('/send-campaign', async (req, res) => {
       messageIds,
     });
   } catch (err) {
-    logger.error('send-campaign error', { message: err?.message, stack: err?.stack });
-    return res.status(500).json({ error: 'Failed to send campaign', message: err?.message });
+    logger.error("send-campaign error", {
+      message: err?.message,
+      stack: err?.stack,
+    });
+    return res
+      .status(500)
+      .json({ error: "Failed to send campaign", message: err?.message });
   }
 });
 
 // Admin: manually trigger daily analytics aggregation
-app.post('/run-daily-aggregation', async (req, res) => {
+app.post("/run-daily-aggregation", async (req, res) => {
   try {
     const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
     if (expectedProxyKey) {
-      const provided = req.get('x-proxy-key');
+      const provided = req.get("x-proxy-key");
       if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ error: "Forbidden" });
       }
     }
 
@@ -3236,21 +3769,23 @@ app.post('/run-daily-aggregation', async (req, res) => {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(date)) {
         return res.status(400).json({
-          error: 'Invalid date format',
-          message: 'Date must be in YYYY-MM-DD format',
+          error: "Invalid date format",
+          message: "Date must be in YYYY-MM-DD format",
         });
       }
       // Validate it's a real date
       const parsed = new Date(`${date}T00:00:00.000Z`);
       if (isNaN(parsed.getTime())) {
         return res.status(400).json({
-          error: 'Invalid date',
-          message: 'Date is not a valid calendar date',
+          error: "Invalid date",
+          message: "Date is not a valid calendar date",
         });
       }
     }
 
-    logger.info('Manual daily aggregation triggered', { date: date || 'yesterday' });
+    logger.info("Manual daily aggregation triggered", {
+      date: date || "yesterday",
+    });
 
     const result = await runDailyAggregation(date || null);
 
@@ -3269,8 +3804,13 @@ app.post('/run-daily-aggregation', async (req, res) => {
       totals: result.totals,
     });
   } catch (err) {
-    logger.error('run-daily-aggregation error', { message: err?.message, stack: err?.stack });
-    return res.status(500).json({ error: 'Failed to run aggregation', message: err?.message });
+    logger.error("run-daily-aggregation error", {
+      message: err?.message,
+      stack: err?.stack,
+    });
+    return res
+      .status(500)
+      .json({ error: "Failed to run aggregation", message: err?.message });
   }
 });
 
@@ -3288,9 +3828,9 @@ exports.stripePayment = onRequest(
       PRINTIFY_SHOP_ID,
       PRINTIFY_WEBHOOK_SECRET,
     ],
-    invoker: 'public',
+    invoker: "public",
   },
-  app,
+  app
 );
 
 // Callable function to create a Stripe customer for the authenticated, verified user
@@ -3299,86 +3839,104 @@ exports.createStripeCustomer = onCall(
   { enforceAppCheck: true, secrets: [STRIPE_SECRET] },
   async (request) => {
     if (!request.app) {
-      throw new HttpsError('failed-precondition', 'App Check required');
+      throw new HttpsError("failed-precondition", "App Check required");
     }
     if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'Authentication required');
+      throw new HttpsError("unauthenticated", "Authentication required");
     }
 
     const uid = request.auth.uid;
 
     // Rate limit check
-    const rateLimitResult = await checkRateLimit('CREATE_CUSTOMER', uid);
+    const rateLimitResult = await checkRateLimit("CREATE_CUSTOMER", uid);
     if (!rateLimitResult.allowed) {
-      logger.warn('createStripeCustomer rate limited', { uid });
-      throw new HttpsError('resource-exhausted', rateLimitResult.message);
+      logger.warn("createStripeCustomer rate limited", { uid });
+      throw new HttpsError("resource-exhausted", rateLimitResult.message);
     }
 
     const stripe = getStripe();
     if (!stripe) {
       throw new HttpsError(
-        'unavailable',
-        'Stripe is not configured. Set the STRIPE_SECRET secret.',
+        "unavailable",
+        "Stripe is not configured. Set the STRIPE_SECRET secret."
       );
     }
 
     const email = request.auth.token.email || undefined;
     const emailVerified = request.auth.token.email_verified === true;
     if (!emailVerified) {
-      throw new HttpsError('permission-denied', 'Email verification required');
+      throw new HttpsError("permission-denied", "Email verification required");
     }
 
     try {
-      const custRef = db.collection('customers').doc(uid);
+      const custRef = db.collection("customers").doc(uid);
       const existing = await custRef.get();
-      if (existing.exists && existing.data() && existing.data().stripeCustomerId) {
+      if (
+        existing.exists &&
+        existing.data() &&
+        existing.data().stripeCustomerId
+      ) {
         return { id: existing.data().stripeCustomerId, ok: true, reused: true };
       }
 
-      const name = request.data && request.data.name ? request.data.name : undefined;
-      const customer = await stripe.customers.create({ email, name, metadata: { uid } });
+      const name =
+        request.data && request.data.name ? request.data.name : undefined;
+      const customer = await stripe.customers.create({
+        email,
+        name,
+        metadata: { uid },
+      });
 
       await Promise.all([
         custRef.set(
-          { stripeCustomerId: customer.id, lastUpdated: new Date().toISOString() },
-          { merge: true },
+          {
+            stripeCustomerId: customer.id,
+            lastUpdated: new Date().toISOString(),
+          },
+          { merge: true }
         ),
         // Best-effort RTDB write; ignore if RTDB is not enabled
         (async () => {
           try {
-            await admin.database().ref(`users/${uid}/stripeCustomerId`).set(customer.id);
+            await admin
+              .database()
+              .ref(`users/${uid}/stripeCustomerId`)
+              .set(customer.id);
           } catch (e) {
-            logger.warn('RTDB write failed (non-fatal)', e);
+            logger.warn("RTDB write failed (non-fatal)", e);
           }
         })(),
       ]);
 
       return { id: customer.id, ok: true };
     } catch (err) {
-      logger.error('createStripeCustomer failed', err);
-      throw new HttpsError('internal', 'Failed to create Stripe customer');
+      logger.error("createStripeCustomer failed", err);
+      throw new HttpsError("internal", "Failed to create Stripe customer");
     }
-  },
+  }
 );
 
 // Scheduled daily reconcile to keep eventUsers summaries fresh
 exports.reconcileEventUsersDaily = onSchedule(
-  { schedule: 'every day 03:00', timeZone: 'America/Los_Angeles' },
+  { schedule: "every day 03:00", timeZone: "America/Los_Angeles" },
   async () => {
     try {
-      const evSnap = await db.collection('events').limit(50).get();
+      const evSnap = await db.collection("events").limit(50).get();
       if (evSnap.empty) return;
       for (const ev of evSnap.docs) {
         const eventId = ev.id;
         try {
-          const ragersRef = db.collection('events').doc(eventId).collection('ragers');
+          const ragersRef = db
+            .collection("events")
+            .doc(eventId)
+            .collection("ragers");
           const snap = await ragersRef.get();
           if (snap.empty) continue;
 
           const perUser = new Map();
           snap.docs.forEach((d) => {
             const v = d.data() || {};
-            const uid = String(v.firebaseId || '').trim();
+            const uid = String(v.firebaseId || "").trim();
             if (!uid) return;
             const qty = Math.max(1, parseInt(v.ticketQuantity || 1, 10));
             const used = Math.max(0, parseInt(v.usedCount || 0, 10));
@@ -3393,7 +3951,8 @@ exports.reconcileEventUsersDaily = onSchedule(
               lastScanAt &&
               lastScanAt.toMillis &&
               (!agg.lastScanAt ||
-                (agg.lastScanAt.toMillis && lastScanAt.toMillis() > agg.lastScanAt.toMillis()))
+                (agg.lastScanAt.toMillis &&
+                  lastScanAt.toMillis() > agg.lastScanAt.toMillis()))
             ) {
               agg.lastScanAt = lastScanAt;
             }
@@ -3403,28 +3962,33 @@ exports.reconcileEventUsersDaily = onSchedule(
           let count = 0;
           for (const [uid, target] of perUser.entries()) {
             const summaryRef = db
-              .collection('eventUsers')
+              .collection("eventUsers")
               .doc(eventId)
-              .collection('users')
+              .collection("users")
               .doc(uid);
             const s = await summaryRef.get();
             let prevTotal = null;
             let prevUsed = null;
             if (s.exists) {
               const d = s.data() || {};
-              prevTotal = typeof d.totalTickets === 'number' ? d.totalTickets : null;
-              prevUsed = typeof d.usedCount === 'number' ? d.usedCount : null;
+              prevTotal =
+                typeof d.totalTickets === "number" ? d.totalTickets : null;
+              prevUsed = typeof d.usedCount === "number" ? d.usedCount : null;
             }
-            if (prevTotal !== target.totalTickets || prevUsed !== target.usedCount) {
+            if (
+              prevTotal !== target.totalTickets ||
+              prevUsed !== target.usedCount
+            ) {
               batch.set(
                 summaryRef,
                 {
                   totalTickets: target.totalTickets,
                   usedCount: target.usedCount,
-                  lastScanAt: target.lastScanAt || admin.firestore.FieldValue.delete(),
+                  lastScanAt:
+                    target.lastScanAt || admin.firestore.FieldValue.delete(),
                   lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                 },
-                { merge: true },
+                { merge: true }
               );
               count += 1;
               if (count >= 400) {
@@ -3438,9 +4002,9 @@ exports.reconcileEventUsersDaily = onSchedule(
 
           try {
             await db
-              .collection('reconciliations')
+              .collection("reconciliations")
               .doc(eventId)
-              .collection('runs')
+              .collection("runs")
               .doc(`auto-${Date.now()}`)
               .set(
                 {
@@ -3450,19 +4014,24 @@ exports.reconcileEventUsersDaily = onSchedule(
                   createdAt: admin.firestore.FieldValue.serverTimestamp(),
                   automated: true,
                 },
-                { merge: true },
+                { merge: true }
               );
           } catch (_e) {}
         } catch (e) {
           try {
-            logger.warn('scheduled reconcile failed for event', { eventId, message: e?.message });
+            logger.warn("scheduled reconcile failed for event", {
+              eventId,
+              message: e?.message,
+            });
           } catch (_e) {}
         }
       }
     } catch (err) {
       try {
-        logger.error('reconcileEventUsersDaily error', { message: err?.message });
+        logger.error("reconcileEventUsersDaily error", {
+          message: err?.message,
+        });
       } catch (_e) {}
     }
-  },
+  }
 );

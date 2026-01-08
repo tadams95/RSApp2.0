@@ -23,5 +23,8 @@ export {
 } from "./EmailTransferForm";
 export type { EmailTransferFormProps } from "./EmailTransferForm";
 
-// Future exports (to be implemented):
-// export { default as PendingTransferCard } from './PendingTransferCard';
+export { default as PendingTransferCard } from "./PendingTransferCard";
+export type {
+  PendingTransfer,
+  PendingTransferCardProps,
+} from "./PendingTransferCard";

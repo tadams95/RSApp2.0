@@ -228,9 +228,12 @@ interface EmailTransferFormProps {
   - Success message: "Transfer sent! We've sent an email to [email]. They have 72 hours to claim."
   - Alert shown after successful transfer
 
-- [ ] **2.2.5** Add "Resend Email" for pending transfers
-  - Button in PendingTransferCard
-  - Re-call `/transfer-ticket` endpoint (same logic)
+- [x] **2.2.5** Add "Resend Email" for pending transfers ✅
+  - Button in PendingTransferCard (for email transfers only)
+  - `/resend-transfer-email` endpoint in Cloud Function
+  - 5-minute rate limit between resends
+  - Generates new claim token (invalidates old)
+  - Reminder-styled email sent
 
 ---
 
@@ -332,30 +335,32 @@ export async function getPendingTransfers(userId: string): Promise<Transfer[]> {
 }
 ```
 
-### Implementation Checklist
+### 2.3 Implementation Checklist
 
-- [ ] **2.3.1** Create `src/services/transferService.ts`
+- [x] **2.3.1** Create `src/services/transferService.ts` ✅
 
   - `initiateTransfer()` - wraps `/transfer-ticket`
   - `cancelTransfer()` - wraps `/cancel-transfer`
   - `getPendingTransfers()` - queries Firestore `ticketTransfers`
   - `getIncomingTransfers()` - queries where `toUserId === userId`
 
-- [ ] **2.3.2** Add proper error handling
+- [x] **2.3.2** Add proper error handling ✅
 
-  - Network errors
-  - Auth errors (not logged in)
-  - Validation errors (ticket already transferred, etc.)
-  - Rate limit errors (429)
+  - Network errors (NETWORK_ERROR code)
+  - Auth errors (AUTH_ERROR with 401)
+  - Validation errors (VALIDATION_ERROR with 400)
+  - API errors parsed from response
 
-- [ ] **2.3.3** Add loading states
+- [x] **2.3.3** Add loading states ✅
 
-  - Use React Query mutations for optimistic updates
-  - Show spinner during API calls
+  - `isTransferring` state in MyEvents.tsx
+  - Loading spinners shown during API calls
 
-- [ ] **2.3.4** Update my-events.tsx to use Cloud Function
-  - Replace direct `updateDoc()` in `transferTicket()` with `initiateTransfer()`
-  - This creates proper `ticketTransfers` doc + sends claim email
+- [x] **2.3.4** Update my-events.tsx to use Cloud Function ✅
+  - QR transfer now uses `initiateTransfer({ recipientUserId })`
+  - Username transfer uses `initiateTransfer({ recipientUsername })`
+  - Email transfer uses `initiateTransfer({ recipientEmail })`
+  - Creates proper `ticketTransfers` doc + sends notifications
 
 ---
 
@@ -495,27 +500,27 @@ src/app/(app)/transfer/
 └── pending.tsx          # View/cancel outgoing transfers
 ```
 
-### Implementation Checklist
+### 2.4 Implementation Checklist
 
-- [ ] **2.4.1** Add deep link handler to `_layout.tsx`
+- [x] **2.4.1** Add deep link handler to `_layout.tsx` ✅
 
   - Handle `ragestate://transfer/...` scheme
   - Handle `https://ragestate.com/claim-ticket?t=...` web URLs
   - Navigate to claim screen with token param
 
-- [ ] **2.4.2** Create `src/app/(app)/transfer/_layout.tsx`
+- [x] **2.4.2** Create `src/app/(app)/transfer/_layout.tsx` ✅
 
   - Stack navigator with "Claim Ticket" / "Pending Transfers" headers
   - Back button to My Events
 
-- [ ] **2.4.3** Create `src/app/(app)/transfer/claim.tsx`
+- [x] **2.4.3** Create `src/app/(app)/transfer/claim.tsx` ✅
 
   - Query `ticketTransfers` by hashed claim token
   - Display: Event name, date, sender name, ticket quantity
   - "Claim Ticket" button
   - Loading and error states
 
-- [ ] **2.4.4** Implement claim logic
+- [x] **2.4.4** Implement claim logic ✅
 
   - Verify transfer is still pending
   - Verify expiration (72 hours)
@@ -523,24 +528,24 @@ src/app/(app)/transfer/
   - Update `rager` doc with new owner's firebaseId
   - Create notification for sender
 
-- [ ] **2.4.5** Handle expired transfers
+- [x] **2.4.5** Handle expired transfers ✅
 
   - Check `expiresAt` field
   - Show "This transfer has expired" message
   - Option to contact sender
 
-- [ ] **2.4.6** Handle already claimed transfers
+- [x] **2.4.6** Handle already claimed transfers ✅
 
   - Show "This ticket has already been claimed"
   - Link to My Events
 
-- [ ] **2.4.7** Create `src/app/(app)/transfer/pending.tsx`
+- [x] **2.4.7** Create `src/app/(app)/transfer/pending.tsx` ✅
 
   - List all pending outgoing transfers
   - Show recipient, event, status, time remaining
   - "Cancel Transfer" button per item
 
-- [ ] **2.4.8** Add cancel transfer functionality
+- [x] **2.4.8** Add cancel transfer functionality ✅
   - Call `transferService.cancelTransfer()`
   - Remove `pendingTransferTo` from rager doc
   - Update `ticketTransfers` status to 'cancelled'
@@ -614,9 +619,9 @@ interface PendingTransferCardProps {
 // - Resend email button (optional)
 ```
 
-### Implementation Checklist
+### 2.5 Implementation Checklist
 
-- [ ] **2.5.1** Create `src/components/transfer/PendingTransferCard.tsx`
+- [x] **2.5.1** Create `src/components/transfer/PendingTransferCard.tsx` ✅
 
   - Event name display
   - Recipient info (username with @ or email)
@@ -624,19 +629,19 @@ interface PendingTransferCardProps {
   - Cancel button with confirmation
   - Resend button
 
-- [ ] **2.5.2** Add `getPendingTransfers()` React Query hook
+- [x] **2.5.2** Add `getPendingTransfers()` React Query hook ✅
 
   - Query `ticketTransfers` collection
   - Filter: `fromUserId === currentUser && status === 'pending'`
   - Order by `createdAt` desc
 
-- [ ] **2.5.3** Integrate into my-events.tsx
+- [x] **2.5.3** Integrate into my-events.tsx ✅
 
   - Add pending transfers section above events list
   - Show count badge if pending > 0
   - Pull-to-refresh includes pending transfers
 
-- [ ] **2.5.4** Add "View All Pending" link
+- [x] **2.5.4** Add "View All Pending" link ✅
   - Navigate to `/transfer/pending` for full list
   - Useful if many pending transfers
 
@@ -676,26 +681,26 @@ These notification types should be added to NotificationManager:
 
 ### Must Have ✅
 
-- [ ] Users can transfer tickets via @username lookup
-- [ ] Users can transfer tickets via email
-- [ ] Profile preview shows before confirming transfer
-- [ ] Cloud Function `/transfer-ticket` used instead of direct Firestore
-- [ ] Transfer creates `ticketTransfers` doc for tracking
-- [ ] Claim emails sent via AWS SES
+- [x] Users can transfer tickets via @username lookup
+- [x] Users can transfer tickets via email
+- [x] Profile preview shows before confirming transfer
+- [x] Cloud Function `/transfer-ticket` used instead of direct Firestore
+- [x] Transfer creates `ticketTransfers` doc for tracking
+- [x] Claim emails sent via AWS SES
 
 ### Should Have 🟡
 
-- [ ] Pending transfers visible in My Events
-- [ ] Users can cancel pending transfers
-- [ ] Deep links open claim screen
-- [ ] Transfer claim works end-to-end
-- [ ] Expired transfers handled gracefully
+- [x] Pending transfers visible in My Events
+- [x] Users can cancel pending transfers
+- [x] Deep links open claim screen
+- [x] Transfer claim works end-to-end
+- [x] Expired transfers handled gracefully
 
 ### Nice to Have 🔵
 
-- [ ] Username autocomplete while typing
-- [ ] "Resend email" for pending transfers
-- [ ] All transfer events tracked in PostHog
+- [x] Username autocomplete while typing
+- [x] "Resend email" for pending transfers
+- [x] All transfer events tracked in PostHog
 
 ---
 
@@ -768,45 +773,45 @@ src/
 
 ### 2.1 @Username Transfer
 
-- [ ] 2.1.1 Create `TransferMethodPicker.tsx`
-- [ ] 2.1.2 Create `UsernameTransferForm.tsx`
-- [ ] 2.1.3 Create `RecipientPreview.tsx`
-- [ ] 2.1.4 Update `my-events.tsx` transfer modal
-- [ ] 2.1.5 Add username format validation
-- [ ] 2.1.6 Handle user not found error
+- [x] 2.1.1 Create `TransferMethodPicker.tsx`
+- [x] 2.1.2 Create `UsernameTransferForm.tsx`
+- [x] 2.1.3 Create `RecipientPreview.tsx`
+- [x] 2.1.4 Update `my-events.tsx` transfer modal
+- [x] 2.1.5 Add username format validation
+- [x] 2.1.6 Handle user not found error
 
 ### 2.2 Email Transfer
 
-- [ ] 2.2.1 Create `EmailTransferForm.tsx`
-- [ ] 2.2.2 Add email validation utility
-- [ ] 2.2.3 Integrate with Cloud Function
-- [ ] 2.2.4 Show pending transfer status
-- [ ] 2.2.5 Add "Resend Email" for pending
+- [x] 2.2.1 Create `EmailTransferForm.tsx`
+- [x] 2.2.2 Add email validation utility
+- [x] 2.2.3 Integrate with Cloud Function
+- [x] 2.2.4 Show pending transfer status
+- [x] 2.2.5 Add "Resend Email" for pending
 
 ### 2.3 Cloud Function Integration
 
-- [ ] 2.3.1 Create `transferService.ts`
-- [ ] 2.3.2 Add error handling
-- [ ] 2.3.3 Add loading states
-- [ ] 2.3.4 Update my-events.tsx to use Cloud Function
+- [x] 2.3.1 Create `transferService.ts`
+- [x] 2.3.2 Add error handling
+- [x] 2.3.3 Add loading states
+- [x] 2.3.4 Update my-events.tsx to use Cloud Function
 
 ### 2.4 Transfer Claim Flow
 
-- [ ] 2.4.1 Add deep link handler to `_layout.tsx`
-- [ ] 2.4.2 Create `transfer/_layout.tsx`
-- [ ] 2.4.3 Create `transfer/claim.tsx`
-- [ ] 2.4.4 Implement claim logic
-- [ ] 2.4.5 Handle expired transfers
-- [ ] 2.4.6 Handle already claimed transfers
-- [ ] 2.4.7 Create `transfer/pending.tsx`
-- [ ] 2.4.8 Add cancel transfer functionality
+- [x] 2.4.1 Add deep link handler to `_layout.tsx`
+- [x] 2.4.2 Create `transfer/_layout.tsx`
+- [x] 2.4.3 Create `transfer/claim.tsx`
+- [x] 2.4.4 Implement claim logic
+- [x] 2.4.5 Handle expired transfers
+- [x] 2.4.6 Handle already claimed transfers
+- [x] 2.4.7 Create `transfer/pending.tsx`
+- [x] 2.4.8 Add cancel transfer functionality
 
 ### 2.5 Pending Transfers
 
-- [ ] 2.5.1 Create `PendingTransferCard.tsx`
-- [ ] 2.5.2 Add `getPendingTransfers()` hook
-- [ ] 2.5.3 Integrate into my-events.tsx
-- [ ] 2.5.4 Add "View All Pending" link
+- [x] 2.5.1 Create `PendingTransferCard.tsx`
+- [x] 2.5.2 Add `getPendingTransfers()` hook
+- [x] 2.5.3 Integrate into my-events.tsx
+- [x] 2.5.4 Add "View All Pending" link
 
 ---
 

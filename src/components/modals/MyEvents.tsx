@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -36,8 +37,12 @@ import { get, getDatabase, ref } from "firebase/database";
 
 // Import notification manager for event notifications
 import { usePostHog } from "../../analytics/PostHogProvider";
-import { NotificationManager } from "../../services/notificationManager";
-import { initiateTransfer } from "../../services/transferService";
+import {
+  cancelTransfer,
+  getPendingTransfers,
+  initiateTransfer,
+  resendTransferEmail,
+} from "../../services/transferService";
 import { UserSearchResult } from "../../services/userSearchService";
 import { retryWithBackoff } from "../../utils/cart/networkErrorDetection";
 import { extractDatabaseErrorCode } from "../../utils/databaseErrorHandler";
@@ -49,6 +54,7 @@ import {
 } from "../../utils/eventDataHandler";
 import {
   EmailTransferForm,
+  PendingTransferCard,
   RecipientPreview,
   TransferMethodPicker,
   UsernameTransferForm,
@@ -201,6 +207,23 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
   const [selectedRecipient, setSelectedRecipient] =
     useState<UserSearchResult | null>(null);
   const [isTransferring, setIsTransferring] = useState<boolean>(false);
+  const [cancellingTransferId, setCancellingTransferId] = useState<
+    string | null
+  >(null);
+  const [resendingTransferId, setResendingTransferId] = useState<string | null>(
+    null
+  );
+
+  // React Query client for cache invalidation
+  const queryClient = useQueryClient();
+
+  // Fetch pending transfers using React Query
+  const { data: pendingTransfers, refetch: refetchPending } = useQuery({
+    queryKey: ["pendingTransfers", currentUser],
+    queryFn: () => getPendingTransfers(currentUser),
+    enabled: !!currentUser,
+    staleTime: 30000, // 30 seconds
+  });
 
   // Monitor network connectivity
   useEffect(() => {
@@ -454,36 +477,25 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
               text: "Send",
               onPress: async () => {
                 try {
-                  await transferTicket(ticketUrl, recipientData);
+                  // Use Cloud Function for transfer (creates ticketTransfers doc + sends notifications)
+                  await initiateTransfer({
+                    ragerId: selectedTicketId,
+                    eventId: eventNameTransfer,
+                    recipientUserId: recipientData.id,
+                  });
+
                   Alert.alert("Success", "Ticket transferred successfully!");
 
-                  // Send transfer confirmation notifications using NotificationManager
-                  const currentEventData = {
-                    eventId: eventNameTransfer,
-                    eventName: eventData.name,
-                    eventDate: eventData.date
-                      ? new Date(eventData.date)
-                      : undefined,
-                    eventLocation: eventData.location,
-                    ticketId: selectedTicketId,
-                    recipientName: `${recipientData.firstName} ${recipientData.lastName}`,
-                    transferFromUser:
-                      auth.currentUser?.displayName ||
-                      auth.currentUser?.email ||
-                      "You",
-                  };
-
-                  // Send confirmation to sender (current user)
-                  await NotificationManager.sendTicketTransferConfirmation(
-                    currentEventData,
-                    false // isRecipient = false (sender)
-                  );
-
-                  // Send old-style push notification to recipient if they have a token
-                  // (keeping this for backward compatibility until all users update)
-                  if (recipientData.expoPushToken) {
-                    await sendPushNotification(recipientData.expoPushToken);
-                  }
+                  // Track analytics
+                  posthog?.capture("ticket_transferred", {
+                    event_id: eventNameTransfer,
+                    ticket_id: selectedTicketId,
+                    transfer_method: "qr",
+                    recipient_id: recipientData.id,
+                    transferred_from: currentUser,
+                    transfer_timestamp: new Date().toISOString(),
+                    user_type: "authenticated",
+                  });
 
                   // Reload events data
                   await fetchEventsData();
@@ -496,12 +508,22 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
                   setScanningAllowed(true);
                 } catch (error: any) {
                   console.error("Error transferring ticket:", error);
+
+                  posthog?.capture("ticket_transfer_failed", {
+                    event_id: eventNameTransfer,
+                    ticket_id: selectedTicketId,
+                    transfer_method: "qr",
+                    recipient_id: recipientData.id,
+                    error_message: error.message,
+                    error_code: error.code,
+                    user_type: "authenticated",
+                  });
+
                   // More helpful error message
                   Alert.alert(
                     "Transfer Failed",
-                    `Could not transfer ticket: ${
-                      error.message || "Permission denied"
-                    }`
+                    error.message ||
+                      "Could not transfer ticket. Please try again."
                   );
                   // Reset state
                   setScannedData(null);
@@ -584,6 +606,95 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
     setScanningAllowed(true);
     setScannedData(null);
   }, []);
+
+  // Handle cancel pending transfer
+  const handleCancelTransfer = useCallback(
+    async (transferId: string, eventName?: string) => {
+      Alert.alert(
+        "Cancel Transfer",
+        `Cancel this pending transfer${
+          eventName ? ` for ${eventName}` : ""
+        }? The ticket will be returned to your account.`,
+        [
+          { text: "Keep Transfer", style: "cancel" },
+          {
+            text: "Cancel Transfer",
+            style: "destructive",
+            onPress: async () => {
+              setCancellingTransferId(transferId);
+              try {
+                await cancelTransfer(transferId);
+
+                posthog?.capture("transfer_cancelled", {
+                  transfer_id: transferId,
+                  event_name: eventName || null,
+                  screen_context: "my_events",
+                });
+
+                // Refetch both pending transfers and events
+                refetchPending();
+                fetchEventsData();
+
+                Alert.alert(
+                  "Cancelled",
+                  "Transfer cancelled. Ticket returned."
+                );
+              } catch (error: any) {
+                console.error("Error cancelling transfer:", error);
+                Alert.alert(
+                  "Cancel Failed",
+                  error.message || "Could not cancel transfer."
+                );
+              } finally {
+                setCancellingTransferId(null);
+              }
+            },
+          },
+        ]
+      );
+    },
+    [posthog, refetchPending, fetchEventsData]
+  );
+
+  // Handle resend email for pending transfer
+  const handleResendEmail = useCallback(
+    async (transferId: string, recipientEmail?: string) => {
+      setResendingTransferId(transferId);
+      try {
+        await resendTransferEmail(transferId);
+
+        posthog?.capture("transfer_email_resent", {
+          transfer_id: transferId,
+          recipient_email: recipientEmail || null,
+          screen_context: "my_events",
+        });
+
+        Alert.alert("Email Sent", "The claim email has been resent.");
+      } catch (error: any) {
+        console.error("Error resending email:", error);
+        // Handle rate limit error specifically
+        if (error.statusCode === 429) {
+          Alert.alert(
+            "Please Wait",
+            error.message || "You can only resend once every 5 minutes."
+          );
+        } else {
+          Alert.alert(
+            "Resend Failed",
+            error.message || "Could not resend email."
+          );
+        }
+      } finally {
+        setResendingTransferId(null);
+      }
+    },
+    [posthog]
+  );
+
+  // Navigate to pending transfers screen
+  const handleViewAllPending = useCallback(() => {
+    router.push("/(app)/transfer/pending");
+  }, [router]);
 
   // Transfer method handlers
   const handleSelectQR = useCallback(async () => {
@@ -883,6 +994,55 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
           contentContainerStyle={styles.cardsContainer}
           showsVerticalScrollIndicator={false}
         >
+          {/* Pending Transfers Section */}
+          {pendingTransfers && pendingTransfers.length > 0 && (
+            <View style={styles.pendingSection}>
+              <View style={styles.pendingSectionHeader}>
+                <View style={styles.pendingTitleRow}>
+                  <MaterialCommunityIcons
+                    name="clock-outline"
+                    size={18}
+                    color="#FF6B35"
+                  />
+                  <Text style={styles.pendingSectionTitle}>
+                    Pending Transfers
+                  </Text>
+                  <View style={styles.pendingBadge}>
+                    <Text style={styles.pendingBadgeText}>
+                      {pendingTransfers.length}
+                    </Text>
+                  </View>
+                </View>
+                {pendingTransfers.length > 2 && (
+                  <TouchableOpacity onPress={handleViewAllPending}>
+                    <Text style={styles.viewAllLink}>View All</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {pendingTransfers.slice(0, 2).map((transfer) => (
+                <PendingTransferCard
+                  key={transfer.id}
+                  transfer={transfer}
+                  onCancel={() =>
+                    handleCancelTransfer(transfer.id, transfer.eventName)
+                  }
+                  onResendEmail={
+                    transfer.recipientEmail && !transfer.recipientUsername
+                      ? () =>
+                          handleResendEmail(
+                            transfer.id,
+                            transfer.recipientEmail
+                          )
+                      : undefined
+                  }
+                  cancelling={cancellingTransferId === transfer.id}
+                  resending={resendingTransferId === transfer.id}
+                  compact
+                />
+              ))}
+            </View>
+          )}
+
           {eventsData.map((event) => (
             <View key={event.id} style={styles.cardWrapper}>
               {event.ragersData.map((ticket) => (
@@ -1191,6 +1351,50 @@ const styles = StyleSheet.create({
   cardsContainer: {
     alignItems: "center", // Center cards horizontally
     paddingVertical: 12,
+  },
+  // Pending transfers section styles
+  pendingSection: {
+    width: screenWidth * 0.9,
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
+  },
+  pendingSectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  pendingTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  pendingSectionTitle: {
+    color: "white",
+    fontFamily,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  pendingBadge: {
+    backgroundColor: "#FF6B35",
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    minWidth: 20,
+    alignItems: "center",
+  },
+  pendingBadgeText: {
+    color: "white",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  viewAllLink: {
+    color: "#FF6B35",
+    fontFamily,
+    fontSize: 13,
+    fontWeight: "600",
   },
   cardWrapper: {
     width: "100%",

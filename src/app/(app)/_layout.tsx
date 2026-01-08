@@ -88,6 +88,13 @@ export default function AppLayout() {
             href: null,
           }}
         />
+        {/* Transfer routes - hidden from tab bar, accessed via deep links */}
+        <Tabs.Screen
+          name="transfer"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
     </ErrorBoundary>
   );
