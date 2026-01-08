@@ -1,7 +1,10 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
+import { StyleSheet, View } from "react-native";
 import ErrorBoundary from "../../components/ErrorBoundary";
+import { GlobalStyles } from "../../constants/styles";
 import { useAuth } from "../../hooks/AuthContext";
+import { useNotificationBadge } from "../../hooks/useNotificationBadge";
 
 // Named export for app component registration
 export function app() {
@@ -10,6 +13,7 @@ export function app() {
 
 export default function AppLayout() {
   const { authenticated, isLoading } = useAuth();
+  const unreadCount = useNotificationBadge();
 
   // If not authenticated, redirect to auth flow
   if (!authenticated && !isLoading) {
@@ -55,14 +59,17 @@ export default function AppLayout() {
           }}
         />
         <Tabs.Screen
-          name="social"
+          name="notifications"
           options={{
             tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons
-                name="newspaper"
-                color={color}
-                size={24}
-              />
+              <View>
+                <MaterialCommunityIcons name="bell" color={color} size={24} />
+                {unreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <View style={styles.badgeDot} />
+                  </View>
+                )}
+              </View>
             ),
           }}
         />
@@ -95,7 +102,28 @@ export default function AppLayout() {
             href: null,
           }}
         />
+        {/* Social routes - hidden, content moved to home tab */}
+        <Tabs.Screen
+          name="social"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
     </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  badge: {
+    position: "absolute",
+    top: -2,
+    right: -4,
+  },
+  badgeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: GlobalStyles.colors.redVivid5,
+  },
+});

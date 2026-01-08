@@ -115,7 +115,7 @@ export default function PostDetailScreen() {
         await likePost(postId);
         posthog.capture("post_liked", {
           post_id: postId,
-          author_id: post?.userId,
+          author_id: post?.userId ?? null,
         });
       }
     } catch (error) {
