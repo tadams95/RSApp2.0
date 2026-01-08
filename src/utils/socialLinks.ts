@@ -47,7 +47,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatform, SocialLinkConfig> = {
   instagram: {
     platform: "instagram",
     name: "Instagram",
-    icon: "instagram",
+    icon: "instagram", // Custom InstagramLogo SVG used in SocialLinksRow
     color: "#E4405F",
     urlPatterns: [
       /^https?:\/\/(www\.)?instagram\.com\/[\w.]+\/?$/i,
@@ -60,7 +60,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatform, SocialLinkConfig> = {
   tiktok: {
     platform: "tiktok",
     name: "TikTok",
-    icon: "music-note", // TikTok icon not in MaterialCommunityIcons, use music-note
+    icon: "music-note", // Custom TikTokLogo SVG used in SocialLinksRow
     color: "#000000",
     urlPatterns: [
       /^https?:\/\/(www\.)?tiktok\.com\/@[\w.]+\/?$/i,

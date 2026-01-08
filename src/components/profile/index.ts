@@ -1,5 +1,6 @@
 // Profile components barrel export
 export { default as FollowButton } from "./FollowButton";
+export { default as PlatformBadge } from "./PlatformBadge";
 export { default as ProfileHeader } from "./ProfileHeader";
 export { default as ProfileStats } from "./ProfileStats";
 export { default as SocialLinksRow } from "./SocialLinksRow";

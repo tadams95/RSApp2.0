@@ -12,18 +12,26 @@ import {
 import { usePostHog } from "../../analytics/PostHogProvider";
 import { GlobalStyles } from "../../constants/styles";
 import { useSoundCloudPlayer } from "../../hooks/SoundCloudPlayerContext";
-import { useSoundCloudTrack } from "../../hooks/useSoundCloudTrack";
+import useMusicTrack from "../../hooks/useMusicTrack";
+import {
+  getDeepLink,
+  getMusicPlatformConfig,
+} from "../../utils/musicPlatforms";
 import { ImageWithFallback } from "../ui";
+import PlatformBadge from "./PlatformBadge";
 
 interface ProfileSongCardProps {
   songUrl: string | null | undefined;
 }
 
 export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
-  const { trackInfo, isLoading, error, errorType } =
-    useSoundCloudTrack(songUrl);
+  const { trackInfo, isLoading, error, errorType, platform } =
+    useMusicTrack(songUrl);
   const player = useSoundCloudPlayer();
   const { capture } = usePostHog();
+
+  // Get platform configuration for colors and names
+  const platformConfig = getMusicPlatformConfig(platform);
 
   // Animation values
   const buttonScale = useRef(new Animated.Value(1)).current;
@@ -66,16 +74,26 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
   const handlePlayToggle = () => {
     animateButton();
 
+    // Only SoundCloud supports in-app playback currently
+    // For other platforms, we should open the app/browser
+    if (platform !== "soundcloud") {
+      handleOpenInPlatform();
+      return;
+    }
+
     if (isPlaying) {
       player.pause();
-      capture("profile_song_paused", {
+      capture("profile_music_paused", {
+        platform,
         song_url: songUrl,
         track_title: trackInfo?.title || null,
         track_artist: trackInfo?.artist || null,
+        progress_percentage: progressPercentage,
       });
     } else if (isThisSong && player.playerState === "paused") {
       player.resume();
-      capture("profile_song_resumed", {
+      capture("profile_music_resumed", {
+        platform,
         song_url: songUrl,
         track_title: trackInfo?.title || null,
         track_artist: trackInfo?.artist || null,
@@ -83,19 +101,49 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
     } else {
       player.play(songUrl);
       // Track song play event
-      capture("profile_song_played", {
+      capture("profile_music_played", {
+        platform,
         song_url: songUrl,
         track_title: trackInfo?.title || null,
         track_artist: trackInfo?.artist || null,
+        is_preview: false,
       });
     }
   };
 
-  const handleOpenSoundCloud = () => {
-    if (songUrl) {
-      Linking.openURL(songUrl).catch((err) =>
-        console.error("Couldn't load page", err)
-      );
+  // Handle opening the track in the platform's app/website
+  const handleOpenInPlatform = async () => {
+    if (!songUrl) return;
+
+    // Track analytics
+    capture("profile_music_opened", {
+      platform,
+      track_title: trackInfo?.title || null,
+      track_artist: trackInfo?.artist || null,
+      destination: "app",
+    });
+
+    // Try deep link first
+    const deepLink = getDeepLink(songUrl, platform);
+    if (deepLink) {
+      try {
+        const canOpen = await Linking.canOpenURL(deepLink);
+        if (canOpen) {
+          await Linking.openURL(deepLink);
+          return;
+        }
+      } catch (err) {
+        console.log(
+          `Deep link failed for ${platform}, falling back to web URL`
+        );
+      }
+    }
+
+    // Fall back to original URL
+    try {
+      await Linking.openURL(songUrl);
+    } catch (err) {
+      console.error("Couldn't open URL", err);
     }
   };
 
@@ -122,33 +170,41 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
 
   // Handle different error types with appropriate messaging
   if (error || !trackInfo) {
-    let errorMessage = "Play on SoundCloud";
-    let errorIcon: "soundcloud" | "lock" | "alert-circle" = "soundcloud";
+    // Use platform-specific messaging
+    let errorMessage = `Open in ${platformConfig.name}`;
+    let errorIcon: string = platformConfig.icon;
 
     if (errorType === "private") {
       errorMessage = "Private Track";
       errorIcon = "lock";
-    } else if (errorType === "deleted") {
+    } else if (errorType === "not_found") {
       errorMessage = "Track Unavailable";
       errorIcon = "alert-circle";
     } else if (errorType === "invalid_url") {
-      errorMessage = "Invalid SoundCloud Link";
+      errorMessage = "Invalid Music Link";
       errorIcon = "alert-circle";
+    } else if (errorType === "network") {
+      errorMessage = "Network Error - Tap to Open";
+      errorIcon = "wifi-off";
     }
 
     return (
       <TouchableOpacity
         style={styles.errorContainer}
-        onPress={handleOpenSoundCloud}
+        onPress={handleOpenInPlatform}
         accessible={true}
-        accessibilityLabel={`${errorMessage}. Tap to open in SoundCloud`}
+        accessibilityLabel={`${errorMessage}. Tap to open in ${platformConfig.name}`}
         accessibilityRole="button"
-        accessibilityHint="Opens the track in the SoundCloud app or website"
+        accessibilityHint={`Opens the track in the ${platformConfig.name} app or website`}
       >
         <MaterialCommunityIcons
-          name={errorIcon}
+          name={errorIcon as any}
           size={24}
-          color={GlobalStyles.colors.grey4}
+          color={
+            platform !== "unknown"
+              ? platformConfig.color
+              : GlobalStyles.colors.grey4
+          }
         />
         <Text style={styles.errorText}>{errorMessage}</Text>
       </TouchableOpacity>
@@ -159,14 +215,18 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
   const playPauseLabel = isPlaying ? "Pause" : isBuffering ? "Loading" : "Play";
   const trackAccessibilityLabel = `${trackInfo.title} by ${trackInfo.artist}. ${playPauseLabel} button`;
 
+  // Determine if we can play in-app (currently only SoundCloud)
+  const canPlayInApp =
+    platform === "soundcloud" && platformConfig.supportsInAppPlayback;
+
   return (
     <TouchableOpacity
       style={styles.container}
-      onLongPress={handleOpenSoundCloud}
+      onLongPress={handleOpenInPlatform}
       activeOpacity={0.9}
       accessible={true}
-      accessibilityLabel={`Profile song: ${trackInfo.title} by ${trackInfo.artist}`}
-      accessibilityHint="Long press to open in SoundCloud"
+      accessibilityLabel={`Profile song from ${platformConfig.name}: ${trackInfo.title} by ${trackInfo.artist}`}
+      accessibilityHint={`Long press to open in ${platformConfig.name}`}
       accessibilityRole="none"
     >
       <View style={styles.topRow}>
@@ -191,58 +251,98 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
             {trackInfo.artist}
           </Text>
         </View>
+
+        {/* Platform Badge - positioned at right corner */}
+        <View style={styles.platformBadgeContainer}>
+          <PlatformBadge platform={platform} size="medium" />
+        </View>
       </View>
 
       {/* Controls */}
       <View style={styles.controlsRow}>
-        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-          <TouchableOpacity
-            style={styles.playButton}
-            onPress={handlePlayToggle}
-            disabled={isBuffering}
-            accessible={true}
-            accessibilityLabel={trackAccessibilityLabel}
-            accessibilityRole="button"
-            accessibilityState={{
-              disabled: isBuffering,
-              busy: isBuffering,
-            }}
-          >
-            {isBuffering ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <MaterialCommunityIcons
-                name={isPlaying ? "pause" : "play"}
-                size={18}
-                color="#fff"
+        {canPlayInApp ? (
+          // SoundCloud: Show play/pause with progress bar
+          <>
+            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+              <TouchableOpacity
+                style={[
+                  styles.playButton,
+                  { backgroundColor: platformConfig.color },
+                ]}
+                onPress={handlePlayToggle}
+                disabled={isBuffering}
+                accessible={true}
+                accessibilityLabel={trackAccessibilityLabel}
+                accessibilityRole="button"
+                accessibilityState={{
+                  disabled: isBuffering,
+                  busy: isBuffering,
+                }}
+              >
+                {isBuffering ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <MaterialCommunityIcons
+                    name={isPlaying ? "pause" : "play"}
+                    size={18}
+                    color="#fff"
+                  />
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* Animated Progress Bar */}
+            <View style={styles.progressBarBg} accessible={false}>
+              <Animated.View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: progressBarWidth.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: ["0%", "100%"],
+                    }),
+                    backgroundColor: platformConfig.color,
+                  },
+                ]}
               />
-            )}
-          </TouchableOpacity>
-        </Animated.View>
+            </View>
 
-        {/* Animated Progress Bar */}
-        <View style={styles.progressBarBg} accessible={false}>
-          <Animated.View
+            {/* Duration */}
+            <Text style={styles.duration} accessible={false}>
+              {isThisSong && player.progress.duration > 0
+                ? formatDuration(player.progress.currentTime)
+                : trackInfo.duration
+                ? formatDuration(trackInfo.duration)
+                : "--:--"}
+            </Text>
+          </>
+        ) : (
+          // Spotify/YouTube: Show "Open in {Platform}" button
+          <TouchableOpacity
             style={[
-              styles.progressBarFill,
-              {
-                width: progressBarWidth.interpolate({
-                  inputRange: [0, 100],
-                  outputRange: ["0%", "100%"],
-                }),
-              },
+              styles.openInPlatformButton,
+              { borderColor: platformConfig.color },
             ]}
-          />
-        </View>
-
-        {/* Duration */}
-        <Text style={styles.duration} accessible={false}>
-          {isThisSong && player.progress.duration > 0
-            ? formatDuration(player.progress.currentTime)
-            : trackInfo.duration
-            ? formatDuration(trackInfo.duration)
-            : "--:--"}
-        </Text>
+            onPress={handleOpenInPlatform}
+            accessible={true}
+            accessibilityLabel={`Open in ${platformConfig.name}`}
+            accessibilityRole="button"
+          >
+            <MaterialCommunityIcons
+              name={platformConfig.icon as any}
+              size={14}
+              color={platformConfig.color}
+            />
+            <Text
+              style={[
+                styles.openInPlatformText,
+                { color: platformConfig.color },
+              ]}
+            >
+              Open in {platformConfig.name}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -289,6 +389,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: GlobalStyles.colors.grey8,
   },
+  platformBadgeContainer: {
+    marginLeft: "auto",
+  },
   loadingArtwork: {
     justifyContent: "center",
     alignItems: "center",
@@ -320,11 +423,25 @@ const styles = StyleSheet.create({
   playButton: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 6,
     backgroundColor: GlobalStyles.colors.redVivid5,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 8,
+  },
+  openInPlatformButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 6,
+  },
+  openInPlatformText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   progressBarBg: {
     flex: 1,

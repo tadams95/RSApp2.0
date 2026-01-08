@@ -18,7 +18,7 @@ import {
   SOCIAL_PLATFORMS,
   SocialPlatform,
 } from "../../utils/socialLinks";
-import { XLogo } from "../icons";
+import { InstagramLogo, TikTokLogo, XLogo } from "../icons";
 
 // ============================================
 // Types
@@ -145,6 +145,10 @@ function SocialIcon({
       >
         {platform === "twitter" ? (
           <XLogo size={18} color={GlobalStyles.colors.grey3} />
+        ) : platform === "instagram" ? (
+          <InstagramLogo size={18} color={GlobalStyles.colors.grey3} />
+        ) : platform === "tiktok" ? (
+          <TikTokLogo size={18} color={GlobalStyles.colors.grey3} />
         ) : (
           <MaterialCommunityIcons
             name={config.icon as any}

@@ -18,13 +18,17 @@ import { doc, getFirestore, setDoc } from "firebase/firestore";
 import { useSelector } from "react-redux";
 import { usePostHog } from "../../analytics/PostHogProvider";
 import { GlobalStyles } from "../../constants/styles";
+import { useMusicTrack } from "../../hooks/useMusicTrack";
 import useProfileUpdateErrorHandler from "../../hooks/useProfileUpdateErrorHandler";
-import { useSoundCloudTrack } from "../../hooks/useSoundCloudTrack";
 import { NotificationManager } from "../../services/notificationManager";
 import { selectLocalId } from "../../store/redux/userSlice";
 import { updateUserData } from "../../utils/auth";
+import {
+  getMusicPlatformConfig,
+  getMusicValidationError,
+  isValidMusicUrl,
+} from "../../utils/musicPlatforms";
 import { isValidSocialUrl, SocialPlatform } from "../../utils/socialLinks";
-import { isValidSoundCloudUrl } from "../../utils/soundcloud";
 import ProfileUpdateErrorNotice from "../ProfileUpdateErrorNotice";
 import { XLogo } from "../icons";
 import {
@@ -106,12 +110,13 @@ const EditProfile: React.FC<EditProfileProps> = ({
   // PostHog analytics
   const posthog = usePostHog();
 
-  // SoundCloud track preview for profile song
+  // Music track preview for profile song (supports SoundCloud, Spotify, YouTube)
   const {
     trackInfo: songPreview,
     isLoading: songLoading,
     error: songError,
-  } = useSoundCloudTrack(profileSongUrl.trim() || null);
+    platform: detectedPlatform,
+  } = useMusicTrack(profileSongUrl.trim() || null);
 
   // Get profile update error handler
   const {
@@ -206,9 +211,12 @@ const EditProfile: React.FC<EditProfileProps> = ({
         }
         break;
       case "profileSongUrl":
-        // Only validate if URL is provided
-        if (value.trim() && !isValidSoundCloudUrl(value.trim())) {
-          error = "Please enter a valid SoundCloud URL";
+        // Only validate if URL is provided - now supports SoundCloud, Spotify, YouTube
+        if (value.trim()) {
+          const validationError = getMusicValidationError(value.trim());
+          if (validationError) {
+            error = validationError;
+          }
         }
         break;
       case "twitterUrl":
@@ -363,9 +371,10 @@ const EditProfile: React.FC<EditProfileProps> = ({
       }
     }
 
-    // Validate profile song URL if provided
-    if (profileSongUrl.trim() && !isValidSoundCloudUrl(profileSongUrl.trim())) {
-      errors.profileSongUrl = "Please enter a valid SoundCloud URL";
+    // Validate profile song URL if provided (supports SoundCloud, Spotify, YouTube)
+    if (profileSongUrl.trim() && !isValidMusicUrl(profileSongUrl.trim())) {
+      errors.profileSongUrl =
+        "Please enter a valid music URL (SoundCloud, Spotify, or YouTube)";
       isValid = false;
     }
 
@@ -685,7 +694,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
               <Text style={styles.subtitle}>Profile Song</Text>
             </View>
             <Text style={styles.profileSongHint}>
-              Add a SoundCloud track to display on your profile
+              Add a track from SoundCloud, Spotify, or YouTube
             </Text>
             <View style={styles.profileSongInputContainer}>
               <TextInput
@@ -694,14 +703,14 @@ const EditProfile: React.FC<EditProfileProps> = ({
                   styles.profileSongInput,
                   formErrors.profileSongUrl && styles.inputError,
                 ]}
-                placeholder="https://soundcloud.com/artist/track"
+                placeholder="Paste any music link..."
                 placeholderTextColor="#666"
                 autoCapitalize="none"
                 autoCorrect={false}
                 value={profileSongUrl}
                 onChangeText={handleProfileSongChange}
                 accessibilityLabel="Profile Song URL input"
-                accessibilityHint="Enter a SoundCloud URL for your profile song"
+                accessibilityHint="Enter a SoundCloud, Spotify, or YouTube URL for your profile song"
               />
               {profileSongUrl.trim() !== "" && (
                 <Pressable
@@ -735,9 +744,9 @@ const EditProfile: React.FC<EditProfileProps> = ({
             {songPreview && !songLoading && (
               <View style={styles.songPreviewContainer}>
                 <MaterialCommunityIcons
-                  name="check-circle"
+                  name={getMusicPlatformConfig(detectedPlatform).icon as any}
                   size={20}
-                  color={GlobalStyles.colors.success || "#4CAF50"}
+                  color={getMusicPlatformConfig(detectedPlatform).color}
                 />
                 <Text style={styles.songPreviewText} numberOfLines={1}>
                   {songPreview.title}
