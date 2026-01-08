@@ -37,6 +37,7 @@ import { get, getDatabase, ref } from "firebase/database";
 // Import notification manager for event notifications
 import { usePostHog } from "../../analytics/PostHogProvider";
 import { NotificationManager } from "../../services/notificationManager";
+import { initiateTransfer } from "../../services/transferService";
 import { UserSearchResult } from "../../services/userSearchService";
 import { retryWithBackoff } from "../../utils/cart/networkErrorDetection";
 import { extractDatabaseErrorCode } from "../../utils/databaseErrorHandler";
@@ -47,6 +48,7 @@ import {
   shouldRetryEventFetch,
 } from "../../utils/eventDataHandler";
 import {
+  EmailTransferForm,
   RecipientPreview,
   TransferMethodPicker,
   UsernameTransferForm,
@@ -618,13 +620,81 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
   }, []);
 
   const handleSelectEmail = useCallback(() => {
-    // Email transfer to be implemented in section 2.2
-    Alert.alert(
-      "Coming Soon",
-      "Email transfer will be available in a future update.",
-      [{ text: "OK" }]
-    );
+    setTransferMode("email");
   }, []);
+
+  // Handle email transfer submission
+  const handleEmailSubmit = useCallback(
+    async (email: string) => {
+      if (!currentUser || isTransferring) return;
+
+      setIsTransferring(true);
+
+      try {
+        // Call transfer service to initiate email transfer
+        const result = await initiateTransfer({
+          ragerId: selectedTicketId,
+          eventId: eventNameTransfer,
+          recipientEmail: email,
+        });
+
+        // Track successful transfer
+        posthog?.capture("ticket_transferred", {
+          event_id: eventNameTransfer,
+          ticket_id: selectedTicketId,
+          transfer_method: "email",
+          recipient_email: email,
+          transfer_id: result.transferId,
+          transferred_from: currentUser,
+          transfer_timestamp: new Date().toISOString(),
+          screen_context: isStandaloneScreen
+            ? "my_events_screen"
+            : "account_qr_modal",
+          user_type: "authenticated",
+        });
+
+        // Show success message
+        Alert.alert(
+          "Transfer Sent!",
+          `We've sent an email to ${email}. They have 72 hours to claim your ticket.`,
+          [{ text: "OK" }]
+        );
+
+        // Refresh and close
+        fetchEventsData();
+        resetTransferModal();
+      } catch (error: any) {
+        console.error("Error transferring ticket via email:", error);
+
+        posthog?.capture("ticket_transfer_failed", {
+          event_id: eventNameTransfer,
+          ticket_id: selectedTicketId,
+          transfer_method: "email",
+          recipient_email: email,
+          error_message: error.message,
+          error_code: error.code,
+          user_type: "authenticated",
+        });
+
+        Alert.alert(
+          "Transfer Failed",
+          error.message || "Could not send transfer. Please try again."
+        );
+      } finally {
+        setIsTransferring(false);
+      }
+    },
+    [
+      currentUser,
+      isTransferring,
+      selectedTicketId,
+      eventNameTransfer,
+      fetchEventsData,
+      resetTransferModal,
+      posthog,
+      isStandaloneScreen,
+    ]
+  );
 
   // Handle user selection from username search
   const handleUserSelected = useCallback((user: UserSearchResult) => {
@@ -862,6 +932,11 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
                   maxHeight: "85%",
                   justifyContent: "flex-start",
                 },
+              // Email mode - compact auto-height
+              transferMode === "email" && {
+                height: "auto",
+                justifyContent: "flex-start",
+              },
             ]}
           >
             {/* Header with back button when not on picker */}
@@ -988,26 +1063,42 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
               </View>
             )}
 
-            {/* Cancel Button - hide when RecipientPreview is shown (it has its own buttons) */}
-            {!(transferMode === "username" && selectedRecipient) && (
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => {
-                  // Track transfer modal closure
-                  posthog?.capture("ticket_transfer_cancelled", {
-                    event_id: eventNameTransfer,
-                    ticket_id: selectedTicketId,
-                    transfer_mode: transferMode,
-                    cancellation_stage: "transfer_modal",
-                    user_type: "authenticated",
-                  });
-
-                  resetTransferModal();
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
+            {/* Email Transfer Mode */}
+            {transferMode === "email" && (
+              <View style={styles.emailFormContainer}>
+                <EmailTransferForm
+                  ticketId={selectedTicketId}
+                  eventId={eventNameTransfer}
+                  eventName={eventData?.name || ""}
+                  onSubmit={handleEmailSubmit}
+                  onCancel={handleBackToPicker}
+                  hideHeader
+                  isLoading={isTransferring}
+                />
+              </View>
             )}
+
+            {/* Cancel Button - hide when RecipientPreview is shown (it has its own buttons) */}
+            {!(transferMode === "username" && selectedRecipient) &&
+              transferMode !== "email" && (
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    // Track transfer modal closure
+                    posthog?.capture("ticket_transfer_cancelled", {
+                      event_id: eventNameTransfer,
+                      ticket_id: selectedTicketId,
+                      transfer_mode: transferMode,
+                      cancellation_stage: "transfer_modal",
+                      user_type: "authenticated",
+                    });
+
+                    resetTransferModal();
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              )}
           </View>
         </View>
       </Modal>
@@ -1382,6 +1473,10 @@ const styles = StyleSheet.create({
     minHeight: 300,
     marginVertical: 8,
     overflow: "hidden",
+  },
+  emailFormContainer: {
+    width: "100%",
+    marginTop: 8,
   },
   recipientPreviewContainer: {
     width: "100%",

@@ -17,6 +17,11 @@ export type { UsernameTransferFormProps } from "./UsernameTransferForm";
 export { default as RecipientPreview } from "./RecipientPreview";
 export type { RecipientPreviewProps } from "./RecipientPreview";
 
+export {
+  default as EmailTransferForm,
+  isValidEmail,
+} from "./EmailTransferForm";
+export type { EmailTransferFormProps } from "./EmailTransferForm";
+
 // Future exports (to be implemented):
-// export { default as EmailTransferForm } from './EmailTransferForm';
 // export { default as PendingTransferCard } from './PendingTransferCard';
