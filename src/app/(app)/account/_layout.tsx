@@ -10,6 +10,13 @@ export default function AccountLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="notifications"
+        options={{
+          headerShown: false, // Managed by the screen itself
+          presentation: "card",
+        }}
+      />
     </Stack>
   );
 }

@@ -537,13 +537,13 @@ interface NotificationSettings {
 
 ### Implementation Checklist
 
-- [ ] **3.2.1** Create `src/services/notificationSettingsService.ts`
-- [ ] **3.2.2** Create `src/hooks/useNotificationSettings.ts`
-- [ ] **3.2.3** Create `src/components/ui/SettingsToggle.tsx`
-- [ ] **3.2.4** Create `src/components/ui/SettingsSection.tsx`
-- [ ] **3.2.5** Create `src/app/(app)/account/notifications.tsx`
-- [ ] **3.2.6** Add link from account screen to notification settings
-- [ ] **3.2.7** Cloud Functions already respect quiet hours ✅
+- [x] **3.2.1** Create `src/services/notificationSettingsService.ts`
+- [x] **3.2.2** Create `src/hooks/useNotificationSettings.ts`
+- [x] **3.2.3** Create `src/components/ui/SettingsToggle.tsx`
+- [x] **3.2.4** Create `src/components/ui/SettingsSection.tsx`
+- [x] **3.2.5** Create `src/app/(app)/account/notifications.tsx`
+- [x] **3.2.6** Add link from account screen to notification settings
+- [x] **3.2.7** Cloud Functions already respect quiet hours ✅
 
 ### File: `src/services/notificationSettingsService.ts`
 

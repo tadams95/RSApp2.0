@@ -9,3 +9,11 @@ export {
 } from "./NetworkStatusBanner";
 export { default as ProfileFormInput } from "./ProfileFormInput";
 export { default as ProgressiveImage } from "./ProgressiveImage";
+export {
+  default as SettingsSection,
+  SettingsSection as SettingsSectionComponent,
+} from "./SettingsSection";
+export {
+  default as SettingsToggle,
+  SettingsToggle as SettingsToggleComponent,
+} from "./SettingsToggle";

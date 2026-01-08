@@ -1,5 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { useRouter } from "expo-router";
 import {
   ref as databaseRef,
   DatabaseReference,
@@ -56,6 +58,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   setAuthenticated,
   handleClose,
 }) => {
+  const router = useRouter();
   const [adminModalVisible, setAdminModalVisible] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [admin, setAdmin] = useState<AdminUser | null>(null);
@@ -421,6 +424,25 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               </Pressable>
             )}
 
+            {/* Notification Settings Link */}
+            <Pressable
+              style={styles.navigationButton}
+              onPress={() => {
+                handleClose();
+                router.push("/(app)/account/notifications");
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Notification settings"
+            >
+              <View style={styles.navigationButtonContent}>
+                <Ionicons name="notifications-outline" size={20} color="#fff" />
+                <Text style={styles.navigationButtonText}>
+                  Notification Settings
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666" />
+            </Pressable>
+
             {/* Analytics Privacy Toggle */}
             <View style={styles.settingsRow}>
               <View style={styles.settingsLabelContainer}>
@@ -525,6 +547,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderColor: "#555",
     backgroundColor: "#222",
+  },
+  navigationButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 12,
+    borderWidth: 1,
+    padding: 16,
+    borderRadius: 8,
+    width: "80%",
+    borderColor: "#555",
+    backgroundColor: "#222",
+  },
+  navigationButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  navigationButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontFamily,
+    fontWeight: "600",
   },
   deleteActionButton: {
     marginVertical: 12,
