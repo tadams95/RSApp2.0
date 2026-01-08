@@ -1,5 +1,7 @@
 import {
   collection,
+  doc,
+  getDoc,
   getDocs,
   getFirestore,
   limit,
@@ -75,6 +77,7 @@ export async function searchUsersByName(
 
 /**
  * Search users by username (exact or prefix match)
+ * Uses the usernames collection for lookup, then fetches user details
  */
 export async function searchUsersByUsername(
   username: string,
@@ -84,35 +87,110 @@ export async function searchUsersByUsername(
     return [];
   }
 
-  // Remove @ prefix if present
+  // Remove @ prefix if present and lowercase for consistent search
   const cleanUsername = username.replace(/^@/, "").toLowerCase();
 
+  try {
+    // Strategy 1: Search usernames collection (preferred - indexed)
+    // The usernames collection has documents with lowercase username as doc ID
+    const usernamesQuery = query(
+      collection(db, "usernames"),
+      where("__name__", ">=", cleanUsername),
+      where("__name__", "<=", cleanUsername + "\uf8ff"),
+      limit(maxResults)
+    );
+
+    const usernamesSnapshot = await getDocs(usernamesQuery);
+
+    if (usernamesSnapshot.empty) {
+      console.log(
+        "No usernames found in usernames collection, trying customers..."
+      );
+      // Fall back to searching customers directly
+      return searchUsersByNameFallback(cleanUsername, maxResults);
+    }
+
+    // Get user details for each matched username
+    const results: UserSearchResult[] = [];
+
+    for (const usernameDoc of usernamesSnapshot.docs) {
+      const usernameData = usernameDoc.data();
+      // The usernames collection stores userId as 'uid', 'oderId' (typo in original spec), or 'userId'
+      const userId =
+        usernameData.uid || usernameData.oderId || usernameData.userId;
+
+      if (!userId) {
+        console.warn(`Username ${usernameDoc.id} has no associated userId`);
+        continue;
+      }
+
+      // Fetch user details from customers collection
+      const userDoc = await getDoc(doc(db, "customers", userId));
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as UserData;
+        results.push({
+          userId: userDoc.id,
+          displayName:
+            userData.displayName ||
+            `${userData.firstName} ${userData.lastName}`,
+          username: usernameDoc.id, // Use the document ID as it's the lowercase username
+          profilePicture: userData.profilePicture || userData.photoURL,
+          verificationStatus: userData.verificationStatus,
+          bio: userData.bio,
+        });
+      }
+    }
+
+    return results;
+  } catch (error) {
+    console.error("Username search error:", error);
+    // Fall back to client-side search on any error
+    return searchUsersByNameFallback(cleanUsername, maxResults);
+  }
+}
+
+/**
+ * Fallback search that queries customers collection directly
+ */
+async function searchUsersByNameFallback(
+  searchTerm: string,
+  maxResults: number
+): Promise<UserSearchResult[]> {
+  const searchLower = searchTerm.toLowerCase();
+
+  // Fetch users and filter client-side
   const usersQuery = query(
     collection(db, "customers"),
-    where("username", ">=", cleanUsername),
-    where("username", "<=", cleanUsername + "\uf8ff"),
-    limit(maxResults)
+    orderBy("displayName"),
+    limit(100)
   );
 
-  try {
-    const snapshot = await getDocs(usersQuery);
+  const snapshot = await getDocs(usersQuery);
+  const results: UserSearchResult[] = [];
 
-    return snapshot.docs.map((doc) => {
-      const data = doc.data() as UserData;
-      return {
+  snapshot.docs.forEach((doc) => {
+    const data = doc.data() as UserData;
+    const displayNameLower = (data.displayName || "").toLowerCase();
+    const usernameLower = (data.username || "").toLowerCase();
+
+    // Match by displayName or username
+    if (
+      displayNameLower.includes(searchLower) ||
+      usernameLower.includes(searchLower)
+    ) {
+      results.push({
         userId: doc.id,
         displayName: data.displayName || `${data.firstName} ${data.lastName}`,
         username: data.username,
-        profilePicture: data.profilePicture,
+        profilePicture: data.profilePicture || data.photoURL,
         verificationStatus: data.verificationStatus,
         bio: data.bio,
-      };
-    });
-  } catch (error) {
-    // If index doesn't exist yet, fall back to client-side search
-    console.log("Username index may not exist, using fallback search");
-    return searchUsersByName(cleanUsername, maxResults);
-  }
+      });
+    }
+  });
+
+  return results.slice(0, maxResults);
 }
 
 /**

@@ -24,6 +24,7 @@ import { NotificationManager } from "../../services/notificationManager";
 import { selectLocalId } from "../../store/redux/userSlice";
 import { updateUserData } from "../../utils/auth";
 import {
+  detectMusicPlatform,
   getMusicPlatformConfig,
   getMusicValidationError,
   isValidMusicUrl,
@@ -488,6 +489,40 @@ const EditProfile: React.FC<EditProfileProps> = ({
 
         if (profileSongChanged) {
           profileUpdate.profileSongUrl = newSongUrl || null;
+
+          // Cache profile music metadata for faster loads
+          if (newSongUrl && songPreview && detectedPlatform !== "unknown") {
+            profileUpdate.profileMusic = {
+              platform: detectedPlatform,
+              url: newSongUrl,
+              title: songPreview.title || null,
+              artist: songPreview.artist || null,
+              artworkUrl: songPreview.artworkUrl || null,
+              cachedAt: new Date().toISOString(),
+            };
+
+            // Track profile music set with PostHog
+            posthog?.capture("profile_music_set", {
+              platform: detectedPlatform,
+              previous_platform: initialData?.profileSongUrl
+                ? getMusicPlatformConfig(
+                    detectMusicPlatform(initialData.profileSongUrl)
+                  ).name
+                : null,
+              track_title: songPreview.title || null,
+              track_artist: songPreview.artist || null,
+            });
+          } else if (!newSongUrl && initialSongUrl) {
+            // Music removed - clear cached data
+            profileUpdate.profileMusic = null;
+
+            // Track profile music removed with PostHog
+            posthog?.capture("profile_music_removed", {
+              platform: getMusicPlatformConfig(
+                detectMusicPlatform(initialSongUrl)
+              ).name,
+            });
+          }
         }
 
         if (socialLinksChanged) {

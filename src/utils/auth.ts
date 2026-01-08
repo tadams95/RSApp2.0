@@ -27,6 +27,16 @@ import { setLocalId, setUserEmail } from "../store/redux/userSlice";
 const db = getFirestore();
 const rtdb = getDatabase();
 
+// Profile music cache type for faster loads
+export interface ProfileMusic {
+  platform: "soundcloud" | "spotify" | "youtube";
+  url: string;
+  title?: string;
+  artist?: string;
+  artworkUrl?: string | null;
+  cachedAt?: string; // ISO date string
+}
+
 // Define types for user data
 export interface UserData {
   email: string;
@@ -71,6 +81,8 @@ export interface UserData {
   name?: string;
   // Profile song (MySpace vibes 🎵)
   profileSongUrl?: string;
+  // Cached profile music metadata for faster loads
+  profileMusic?: ProfileMusic;
   stats?: {
     eventsAttended: number;
     postsCount: number;

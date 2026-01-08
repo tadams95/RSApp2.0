@@ -11,27 +11,61 @@ import {
 } from "react-native";
 import { usePostHog } from "../../analytics/PostHogProvider";
 import { GlobalStyles } from "../../constants/styles";
-import { useSoundCloudPlayer } from "../../hooks/SoundCloudPlayerContext";
+import { useMusicPlayer } from "../../hooks/MusicPlayerContext";
 import useMusicTrack from "../../hooks/useMusicTrack";
 import {
   getDeepLink,
   getMusicPlatformConfig,
+  MusicPlatform,
+  MusicTrackInfo,
 } from "../../utils/musicPlatforms";
 import { ImageWithFallback } from "../ui";
 import PlatformBadge from "./PlatformBadge";
 
-interface ProfileSongCardProps {
-  songUrl: string | null | undefined;
+// Cached track info from Firestore profileMusic field
+interface CachedTrackInfo {
+  platform: MusicPlatform;
+  title?: string;
+  artist?: string;
+  artworkUrl?: string | null;
 }
 
-export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
+interface ProfileSongCardProps {
+  songUrl: string | null | undefined;
+  /** Optional cached track data from Firestore to avoid refetching */
+  cachedTrackInfo?: CachedTrackInfo;
+}
+
+export default function ProfileSongCard({
+  songUrl,
+  cachedTrackInfo,
+}: ProfileSongCardProps) {
   const { trackInfo, isLoading, error, errorType, platform } =
     useMusicTrack(songUrl);
-  const player = useSoundCloudPlayer();
+  const player = useMusicPlayer();
   const { capture } = usePostHog();
 
+  // Use cached data as fallback while loading or if oEmbed fails
+  // This provides instant display using Firestore-cached metadata
+  const displayInfo: MusicTrackInfo | null =
+    trackInfo ||
+    (cachedTrackInfo
+      ? {
+          title: cachedTrackInfo.title || "Unknown Track",
+          artist: cachedTrackInfo.artist || "Unknown Artist",
+          artworkUrl: cachedTrackInfo.artworkUrl || null,
+          platform: cachedTrackInfo.platform,
+          embedUrl: null,
+          originalUrl: songUrl || "",
+        }
+      : null);
+
+  // Use detected platform or cached platform
+  const displayPlatform =
+    platform !== "unknown" ? platform : cachedTrackInfo?.platform || "unknown";
+
   // Get platform configuration for colors and names
-  const platformConfig = getMusicPlatformConfig(platform);
+  const platformConfig = getMusicPlatformConfig(displayPlatform);
 
   // Animation values
   const buttonScale = useRef(new Animated.Value(1)).current;
@@ -74,40 +108,22 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
   const handlePlayToggle = () => {
     animateButton();
 
-    // Only SoundCloud supports in-app playback currently
-    // For other platforms, we should open the app/browser
-    if (platform !== "soundcloud") {
+    // Check if platform can play in-app using MusicPlayer
+    const canPlay = player.canPlayInApp(displayPlatform);
+    if (!canPlay) {
       handleOpenInPlatform();
       return;
     }
 
     if (isPlaying) {
       player.pause();
-      capture("profile_music_paused", {
-        platform,
-        song_url: songUrl,
-        track_title: trackInfo?.title || null,
-        track_artist: trackInfo?.artist || null,
-        progress_percentage: progressPercentage,
-      });
+      // Analytics tracked in MusicPlayerContext
     } else if (isThisSong && player.playerState === "paused") {
       player.resume();
-      capture("profile_music_resumed", {
-        platform,
-        song_url: songUrl,
-        track_title: trackInfo?.title || null,
-        track_artist: trackInfo?.artist || null,
-      });
+      // Analytics tracked in MusicPlayerContext
     } else {
-      player.play(songUrl);
-      // Track song play event
-      capture("profile_music_played", {
-        platform,
-        song_url: songUrl,
-        track_title: trackInfo?.title || null,
-        track_artist: trackInfo?.artist || null,
-        is_preview: false,
-      });
+      player.play(songUrl, displayInfo || undefined);
+      // Analytics tracked in MusicPlayerContext
     }
   };
 
@@ -117,14 +133,14 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
 
     // Track analytics
     capture("profile_music_opened", {
-      platform,
-      track_title: trackInfo?.title || null,
-      track_artist: trackInfo?.artist || null,
+      platform: displayPlatform,
+      track_title: displayInfo?.title || null,
+      track_artist: displayInfo?.artist || null,
       destination: "app",
     });
 
     // Try deep link first
-    const deepLink = getDeepLink(songUrl, platform);
+    const deepLink = getDeepLink(songUrl, displayPlatform);
     if (deepLink) {
       try {
         const canOpen = await Linking.canOpenURL(deepLink);
@@ -134,7 +150,7 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
         }
       } catch (err) {
         console.log(
-          `Deep link failed for ${platform}, falling back to web URL`
+          `Deep link failed for ${displayPlatform}, falling back to web URL`
         );
       }
     }
@@ -147,7 +163,8 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
     }
   };
 
-  if (isLoading) {
+  // Show loading state only if we don't have cached data to show
+  if (isLoading && !displayInfo) {
     return (
       <View
         style={styles.container}
@@ -169,7 +186,8 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
   }
 
   // Handle different error types with appropriate messaging
-  if (error || !trackInfo) {
+  // Only show error if we have no display info (cached or fetched)
+  if ((error || !trackInfo) && !displayInfo) {
     // Use platform-specific messaging
     let errorMessage = `Open in ${platformConfig.name}`;
     let errorIcon: string = platformConfig.icon;
@@ -201,7 +219,7 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
           name={errorIcon as any}
           size={24}
           color={
-            platform !== "unknown"
+            displayPlatform !== "unknown"
               ? platformConfig.color
               : GlobalStyles.colors.grey4
           }
@@ -211,13 +229,15 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
     );
   }
 
+  // If we still don't have display info, return null
+  if (!displayInfo) return null;
+
   // Build accessibility label
   const playPauseLabel = isPlaying ? "Pause" : isBuffering ? "Loading" : "Play";
-  const trackAccessibilityLabel = `${trackInfo.title} by ${trackInfo.artist}. ${playPauseLabel} button`;
+  const trackAccessibilityLabel = `${displayInfo.title} by ${displayInfo.artist}. ${playPauseLabel} button`;
 
-  // Determine if we can play in-app (currently only SoundCloud)
-  const canPlayInApp =
-    platform === "soundcloud" && platformConfig.supportsInAppPlayback;
+  // Determine if we can play in-app (SoundCloud and YouTube)
+  const canPlayInApp = player.canPlayInApp(displayPlatform);
 
   return (
     <TouchableOpacity
@@ -225,7 +245,7 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
       onLongPress={handleOpenInPlatform}
       activeOpacity={0.9}
       accessible={true}
-      accessibilityLabel={`Profile song from ${platformConfig.name}: ${trackInfo.title} by ${trackInfo.artist}`}
+      accessibilityLabel={`Profile song from ${platformConfig.name}: ${displayInfo.title} by ${displayInfo.artist}`}
       accessibilityHint={`Long press to open in ${platformConfig.name}`}
       accessibilityRole="none"
     >
@@ -233,8 +253,8 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
         {/* Artwork */}
         <ImageWithFallback
           source={
-            trackInfo.artworkUrl
-              ? { uri: trackInfo.artworkUrl }
+            displayInfo.artworkUrl
+              ? { uri: displayInfo.artworkUrl }
               : require("../../assets/icon.png")
           }
           fallbackSource={require("../../assets/icon.png")}
@@ -245,16 +265,16 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
         {/* Info */}
         <View style={styles.infoContainer}>
           <Text style={styles.title} numberOfLines={1} accessible={false}>
-            {trackInfo.title}
+            {displayInfo.title}
           </Text>
           <Text style={styles.artist} numberOfLines={1} accessible={false}>
-            {trackInfo.artist}
+            {displayInfo.artist}
           </Text>
         </View>
 
         {/* Platform Badge - positioned at right corner */}
         <View style={styles.platformBadgeContainer}>
-          <PlatformBadge platform={platform} size="medium" />
+          <PlatformBadge platform={displayPlatform} size="medium" />
         </View>
       </View>
 
@@ -311,8 +331,8 @@ export default function ProfileSongCard({ songUrl }: ProfileSongCardProps) {
             <Text style={styles.duration} accessible={false}>
               {isThisSong && player.progress.duration > 0
                 ? formatDuration(player.progress.currentTime)
-                : trackInfo.duration
-                ? formatDuration(trackInfo.duration)
+                : displayInfo.duration
+                ? formatDuration(displayInfo.duration)
                 : "--:--"}
             </Text>
           </>

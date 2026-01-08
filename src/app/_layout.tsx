@@ -18,6 +18,7 @@ import { PostHogProvider } from "../analytics/PostHogProvider";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { queryClient } from "../config/reactQuery";
 import { AuthProvider } from "../hooks/AuthContext";
+import { MusicPlayerProvider } from "../hooks/MusicPlayerContext";
 import { SoundCloudPlayerProvider } from "../hooks/SoundCloudPlayerContext";
 import { store } from "../store/redux/store";
 import {
@@ -192,12 +193,14 @@ export default function RootLayout() {
               }}
             >
               <AuthProvider>
-                <SoundCloudPlayerProvider>
-                  <View style={{ flex: 1, backgroundColor: "#000" }}>
-                    <StatusBar style="light" />
-                    <Slot />
-                  </View>
-                </SoundCloudPlayerProvider>
+                <MusicPlayerProvider>
+                  <SoundCloudPlayerProvider>
+                    <View style={{ flex: 1, backgroundColor: "#000" }}>
+                      <StatusBar style="light" />
+                      <Slot />
+                    </View>
+                  </SoundCloudPlayerProvider>
+                </MusicPlayerProvider>
               </AuthProvider>
             </ErrorBoundary>
           </PaperProvider>

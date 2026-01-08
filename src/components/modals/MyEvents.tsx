@@ -28,13 +28,16 @@ import {
 } from "firebase/firestore";
 
 import NetInfo from "@react-native-community/netinfo";
-import { Camera, CameraView } from "expo-camera";
+import { Camera, CameraView, PermissionStatus } from "expo-camera";
 import * as Notifications from "expo-notifications";
+import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { get, getDatabase, ref } from "firebase/database";
 
 // Import notification manager for event notifications
+import { usePostHog } from "../../analytics/PostHogProvider";
 import { NotificationManager } from "../../services/notificationManager";
+import { UserSearchResult } from "../../services/userSearchService";
 import { retryWithBackoff } from "../../utils/cart/networkErrorDetection";
 import { extractDatabaseErrorCode } from "../../utils/databaseErrorHandler";
 import {
@@ -43,9 +46,23 @@ import {
   sanitizeEventData,
   shouldRetryEventFetch,
 } from "../../utils/eventDataHandler";
+import {
+  RecipientPreview,
+  TransferMethodPicker,
+  UsernameTransferForm,
+} from "../transfer";
 
 // Calculate screen width once
 const screenWidth = Dimensions.get("window").width;
+
+// Transfer mode type for modal state management
+type TransferMode = "picker" | "qr" | "username" | "email";
+
+// Component props
+interface MyEventsProps {
+  /** When true, renders as a standalone screen with back button and extra padding */
+  isStandaloneScreen?: boolean;
+}
 
 // Define types for our components and data
 interface EventTicketCardProps {
@@ -135,7 +152,7 @@ const EventTicketCard: React.FC<EventTicketCardProps> = ({
   </TouchableOpacity>
 );
 
-const MyEvents: React.FC = () => {
+const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
   const [eventsData, setEventsData] = useState<EventWithRagers[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -145,8 +162,24 @@ const MyEvents: React.FC = () => {
 
   const firestore = getFirestore();
   const auth = getAuth();
+  const posthog = usePostHog();
+  const router = useRouter();
   const currentUser = auth.currentUser?.uid || "";
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+
+  // Screen tracking for analytics (only when standalone)
+  useEffect(() => {
+    if (isStandaloneScreen) {
+      posthog?.screen("My Events", {
+        screen_type: "my_events",
+        user_authenticated: !!auth.currentUser,
+        is_standalone: true,
+      });
+    }
+  }, [isStandaloneScreen, posthog, auth.currentUser]);
+
+  const [hasPermission, setHasPermission] = useState<PermissionStatus | null>(
+    null
+  );
   const [transferModalVisible, setTransferModalVisible] =
     useState<boolean>(false);
   const [eventData, setEventData] = useState<EventData>({
@@ -160,6 +193,12 @@ const MyEvents: React.FC = () => {
   } | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string>("");
   const [eventNameTransfer, setEventNameTransfer] = useState<string>("");
+
+  // New state for transfer mode management
+  const [transferMode, setTransferMode] = useState<TransferMode>("picker");
+  const [selectedRecipient, setSelectedRecipient] =
+    useState<UserSearchResult | null>(null);
+  const [isTransferring, setIsTransferring] = useState<boolean>(false);
 
   // Monitor network connectivity
   useEffect(() => {
@@ -296,8 +335,8 @@ const MyEvents: React.FC = () => {
         await Camera.getCameraPermissionsAsync();
       console.log("Updated camera permission status:", updatedStatus);
 
-      setHasPermission(updatedStatus === "granted");
-      return updatedStatus === "granted";
+      setHasPermission(updatedStatus);
+      return updatedStatus === PermissionStatus.GRANTED;
     } catch (error) {
       console.error("Error requesting camera permissions:", error);
       return false;
@@ -310,8 +349,8 @@ const MyEvents: React.FC = () => {
       // First check if we already have permission
       const { status } = await Camera.getCameraPermissionsAsync();
 
-      if (status === "granted") {
-        setHasPermission(true);
+      if (status === PermissionStatus.GRANTED) {
+        setHasPermission(status);
         return;
       }
 
@@ -505,59 +544,189 @@ const MyEvents: React.FC = () => {
     ticketId: string,
     eventName: string
   ) {
+    // Reset transfer mode and recipient when opening modal
+    setTransferMode("picker");
+    setSelectedRecipient(null);
+    setIsTransferring(false);
+
     // First check current permission status directly from the API
     Camera.getCameraPermissionsAsync().then(({ status }) => {
-      if (status === "granted") {
-        // We already have permission, proceed
-        setTransferModalVisible(true);
-        setEventData(eventData);
-        setSelectedTicketId(ticketId);
-        setEventNameTransfer(eventName);
+      setHasPermission(status);
+      // We don't need camera permission to open the modal anymore
+      // since user can choose username/email transfer
+      setTransferModalVisible(true);
+      setEventData(eventData);
+      setSelectedTicketId(ticketId);
+      setEventNameTransfer(eventName);
+
+      // Track transfer modal opening
+      posthog?.capture("ticket_transfer_initiated", {
+        event_id: eventName,
+        ticket_id: ticketId,
+        event_title: eventData.name,
+        camera_permission_status: status,
+        screen_context: isStandaloneScreen
+          ? "my_events_screen"
+          : "account_qr_modal",
+        user_type: "authenticated",
+      });
+    });
+  }
+
+  // Reset modal state helper
+  const resetTransferModal = useCallback(() => {
+    setTransferModalVisible(false);
+    setTransferMode("picker");
+    setSelectedRecipient(null);
+    setIsTransferring(false);
+    setScanningAllowed(true);
+    setScannedData(null);
+  }, []);
+
+  // Transfer method handlers
+  const handleSelectQR = useCallback(async () => {
+    // Check/request camera permission before switching to QR mode
+    const { status } = await Camera.getCameraPermissionsAsync();
+    if (status === PermissionStatus.GRANTED) {
+      setTransferMode("qr");
+      setScanningAllowed(true);
+      setScannedData(null);
+    } else {
+      const { status: newStatus } =
+        await Camera.requestCameraPermissionsAsync();
+      if (newStatus === PermissionStatus.GRANTED) {
+        setHasPermission(newStatus);
+        setTransferMode("qr");
+        setScanningAllowed(true);
+        setScannedData(null);
       } else {
-        // Need to request permission
         Alert.alert(
           "Camera Permission Required",
-          "To transfer tickets, you need to allow RAGESTATE to access your camera.",
+          "Please enable camera access in your device settings to scan QR codes.",
           [
             { text: "Cancel", style: "cancel" },
-            {
-              text: "Grant Permission",
-              onPress: async () => {
-                const granted = await requestPermissions();
-                if (granted) {
-                  // Success! Now open the modal
-                  setTransferModalVisible(true);
-                  setEventData(eventData);
-                  setSelectedTicketId(ticketId);
-                  setEventNameTransfer(eventName);
-                } else {
-                  // If still not granted, guide the user to settings
-                  Alert.alert(
-                    "Permission Required",
-                    "Please enable camera access in your device settings to use this feature.",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      {
-                        text: "Open Settings",
-                        onPress: () => {
-                          Linking.openSettings();
-                        },
-                      },
-                    ]
-                  );
-                }
-              },
-            },
+            { text: "Open Settings", onPress: () => Linking.openSettings() },
           ]
         );
       }
-    });
-  }
+    }
+  }, []);
+
+  const handleSelectUsername = useCallback(() => {
+    setTransferMode("username");
+    setSelectedRecipient(null);
+  }, []);
+
+  const handleSelectEmail = useCallback(() => {
+    // Email transfer to be implemented in section 2.2
+    Alert.alert(
+      "Coming Soon",
+      "Email transfer will be available in a future update.",
+      [{ text: "OK" }]
+    );
+  }, []);
+
+  // Handle user selection from username search
+  const handleUserSelected = useCallback((user: UserSearchResult) => {
+    setSelectedRecipient(user);
+  }, []);
+
+  // Handle back to method picker
+  const handleBackToPicker = useCallback(() => {
+    setTransferMode("picker");
+    setSelectedRecipient(null);
+    setScanningAllowed(true);
+    setScannedData(null);
+  }, []);
+
+  // Handle confirm username transfer
+  const handleConfirmUsernameTransfer = useCallback(async () => {
+    if (!selectedRecipient || !currentUser || isTransferring) return;
+
+    setIsTransferring(true);
+
+    try {
+      // Build ticket URL for transfer
+      const ticketUrl = `events/${eventNameTransfer}/ragers/${selectedTicketId}`;
+
+      // Create recipient data object
+      const recipientData: RecipientData = {
+        firstName: selectedRecipient.displayName.split(" ")[0] || "",
+        lastName:
+          selectedRecipient.displayName.split(" ").slice(1).join(" ") || "",
+        email: "",
+        expoPushToken: null,
+        id: selectedRecipient.userId,
+      };
+
+      // Transfer the ticket using existing function
+      await transferTicket(ticketUrl, recipientData);
+
+      // Track successful transfer
+      posthog?.capture("ticket_transferred", {
+        event_id: eventNameTransfer,
+        ticket_id: selectedTicketId,
+        transfer_method: "username",
+        recipient_id: selectedRecipient.userId,
+        recipient_username: selectedRecipient.username || null,
+        recipient_name: selectedRecipient.displayName,
+        transferred_from: currentUser,
+        transfer_timestamp: new Date().toISOString(),
+        screen_context: isStandaloneScreen
+          ? "my_events_screen"
+          : "account_qr_modal",
+        user_type: "authenticated",
+      });
+
+      // Show success
+      Alert.alert(
+        "Success",
+        `You transferred your ticket to ${selectedRecipient.displayName}`
+      );
+
+      // Refresh and close
+      fetchEventsData();
+      resetTransferModal();
+    } catch (error: any) {
+      console.error("Error transferring ticket:", error);
+
+      posthog?.capture("ticket_transfer_failed", {
+        event_id: eventNameTransfer,
+        ticket_id: selectedTicketId,
+        transfer_method: "username",
+        recipient_id: selectedRecipient.userId,
+        error_message: error.message,
+        user_type: "authenticated",
+      });
+
+      Alert.alert(
+        "Transfer Failed",
+        `Could not transfer ticket: ${error.message || "Please try again"}`
+      );
+    } finally {
+      setIsTransferring(false);
+    }
+  }, [
+    selectedRecipient,
+    currentUser,
+    isTransferring,
+    eventNameTransfer,
+    selectedTicketId,
+    fetchEventsData,
+    resetTransferModal,
+    posthog,
+    isStandaloneScreen,
+  ]);
 
   // Render function with error states and retry options
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.container,
+          isStandaloneScreen && styles.standaloneContainer,
+        ]}
+      >
         <ActivityIndicator
           size="large"
           color="#ffffff"
@@ -568,7 +737,23 @@ const MyEvents: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        isStandaloneScreen && styles.standaloneContainer,
+      ]}
+    >
+      {/* Back button for standalone screen */}
+      {isStandaloneScreen && (
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
+          <Text style={styles.backButtonText}>Back</Text>
+        </TouchableOpacity>
+      )}
+
       <Text style={styles.headline}>Your events</Text>
 
       {/* Show offline banner if applicable */}
@@ -659,69 +844,170 @@ const MyEvents: React.FC = () => {
         onShow={() => {
           // Recheck permission when modal shows
           Camera.getCameraPermissionsAsync().then(({ status }) => {
-            setHasPermission(status === "granted");
+            setHasPermission(status);
           });
         }}
+        onRequestClose={resetTransferModal}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>Transfer Ticket</Text>
-            <View style={styles.ticketInfoContainer}>
-              <Text style={styles.ticketName}>{eventData.name}</Text>
-              <ImageWithFallback
-                style={styles.ticketImage}
-                source={{ uri: eventData.imgURL }}
-                fallbackSource={require("../../assets/BlurHero_2.png")}
-                showLoadingIndicator={true}
-                showRetryButton={false}
-                showErrorMessage={false}
-                maxRetries={2}
-                errorContext="TicketTransfer"
-                resizeMode="cover"
-              />
-              <Text style={styles.ticketQuantity}>Quantity: 1</Text>
-            </View>
-            <View style={styles.cameraContainer}>
-              {hasPermission === false ? (
-                <View style={styles.permissionContainer}>
-                  <Text style={styles.permissionText}>
-                    Camera permission is required to scan QR codes
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.permissionButton}
-                    onPress={requestPermissions}
-                  >
-                    <Text style={styles.permissionButtonText}>
-                      Grant Permission
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.permissionButton, { marginTop: 10 }]}
-                    onPress={() => Linking.openSettings()}
-                  >
-                    <Text style={styles.permissionButtonText}>
-                      Open Settings
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                scanningAllowed && (
-                  <CameraView
-                    onBarcodeScanned={handleBarCodeScanned}
-                    barcodeScannerSettings={{
-                      barcodeTypes: ["qr", "pdf417"],
-                    }}
-                    style={styles.camera}
+          <View
+            style={[
+              styles.modalContent,
+              // Adjust height based on transfer mode
+              transferMode === "picker" && { height: "auto", maxHeight: "90%" },
+              // Username mode needs more space for input and results
+              transferMode === "username" &&
+                !selectedRecipient && {
+                  height: "70%",
+                  maxHeight: "85%",
+                  justifyContent: "flex-start",
+                },
+            ]}
+          >
+            {/* Header with back button when not on picker */}
+            <View style={styles.modalHeader}>
+              {transferMode !== "picker" && (
+                <TouchableOpacity
+                  style={styles.modalBackButton}
+                  onPress={handleBackToPicker}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <MaterialCommunityIcons
+                    name="arrow-left"
+                    size={24}
+                    color="white"
                   />
-                )
+                </TouchableOpacity>
               )}
+              <Text style={styles.modalText}>
+                {transferMode === "picker" && "Transfer Ticket"}
+                {transferMode === "qr" && "Scan QR Code"}
+                {transferMode === "username" &&
+                  (selectedRecipient ? "Confirm Transfer" : "Find by Username")}
+                {transferMode === "email" && "Transfer by Email"}
+              </Text>
+              {transferMode !== "picker" && <View style={{ width: 24 }} />}
             </View>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setTransferModalVisible(false)}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
+
+            {/* Event info - shown in picker mode */}
+            {transferMode === "picker" && (
+              <View style={styles.ticketInfoContainer}>
+                <Text style={styles.ticketName}>{eventData.name}</Text>
+                <ImageWithFallback
+                  style={styles.ticketImage}
+                  source={{ uri: eventData.imgURL }}
+                  fallbackSource={require("../../assets/BlurHero_2.png")}
+                  showLoadingIndicator={true}
+                  showRetryButton={false}
+                  showErrorMessage={false}
+                  maxRetries={2}
+                  errorContext="TicketTransfer"
+                  resizeMode="cover"
+                />
+                <Text style={styles.ticketQuantity}>Quantity: 1</Text>
+              </View>
+            )}
+
+            {/* Transfer Method Picker */}
+            {transferMode === "picker" && (
+              <View style={styles.methodPickerContainer}>
+                <TransferMethodPicker
+                  onSelectQR={handleSelectQR}
+                  onSelectUsername={handleSelectUsername}
+                  onSelectEmail={handleSelectEmail}
+                  eventId={eventNameTransfer}
+                  ticketId={selectedTicketId}
+                />
+              </View>
+            )}
+
+            {/* QR Scanner Mode */}
+            {transferMode === "qr" && (
+              <View style={styles.cameraContainer}>
+                {hasPermission !== PermissionStatus.GRANTED ? (
+                  <View style={styles.permissionContainer}>
+                    <Text style={styles.permissionText}>
+                      Camera permission is required to scan QR codes
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.permissionButton}
+                      onPress={requestPermissions}
+                    >
+                      <Text style={styles.permissionButtonText}>
+                        Grant Permission
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.permissionButton, { marginTop: 10 }]}
+                      onPress={() => Linking.openSettings()}
+                    >
+                      <Text style={styles.permissionButtonText}>
+                        Open Settings
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  scanningAllowed && (
+                    <CameraView
+                      onBarcodeScanned={handleBarCodeScanned}
+                      barcodeScannerSettings={{
+                        barcodeTypes: ["qr", "pdf417"],
+                      }}
+                      style={styles.camera}
+                    />
+                  )
+                )}
+              </View>
+            )}
+
+            {/* Username Transfer Mode */}
+            {transferMode === "username" && !selectedRecipient && (
+              <View style={styles.usernameFormContainer}>
+                <UsernameTransferForm
+                  ticketId={selectedTicketId}
+                  eventId={eventNameTransfer}
+                  eventName={eventData?.name || ""}
+                  onUserSelected={handleUserSelected}
+                  onCancel={handleBackToPicker}
+                  hideHeader
+                />
+              </View>
+            )}
+
+            {/* Recipient Preview (when user selected from username search) */}
+            {transferMode === "username" && selectedRecipient && (
+              <View style={styles.recipientPreviewContainer}>
+                <RecipientPreview
+                  user={selectedRecipient}
+                  onConfirm={handleConfirmUsernameTransfer}
+                  onCancel={() => setSelectedRecipient(null)}
+                  isLoading={isTransferring}
+                  eventName={eventData?.name}
+                  hideHeader
+                />
+              </View>
+            )}
+
+            {/* Cancel Button - hide when RecipientPreview is shown (it has its own buttons) */}
+            {!(transferMode === "username" && selectedRecipient) && (
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => {
+                  // Track transfer modal closure
+                  posthog?.capture("ticket_transfer_cancelled", {
+                    event_id: eventNameTransfer,
+                    ticket_id: selectedTicketId,
+                    transfer_mode: transferMode,
+                    cancellation_stage: "transfer_modal",
+                    user_type: "authenticated",
+                  });
+
+                  resetTransferModal();
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </Modal>
@@ -1015,7 +1301,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "white",
     textAlign: "center",
-    marginBottom: 16,
     fontSize: 20,
     fontFamily,
   },
@@ -1048,6 +1333,61 @@ const styles = StyleSheet.create({
     color: "white",
     fontFamily,
     fontWeight: "600",
+  },
+  // Standalone screen styles
+  standaloneContainer: {
+    flex: 1,
+    paddingTop: Platform.OS === "ios" ? 50 : 30,
+    paddingHorizontal: 16,
+    width: "100%",
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingVertical: 8,
+  },
+  backButtonText: {
+    color: "white",
+    fontFamily,
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  // Modal header styles for transfer modes
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    marginBottom: 16,
+    position: "relative",
+    minHeight: 32,
+  },
+  modalBackButton: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    padding: 4,
+  },
+  // Container styles for transfer modes
+  methodPickerContainer: {
+    width: "100%",
+    marginVertical: 8,
+  },
+  usernameFormContainer: {
+    width: "100%",
+    flex: 1,
+    minHeight: 300,
+    marginVertical: 8,
+    overflow: "hidden",
+  },
+  recipientPreviewContainer: {
+    width: "100%",
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
