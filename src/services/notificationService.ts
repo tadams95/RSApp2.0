@@ -147,12 +147,15 @@ export class NotificationService {
    */
   public async sendLocalNotification(
     notification: NotificationRequest
-  ): Promise<string> {
+  ): Promise<string | null> {
     try {
       const permissionStatus = await this.getPermissionStatus();
 
       if (permissionStatus !== "granted") {
-        throw new Error("Notification permissions not granted");
+        // Silently skip notification if permissions not granted
+        // This is expected behavior - user may have denied permissions
+        console.log("Notification skipped: permissions not granted");
+        return null;
       }
 
       const notificationId = await Notifications.scheduleNotificationAsync({
@@ -171,7 +174,7 @@ export class NotificationService {
       return notificationId;
     } catch (error) {
       console.error("Error sending local notification:", error);
-      throw error;
+      return null;
     }
   }
 
@@ -180,12 +183,14 @@ export class NotificationService {
    */
   public async scheduleNotification(
     notification: ScheduledNotificationRequest
-  ): Promise<string> {
+  ): Promise<string | null> {
     try {
       const permissionStatus = await this.getPermissionStatus();
 
       if (permissionStatus !== "granted") {
-        throw new Error("Notification permissions not granted");
+        // Silently skip notification if permissions not granted
+        console.log("Scheduled notification skipped: permissions not granted");
+        return null;
       }
 
       const notificationId = await Notifications.scheduleNotificationAsync({
@@ -204,7 +209,7 @@ export class NotificationService {
       return notificationId;
     } catch (error) {
       console.error("Error scheduling notification:", error);
-      throw error;
+      return null;
     }
   }
 

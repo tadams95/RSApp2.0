@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -15,14 +16,17 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { doc, getFirestore, setDoc } from "firebase/firestore";
 import { useSelector } from "react-redux";
+import { usePostHog } from "../../analytics/PostHogProvider";
 import { GlobalStyles } from "../../constants/styles";
 import useProfileUpdateErrorHandler from "../../hooks/useProfileUpdateErrorHandler";
 import { useSoundCloudTrack } from "../../hooks/useSoundCloudTrack";
 import { NotificationManager } from "../../services/notificationManager";
 import { selectLocalId } from "../../store/redux/userSlice";
 import { updateUserData } from "../../utils/auth";
+import { isValidSocialUrl, SocialPlatform } from "../../utils/socialLinks";
 import { isValidSoundCloudUrl } from "../../utils/soundcloud";
 import ProfileUpdateErrorNotice from "../ProfileUpdateErrorNotice";
+import { XLogo } from "../icons";
 import {
   formatPhoneNumberInput,
   validateEmail,
@@ -40,6 +44,14 @@ interface EditProfileProps {
     email?: string;
     phoneNumber?: string;
     profileSongUrl?: string | null;
+    socialLinks?: {
+      twitter?: string;
+      instagram?: string;
+      tiktok?: string;
+      soundcloud?: string;
+      spotify?: string;
+      youtube?: string;
+    };
   };
 }
 
@@ -58,6 +70,12 @@ interface FormErrors {
   email?: string;
   phoneNumber?: string;
   profileSongUrl?: string;
+  twitterUrl?: string;
+  instagramUrl?: string;
+  tiktokUrl?: string;
+  soundcloudUrl?: string;
+  spotifyUrl?: string;
+  youtubeUrl?: string;
 }
 
 const EditProfile: React.FC<EditProfileProps> = ({
@@ -74,6 +92,19 @@ const EditProfile: React.FC<EditProfileProps> = ({
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formState, setFormState] = useState<UserDataUpdate>({});
+
+  // Social links state
+  const [twitterUrl, setTwitterUrl] = useState<string>("");
+  const [instagramUrl, setInstagramUrl] = useState<string>("");
+  const [tiktokUrl, setTiktokUrl] = useState<string>("");
+  const [soundcloudUrl, setSoundcloudUrl] = useState<string>("");
+  const [spotifyUrl, setSpotifyUrl] = useState<string>("");
+  const [youtubeUrl, setYoutubeUrl] = useState<string>("");
+  const [socialLinksExpanded, setSocialLinksExpanded] =
+    useState<boolean>(false);
+
+  // PostHog analytics
+  const posthog = usePostHog();
 
   // SoundCloud track preview for profile song
   const {
@@ -108,6 +139,24 @@ const EditProfile: React.FC<EditProfileProps> = ({
       setEmail(initialData.email || "");
       setPhoneNumber(initialData.phoneNumber || "");
       setProfileSongUrl(initialData.profileSongUrl || "");
+      // Initialize social links
+      setTwitterUrl(initialData.socialLinks?.twitter || "");
+      setInstagramUrl(initialData.socialLinks?.instagram || "");
+      setTiktokUrl(initialData.socialLinks?.tiktok || "");
+      setSoundcloudUrl(initialData.socialLinks?.soundcloud || "");
+      setSpotifyUrl(initialData.socialLinks?.spotify || "");
+      setYoutubeUrl(initialData.socialLinks?.youtube || "");
+      // Auto-expand if any social links exist
+      if (
+        initialData.socialLinks?.twitter ||
+        initialData.socialLinks?.instagram ||
+        initialData.socialLinks?.tiktok ||
+        initialData.socialLinks?.soundcloud ||
+        initialData.socialLinks?.spotify ||
+        initialData.socialLinks?.youtube
+      ) {
+        setSocialLinksExpanded(true);
+      }
     }
   }, [initialData]);
 
@@ -162,6 +211,42 @@ const EditProfile: React.FC<EditProfileProps> = ({
           error = "Please enter a valid SoundCloud URL";
         }
         break;
+      case "twitterUrl":
+        if (value.trim() && !isValidSocialUrl(value.trim(), "twitter")) {
+          error =
+            "Please enter a valid X/Twitter URL (e.g., https://x.com/username)";
+        }
+        break;
+      case "instagramUrl":
+        if (value.trim() && !isValidSocialUrl(value.trim(), "instagram")) {
+          error =
+            "Please enter a valid Instagram URL (e.g., https://instagram.com/username)";
+        }
+        break;
+      case "tiktokUrl":
+        if (value.trim() && !isValidSocialUrl(value.trim(), "tiktok")) {
+          error =
+            "Please enter a valid TikTok URL (e.g., https://tiktok.com/@username)";
+        }
+        break;
+      case "soundcloudUrl":
+        if (value.trim() && !isValidSocialUrl(value.trim(), "soundcloud")) {
+          error =
+            "Please enter a valid SoundCloud URL (e.g., https://soundcloud.com/username)";
+        }
+        break;
+      case "spotifyUrl":
+        if (value.trim() && !isValidSocialUrl(value.trim(), "spotify")) {
+          error =
+            "Please enter a valid Spotify URL (e.g., https://open.spotify.com/artist/...)";
+        }
+        break;
+      case "youtubeUrl":
+        if (value.trim() && !isValidSocialUrl(value.trim(), "youtube")) {
+          error =
+            "Please enter a valid YouTube URL (e.g., https://youtube.com/@username)";
+        }
+        break;
     }
 
     setFormErrors((prev) => ({ ...prev, [field]: error }));
@@ -206,6 +291,13 @@ const EditProfile: React.FC<EditProfileProps> = ({
     setEmail("");
     setPhoneNumber("");
     setProfileSongUrl("");
+    setTwitterUrl("");
+    setInstagramUrl("");
+    setTiktokUrl("");
+    setSoundcloudUrl("");
+    setSpotifyUrl("");
+    setYoutubeUrl("");
+    setSocialLinksExpanded(false);
     setFormErrors({});
     clearErrors();
     onCancel();
@@ -220,6 +312,13 @@ const EditProfile: React.FC<EditProfileProps> = ({
     setEmail("");
     setPhoneNumber("");
     setProfileSongUrl("");
+    setTwitterUrl("");
+    setInstagramUrl("");
+    setTiktokUrl("");
+    setSoundcloudUrl("");
+    setSpotifyUrl("");
+    setYoutubeUrl("");
+    setSocialLinksExpanded(false);
     setFormErrors({});
     clearErrors();
   };
@@ -325,8 +424,33 @@ const EditProfile: React.FC<EditProfileProps> = ({
     const newSongUrl = profileSongUrl.trim();
     const profileSongChanged = newSongUrl !== initialSongUrl;
 
+    // Check if social links changed
+    const initialTwitter = initialData?.socialLinks?.twitter || "";
+    const initialInstagram = initialData?.socialLinks?.instagram || "";
+    const initialTiktok = initialData?.socialLinks?.tiktok || "";
+    const initialSoundcloud = initialData?.socialLinks?.soundcloud || "";
+    const initialSpotify = initialData?.socialLinks?.spotify || "";
+    const initialYoutube = initialData?.socialLinks?.youtube || "";
+    const newTwitter = twitterUrl.trim();
+    const newInstagram = instagramUrl.trim();
+    const newTiktok = tiktokUrl.trim();
+    const newSoundcloud = soundcloudUrl.trim();
+    const newSpotify = spotifyUrl.trim();
+    const newYoutube = youtubeUrl.trim();
+    const socialLinksChanged =
+      newTwitter !== initialTwitter ||
+      newInstagram !== initialInstagram ||
+      newTiktok !== initialTiktok ||
+      newSoundcloud !== initialSoundcloud ||
+      newSpotify !== initialSpotify ||
+      newYoutube !== initialYoutube;
+
     // Only update if there are changes to make
-    if (Object.keys(updatedUserData).length === 0 && !profileSongChanged) {
+    if (
+      Object.keys(updatedUserData).length === 0 &&
+      !profileSongChanged &&
+      !socialLinksChanged
+    ) {
       console.warn("No changes to update");
       setIsSubmitting(false);
       onCancel();
@@ -343,19 +467,69 @@ const EditProfile: React.FC<EditProfileProps> = ({
         }
       }
 
-      // Update profile song URL in /profiles collection if changed
-      if (profileSongChanged) {
+      // Update profile data in /profiles collection (song URL + social links)
+      if (profileSongChanged || socialLinksChanged) {
         const db = getFirestore();
         const profileRef = doc(db, "profiles", userId);
-        await setDoc(
-          profileRef,
-          {
-            profileSongUrl: newSongUrl || null,
-            updatedAt: new Date(),
-          },
-          { merge: true }
-        );
-        console.log("Profile song URL updated successfully");
+
+        // Build the update object
+        const profileUpdate: Record<string, unknown> = {
+          updatedAt: new Date(),
+        };
+
+        if (profileSongChanged) {
+          profileUpdate.profileSongUrl = newSongUrl || null;
+        }
+
+        if (socialLinksChanged) {
+          profileUpdate.socialLinks = {
+            twitter: newTwitter || null,
+            instagram: newInstagram || null,
+            tiktok: newTiktok || null,
+            soundcloud: newSoundcloud || null,
+            spotify: newSpotify || null,
+            youtube: newYoutube || null,
+          };
+
+          // Track social link changes with PostHog
+          const platforms: SocialPlatform[] = [
+            "twitter",
+            "instagram",
+            "tiktok",
+            "soundcloud",
+            "spotify",
+            "youtube",
+          ];
+          platforms.forEach((platform) => {
+            const initial = initialData?.socialLinks?.[platform] || "";
+            const current =
+              platform === "twitter"
+                ? newTwitter
+                : platform === "instagram"
+                ? newInstagram
+                : platform === "tiktok"
+                ? newTiktok
+                : platform === "soundcloud"
+                ? newSoundcloud
+                : platform === "spotify"
+                ? newSpotify
+                : newYoutube;
+
+            if (current && !initial) {
+              // Link added
+              posthog?.capture("social_link_added", { platform });
+            } else if (!current && initial) {
+              // Link removed
+              posthog?.capture("social_link_removed", { platform });
+            } else if (current !== initial) {
+              // Link updated
+              posthog?.capture("social_link_updated", { platform });
+            }
+          });
+        }
+
+        await setDoc(profileRef, profileUpdate, { merge: true });
+        console.log("Profile data updated successfully");
       }
 
       // Send profile update confirmation notification
@@ -363,6 +537,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
         const changedFields = [
           ...Object.keys(updatedUserData),
           ...(profileSongChanged ? ["profileSongUrl"] : []),
+          ...(socialLinksChanged ? ["socialLinks"] : []),
         ];
         const updateType = changedFields.some(
           (field) => field === "email" || field === "phoneNumber"
@@ -404,7 +579,12 @@ const EditProfile: React.FC<EditProfileProps> = ({
       style={styles.container}
       accessibilityLabel="Edit profile form"
     >
-      <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.headline} accessibilityRole="header">
           Edit your profile details below
         </Text>
@@ -577,6 +757,248 @@ const EditProfile: React.FC<EditProfileProps> = ({
               </View>
             )}
           </View>
+
+          {/* Social Links Section - Collapsible */}
+          <View style={styles.socialLinksSection}>
+            <Pressable
+              onPress={() => setSocialLinksExpanded(!socialLinksExpanded)}
+              style={styles.socialLinksHeader}
+              accessibilityRole="button"
+              accessibilityLabel={`Social links section, ${
+                socialLinksExpanded ? "expanded" : "collapsed"
+              }`}
+            >
+              <View style={styles.socialLinksHeaderLeft}>
+                <MaterialCommunityIcons
+                  name="link-variant"
+                  size={20}
+                  color={GlobalStyles.colors.accent}
+                />
+                <Text style={styles.subtitle}>Social Links (optional)</Text>
+              </View>
+              <MaterialCommunityIcons
+                name={socialLinksExpanded ? "chevron-up" : "chevron-down"}
+                size={24}
+                color="#888"
+              />
+            </Pressable>
+
+            {socialLinksExpanded && (
+              <View style={styles.socialLinksContent}>
+                {/* X (Twitter) Input */}
+                <View style={styles.socialLinkInputRow}>
+                  <View style={styles.socialLinkIconContainer}>
+                    <XLogo size={20} color="#000" />
+                  </View>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.socialLinkInput,
+                      formErrors.twitterUrl && styles.inputError,
+                    ]}
+                    placeholder="https://x.com/username"
+                    placeholderTextColor="#666"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={twitterUrl}
+                    onChangeText={(text) => {
+                      setTwitterUrl(text);
+                      validateField("twitterUrl", text);
+                    }}
+                    accessibilityLabel="X Twitter URL input"
+                    accessibilityHint="Enter your X or Twitter profile URL"
+                  />
+                </View>
+                {formErrors.twitterUrl ? (
+                  <Text style={styles.errorText}>{formErrors.twitterUrl}</Text>
+                ) : null}
+
+                {/* Instagram Input */}
+                <View style={styles.socialLinkInputRow}>
+                  <View
+                    style={[
+                      styles.socialLinkIconContainer,
+                      { backgroundColor: "#E4405F" },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name="instagram"
+                      size={20}
+                      color="#fff"
+                    />
+                  </View>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.socialLinkInput,
+                      formErrors.instagramUrl && styles.inputError,
+                    ]}
+                    placeholder="https://instagram.com/username"
+                    placeholderTextColor="#666"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={instagramUrl}
+                    onChangeText={(text) => {
+                      setInstagramUrl(text);
+                      validateField("instagramUrl", text);
+                    }}
+                    accessibilityLabel="Instagram URL input"
+                    accessibilityHint="Enter your Instagram profile URL"
+                  />
+                </View>
+                {formErrors.instagramUrl ? (
+                  <Text style={styles.errorText}>
+                    {formErrors.instagramUrl}
+                  </Text>
+                ) : null}
+
+                {/* TikTok Input */}
+                <View style={styles.socialLinkInputRow}>
+                  <View style={styles.socialLinkIconContainer}>
+                    <MaterialCommunityIcons
+                      name="music-note"
+                      size={20}
+                      color="#000"
+                    />
+                  </View>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.socialLinkInput,
+                      formErrors.tiktokUrl && styles.inputError,
+                    ]}
+                    placeholder="https://tiktok.com/@username"
+                    placeholderTextColor="#666"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={tiktokUrl}
+                    onChangeText={(text) => {
+                      setTiktokUrl(text);
+                      validateField("tiktokUrl", text);
+                    }}
+                    accessibilityLabel="TikTok URL input"
+                    accessibilityHint="Enter your TikTok profile URL"
+                  />
+                </View>
+                {formErrors.tiktokUrl ? (
+                  <Text style={styles.errorText}>{formErrors.tiktokUrl}</Text>
+                ) : null}
+
+                {/* SoundCloud Input */}
+                <View style={styles.socialLinkInputRow}>
+                  <View
+                    style={[
+                      styles.socialLinkIconContainer,
+                      { backgroundColor: "#FF5500" },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name="soundcloud"
+                      size={20}
+                      color="#fff"
+                    />
+                  </View>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.socialLinkInput,
+                      formErrors.soundcloudUrl && styles.inputError,
+                    ]}
+                    placeholder="https://soundcloud.com/username"
+                    placeholderTextColor="#666"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={soundcloudUrl}
+                    onChangeText={(text) => {
+                      setSoundcloudUrl(text);
+                      validateField("soundcloudUrl", text);
+                    }}
+                    accessibilityLabel="SoundCloud URL input"
+                    accessibilityHint="Enter your SoundCloud profile URL"
+                  />
+                </View>
+                {formErrors.soundcloudUrl ? (
+                  <Text style={styles.errorText}>
+                    {formErrors.soundcloudUrl}
+                  </Text>
+                ) : null}
+
+                {/* Spotify Input */}
+                <View style={styles.socialLinkInputRow}>
+                  <View
+                    style={[
+                      styles.socialLinkIconContainer,
+                      { backgroundColor: "#1DB954" },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name="spotify"
+                      size={20}
+                      color="#fff"
+                    />
+                  </View>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.socialLinkInput,
+                      formErrors.spotifyUrl && styles.inputError,
+                    ]}
+                    placeholder="https://open.spotify.com/artist/..."
+                    placeholderTextColor="#666"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={spotifyUrl}
+                    onChangeText={(text) => {
+                      setSpotifyUrl(text);
+                      validateField("spotifyUrl", text);
+                    }}
+                    accessibilityLabel="Spotify URL input"
+                    accessibilityHint="Enter your Spotify artist or profile URL"
+                  />
+                </View>
+                {formErrors.spotifyUrl ? (
+                  <Text style={styles.errorText}>{formErrors.spotifyUrl}</Text>
+                ) : null}
+
+                {/* YouTube Input */}
+                <View style={styles.socialLinkInputRow}>
+                  <View
+                    style={[
+                      styles.socialLinkIconContainer,
+                      { backgroundColor: "#FF0000" },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name="youtube"
+                      size={20}
+                      color="#fff"
+                    />
+                  </View>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.socialLinkInput,
+                      formErrors.youtubeUrl && styles.inputError,
+                    ]}
+                    placeholder="https://youtube.com/@username"
+                    placeholderTextColor="#666"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={youtubeUrl}
+                    onChangeText={(text) => {
+                      setYoutubeUrl(text);
+                      validateField("youtubeUrl", text);
+                    }}
+                    accessibilityLabel="YouTube URL input"
+                    accessibilityHint="Enter your YouTube channel URL"
+                  />
+                </View>
+                {formErrors.youtubeUrl ? (
+                  <Text style={styles.errorText}>{formErrors.youtubeUrl}</Text>
+                ) : null}
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Tab Container */}
@@ -603,7 +1025,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
             </Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -619,8 +1041,15 @@ const fontFamily: string =
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginBottom: Dimensions.get("window").height * 0.12,
     width: "100%",
+  },
+  scrollView: {
+    flex: 1,
+    width: "100%",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: Dimensions.get("window").height * 0.12,
   },
   headline: {
     fontFamily,
@@ -750,6 +1179,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#FF6B6B",
     flex: 1,
+  },
+  // Social Links styles
+  socialLinksSection: {
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  socialLinksHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  socialLinksHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  socialLinksContent: {
+    marginTop: 8,
+  },
+  socialLinkInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 8,
+  },
+  socialLinkIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  socialLinkInput: {
+    flex: 1,
+    marginBottom: 0,
   },
 });
 

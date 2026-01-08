@@ -52,6 +52,9 @@ export interface UserData {
     soundcloud?: string;
     instagram?: string;
     twitter?: string;
+    tiktok?: string;
+    spotify?: string;
+    youtube?: string;
   };
   interests?: string[]; // music genres, event types
   location?: {

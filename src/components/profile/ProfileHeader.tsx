@@ -1,18 +1,12 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { GlobalStyles } from "../../constants/styles";
 import { UserData } from "../../utils/auth";
 import { ImageWithFallback } from "../ui";
+import FollowButton from "./FollowButton";
 import ProfileSongCard from "./ProfileSongCard";
-
-const { width: screenWidth } = Dimensions.get("window");
+import SocialLinksRow from "./SocialLinksRow";
 
 interface ProfileHeaderProps {
   profile: UserData | null;
@@ -20,6 +14,7 @@ interface ProfileHeaderProps {
   onEditPress?: () => void;
   onFollowersPress?: () => void;
   onFollowingPress?: () => void;
+  onFollowChange?: (isFollowing: boolean) => void;
 }
 
 export default function ProfileHeader({
@@ -28,6 +23,7 @@ export default function ProfileHeader({
   onEditPress,
   onFollowersPress,
   onFollowingPress,
+  onFollowChange,
 }: ProfileHeaderProps) {
   const displayName = profile?.displayName || "User";
   const username = profile?.username ? `@${profile.username}` : null;
@@ -67,7 +63,7 @@ export default function ProfileHeader({
 
   return (
     <View style={styles.container}>
-      {/* Top Section: Avatar + Info */}
+      {/* Top Section: Avatar + Name/Username/Bio/Location */}
       <View style={styles.topSection}>
         {/* Profile Picture */}
         <View style={styles.avatarContainer}>
@@ -81,14 +77,6 @@ export default function ProfileHeader({
             style={styles.avatar}
             resizeMode="cover"
           />
-          {isOwnProfile && onEditPress && (
-            <TouchableOpacity
-              style={styles.editAvatarButton}
-              onPress={onEditPress}
-            >
-              <MaterialCommunityIcons name="pencil" size={16} color="#fff" />
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* Info beside avatar */}
@@ -116,41 +104,77 @@ export default function ProfileHeader({
               <Text style={styles.location}>{location}</Text>
             </View>
           )}
-
-          {/* Edit Profile Button + Stats Row */}
-          <View style={styles.actionRow}>
-            {isOwnProfile && onEditPress && (
-              <TouchableOpacity style={styles.editButton} onPress={onEditPress}>
-                <Text style={styles.editButtonText}>Edit Profile</Text>
-              </TouchableOpacity>
-            )}
-            <View style={styles.statsRow}>
-              <TouchableOpacity onPress={onFollowingPress} activeOpacity={0.7}>
-                <Text style={styles.statsText}>
-                  <Text style={styles.statsNumber}>
-                    {profile?.stats?.followingCount ?? 0}
-                  </Text>
-                  {" Following"}
-                </Text>
-              </TouchableOpacity>
-              <Text style={styles.statsDot}>·</Text>
-              <TouchableOpacity onPress={onFollowersPress} activeOpacity={0.7}>
-                <Text style={styles.statsText}>
-                  <Text style={styles.statsNumber}>
-                    {profile?.stats?.followersCount ?? 0}
-                  </Text>
-                  {" Followers"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
       </View>
 
-      {/* Profile Song Section (full width, below profile info) */}
+      {/* Profile Song Section - Personal expression/vibe */}
       {profile?.profileSongUrl && (
         <View style={styles.songSection}>
           <ProfileSongCard songUrl={profile.profileSongUrl} />
+        </View>
+      )}
+
+      {/* Stats Row - Full Width */}
+      <View style={styles.statsRow}>
+        <TouchableOpacity
+          onPress={onFollowingPress}
+          activeOpacity={0.7}
+          style={styles.statItem}
+        >
+          <Text style={styles.statsNumber}>
+            {profile?.stats?.followingCount ?? 0}
+          </Text>
+          <Text style={styles.statsLabel}>Following</Text>
+        </TouchableOpacity>
+        <View style={styles.statsDivider} />
+        <TouchableOpacity
+          onPress={onFollowersPress}
+          activeOpacity={0.7}
+          style={styles.statItem}
+        >
+          <Text style={styles.statsNumber}>
+            {profile?.stats?.followersCount ?? 0}
+          </Text>
+          <Text style={styles.statsLabel}>Followers</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Action Row - Edit Profile OR Follow Button */}
+      <View style={styles.actionRow}>
+        {isOwnProfile ? (
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={onEditPress}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons
+              name="pencil-outline"
+              size={16}
+              color="#fff"
+              style={styles.editIcon}
+            />
+            <Text style={styles.editButtonText}>Edit Profile</Text>
+          </TouchableOpacity>
+        ) : (
+          profile?.userId && (
+            <View style={styles.followButtonContainer}>
+              <FollowButton
+                targetUserId={profile.userId}
+                onFollowChange={onFollowChange}
+              />
+            </View>
+          )
+        )}
+      </View>
+
+      {/* Social Links Row - Full Width, Centered */}
+      {profile?.socialLinks && (
+        <View style={styles.socialLinksContainer}>
+          <SocialLinksRow
+            socialLinks={profile.socialLinks}
+            userId={profile.userId}
+            isOwnProfile={isOwnProfile}
+          />
         </View>
       )}
     </View>
@@ -165,38 +189,25 @@ const styles = StyleSheet.create({
   },
   topSection: {
     flexDirection: "row",
-    alignItems: "stretch",
+    alignItems: "flex-start",
   },
   avatarContainer: {
-    position: "relative",
     marginRight: 14,
   },
   avatar: {
-    width: 100,
-    height: 100,
+    width: 88,
+    height: 88,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: GlobalStyles.colors.grey8,
   },
-  editAvatarButton: {
-    position: "absolute",
-    bottom: -1,
-    right: -1,
-    backgroundColor: GlobalStyles.colors.redVivid5,
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#000",
-  },
   infoSection: {
     flex: 1,
     justifyContent: "flex-start",
+    paddingTop: 2,
   },
   nameContainer: {
-    marginBottom: 0,
+    marginBottom: 2,
   },
   displayNameRow: {
     flexDirection: "row",
@@ -231,41 +242,66 @@ const styles = StyleSheet.create({
     color: GlobalStyles.colors.grey4,
     marginLeft: 4,
   },
-  editButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey6,
-  },
-  editButtonText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  actionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
+  // Stats Row Styles
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+    paddingVertical: 12,
+    backgroundColor: GlobalStyles.colors.grey9,
+    borderRadius: 10,
   },
-  statsText: {
-    fontSize: 13,
-    color: GlobalStyles.colors.grey4,
+  statItem: {
+    alignItems: "center",
+    paddingHorizontal: 24,
   },
   statsNumber: {
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "700",
     color: "#fff",
   },
-  statsDot: {
-    color: GlobalStyles.colors.grey5,
-    marginHorizontal: 6,
-    fontSize: 13,
+  statsLabel: {
+    fontSize: 12,
+    color: GlobalStyles.colors.grey4,
+    marginTop: 2,
   },
+  statsDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: GlobalStyles.colors.grey7,
+  },
+  // Action Row Styles
+  actionRow: {
+    marginTop: 12,
+  },
+  editButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: GlobalStyles.colors.grey6,
+    backgroundColor: "transparent",
+  },
+  editIcon: {
+    marginRight: 6,
+  },
+  editButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  followButtonContainer: {
+    width: "100%",
+  },
+  // Social Links Styles
+  socialLinksContainer: {
+    alignItems: "center",
+    marginTop: 12,
+  },
+  // Song Section
   songSection: {
     marginTop: 14,
   },

@@ -27,7 +27,6 @@ import { getUserPosts, Post } from "../../services/feedService";
 import { UserData } from "../../utils/auth";
 import { PostCard } from "../feed";
 import { EditProfile } from "../modals";
-import FollowButton from "./FollowButton";
 import ProfileHeader from "./ProfileHeader";
 
 interface UserProfileViewProps {
@@ -325,13 +324,6 @@ export default function UserProfileView({
           // TODO: Navigate to following list
         }}
       />
-
-      {/* Follow Button (for other profiles only) */}
-      {!isOwnProfile && (
-        <View style={styles.followButtonContainer}>
-          <FollowButton targetUserId={userId} />
-        </View>
-      )}
     </View>
   );
 
@@ -400,6 +392,7 @@ export default function UserProfileView({
                 email: profile.email,
                 phoneNumber: profile.phoneNumber,
                 profileSongUrl: profile.profileSongUrl,
+                socialLinks: profile.socialLinks,
               }}
             />
           </View>
@@ -423,10 +416,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#000",
     padding: 20,
-  },
-  followButtonContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
   },
   errorText: {
     fontSize: 18,
