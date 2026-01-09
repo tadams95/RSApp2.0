@@ -244,6 +244,13 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
       setLoading(true);
       setErrorMessage(null);
 
+      // Don't fetch if user is not authenticated
+      if (!currentUser) {
+        setEventsData([]);
+        setLoading(false);
+        return;
+      }
+
       if (isOffline) {
         setErrorMessage("You're offline. Please check your connection.");
         setLoading(false);

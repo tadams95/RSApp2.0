@@ -146,8 +146,14 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
   const lastActiveTime = useRef<number>(Date.now());
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
 
+  // Initialize enhancements only if postHog is available
   useEffect(() => {
-    initializeEnhancements();
+    if (postHog) {
+      initializeEnhancements();
+    }
+  }, [postHog]);
+
+  useEffect(() => {
     setupNetworkListener();
     setupAppStateTracking();
 
@@ -590,11 +596,17 @@ export const PostHogProvider: React.FC<EnhancedPostHogProviderProps> = ({
     autocapture: false,
   };
 
-  return (
-    <PostHogBaseProvider apiKey={config.apiKey} options={options}>
-      <EnhancedPostHogInnerProvider>{children}</EnhancedPostHogInnerProvider>
-    </PostHogBaseProvider>
-  );
+  try {
+    return (
+      <PostHogBaseProvider apiKey={config.apiKey} options={options}>
+        <EnhancedPostHogInnerProvider>{children}</EnhancedPostHogInnerProvider>
+      </PostHogBaseProvider>
+    );
+  } catch (error) {
+    console.error("PostHog provider initialization failed:", error);
+    // Return children without analytics if PostHog fails to initialize
+    return <>{children}</>;
+  }
 };
 
 // Custom hook for using enhanced PostHog analytics
@@ -613,11 +625,14 @@ export const useScreenTracking = (
   screenName: string,
   properties?: AnalyticsProperties
 ) => {
-  const { screen } = usePostHog();
+  const context = useContext(EnhancedPostHogContext);
 
   useEffect(() => {
-    screen(screenName, properties);
-  }, [screenName, screen]);
+    // Only track if PostHog context is available
+    if (context?.screen) {
+      context.screen(screenName, properties);
+    }
+  }, [screenName, context?.screen]);
 };
 
 // Export types for external use

@@ -1,10 +1,15 @@
-import messaging, {
-  FirebaseMessagingTypes,
-} from "@react-native-firebase/messaging";
 import * as Notifications from "expo-notifications";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { Platform } from "react-native";
 import { db } from "../firebase/firebase";
+
+// Lazy-loaded Firebase messaging to avoid crashes in Expo Go
+let messagingModule:
+  | typeof import("@react-native-firebase/messaging").default
+  | null = null;
+let FirebaseMessagingTypes:
+  | typeof import("@react-native-firebase/messaging").FirebaseMessagingTypes
+  | null = null;
 
 // Configure expo-notifications handler for foreground display
 Notifications.setNotificationHandler({
@@ -18,16 +23,38 @@ Notifications.setNotificationHandler({
 });
 
 /**
+ * Check if Firebase messaging is available and load it lazily
+ * Returns the messaging function if available, null otherwise
+ */
+function getFirebaseMessaging():
+  | typeof import("@react-native-firebase/messaging").default
+  | null {
+  if (messagingModule !== null) {
+    return messagingModule;
+  }
+
+  try {
+    // Dynamically require Firebase messaging - this will throw in Expo Go
+    const firebaseMessaging =
+      require("@react-native-firebase/messaging").default;
+    // Test if native module is available by calling it
+    firebaseMessaging();
+    messagingModule = firebaseMessaging;
+    return messagingModule;
+  } catch (error) {
+    console.log(
+      "Firebase messaging not available (running in Expo Go?):",
+      error
+    );
+    return null;
+  }
+}
+
+/**
  * Check if Firebase messaging is available (not available in Expo Go)
  */
 function isFirebaseMessagingAvailable(): boolean {
-  try {
-    // Try to access the messaging module - will throw if not available
-    messaging();
-    return true;
-  } catch {
-    return false;
-  }
+  return getFirebaseMessaging() !== null;
 }
 
 /**
@@ -37,8 +64,10 @@ function isFirebaseMessagingAvailable(): boolean {
 export async function registerForPushNotifications(
   userId: string
 ): Promise<string | null> {
+  const messaging = getFirebaseMessaging();
+
   // Skip if Firebase messaging is not available (e.g., running in Expo Go)
-  if (!isFirebaseMessagingAvailable()) {
+  if (!messaging) {
     console.log("Firebase messaging not available - skipping FCM registration");
     return null;
   }
@@ -95,6 +124,11 @@ export async function registerForPushNotifications(
  * Tokens can change when app data is cleared, reinstalled, etc.
  */
 export function setupTokenRefreshListener(userId: string): () => void {
+  const messaging = getFirebaseMessaging();
+  if (!messaging) {
+    return () => {};
+  }
+
   const unsubscribe = messaging().onTokenRefresh(async (newToken) => {
     try {
       const tokenHash = newToken.substring(0, 20);
@@ -122,6 +156,14 @@ export function setupTokenRefreshListener(userId: string): () => void {
  * Subscribe to topic-based notifications (e.g., new events)
  */
 export async function subscribeToTopic(topic: string): Promise<void> {
+  const messaging = getFirebaseMessaging();
+  if (!messaging) {
+    console.log(
+      "Firebase messaging not available - skipping topic subscription"
+    );
+    return;
+  }
+
   try {
     await messaging().subscribeToTopic(topic);
     console.log(`Subscribed to topic: ${topic}`);
@@ -135,6 +177,14 @@ export async function subscribeToTopic(topic: string): Promise<void> {
  * Unsubscribe from topic-based notifications
  */
 export async function unsubscribeFromTopic(topic: string): Promise<void> {
+  const messaging = getFirebaseMessaging();
+  if (!messaging) {
+    console.log(
+      "Firebase messaging not available - skipping topic unsubscription"
+    );
+    return;
+  }
+
   try {
     await messaging().unsubscribeFromTopic(topic);
     console.log(`Unsubscribed from topic: ${topic}`);
@@ -149,8 +199,10 @@ export async function unsubscribeFromTopic(topic: string): Promise<void> {
  * Call this in your app's root layout useEffect
  */
 export function setupForegroundHandler(): () => void {
+  const messaging = getFirebaseMessaging();
+
   // Skip if Firebase messaging is not available (e.g., running in Expo Go)
-  if (!isFirebaseMessagingAvailable()) {
+  if (!messaging) {
     console.log(
       "Firebase messaging not available - skipping foreground handler"
     );
@@ -158,22 +210,20 @@ export function setupForegroundHandler(): () => void {
   }
 
   try {
-    const unsubscribe = messaging().onMessage(
-      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
-        console.log("Foreground FCM message received:", remoteMessage);
+    const unsubscribe = messaging().onMessage(async (remoteMessage: any) => {
+      console.log("Foreground FCM message received:", remoteMessage);
 
-        // Show local notification using expo-notifications
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: remoteMessage.notification?.title || "RageState",
-            body: remoteMessage.notification?.body || "",
-            data: remoteMessage.data || {},
-            sound: "default",
-          },
-          trigger: null, // Show immediately
-        });
-      }
-    );
+      // Show local notification using expo-notifications
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: remoteMessage.notification?.title || "RageState",
+          body: remoteMessage.notification?.body || "",
+          data: remoteMessage.data || {},
+          sound: "default",
+        },
+        trigger: null, // Show immediately
+      });
+    });
 
     return unsubscribe;
   } catch (error) {
@@ -186,8 +236,9 @@ export function setupForegroundHandler(): () => void {
  * Handle notification opened while app was in background/quit
  * Returns the initial notification if app was opened from one
  */
-export async function getInitialNotification(): Promise<FirebaseMessagingTypes.RemoteMessage | null> {
-  if (!isFirebaseMessagingAvailable()) {
+export async function getInitialNotification(): Promise<any | null> {
+  const messaging = getFirebaseMessaging();
+  if (!messaging) {
     return null;
   }
   try {
@@ -202,11 +253,10 @@ export async function getInitialNotification(): Promise<FirebaseMessagingTypes.R
  * Handle notification tap when app is in background
  */
 export function setupNotificationOpenedHandler(
-  onNotificationOpened: (
-    remoteMessage: FirebaseMessagingTypes.RemoteMessage
-  ) => void
+  onNotificationOpened: (remoteMessage: any) => void
 ): () => void {
-  if (!isFirebaseMessagingAvailable()) {
+  const messaging = getFirebaseMessaging();
+  if (!messaging) {
     return () => {};
   }
   try {
@@ -224,8 +274,10 @@ export function setupNotificationOpenedHandler(
  * This handles messages when app is in background or terminated
  */
 export function setupBackgroundHandler(): void {
+  const messaging = getFirebaseMessaging();
+
   // Skip if Firebase messaging is not available (e.g., running in Expo Go)
-  if (!isFirebaseMessagingAvailable()) {
+  if (!messaging) {
     console.log(
       "Firebase messaging not available - skipping background handler setup"
     );
@@ -233,21 +285,19 @@ export function setupBackgroundHandler(): void {
   }
 
   try {
-    messaging().setBackgroundMessageHandler(
-      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
-        console.log("Background FCM message received:", remoteMessage);
+    messaging().setBackgroundMessageHandler(async (remoteMessage: any) => {
+      console.log("Background FCM message received:", remoteMessage);
 
-        // Handle data-only messages here
-        // Note: notification messages are automatically displayed by the system
+      // Handle data-only messages here
+      // Note: notification messages are automatically displayed by the system
 
-        // You can update badges, sync data, etc.
-        if (remoteMessage.data?.badgeCount) {
-          await Notifications.setBadgeCountAsync(
-            parseInt(remoteMessage.data.badgeCount as string, 10) || 0
-          );
-        }
+      // You can update badges, sync data, etc.
+      if (remoteMessage.data?.badgeCount) {
+        await Notifications.setBadgeCountAsync(
+          parseInt(remoteMessage.data.badgeCount as string, 10) || 0
+        );
       }
-    );
+    });
   } catch (error) {
     console.warn("Failed to setup background handler:", error);
   }
@@ -257,7 +307,8 @@ export function setupBackgroundHandler(): void {
  * Check if app has notification permission
  */
 export async function hasNotificationPermission(): Promise<boolean> {
-  if (!isFirebaseMessagingAvailable()) {
+  const messaging = getFirebaseMessaging();
+  if (!messaging) {
     return false;
   }
   try {
@@ -277,7 +328,8 @@ export async function hasNotificationPermission(): Promise<boolean> {
 export async function unregisterPushNotifications(
   userId: string
 ): Promise<void> {
-  if (!isFirebaseMessagingAvailable()) {
+  const messaging = getFirebaseMessaging();
+  if (!messaging) {
     return;
   }
   try {

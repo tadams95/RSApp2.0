@@ -1064,33 +1064,33 @@ export function initializeGoogleSignIn(
 
 ## Success Criteria
 
-### 3.1 In-App Feed (No Apple Account)
+### 3.1 In-App Feed (No Apple Account) ✅ COMPLETE
 
-- [ ] Notification feed shows all types
-- [ ] Unread badge displays on tab bar
-- [ ] Tap navigates to correct screen
-- [ ] Mark as read works
-- [ ] Mark all read works
-- [ ] Real-time updates work
+- [x] Notification feed shows all types
+- [x] Unread badge displays on tab bar
+- [x] Tap navigates to correct screen
+- [x] Mark as read works
+- [x] Mark all read works
+- [x] Real-time updates work
 
-### 3.2 Preferences (No Apple Account)
+### 3.2 Preferences (No Apple Account) ✅ COMPLETE
 
-- [ ] Settings screen accessible from account
-- [ ] Toggle states persist
-- [ ] Quiet hours configurable
+- [x] Settings screen accessible from account
+- [x] Toggle states persist
+- [x] Quiet hours configurable
 
-### 3.3 FCM Push (Apple Account Required for iOS)
+### 3.3 FCM Push (Apple Account Required for iOS) 🟡 CODE COMPLETE - DEVICE TESTING PENDING
 
-- [ ] FCM tokens registered and stored
-- [ ] Push notifications received in foreground (Android)
-- [ ] Push notifications received in background (Android)
-- [ ] Push notifications work on iOS (after enrollment)
+- [x] FCM tokens registered and stored
+- [ ] Push notifications received in foreground (Android) ⏳ Needs dev build
+- [ ] Push notifications received in background (Android) ⏳ Needs dev build
+- [ ] Push notifications work on iOS (after enrollment) ⏳ Needs Apple account
 
-### 3.4 Google Sign-In (Apple Account Required for iOS)
+### 3.4 Google Sign-In (Apple Account Required for iOS) 🟡 CODE COMPLETE - DEVICE TESTING PENDING
 
-- [ ] Google Sign-In works on Android
-- [ ] Google Sign-In works on iOS (after enrollment)
-- [ ] New users redirected to profile setup
+- [ ] Google Sign-In works on Android ⏳ Needs dev build
+- [ ] Google Sign-In works on iOS (after enrollment) ⏳ Needs Apple account
+- [x] New users redirected to profile setup
 
 ---
 
