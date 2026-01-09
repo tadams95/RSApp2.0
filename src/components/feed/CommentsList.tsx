@@ -111,7 +111,9 @@ const CommentItem: React.FC<{
             onPress={() => onProfilePress?.(comment.userId)}
             style={styles.nameRow}
           >
-            <Text style={styles.userName}>{comment.userDisplayName}</Text>
+            <Text style={styles.userName}>
+              {comment.userDisplayName || "User"}
+            </Text>
             {comment.userVerified && <VerifiedBadge />}
           </TouchableOpacity>
           <Text style={styles.timestamp}>{getTimeAgo()}</Text>

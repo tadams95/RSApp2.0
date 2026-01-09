@@ -1,12 +1,15 @@
 module.exports = {
-  ...require('./feed'),
-  ...require('./stripe'),
-  ...require('./email'),
-  ...require('./notifications'),
-  ...require('./transcode'),
-  ...require('./printifyWebhook'),
+  ...require("./feed"),
+  ...require("./stripe"),
+  ...require("./email"),
+  ...require("./notifications"),
+  ...require("./transcode"),
+  ...require("./printifyWebhook"),
   // Rate limit cleanup (scheduled daily)
-  scheduledRateLimitCleanup: require('./rateLimit').scheduledRateLimitCleanup,
+  scheduledRateLimitCleanup: require("./rateLimit").scheduledRateLimitCleanup,
   // Analytics aggregation (scheduled daily at 2 AM UTC)
-  aggregateDailyMetrics: require('./analytics').aggregateDailyMetrics,
+  aggregateDailyMetrics: require("./analytics").aggregateDailyMetrics,
+  // One-time backfill for comments (run once, then remove)
+  backfillCommentsUserData:
+    require("./backfillComments").backfillCommentsUserData,
 };
