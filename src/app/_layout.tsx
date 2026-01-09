@@ -21,6 +21,10 @@ import { queryClient } from "../config/reactQuery";
 import { AuthProvider } from "../hooks/AuthContext";
 import { MusicPlayerProvider } from "../hooks/MusicPlayerContext";
 import { SoundCloudPlayerProvider } from "../hooks/SoundCloudPlayerContext";
+import {
+  setupBackgroundHandler,
+  setupForegroundHandler,
+} from "../services/pushNotificationService";
 import { store } from "../store/redux/store";
 import {
   handleMemoryPressure,
@@ -28,6 +32,9 @@ import {
 } from "../utils/imageCacheConfig";
 import { imagePreloader } from "../utils/imagePreloader";
 import { initializeOfflineCartSync } from "../utils/offlineCartSync";
+
+// Setup FCM background handler - MUST be called at module level (outside components)
+setupBackgroundHandler();
 
 // Suppress PostHog's getCurrentRoute error logs (harmless navigation tracking incompatibility with Expo Router)
 LogBox.ignoreLogs([
@@ -168,6 +175,12 @@ export default function RootLayout() {
   useEffect(() => {
     // Initialize offline cart sync when app starts
     initializeOfflineCartSync();
+  }, []);
+
+  // Setup FCM foreground message handler
+  useEffect(() => {
+    const unsubscribe = setupForegroundHandler();
+    return () => unsubscribe();
   }, []);
 
   // Deep link handler for transfer claim URLs

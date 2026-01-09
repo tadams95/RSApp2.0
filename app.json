@@ -18,6 +18,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.tyrelle.ragestateapp",
       "buildNumber": "46",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -29,8 +30,6 @@
       },
       "googleServicesFile": "./google-services.json",
       "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA"
       ],
@@ -70,6 +69,8 @@
           "recordAudioAndroid": true
         }
       ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
       "expo-router",
       "expo-localization"
     ],

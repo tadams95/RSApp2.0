@@ -1,10 +1,16 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
+import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import { GlobalStyles } from "../../constants/styles";
+import { auth } from "../../firebase/firebase";
 import { useAuth } from "../../hooks/AuthContext";
 import { useNotificationBadge } from "../../hooks/useNotificationBadge";
+import {
+  registerForPushNotifications,
+  setupTokenRefreshListener,
+} from "../../services/pushNotificationService";
 
 // Named export for app component registration
 export function app() {
@@ -14,6 +20,24 @@ export function app() {
 export default function AppLayout() {
   const { authenticated, isLoading } = useAuth();
   const unreadCount = useNotificationBadge();
+
+  // Register for push notifications when user is authenticated
+  useEffect(() => {
+    if (!authenticated) return;
+
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    // Register device for push notifications
+    registerForPushNotifications(userId).catch((error) => {
+      console.warn("Failed to register for push notifications:", error);
+    });
+
+    // Listen for token refreshes
+    const unsubscribe = setupTokenRefreshListener(userId);
+
+    return () => unsubscribe();
+  }, [authenticated]);
 
   // If not authenticated, redirect to auth flow
   if (!authenticated && !isLoading) {
@@ -98,13 +122,6 @@ export default function AppLayout() {
         {/* Transfer routes - hidden from tab bar, accessed via deep links */}
         <Tabs.Screen
           name="transfer"
-          options={{
-            href: null,
-          }}
-        />
-        {/* Social routes - hidden, content moved to home tab */}
-        <Tabs.Screen
-          name="social"
           options={{
             href: null,
           }}

@@ -799,14 +799,14 @@ npx expo install expo-notifications @react-native-firebase/app @react-native-fir
 
 ### Implementation Checklist
 
-- [ ] **3.3.1** Install `@react-native-firebase/app` and `@react-native-firebase/messaging`
-- [ ] **3.3.2** Add `GoogleService-Info.plist` for iOS (after Apple enrollment)
-- [ ] **3.3.3** Update app.json with plugins
-- [ ] **3.3.4** Create `src/services/pushNotificationService.ts`
-- [ ] **3.3.5** Setup foreground handler in `_layout.tsx`
-- [ ] **3.3.6** Setup background handler (top-level)
-- [ ] **3.3.7** Store FCM tokens in Firestore
-- [ ] **3.3.8** Update Cloud Functions to send via FCM
+- [x] **3.3.1** Install `@react-native-firebase/app` and `@react-native-firebase/messaging`
+- [x] **3.3.2** Add `GoogleService-Info.plist` for iOS (after Apple enrollment)
+- [x] **3.3.3** Update app.json with plugins
+- [x] **3.3.4** Create `src/services/pushNotificationService.ts`
+- [x] **3.3.5** Setup foreground handler in `_layout.tsx`
+- [x] **3.3.6** Setup background handler (top-level)
+- [x] **3.3.7** Store FCM tokens in Firestore (devices collection)
+- [x] **3.3.8** Cloud Functions already send via FCM (admin.messaging)
 - [ ] **3.3.9** Test on Android physical device
 - [ ] **3.3.10** Test on iOS physical device (requires Apple account)
 
