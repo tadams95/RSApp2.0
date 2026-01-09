@@ -964,14 +964,14 @@ npx expo install @react-native-google-signin/google-signin
 
 ### Implementation Checklist
 
-- [ ] **3.4.1** Install `@react-native-google-signin/google-signin`
-- [ ] **3.4.2** Get web client ID from Firebase Console
-- [ ] **3.4.3** Get iOS client ID from Google Cloud Console
-- [ ] **3.4.4** Update app.json with plugin config
-- [ ] **3.4.5** Create `src/services/googleAuthService.ts`
-- [ ] **3.4.6** Add Google button to login screen
-- [ ] **3.4.7** Add Google button to signup screen
-- [ ] **3.4.8** Handle new user profile setup flow
+- [x] **3.4.1** Install `@react-native-google-signin/google-signin`
+- [x] **3.4.2** Get web client ID from Firebase Console
+- [x] **3.4.3** Get iOS client ID from Google Cloud Console
+- [x] **3.4.4** Update app.json with plugin config
+- [x] **3.4.5** Create `src/services/googleAuthService.ts`
+- [x] **3.4.6** Add Google button to login screen
+- [x] **3.4.7** Add Google button to signup screen
+- [x] **3.4.8** Handle new user profile setup flow
 - [ ] **3.4.9** Test on Android device
 - [ ] **3.4.10** Test on iOS device (requires Apple account)
 

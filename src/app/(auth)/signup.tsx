@@ -28,6 +28,7 @@ import { useDispatch } from "react-redux";
 import { usePostHog, useScreenTracking } from "../../analytics/PostHogProvider";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import SignupErrorNotice from "../../components/SignupErrorNotice";
+import { useAuth } from "../../hooks/AuthContext";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { setStripeCustomerId } from "../../store/redux/userSlice";
 
@@ -50,6 +51,7 @@ export default function SignupScreen() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const dispatch = useDispatch();
   const { track } = usePostHog();
+  const { setAuthenticated } = useAuth();
 
   // Track screen view
   useScreenTracking("Signup Screen", {
@@ -138,6 +140,82 @@ export default function SignupScreen() {
 
   function cancelCreateHandler() {
     router.back();
+  }
+
+  // Google Sign-In handler
+  async function handleGoogleSignIn() {
+    setIsAuthenticating(true);
+    setSignupError(null);
+
+    await track("signup_attempt", {
+      method: "google",
+    });
+
+    try {
+      // Dynamic import to avoid crashing in Expo Go
+      const { signInWithGoogle } = await import(
+        "../../services/googleAuthService"
+      );
+      const { userCredential, isNewUser } = await signInWithGoogle();
+
+      await track("signup_successful", {
+        method: "google",
+        is_new_user: isNewUser,
+        email_domain: userCredential.user.email?.split("@")[1] || "unknown",
+      });
+
+      // Redirect new users to complete their profile
+      if (isNewUser) {
+        router.replace({
+          pathname: "/(auth)/complete-profile",
+          params: {
+            firstName: userCredential.user.displayName?.split(" ")[0] || "",
+            lastName:
+              userCredential.user.displayName?.split(" ").slice(1).join(" ") ||
+              "",
+          },
+        });
+      } else {
+        setAuthenticated(true);
+        router.replace("/(app)/home");
+      }
+    } catch (error: any) {
+      // Check if Google Sign-In is not available (running in Expo Go)
+      if (
+        error.message?.includes("RNGoogleSignin") ||
+        error.message?.includes("native binary") ||
+        error.message?.includes("not available")
+      ) {
+        Alert.alert(
+          "Google Sign-In Not Available",
+          "Google Sign-In requires a development build. Please use email/password signup, or run the app with 'npx expo run:android' or 'npx expo run:ios'.",
+          [{ text: "OK" }]
+        );
+        setIsAuthenticating(false);
+        return;
+      }
+
+      // Don't show error for user cancellation
+      if (
+        error.message?.includes("cancelled") ||
+        error.message?.includes("canceled")
+      ) {
+        await track("signup_cancelled", {
+          method: "google",
+        });
+        setIsAuthenticating(false);
+        return;
+      }
+
+      await track("signup_failed", {
+        error_type: "google_auth",
+        error_message: error.message || "Unknown error",
+      });
+
+      setSignupError(error.message || "Failed to sign in with Google");
+    } finally {
+      setIsAuthenticating(false);
+    }
   }
 
   function validatePassword(passwordToValidate: string) {
@@ -570,6 +648,25 @@ export default function SignupScreen() {
             By creating an account, you agree to our Terms of Service and
             Privacy Policy
           </Text>
+
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.googleButton}
+            onPress={handleGoogleSignIn}
+          >
+            <Image
+              source={{
+                uri: "https://developers.google.com/identity/images/g-logo.png",
+              }}
+              style={styles.googleIcon}
+            />
+            <Text style={styles.googleButtonText}>Continue with Google</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -707,5 +804,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
     marginTop: 20,
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#333",
+  },
+  dividerText: {
+    color: "#666",
+    paddingHorizontal: 16,
+    fontSize: 14,
+  },
+  googleButton: {
+    backgroundColor: "#fff",
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    width: "100%",
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 12,
+  },
+  googleButtonText: {
+    color: "#333",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

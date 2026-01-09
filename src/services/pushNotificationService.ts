@@ -18,12 +18,31 @@ Notifications.setNotificationHandler({
 });
 
 /**
+ * Check if Firebase messaging is available (not available in Expo Go)
+ */
+function isFirebaseMessagingAvailable(): boolean {
+  try {
+    // Try to access the messaging module - will throw if not available
+    messaging();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Request notification permissions and get FCM token
  * Stores token in Firestore for Cloud Functions to send push notifications
  */
 export async function registerForPushNotifications(
   userId: string
 ): Promise<string | null> {
+  // Skip if Firebase messaging is not available (e.g., running in Expo Go)
+  if (!isFirebaseMessagingAvailable()) {
+    console.log("Firebase messaging not available - skipping FCM registration");
+    return null;
+  }
+
   try {
     // Request permission (iOS prompts user, Android auto-grants)
     const authStatus = await messaging().requestPermission();
@@ -130,24 +149,37 @@ export async function unsubscribeFromTopic(topic: string): Promise<void> {
  * Call this in your app's root layout useEffect
  */
 export function setupForegroundHandler(): () => void {
-  const unsubscribe = messaging().onMessage(
-    async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
-      console.log("Foreground FCM message received:", remoteMessage);
+  // Skip if Firebase messaging is not available (e.g., running in Expo Go)
+  if (!isFirebaseMessagingAvailable()) {
+    console.log(
+      "Firebase messaging not available - skipping foreground handler"
+    );
+    return () => {}; // Return no-op unsubscribe
+  }
 
-      // Show local notification using expo-notifications
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: remoteMessage.notification?.title || "RageState",
-          body: remoteMessage.notification?.body || "",
-          data: remoteMessage.data || {},
-          sound: "default",
-        },
-        trigger: null, // Show immediately
-      });
-    }
-  );
+  try {
+    const unsubscribe = messaging().onMessage(
+      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
+        console.log("Foreground FCM message received:", remoteMessage);
 
-  return unsubscribe;
+        // Show local notification using expo-notifications
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: remoteMessage.notification?.title || "RageState",
+            body: remoteMessage.notification?.body || "",
+            data: remoteMessage.data || {},
+            sound: "default",
+          },
+          trigger: null, // Show immediately
+        });
+      }
+    );
+
+    return unsubscribe;
+  } catch (error) {
+    console.warn("Failed to setup foreground handler:", error);
+    return () => {};
+  }
 }
 
 /**
@@ -155,8 +187,15 @@ export function setupForegroundHandler(): () => void {
  * Returns the initial notification if app was opened from one
  */
 export async function getInitialNotification(): Promise<FirebaseMessagingTypes.RemoteMessage | null> {
-  const initialNotification = await messaging().getInitialNotification();
-  return initialNotification;
+  if (!isFirebaseMessagingAvailable()) {
+    return null;
+  }
+  try {
+    const initialNotification = await messaging().getInitialNotification();
+    return initialNotification;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -167,8 +206,16 @@ export function setupNotificationOpenedHandler(
     remoteMessage: FirebaseMessagingTypes.RemoteMessage
   ) => void
 ): () => void {
-  const unsubscribe = messaging().onNotificationOpenedApp(onNotificationOpened);
-  return unsubscribe;
+  if (!isFirebaseMessagingAvailable()) {
+    return () => {};
+  }
+  try {
+    const unsubscribe =
+      messaging().onNotificationOpenedApp(onNotificationOpened);
+    return unsubscribe;
+  } catch {
+    return () => {};
+  }
 }
 
 /**
@@ -177,32 +224,51 @@ export function setupNotificationOpenedHandler(
  * This handles messages when app is in background or terminated
  */
 export function setupBackgroundHandler(): void {
-  messaging().setBackgroundMessageHandler(
-    async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
-      console.log("Background FCM message received:", remoteMessage);
+  // Skip if Firebase messaging is not available (e.g., running in Expo Go)
+  if (!isFirebaseMessagingAvailable()) {
+    console.log(
+      "Firebase messaging not available - skipping background handler setup"
+    );
+    return;
+  }
 
-      // Handle data-only messages here
-      // Note: notification messages are automatically displayed by the system
+  try {
+    messaging().setBackgroundMessageHandler(
+      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
+        console.log("Background FCM message received:", remoteMessage);
 
-      // You can update badges, sync data, etc.
-      if (remoteMessage.data?.badgeCount) {
-        await Notifications.setBadgeCountAsync(
-          parseInt(remoteMessage.data.badgeCount as string, 10) || 0
-        );
+        // Handle data-only messages here
+        // Note: notification messages are automatically displayed by the system
+
+        // You can update badges, sync data, etc.
+        if (remoteMessage.data?.badgeCount) {
+          await Notifications.setBadgeCountAsync(
+            parseInt(remoteMessage.data.badgeCount as string, 10) || 0
+          );
+        }
       }
-    }
-  );
+    );
+  } catch (error) {
+    console.warn("Failed to setup background handler:", error);
+  }
 }
 
 /**
  * Check if app has notification permission
  */
 export async function hasNotificationPermission(): Promise<boolean> {
-  const authStatus = await messaging().hasPermission();
-  return (
-    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-    authStatus === messaging.AuthorizationStatus.PROVISIONAL
-  );
+  if (!isFirebaseMessagingAvailable()) {
+    return false;
+  }
+  try {
+    const authStatus = await messaging().hasPermission();
+    return (
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -211,6 +277,9 @@ export async function hasNotificationPermission(): Promise<boolean> {
 export async function unregisterPushNotifications(
   userId: string
 ): Promise<void> {
+  if (!isFirebaseMessagingAvailable()) {
+    return;
+  }
   try {
     await messaging().deleteToken();
     // Optionally delete token from Firestore

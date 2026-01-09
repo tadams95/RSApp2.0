@@ -2,7 +2,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   Dimensions,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -121,6 +123,82 @@ export default function LoginScreen() {
     }
   }
 
+  // Google Sign-In handler
+  async function handleGoogleSignIn() {
+    setIsLoading(true);
+    clearErrors();
+
+    await track("login_attempt", {
+      method: "google",
+    });
+
+    try {
+      // Dynamic import to avoid crashing in Expo Go
+      const { signInWithGoogle } = await import(
+        "../../services/googleAuthService"
+      );
+      const { userCredential, isNewUser } = await signInWithGoogle();
+
+      await track("login_successful", {
+        method: "google",
+        is_new_user: isNewUser,
+        email_domain: userCredential.user.email?.split("@")[1] || "unknown",
+      });
+
+      // Redirect new users to complete their profile
+      if (isNewUser) {
+        router.replace({
+          pathname: "/(auth)/complete-profile",
+          params: {
+            firstName: userCredential.user.displayName?.split(" ")[0] || "",
+            lastName:
+              userCredential.user.displayName?.split(" ").slice(1).join(" ") ||
+              "",
+          },
+        });
+      } else {
+        setAuthenticated(true);
+        router.replace("/(app)/home");
+      }
+    } catch (error: any) {
+      // Check if Google Sign-In is not available (running in Expo Go)
+      if (
+        error.message?.includes("RNGoogleSignin") ||
+        error.message?.includes("native binary") ||
+        error.message?.includes("not available")
+      ) {
+        Alert.alert(
+          "Google Sign-In Not Available",
+          "Google Sign-In requires a development build. Please use email/password login, or run the app with 'npx expo run:android' or 'npx expo run:ios'.",
+          [{ text: "OK" }]
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      // Don't show error for user cancellation
+      if (
+        error.message?.includes("cancelled") ||
+        error.message?.includes("canceled")
+      ) {
+        await track("login_cancelled", {
+          method: "google",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      await track("login_failed", {
+        error_type: "google_auth",
+        error_message: error.message || "Unknown error",
+      });
+
+      handleLoginError(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   if (isLoading) {
     return <LoadingOverlay message="Logging in..." />;
   }
@@ -191,6 +269,22 @@ export default function LoginScreen() {
 
             <Pressable style={styles.button} onPress={loginHandler}>
               <Text style={styles.buttonText}>LOG IN</Text>
+            </Pressable>
+
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <Pressable style={styles.googleButton} onPress={handleGoogleSignIn}>
+              <Image
+                source={{
+                  uri: "https://developers.google.com/identity/images/g-logo.png",
+                }}
+                style={styles.googleIcon}
+              />
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
             </Pressable>
           </View>
 
@@ -312,6 +406,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     letterSpacing: 1,
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#333",
+  },
+  dividerText: {
+    color: "#666",
+    paddingHorizontal: 16,
+    fontSize: 14,
+  },
+  googleButton: {
+    backgroundColor: "#fff",
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 12,
+  },
+  googleButtonText: {
+    color: "#333",
+    fontSize: 16,
+    fontWeight: "600",
   },
   footer: {
     flexDirection: "row",
