@@ -6,25 +6,28 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { useTheme } from "../../contexts/ThemeContext";
 import { auth } from "../../firebase/firebase";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { Comment } from "../../services/commentService";
 import { ImageWithFallback } from "../ui";
 
 // Verification badge component
-const VerifiedBadge = () => (
-  <MaterialCommunityIcons
-    name="check-decagram"
-    size={12}
-    color={GlobalStyles.colors.redVivid5}
-    style={{ marginLeft: 4 }}
-  />
-);
+const VerifiedBadge = () => {
+  const { theme } = useTheme();
+  return (
+    <MaterialCommunityIcons
+      name="check-decagram"
+      size={12}
+      color={theme.colors.accent}
+      style={{ marginLeft: 4 }}
+    />
+  );
+};
 
 interface CommentsListProps {
   comments: Comment[];
@@ -38,6 +41,8 @@ const CommentItem: React.FC<{
   onDelete?: (commentId: string) => void;
   onProfilePress?: (userId: string) => void;
 }> = ({ comment, onDelete, onProfilePress }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const currentUserId = auth.currentUser?.uid;
   const isOwnComment = currentUserId === comment.userId;
 
@@ -127,7 +132,7 @@ const CommentItem: React.FC<{
           <MaterialCommunityIcons
             name="trash-can-outline"
             size={16}
-            color={GlobalStyles.colors.grey5}
+            color={theme.colors.textTertiary}
           />
         </TouchableOpacity>
       )}
@@ -141,6 +146,9 @@ export const CommentsList: React.FC<CommentsListProps> = ({
   onDeleteComment,
   onProfilePress,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   const renderComment = useCallback(
     ({ item }: { item: Comment }) => (
       <CommentItem
@@ -157,7 +165,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color={GlobalStyles.colors.grey5} />
+        <ActivityIndicator size="small" color={theme.colors.textTertiary} />
       </View>
     );
   }
@@ -168,7 +176,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({
         <MaterialCommunityIcons
           name="comment-outline"
           size={32}
-          color={GlobalStyles.colors.grey6}
+          color={theme.colors.textTertiary}
         />
         <Text style={styles.emptyText}>No comments yet</Text>
         <Text style={styles.emptySubtext}>Be the first to comment</Text>
@@ -187,31 +195,31 @@ export const CommentsList: React.FC<CommentsListProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   listContent: {
     paddingVertical: 8,
   },
   loadingContainer: {
     padding: 24,
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   emptyContainer: {
     padding: 32,
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   emptyText: {
-    color: GlobalStyles.colors.grey5,
+    color: theme.colors.textTertiary,
     fontSize: 14,
     marginTop: 12,
-    fontWeight: "500",
+    fontWeight: "500" as const,
   },
   emptySubtext: {
-    color: GlobalStyles.colors.grey6,
+    color: theme.colors.textTertiary,
     fontSize: 12,
     marginTop: 4,
   },
   commentContainer: {
-    flexDirection: "row",
+    flexDirection: "row" as const,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -224,40 +232,40 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: GlobalStyles.colors.grey8,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: theme.colors.borderSubtle,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   avatarInitials: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   commentContent: {
     flex: 1,
     marginLeft: 12,
   },
   commentHeader: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     marginBottom: 4,
   },
   userName: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
   },
   timestamp: {
-    color: GlobalStyles.colors.grey5,
+    color: theme.colors.textTertiary,
     fontSize: 12,
     marginLeft: 8,
   },
   commentText: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 14,
     lineHeight: 20,
   },

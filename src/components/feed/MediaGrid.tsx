@@ -11,7 +11,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { LazyImage } from "../ui";
 
 interface MediaGridProps {
@@ -24,6 +25,40 @@ interface MediaGridProps {
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+// Static styles for components defined outside MediaGrid (no theme needed)
+const staticStyles = StyleSheet.create({
+  fullSize: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  videoPlaceholder: {
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  videoErrorText: {
+    color: "#888",
+    fontSize: 12,
+    marginTop: 8,
+  },
+  videoControlOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.2)",
+  },
+  videoLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  loadingIcon: {
+    opacity: 0.8,
+  },
+});
 
 // Video file extensions to detect videos when mediaTypes is not provided
 const VIDEO_EXTENSIONS = [".mp4", ".mov", ".webm", ".avi", ".mkv", ".m4v"];
@@ -92,13 +127,13 @@ const VideoPlayer: React.FC<{
   if (hasError) {
     return (
       <Pressable onPress={handlePress} style={style}>
-        <View style={[styles.fullSize, styles.videoPlaceholder]}>
+        <View style={[staticStyles.fullSize, staticStyles.videoPlaceholder]}>
           <MaterialCommunityIcons
             name="video-off-outline"
             size={32}
             color="#888"
           />
-          <Text style={styles.videoErrorText}>Video unavailable</Text>
+          <Text style={staticStyles.videoErrorText}>Video unavailable</Text>
         </View>
       </Pressable>
     );
@@ -109,7 +144,7 @@ const VideoPlayer: React.FC<{
       <Video
         ref={videoRef}
         source={{ uri }}
-        style={styles.fullSize}
+        style={staticStyles.fullSize}
         resizeMode={ResizeMode.COVER}
         shouldPlay={autoPlay}
         isLooping
@@ -129,7 +164,7 @@ const VideoPlayer: React.FC<{
       />
       {/* Play/Pause overlay */}
       {showControls && !isLoading && (
-        <View style={styles.videoControlOverlay}>
+        <View style={staticStyles.videoControlOverlay}>
           {!isPlaying && (
             <MaterialCommunityIcons name="play-circle" size={48} color="#fff" />
           )}
@@ -137,12 +172,12 @@ const VideoPlayer: React.FC<{
       )}
       {/* Loading indicator */}
       {isLoading && (
-        <View style={styles.videoLoadingOverlay}>
+        <View style={staticStyles.videoLoadingOverlay}>
           <MaterialCommunityIcons
             name="loading"
             size={32}
             color="#fff"
-            style={styles.loadingIcon}
+            style={staticStyles.loadingIcon}
           />
         </View>
       )}
@@ -176,7 +211,7 @@ const MediaItem: React.FC<{
     <Pressable onPress={onPress} style={style}>
       <LazyImage
         source={{ uri: url }}
-        style={styles.fullSize}
+        style={staticStyles.fullSize}
         resizeMode="cover"
         showRetryButton={false}
         maxRetries={1}
@@ -193,6 +228,8 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
 }) => {
   const [visible, setVisible] = useState(false);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   if (!mediaUrls || mediaUrls.length === 0) return null;
 
@@ -448,31 +485,31 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
     marginTop: 12,
     borderRadius: 12,
-    overflow: "hidden",
-    width: "100%",
+    overflow: "hidden" as const,
+    width: "100%" as const,
     aspectRatio: 16 / 9,
-    backgroundColor: GlobalStyles.colors.grey9,
+    backgroundColor: theme.colors.bgElev1,
   },
   modalContainer: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.95)",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   closeButton: {
-    position: "absolute",
+    position: "absolute" as const,
     top: 50,
     right: 20,
     zIndex: 10,
     padding: 10,
   },
   navButton: {
-    position: "absolute",
-    top: "50%",
+    position: "absolute" as const,
+    top: "50%" as const,
     marginTop: -25,
     zIndex: 10,
     padding: 10,
@@ -486,11 +523,11 @@ const styles = StyleSheet.create({
     right: 10,
   },
   indicatorContainer: {
-    position: "absolute",
+    position: "absolute" as const,
     bottom: 80,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   indicator: {
     width: 8,
@@ -500,17 +537,17 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   indicatorActive: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.textPrimary,
   },
   fullScreenMedia: {
     width: SCREEN_WIDTH,
-    height: "80%",
+    height: "80%" as const,
   },
   singleContainer: {
     flex: 1,
   },
   row: {
-    flexDirection: "row",
+    flexDirection: "row" as const,
     flex: 1,
   },
   column: {
@@ -518,8 +555,8 @@ const styles = StyleSheet.create({
   },
   fullSize: {
     flex: 1,
-    width: "100%",
-    height: "100%",
+    width: "100%" as const,
+    height: "100%" as const,
   },
   halfSize: {
     flex: 1,
@@ -534,25 +571,25 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   videoPlaceholder: {
-    backgroundColor: GlobalStyles.colors.grey8,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: theme.colors.borderSubtle,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   videoErrorText: {
-    color: "#888",
+    color: theme.colors.textSecondary,
     fontSize: 12,
     marginTop: 8,
   },
   videoControlOverlay: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     backgroundColor: "rgba(0,0,0,0.2)",
   },
   videoLoadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     backgroundColor: "rgba(0,0,0,0.4)",
   },
   loadingIcon: {
@@ -561,16 +598,16 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   overlayText: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 24,
-    fontWeight: "700",
+    fontWeight: "700" as const,
   },
   processingBadge: {
-    position: "absolute",
+    position: "absolute" as const,
     top: 8,
     right: 8,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
@@ -579,8 +616,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   processingText: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
 });

@@ -4,13 +4,13 @@ import {
   Alert,
   Linking,
   Platform,
-  StyleSheet,
   TouchableOpacity,
   Vibration,
   View,
 } from "react-native";
 import { usePostHog } from "../../analytics/PostHogProvider";
-import { GlobalStyles } from "../../constants/styles";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import {
   getOpenableUrl,
   getSocialDeepLink,
@@ -58,6 +58,8 @@ function SocialIcon({
 }: SocialIconProps) {
   const config = SOCIAL_PLATFORMS[platform];
   const { capture } = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const handlePress = async () => {
     // Light haptic feedback (vibration fallback for Android)
@@ -144,16 +146,16 @@ function SocialIcon({
         importantForAccessibility="no-hide-descendants"
       >
         {platform === "twitter" ? (
-          <XLogo size={18} color={GlobalStyles.colors.grey3} />
+          <XLogo size={18} color={theme.colors.textSecondary} />
         ) : platform === "instagram" ? (
-          <InstagramLogo size={18} color={GlobalStyles.colors.grey3} />
+          <InstagramLogo size={18} color={theme.colors.textSecondary} />
         ) : platform === "tiktok" ? (
-          <TikTokLogo size={18} color={GlobalStyles.colors.grey3} />
+          <TikTokLogo size={18} color={theme.colors.textSecondary} />
         ) : (
           <MaterialCommunityIcons
             name={config.icon as any}
             size={18}
-            color={GlobalStyles.colors.grey3}
+            color={theme.colors.textSecondary}
           />
         )}
       </View>
@@ -170,6 +172,8 @@ export default function SocialLinksRow({
   userId,
   isOwnProfile,
 }: SocialLinksRowProps) {
+  const styles = useThemedStyles(createStyles);
+
   // Don't render if no social links exist
   if (!hasSocialLinks(socialLinks)) {
     return null;
@@ -221,10 +225,10 @@ export default function SocialLinksRow({
 // Styles
 // ============================================
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     marginTop: 8,
     gap: 8,
   },
@@ -235,8 +239,8 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 6,
-    backgroundColor: GlobalStyles.colors.grey8,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: theme.colors.bgElev2,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
 });

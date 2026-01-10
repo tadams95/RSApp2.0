@@ -6,7 +6,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -15,9 +14,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { usePostHog, useScreenTracking } from "../../analytics/PostHogProvider";
 import LoadingOverlay from "../../components/LoadingOverlay";
-import { GlobalStyles } from "../../constants/styles";
+import { useTheme } from "../../contexts/ThemeContext";
 import { auth, db } from "../../firebase/firebase";
 import { useAuth } from "../../hooks/AuthContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 /**
  * Profile completion screen for new Google Sign-In users
@@ -38,6 +38,9 @@ export default function CompleteProfileScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Track screen view
   useScreenTracking("Complete Profile Screen", {
@@ -164,7 +167,7 @@ export default function CompleteProfileScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your first name"
-                placeholderTextColor="#666"
+                placeholderTextColor={theme.colors.textTertiary}
                 value={firstName}
                 onChangeText={setFirstName}
                 autoCapitalize="words"
@@ -176,7 +179,7 @@ export default function CompleteProfileScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your last name"
-                placeholderTextColor="#666"
+                placeholderTextColor={theme.colors.textTertiary}
                 value={lastName}
                 onChangeText={setLastName}
                 autoCapitalize="words"
@@ -188,7 +191,7 @@ export default function CompleteProfileScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="(555) 123-4567"
-                placeholderTextColor="#666"
+                placeholderTextColor={theme.colors.textTertiary}
                 value={phoneNumber}
                 onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
                 keyboardType="phone-pad"
@@ -216,17 +219,17 @@ export default function CompleteProfileScreen() {
 const { width } = Dimensions.get("window");
 const MAX_FORM_WIDTH = 400;
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bgRoot,
   },
   keyboardAvoidingView: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "center" as const,
   },
   contentContainer: {
-    alignSelf: "center",
+    alignSelf: "center" as const,
     width: width > MAX_FORM_WIDTH ? MAX_FORM_WIDTH : width * 0.9,
     paddingHorizontal: 20,
     paddingTop: 30,
@@ -234,50 +237,46 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: "bold",
-    color: "#fff",
+    fontWeight: "bold" as const,
+    color: theme.colors.textPrimary,
     marginBottom: 8,
-    textAlign: "center",
+    textAlign: "center" as const,
     letterSpacing: 1,
   },
   subtitle: {
     fontSize: 16,
-    color: "#888",
+    color: theme.colors.textSecondary,
     marginBottom: 32,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   formContainer: {
-    width: "100%",
-    backgroundColor: "#0d0d0d",
+    width: "100%" as const,
+    backgroundColor: theme.colors.bgElev1,
     borderRadius: 12,
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
+    ...theme.shadows.card,
   },
   inputContainer: {
     marginBottom: 22,
   },
   label: {
-    color: GlobalStyles.colors.grey3,
+    color: theme.colors.textSecondary,
     fontSize: 14,
     marginBottom: 8,
-    fontWeight: "500",
+    fontWeight: "500" as const,
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#111",
+    backgroundColor: theme.colors.bgElev2,
     borderRadius: 8,
     padding: 16,
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#222",
+    borderColor: theme.colors.borderSubtle,
   },
   helperText: {
-    color: "#666",
+    color: theme.colors.textTertiary,
     fontSize: 12,
     marginTop: 6,
   },
@@ -290,30 +289,30 @@ const styles = StyleSheet.create({
     borderColor: "rgba(231, 76, 60, 0.3)",
   },
   errorText: {
-    color: "#e74c3c",
+    color: theme.colors.error,
     fontSize: 14,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   button: {
-    backgroundColor: GlobalStyles.colors.red7,
+    backgroundColor: theme.colors.accent,
     paddingVertical: 16,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: "center" as const,
     marginTop: 8,
   },
   buttonText: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
     letterSpacing: 1,
   },
   skipButton: {
     paddingVertical: 16,
-    alignItems: "center",
+    alignItems: "center" as const,
     marginTop: 8,
   },
   skipButtonText: {
-    color: "#888",
+    color: theme.colors.textSecondary,
     fontSize: 14,
   },
 });

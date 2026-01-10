@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+import { ActivityIndicator, Text, TouchableOpacity } from "react-native";
 import { useSelector } from "react-redux";
 import { usePostHog } from "../../analytics/PostHogProvider";
-import { GlobalStyles } from "../../constants/styles";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import {
   followUser,
   isFollowing,
@@ -29,6 +25,8 @@ export default function FollowButton({
   const [updating, setUpdating] = useState(false);
   const currentUserId = useSelector(selectLocalId);
   const { track } = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Don't render if viewing own profile
   if (currentUserId === targetUserId) {
@@ -88,7 +86,7 @@ export default function FollowButton({
   if (loading) {
     return (
       <TouchableOpacity style={[styles.button, styles.loadingButton]} disabled>
-        <ActivityIndicator size="small" color="#fff" />
+        <ActivityIndicator size="small" color={theme.colors.textPrimary} />
       </TouchableOpacity>
     );
   }
@@ -109,7 +107,7 @@ export default function FollowButton({
       activeOpacity={0.7}
     >
       {updating ? (
-        <ActivityIndicator size="small" color={following ? "#fff" : "#000"} />
+        <ActivityIndicator size="small" color={theme.colors.textPrimary} />
       ) : (
         <Text
           style={[
@@ -124,34 +122,34 @@ export default function FollowButton({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   button: {
     paddingVertical: 8,
     paddingHorizontal: 20,
     borderRadius: 20,
     minWidth: 100,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   followButton: {
-    backgroundColor: GlobalStyles.colors.redVivid5,
+    backgroundColor: theme.colors.accent,
   },
   followingButton: {
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey5,
+    borderColor: theme.colors.borderStrong,
   },
   loadingButton: {
-    backgroundColor: GlobalStyles.colors.grey7,
+    backgroundColor: theme.colors.bgElev2,
   },
   buttonText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   followText: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
   },
   followingText: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
   },
 });

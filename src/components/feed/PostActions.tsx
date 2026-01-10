@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 interface PostActionsProps {
   likeCount: number;
@@ -26,6 +27,9 @@ export const PostActions: React.FC<PostActionsProps> = ({
   onRepostPress,
   onSharePress,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   const formatCount = (count: number): string => {
     if (count >= 1000000) {
       return (count / 1000000).toFixed(1) + "M";
@@ -47,15 +51,10 @@ export const PostActions: React.FC<PostActionsProps> = ({
         <MaterialCommunityIcons
           name={isLiked ? "heart" : "heart-outline"}
           size={20}
-          color={
-            isLiked ? GlobalStyles.colors.redVivid5 : GlobalStyles.colors.grey4
-          }
+          color={isLiked ? theme.colors.accent : theme.colors.textSecondary}
         />
         <Text
-          style={[
-            styles.actionText,
-            isLiked && { color: GlobalStyles.colors.redVivid5 },
-          ]}
+          style={[styles.actionText, isLiked && { color: theme.colors.accent }]}
         >
           {formatCount(likeCount)}
         </Text>
@@ -70,7 +69,7 @@ export const PostActions: React.FC<PostActionsProps> = ({
         <MaterialCommunityIcons
           name="comment-outline"
           size={20}
-          color={GlobalStyles.colors.grey4}
+          color={theme.colors.textSecondary}
         />
         <Text style={styles.actionText}>{formatCount(commentCount)}</Text>
       </TouchableOpacity>
@@ -84,9 +83,14 @@ export const PostActions: React.FC<PostActionsProps> = ({
         <MaterialCommunityIcons
           name="repeat"
           size={22}
-          color={isReposted ? "#19c37d" : GlobalStyles.colors.grey4}
+          color={isReposted ? theme.colors.success : theme.colors.textSecondary}
         />
-        <Text style={[styles.actionText, isReposted && { color: "#19c37d" }]}>
+        <Text
+          style={[
+            styles.actionText,
+            isReposted && { color: theme.colors.success },
+          ]}
+        >
           {formatCount(repostCount)}
         </Text>
       </TouchableOpacity>
@@ -100,31 +104,31 @@ export const PostActions: React.FC<PostActionsProps> = ({
         <MaterialCommunityIcons
           name="share-variant-outline"
           size={20}
-          color={GlobalStyles.colors.grey4}
+          color={theme.colors.textSecondary}
         />
       </TouchableOpacity>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
     paddingTop: 12,
     marginTop: 4,
-    maxWidth: "90%",
+    maxWidth: "90%" as const,
   },
   actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     gap: 6,
     minWidth: 50,
   },
   actionText: {
     fontSize: 13,
-    color: GlobalStyles.colors.grey4,
-    fontWeight: "500",
+    color: theme.colors.textSecondary,
+    fontWeight: "500" as const,
   },
 });

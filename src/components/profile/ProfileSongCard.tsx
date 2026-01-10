@@ -4,15 +4,15 @@ import {
   ActivityIndicator,
   Animated,
   Linking,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { usePostHog } from "../../analytics/PostHogProvider";
-import { GlobalStyles } from "../../constants/styles";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useMusicPlayer } from "../../hooks/MusicPlayerContext";
 import useMusicTrack from "../../hooks/useMusicTrack";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import {
   getDeepLink,
   getMusicPlatformConfig,
@@ -44,6 +44,8 @@ export default function ProfileSongCard({
     useMusicTrack(songUrl);
   const player = useMusicPlayer();
   const { capture } = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Use cached data as fallback while loading or if oEmbed fails
   // This provides instant display using Firestore-cached metadata
@@ -173,7 +175,7 @@ export default function ProfileSongCard({
         accessibilityRole="progressbar"
       >
         <View style={[styles.artwork, styles.loadingArtwork]}>
-          <ActivityIndicator size="small" color={GlobalStyles.colors.grey4} />
+          <ActivityIndicator size="small" color={theme.colors.textSecondary} />
         </View>
         <View style={styles.infoContainer}>
           <View
@@ -221,7 +223,7 @@ export default function ProfileSongCard({
           color={
             displayPlatform !== "unknown"
               ? platformConfig.color
-              : GlobalStyles.colors.grey4
+              : theme.colors.textSecondary
           }
         />
         <Text style={styles.errorText}>{errorMessage}</Text>
@@ -300,12 +302,15 @@ export default function ProfileSongCard({
                 }}
               >
                 {isBuffering ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.textPrimary}
+                  />
                 ) : (
                   <MaterialCommunityIcons
                     name={isPlaying ? "pause" : "play"}
                     size={18}
-                    color="#fff"
+                    color={theme.colors.textPrimary}
                   />
                 )}
               </TouchableOpacity>
@@ -375,85 +380,85 @@ function formatDuration(ms: number): string {
   return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
-    backgroundColor: GlobalStyles.colors.grey9,
+    backgroundColor: theme.colors.bgElev1,
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey8,
-    width: "100%",
+    borderColor: theme.colors.borderSubtle,
+    width: "100%" as const,
   },
   errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: GlobalStyles.colors.grey9,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: theme.colors.bgElev1,
     padding: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey8,
+    borderColor: theme.colors.borderSubtle,
   },
   errorText: {
-    color: GlobalStyles.colors.grey4,
+    color: theme.colors.textSecondary,
     fontSize: 12,
     marginLeft: 8,
   },
   topRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     marginBottom: 8,
   },
   artwork: {
     width: 40,
     height: 40,
     borderRadius: 4,
-    backgroundColor: GlobalStyles.colors.grey8,
+    backgroundColor: theme.colors.bgElev2,
   },
   platformBadgeContainer: {
-    marginLeft: "auto",
+    marginLeft: "auto" as const,
   },
   loadingArtwork: {
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   infoContainer: {
     flex: 1,
     marginLeft: 10,
-    justifyContent: "center",
+    justifyContent: "center" as const,
   },
   title: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "600" as const,
     marginBottom: 2,
   },
   artist: {
-    color: GlobalStyles.colors.grey4,
+    color: theme.colors.textSecondary,
     fontSize: 11,
   },
   loadingText: {
     height: 10,
-    backgroundColor: GlobalStyles.colors.grey8,
+    backgroundColor: theme.colors.bgElev2,
     borderRadius: 4,
   },
   controlsRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
   },
   playButton: {
     width: 28,
     height: 28,
     borderRadius: 6,
-    backgroundColor: GlobalStyles.colors.redVivid5,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: theme.colors.accent,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     marginRight: 8,
   },
   openInPlatformButton: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     paddingVertical: 8,
     borderRadius: 6,
     borderWidth: 1,
@@ -461,24 +466,24 @@ const styles = StyleSheet.create({
   },
   openInPlatformText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   progressBarBg: {
     flex: 1,
     height: 3,
-    backgroundColor: GlobalStyles.colors.grey7, // Darker track
+    backgroundColor: theme.colors.bgElev2,
     borderRadius: 1.5,
     marginRight: 8,
-    overflow: "hidden",
+    overflow: "hidden" as const,
   },
   progressBarFill: {
-    height: "100%",
-    backgroundColor: GlobalStyles.colors.grey4, // Active progress
+    height: "100%" as const,
+    backgroundColor: theme.colors.textSecondary,
     borderRadius: 1.5,
   },
   duration: {
-    color: GlobalStyles.colors.grey5,
+    color: theme.colors.textTertiary,
     fontSize: 10,
-    fontVariant: ["tabular-nums"],
+    fontVariant: ["tabular-nums"] as "tabular-nums"[],
   },
 });

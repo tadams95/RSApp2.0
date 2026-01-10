@@ -8,13 +8,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { createUser, loginUser, updateUserStripeId } from "../../utils/auth";
 import {
   extractFirebaseErrorCode,
@@ -69,6 +70,9 @@ export default function SignupScreen() {
   } | null>(null);
   const { getErrorMessage } = useErrorHandler();
   const router = useRouter();
+
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const API_URL =
     "https://us-central1-ragestate-app.cloudfunctions.net/stripePayment"; // TODO: Move to a config file
@@ -488,7 +492,7 @@ export default function SignupScreen() {
           <TextInput
             style={styles.input}
             placeholder={placeholder}
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.colors.textTertiary}
             value={value}
             onChangeText={(text) => {
               if (keyboardType === "phone-pad") {
@@ -513,7 +517,7 @@ export default function SignupScreen() {
               <Ionicons
                 name={showPasswordState ? "eye-off-outline" : "eye-outline"}
                 size={24}
-                color="#888"
+                color={theme.colors.textSecondary}
               />
             </TouchableOpacity>
           )}
@@ -681,92 +685,92 @@ const fontFamily = Platform.select({
 
 const windowWidth = Dimensions.get("window").width;
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
     flex: 1,
-    backgroundColor: "#000", // Assuming a dark theme
+    backgroundColor: theme.colors.bgRoot,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     padding: 20,
   },
   errorContainer: {
     marginBottom: 16,
-    width: "100%",
+    width: "100%" as const,
   },
   image: {
     width: windowWidth * 0.5,
-    height: windowWidth * 0.5 * (200 / 600), // Adjust aspect ratio based on actual image
-    resizeMode: "contain",
+    height: windowWidth * 0.5 * (200 / 600),
+    resizeMode: "contain" as const,
     marginBottom: 30,
     marginTop: 20,
   },
   formContainer: {
-    width: "100%",
+    width: "100%" as const,
     maxWidth: 400,
-    backgroundColor: "#121212", // Slightly lighter than background
+    backgroundColor: theme.colors.bgElev1,
     padding: 20,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: theme.colors.borderSubtle,
   },
   headline: {
     fontFamily,
     fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
+    fontWeight: "bold" as const,
+    color: theme.colors.textPrimary,
     marginBottom: 20,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   nameRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10, // Add gap between name fields
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    gap: 10,
   },
   inputContainer: {
     marginBottom: 15,
-    flex: 1, // Ensure name fields take equal width
+    flex: 1,
   },
   label: {
     fontFamily,
-    color: "white",
+    color: theme.colors.textPrimary,
     marginBottom: 5,
     fontSize: 14,
   },
   inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#1e1e1e",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: theme.colors.bgElev2,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: "#444",
+    borderColor: theme.colors.borderStrong,
   },
   input: {
     flex: 1,
-    color: "white",
+    color: theme.colors.textPrimary,
     padding: 10,
     fontSize: 16,
     fontFamily,
   },
   inputError: {
-    borderColor: "red",
+    borderColor: theme.colors.error,
   },
   eyeIcon: {
     padding: 10,
   },
   errorText: {
-    color: "red",
+    color: theme.colors.error,
     fontSize: 12,
     marginTop: 5,
   },
   actionContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
     marginTop: 20,
     gap: 10,
   },
@@ -774,49 +778,49 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 5,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   cancelButton: {
-    backgroundColor: "#333",
+    backgroundColor: theme.colors.borderSubtle,
   },
   cancelButtonText: {
     fontFamily,
-    color: "white",
-    fontWeight: "bold",
+    color: theme.colors.textPrimary,
+    fontWeight: "bold" as const,
     fontSize: 16,
   },
   createButton: {
-    backgroundColor: "#fff", // Or your primary color
+    backgroundColor: theme.colors.textPrimary,
   },
   createButtonText: {
     fontFamily,
-    color: "#000", // Or your primary text color
-    fontWeight: "bold",
+    color: theme.colors.bgRoot,
+    fontWeight: "bold" as const,
     fontSize: 16,
   },
   disabledButton: {
-    backgroundColor: "#555",
+    backgroundColor: theme.colors.borderStrong,
   },
   termsText: {
     fontFamily,
-    color: "#888",
+    color: theme.colors.textSecondary,
     fontSize: 12,
-    textAlign: "center",
+    textAlign: "center" as const,
     marginTop: 20,
   },
   dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     marginVertical: 20,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#333",
+    backgroundColor: theme.colors.borderSubtle,
   },
   dividerText: {
-    color: "#666",
+    color: theme.colors.textTertiary,
     paddingHorizontal: 16,
     fontSize: 14,
   },
@@ -824,10 +828,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingVertical: 14,
     borderRadius: 8,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    width: "100%",
+    alignItems: "center" as const,
+    flexDirection: "row" as const,
+    justifyContent: "center" as const,
+    width: "100%" as const,
   },
   googleIcon: {
     width: 20,
@@ -837,6 +841,6 @@ const styles = StyleSheet.create({
   googleButtonText: {
     color: "#333",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
 });

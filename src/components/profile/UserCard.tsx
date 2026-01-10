@@ -1,8 +1,9 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { UserSearchResult } from "../../services/userSearchService";
 import { ImageWithFallback } from "../ui";
 import FollowButton from "./FollowButton";
@@ -19,6 +20,8 @@ export default function UserCard({
   onPress,
 }: UserCardProps) {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const handlePress = () => {
     if (onPress) {
@@ -34,7 +37,7 @@ export default function UserCard({
         <MaterialCommunityIcons
           name="check-decagram"
           size={14}
-          color="#1DA1F2"
+          color={theme.colors.accent}
           style={styles.badge}
         />
       );
@@ -44,7 +47,7 @@ export default function UserCard({
         <MaterialCommunityIcons
           name="star-circle"
           size={14}
-          color={GlobalStyles.colors.yellow}
+          color={theme.colors.warning}
           style={styles.badge}
         />
       );
@@ -97,15 +100,15 @@ export default function UserCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bgRoot,
     borderBottomWidth: 1,
-    borderBottomColor: GlobalStyles.colors.grey8,
+    borderBottomColor: theme.colors.borderSubtle,
   },
   avatar: {
     width: 50,
@@ -118,28 +121,28 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
   },
   displayName: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: "600" as const,
+    color: theme.colors.textPrimary,
   },
   badge: {
     marginLeft: 4,
   },
   username: {
     fontSize: 14,
-    color: GlobalStyles.colors.grey4,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   bio: {
     fontSize: 13,
-    color: GlobalStyles.colors.grey5,
+    color: theme.colors.textTertiary,
     marginTop: 4,
   },
   followButtonContainer: {
-    marginLeft: "auto",
+    marginLeft: "auto" as const,
   },
 });

@@ -20,7 +20,8 @@ import {
   CartOperationErrorBoundary,
   ProductFetchErrorBoundary,
 } from "../../../components/shopify";
-import { AppCarousel, ImageWithFallback } from "../../../components/ui";
+import { ImageWithFallback } from "../../../components/ui";
+import AppCarousel from "../../../components/ui/AppCarousel";
 import { GlobalStyles } from "../../../constants/styles";
 import { useErrorHandler } from "../../../hooks/useErrorHandler";
 import { getProductLoadingState, useProduct } from "../../../hooks/useProducts"; // Use React Query hook

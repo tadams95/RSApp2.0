@@ -14,6 +14,8 @@ import {
 
 import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import PaginatedList from "../../../components/ui/PaginatedList";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { EventData } from "../../../utils/eventDataHandler";
 
 // Default font family for styling consistency
@@ -30,6 +32,8 @@ const fontFamily =
  */
 export default function PaginatedEventsScreen() {
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Track screen view for analytics
   useScreenTracking("Paginated Events", {
@@ -112,7 +116,11 @@ export default function PaginatedEventsScreen() {
           {!isImageLoaded && (
             <View style={styles.loadingOverlay}>
               <View style={styles.loadingContainer}>
-                <Ionicons name="image-outline" size={36} color="#666" />
+                <Ionicons
+                  name="image-outline"
+                  size={36}
+                  color={theme.colors.textTertiary}
+                />
               </View>
             </View>
           )}
@@ -140,12 +148,20 @@ export default function PaginatedEventsScreen() {
 
           <View style={styles.detailsContainer}>
             <View style={styles.detailRow}>
-              <Ionicons name="calendar-outline" size={18} color="white" />
+              <Ionicons
+                name="calendar-outline"
+                size={18}
+                color={theme.colors.textPrimary}
+              />
               <Text style={styles.detailText}>{formattedDate}</Text>
             </View>
 
             <View style={styles.detailRow}>
-              <Ionicons name="location-outline" size={18} color="white" />
+              <Ionicons
+                name="location-outline"
+                size={18}
+                color={theme.colors.textPrimary}
+              />
               <Text style={styles.detailText}>
                 {item.location || "Location TBA"}
               </Text>
@@ -153,8 +169,14 @@ export default function PaginatedEventsScreen() {
 
             {remainingTickets > 0 ? (
               <View style={styles.detailRow}>
-                <Ionicons name="ticket-outline" size={18} color="#4ade80" />
-                <Text style={[styles.detailText, { color: "#4ade80" }]}>
+                <Ionicons
+                  name="ticket-outline"
+                  size={18}
+                  color={theme.colors.success}
+                />
+                <Text
+                  style={[styles.detailText, { color: theme.colors.success }]}
+                >
                   Tickets available
                 </Text>
               </View>
@@ -163,9 +185,11 @@ export default function PaginatedEventsScreen() {
                 <Ionicons
                   name="alert-circle-outline"
                   size={18}
-                  color="#ef4444"
+                  color={theme.colors.danger}
                 />
-                <Text style={[styles.detailText, { color: "#ef4444" }]}>
+                <Text
+                  style={[styles.detailText, { color: theme.colors.danger }]}
+                >
                   Sold out
                 </Text>
               </View>
@@ -227,111 +251,112 @@ export default function PaginatedEventsScreen() {
 }
 
 // Component styles
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  header: {
-    paddingVertical: 16,
-    marginBottom: 10,
-  },
-  headerTitle: {
-    fontFamily,
-    fontSize: 24,
-    fontWeight: "700",
-    color: "white",
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontFamily,
-    fontSize: 16,
-    color: "#999",
-    marginBottom: 10,
-  },
-  eventCard: {
-    backgroundColor: "#111",
-    borderRadius: 12,
-    overflow: "hidden",
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  cardImageContainer: {
-    height: 180,
-    position: "relative",
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#222",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardImage: {
-    width: "100%",
-    height: "100%",
-  },
-  cardContent: {
-    padding: 16,
-  },
-  eventName: {
-    fontFamily,
-    fontSize: 20,
-    fontWeight: "700",
-    color: "white",
-    marginBottom: 12,
-  },
-  detailsContainer: {
-    marginBottom: 16,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  detailText: {
-    fontFamily,
-    fontSize: 14,
-    color: "white",
-    marginLeft: 8,
-  },
-  priceTag: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
-  },
-  priceText: {
-    fontFamily,
-    fontWeight: "700",
-    color: "white",
-    fontSize: 16,
-  },
-  viewButton: {
-    backgroundColor: "#333",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  viewButtonText: {
-    fontFamily,
-    fontSize: 14,
-    fontWeight: "600",
-    color: "white",
-  },
-  disabledButton: {
-    backgroundColor: "#222",
-    borderColor: "#444",
-  },
-});
+const createStyles = (theme: import("../../../constants/themes").Theme) =>
+  ({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    header: {
+      paddingVertical: 16,
+      marginBottom: 10,
+    },
+    headerTitle: {
+      fontFamily,
+      fontSize: 24,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: 8,
+    },
+    headerSubtitle: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      marginBottom: 10,
+    },
+    eventCard: {
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 12,
+      overflow: "hidden",
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+    },
+    cardImageContainer: {
+      height: 180,
+      position: "relative",
+    },
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: theme.colors.bgElev2,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    loadingContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cardImage: {
+      width: "100%",
+      height: "100%",
+    },
+    cardContent: {
+      padding: 16,
+    },
+    eventName: {
+      fontFamily,
+      fontSize: 20,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: 12,
+    },
+    detailsContainer: {
+      marginBottom: 16,
+    },
+    detailRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    detailText: {
+      fontFamily,
+      fontSize: 14,
+      color: theme.colors.textPrimary,
+      marginLeft: 8,
+    },
+    priceTag: {
+      position: "absolute",
+      top: 12,
+      right: 12,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.3)",
+    },
+    priceText: {
+      fontFamily,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+    },
+    viewButton: {
+      backgroundColor: theme.colors.borderSubtle,
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    viewButtonText: {
+      fontFamily,
+      fontSize: 14,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    disabledButton: {
+      backgroundColor: theme.colors.bgElev2,
+      borderColor: theme.colors.borderStrong,
+    },
+  } as const);

@@ -27,6 +27,8 @@ import {
   usePostHog,
   useScreenTracking,
 } from "../../../analytics/PostHogProvider";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 
 // Import React Query hooks
 import { useEventsWithHelpers } from "../../../hooks/useEvents";
@@ -44,6 +46,8 @@ export default function EventsScreen() {
   const { events, isLoading, error, refetch, hasEvents, isEmpty, hasError } =
     useEventsWithHelpers();
   const posthog = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const [isOffline, setIsOffline] = useState(false);
@@ -231,7 +235,10 @@ export default function EventsScreen() {
 
           {!isImageLoaded && (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color="white" />
+              <ActivityIndicator
+                size="large"
+                color={theme.colors.textPrimary}
+              />
             </View>
           )}
 
@@ -253,12 +260,20 @@ export default function EventsScreen() {
 
             <View style={styles.detailsContainer}>
               <View style={styles.detailRow}>
-                <Ionicons name="calendar-outline" size={18} color="white" />
+                <Ionicons
+                  name="calendar-outline"
+                  size={18}
+                  color={theme.colors.textPrimary}
+                />
                 <Text style={styles.detailText}>{formattedDate}</Text>
               </View>
 
               <View style={styles.detailRow}>
-                <Ionicons name="location-outline" size={18} color="white" />
+                <Ionicons
+                  name="location-outline"
+                  size={18}
+                  color={theme.colors.textPrimary}
+                />
                 <Text style={styles.detailText}>
                   {item.location || "Location TBA"}
                 </Text>
@@ -266,8 +281,14 @@ export default function EventsScreen() {
 
               {remainingTickets > 0 ? (
                 <View style={styles.detailRow}>
-                  <Ionicons name="ticket-outline" size={18} color="#4ade80" />
-                  <Text style={[styles.detailText, { color: "#4ade80" }]}>
+                  <Ionicons
+                    name="ticket-outline"
+                    size={18}
+                    color={theme.colors.success}
+                  />
+                  <Text
+                    style={[styles.detailText, { color: theme.colors.success }]}
+                  >
                     Tickets available
                   </Text>
                 </View>
@@ -276,9 +297,11 @@ export default function EventsScreen() {
                   <Ionicons
                     name="alert-circle-outline"
                     size={18}
-                    color="#ef4444"
+                    color={theme.colors.danger}
                   />
-                  <Text style={[styles.detailText, { color: "#ef4444" }]}>
+                  <Text
+                    style={[styles.detailText, { color: theme.colors.danger }]}
+                  >
                     Sold out
                   </Text>
                 </View>
@@ -308,7 +331,7 @@ export default function EventsScreen() {
   if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="white" />
+        <ActivityIndicator size="large" color={theme.colors.accent} />
         <Text style={styles.loaderText}>Loading events...</Text>
       </View>
     );
@@ -318,7 +341,7 @@ export default function EventsScreen() {
   if (isOffline) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="cloud-offline" size={70} color="#ef4444" />
+        <Ionicons name="cloud-offline" size={70} color={theme.colors.danger} />
         <Text style={styles.emptyTitle}>You're Offline</Text>
         <Text style={styles.emptySubtitle}>
           Please check your connection and try again
@@ -343,7 +366,11 @@ export default function EventsScreen() {
   if (hasError && isEmpty) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="alert-circle-outline" size={70} color="#ef4444" />
+        <Ionicons
+          name="alert-circle-outline"
+          size={70}
+          color={theme.colors.danger}
+        />
         <Text style={styles.emptyTitle}>Couldn't Load Events</Text>
         <Text style={styles.emptySubtitle}>
           {error?.message || "Please try again"}
@@ -359,7 +386,11 @@ export default function EventsScreen() {
   if (isEmpty) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="calendar-outline" size={70} color="#555" />
+        <Ionicons
+          name="calendar-outline"
+          size={70}
+          color={theme.colors.textTertiary}
+        />
         <Text style={styles.emptyTitle}>No Events Available</Text>
         <Text style={styles.emptySubtitle}>
           Check back soon for upcoming events
@@ -486,181 +517,182 @@ interface Styles {
   errorBannerText: TextStyle;
 }
 
-const styles = StyleSheet.create<Styles>({
-  container: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "black",
-  },
-  loaderText: {
-    color: "white",
-    marginTop: 12,
-    fontFamily,
-    fontSize: 16,
-  },
-  eventSlide: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-    position: "relative",
-  },
-  eventImage: {
-    width: "100%",
-    height: "100%",
-    position: "absolute",
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  gradient: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "70%",
-  },
-  priceTag: {
-    position: "absolute",
-    top: Platform.OS === "ios" ? 55 : 35,
-    right: 15,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
-    zIndex: 100,
-  },
-  priceText: {
-    fontFamily,
-    fontWeight: "700",
-    color: "white",
-    fontSize: 16,
-  },
-  eventContent: {
-    position: "absolute",
-    bottom: Platform.OS === "ios" ? 165 : 95, // Standardized to match guest layout for optimal screen utilization
-    left: 0,
-    right: 0,
-    padding: 20,
-  },
-  eventName: {
-    fontFamily,
-    fontWeight: "700",
-    fontSize: 24,
-    color: "white",
-    marginBottom: 10,
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 5,
-  },
-  detailsContainer: {
-    marginBottom: 14,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  detailText: {
-    fontFamily,
-    fontSize: 16,
-    color: "white",
-    marginLeft: 8,
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-    flexShrink: 1,
-  },
-  viewButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderWidth: 1.5,
-    borderColor: "white",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-  disabledButton: {
-    borderColor: "#999",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  viewButtonText: {
-    fontFamily,
-    fontWeight: "600",
-    color: "white",
-    fontSize: 14,
-  },
-  emptyContainer: {
-    flex: 1,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  emptyTitle: {
-    fontFamily,
-    fontSize: 22,
-    fontWeight: "600",
-    color: "white",
-    marginTop: 16,
-  },
-  emptySubtitle: {
-    fontFamily,
-    fontSize: 16,
-    color: "#999",
-    marginTop: 8,
-    textAlign: "center",
-  },
-  paginationWrapper: {
-    position: "absolute",
-    right: 15,
-    top: "50%",
-    transform: [{ translateY: -50 }],
-    alignItems: "center",
-  },
-  paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "white",
-    marginVertical: 3,
-  },
-  retryButton: {
-    backgroundColor: "#222",
-    borderWidth: 1,
-    borderColor: "white",
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    marginTop: 20,
-  },
-  retryButtonText: {
-    fontFamily,
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  errorBanner: {
-    position: "absolute",
-    top: Platform.OS === "ios" ? 50 : 30,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(239, 68, 68, 0.9)",
-    padding: 10,
-    zIndex: 1000,
-  },
-  errorBannerText: {
-    fontFamily,
-    color: "white",
-    textAlign: "center",
-    fontSize: 14,
-  },
-});
+const createStyles = (theme: import("../../../constants/themes").Theme) =>
+  ({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    loaderContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgRoot,
+    },
+    loaderText: {
+      color: theme.colors.textPrimary,
+      marginTop: 12,
+      fontFamily,
+      fontSize: 16,
+    },
+    eventSlide: {
+      width: SCREEN_WIDTH,
+      height: SCREEN_HEIGHT,
+      position: "relative",
+    },
+    eventImage: {
+      width: "100%",
+      height: "100%",
+      position: "absolute",
+    },
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0,0,0,0.7)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    gradient: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: "70%",
+    },
+    priceTag: {
+      position: "absolute",
+      top: Platform.OS === "ios" ? 55 : 35,
+      right: 15,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.3)",
+      zIndex: 100,
+    },
+    priceText: {
+      fontFamily,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+    },
+    eventContent: {
+      position: "absolute",
+      bottom: Platform.OS === "ios" ? 165 : 95,
+      left: 0,
+      right: 0,
+      padding: 20,
+    },
+    eventName: {
+      fontFamily,
+      fontWeight: "700",
+      fontSize: 24,
+      color: theme.colors.textPrimary,
+      marginBottom: 10,
+      textShadowColor: "rgba(0, 0, 0, 0.75)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 5,
+    },
+    detailsContainer: {
+      marginBottom: 14,
+    },
+    detailRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 6,
+    },
+    detailText: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.textPrimary,
+      marginLeft: 8,
+      textShadowColor: "rgba(0, 0, 0, 0.75)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 3,
+      flexShrink: 1,
+    },
+    viewButton: {
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      borderWidth: 1.5,
+      borderColor: theme.colors.textPrimary,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      alignSelf: "flex-start",
+    },
+    disabledButton: {
+      borderColor: theme.colors.textSecondary,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    viewButtonText: {
+      fontFamily,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+    },
+    emptyContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    emptyTitle: {
+      fontFamily,
+      fontSize: 22,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+      marginTop: 16,
+    },
+    emptySubtitle: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      marginTop: 8,
+      textAlign: "center",
+    },
+    paginationWrapper: {
+      position: "absolute",
+      right: 15,
+      top: "50%",
+      transform: [{ translateY: -50 }],
+      alignItems: "center",
+    },
+    paginationDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.textPrimary,
+      marginVertical: 3,
+    },
+    retryButton: {
+      backgroundColor: theme.colors.bgElev2,
+      borderWidth: 1,
+      borderColor: theme.colors.textPrimary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      marginTop: 20,
+    },
+    retryButtonText: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    errorBanner: {
+      position: "absolute",
+      top: Platform.OS === "ios" ? 50 : 30,
+      left: 0,
+      right: 0,
+      backgroundColor: `${theme.colors.danger}E6`, // 90% opacity
+      padding: 10,
+      zIndex: 1000,
+    },
+    errorBannerText: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      textAlign: "center",
+      fontSize: 14,
+    },
+  } as const);

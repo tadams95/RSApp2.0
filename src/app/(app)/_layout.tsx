@@ -3,7 +3,7 @@ import { Redirect, Tabs } from "expo-router";
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import ErrorBoundary from "../../components/ErrorBoundary";
-import { GlobalStyles } from "../../constants/styles";
+import { useTheme } from "../../contexts/ThemeContext";
 import { auth } from "../../firebase/firebase";
 import { useAuth } from "../../hooks/AuthContext";
 import { useNotificationBadge } from "../../hooks/useNotificationBadge";
@@ -20,6 +20,7 @@ export function app() {
 export default function AppLayout() {
   const { authenticated, isLoading } = useAuth();
   const unreadCount = useNotificationBadge();
+  const { theme } = useTheme();
 
   // Register for push notifications when user is authenticated
   useEffect(() => {
@@ -49,12 +50,12 @@ export default function AppLayout() {
       <Tabs
         screenOptions={{
           tabBarStyle: {
-            backgroundColor: "black",
-            borderTopColor: "#333",
+            backgroundColor: theme.colors.tabBarBackground,
+            borderTopColor: theme.colors.borderSubtle,
           },
           headerShown: false,
-          tabBarActiveTintColor: "white",
-          tabBarInactiveTintColor: "gray",
+          tabBarActiveTintColor: theme.colors.tabBarActive,
+          tabBarInactiveTintColor: theme.colors.tabBarInactive,
           tabBarShowLabel: false,
         }}
       >
@@ -141,6 +142,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: GlobalStyles.colors.redVivid5,
+    backgroundColor: "#ff1f42", // accent color - keep static for badge visibility
   },
 });

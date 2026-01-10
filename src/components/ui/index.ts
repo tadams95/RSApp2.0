@@ -1,5 +1,7 @@
 // UI components exports
-export { default as AppCarousel } from "./AppCarousel";
+// NOTE: AppCarousel is NOT exported here because react-native-reanimated-carousel
+// has TurboModule issues in certain environments (web, dev client).
+// Import it directly: import AppCarousel from "@/components/ui/AppCarousel"
 export { default as CompressedImageUploader } from "./CompressedImageUploader";
 export { default as ImageWithFallback } from "./ImageWithFallback";
 export { default as LazyImage } from "./LazyImage";

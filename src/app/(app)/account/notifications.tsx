@@ -6,14 +6,14 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
 import { usePostHog } from "../../../analytics/PostHogProvider";
 import { SettingsSection, SettingsToggle } from "../../../components/ui";
-import { GlobalStyles } from "../../../constants/styles";
+import { useTheme } from "../../../contexts/ThemeContext";
 import { useNotificationSettings } from "../../../hooks/useNotificationSettings";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { NotificationSettings } from "../../../services/notificationSettingsService";
 
 /**
@@ -23,6 +23,8 @@ import { NotificationSettings } from "../../../services/notificationSettingsServ
 export default function NotificationSettingsScreen() {
   const router = useRouter();
   const posthog = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { settings, isLoading, error, updateSetting, refetch } =
     useNotificationSettings();
 
@@ -51,19 +53,23 @@ export default function NotificationSettingsScreen() {
           options={{
             headerShown: true,
             headerTitle: "Notifications",
-            headerStyle: { backgroundColor: "#000" },
-            headerTintColor: "#fff",
+            headerStyle: { backgroundColor: theme.colors.bgRoot },
+            headerTintColor: theme.colors.textPrimary,
             headerLeft: () => (
               <Pressable
                 onPress={() => router.back()}
                 style={styles.backButton}
               >
-                <Ionicons name="chevron-back" size={24} color="#fff" />
+                <Ionicons
+                  name="chevron-back"
+                  size={24}
+                  color={theme.colors.textPrimary}
+                />
               </Pressable>
             ),
           }}
         />
-        <ActivityIndicator size="large" color={GlobalStyles.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.accent} />
         <Text style={styles.loadingText}>Loading settings...</Text>
       </View>
     );
@@ -76,19 +82,27 @@ export default function NotificationSettingsScreen() {
           options={{
             headerShown: true,
             headerTitle: "Notifications",
-            headerStyle: { backgroundColor: "#000" },
-            headerTintColor: "#fff",
+            headerStyle: { backgroundColor: theme.colors.bgRoot },
+            headerTintColor: theme.colors.textPrimary,
             headerLeft: () => (
               <Pressable
                 onPress={() => router.back()}
                 style={styles.backButton}
               >
-                <Ionicons name="chevron-back" size={24} color="#fff" />
+                <Ionicons
+                  name="chevron-back"
+                  size={24}
+                  color={theme.colors.textPrimary}
+                />
               </Pressable>
             ),
           }}
         />
-        <Ionicons name="alert-circle-outline" size={48} color="#ff6b6b" />
+        <Ionicons
+          name="alert-circle-outline"
+          size={48}
+          color={theme.colors.danger}
+        />
         <Text style={styles.errorText}>{error.message}</Text>
         <Pressable style={styles.retryButton} onPress={refetch}>
           <Text style={styles.retryButtonText}>Try Again</Text>
@@ -103,8 +117,8 @@ export default function NotificationSettingsScreen() {
         options={{
           headerShown: true,
           headerTitle: "Notifications",
-          headerStyle: { backgroundColor: "#000" },
-          headerTintColor: "#fff",
+          headerStyle: { backgroundColor: theme.colors.bgRoot },
+          headerTintColor: theme.colors.textPrimary,
           headerTitleStyle: {
             fontWeight: "700",
             fontFamily: Platform.select({
@@ -115,7 +129,11 @@ export default function NotificationSettingsScreen() {
           },
           headerLeft: () => (
             <Pressable onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="chevron-back" size={24} color="#fff" />
+              <Ionicons
+                name="chevron-back"
+                size={24}
+                color={theme.colors.textPrimary}
+              />
             </Pressable>
           ),
         }}
@@ -247,76 +265,77 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: "#000",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loadingText: {
-    color: "#999",
-    fontSize: 14,
-    fontFamily,
-    marginTop: 12,
-  },
-  errorContainer: {
-    flex: 1,
-    backgroundColor: "#000",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  errorText: {
-    color: "#ff6b6b",
-    fontSize: 16,
-    fontFamily,
-    textAlign: "center",
-    marginTop: 12,
-    marginBottom: 20,
-  },
-  retryButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: "#222",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  retryButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily,
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  footer: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: "#111",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  footerText: {
-    color: "#666",
-    fontSize: 13,
-    fontFamily,
-    lineHeight: 18,
-    textAlign: "center",
-  },
-});
+const createStyles = (theme: import("../../../constants/themes").Theme) =>
+  ({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    loadingContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    loadingText: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+      fontFamily,
+      marginTop: 12,
+    },
+    errorContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+    },
+    errorText: {
+      color: theme.colors.danger,
+      fontSize: 16,
+      fontFamily,
+      textAlign: "center",
+      marginTop: 12,
+      marginBottom: 20,
+    },
+    retryButton: {
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      backgroundColor: theme.colors.bgElev2,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    retryButtonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      fontWeight: "600",
+      fontFamily,
+    },
+    backButton: {
+      padding: 8,
+      marginLeft: -8,
+    },
+    footer: {
+      marginTop: 16,
+      padding: 16,
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+    },
+    footerText: {
+      color: theme.colors.textTertiary,
+      fontSize: 13,
+      fontFamily,
+      lineHeight: 18,
+      textAlign: "center",
+    },
+  } as const);

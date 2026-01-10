@@ -1,6 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { Text, TouchableOpacity, View } from "react-native";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { UserData } from "../../utils/auth";
 
 interface ProfileStatsProps {
@@ -16,6 +16,7 @@ interface StatItemProps {
 }
 
 function StatItem({ value, label, onPress }: StatItemProps) {
+  const styles = useThemedStyles(createStyles);
   const content = (
     <View style={styles.statItem}>
       <Text style={styles.statValue}>{value.toLocaleString()}</Text>
@@ -39,6 +40,7 @@ export default function ProfileStats({
   onFollowersPress,
   onFollowingPress,
 }: ProfileStatsProps) {
+  const styles = useThemedStyles(createStyles);
   const stats = profile?.stats || {
     eventsAttended: 0,
     postsCount: 0,
@@ -67,35 +69,35 @@ export default function ProfileStats({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    justifyContent: "space-around" as const,
+    alignItems: "center" as const,
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: GlobalStyles.colors.grey8,
-    backgroundColor: GlobalStyles.colors.grey9,
+    borderColor: theme.colors.borderSubtle,
+    backgroundColor: theme.colors.bgElev1,
   },
   statItem: {
-    alignItems: "center",
+    alignItems: "center" as const,
     paddingHorizontal: 12,
   },
   statValue: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#fff",
+    fontWeight: "bold" as const,
+    color: theme.colors.textPrimary,
   },
   statLabel: {
     fontSize: 12,
-    color: GlobalStyles.colors.grey4,
+    color: theme.colors.textTertiary,
     marginTop: 2,
   },
   divider: {
     width: 1,
     height: 30,
-    backgroundColor: GlobalStyles.colors.grey7,
+    backgroundColor: theme.colors.borderSubtle,
   },
 });

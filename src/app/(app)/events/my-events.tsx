@@ -7,10 +7,15 @@
  * @see src/components/modals/MyEvents.tsx - Main component with all functionality
  */
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import MyEvents from "../../../components/modals/MyEvents";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 
 export default function MyEventsScreen() {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.container}>
       <MyEvents isStandaloneScreen />
@@ -18,9 +23,10 @@ export default function MyEventsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0D0D0D",
-  },
-});
+const createStyles = (theme: import("../../../constants/themes").Theme) =>
+  ({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+  } as const);

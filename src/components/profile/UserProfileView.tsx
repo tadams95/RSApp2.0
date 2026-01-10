@@ -17,12 +17,12 @@ import {
   FlatList,
   Modal,
   RefreshControl,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useScreenTracking } from "../../analytics/PostHogProvider";
-import { GlobalStyles } from "../../constants/styles";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { getUserPosts, Post } from "../../services/feedService";
 import { UserData } from "../../utils/auth";
 import { PostCard } from "../feed";
@@ -203,6 +203,8 @@ export default function UserProfileView({
 }: UserProfileViewProps) {
   const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Track screen view
   useScreenTracking("User Profile", {
@@ -269,7 +271,7 @@ export default function UserProfileView({
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={GlobalStyles.colors.redVivid5} />
+        <ActivityIndicator size="large" color={theme.colors.accent} />
       </View>
     );
   }
@@ -332,7 +334,7 @@ export default function UserProfileView({
     if (postsLoading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="small" color={GlobalStyles.colors.grey4} />
+          <ActivityIndicator size="small" color={theme.colors.textSecondary} />
         </View>
       );
     }
@@ -367,7 +369,7 @@ export default function UserProfileView({
           <RefreshControl
             refreshing={profileLoading}
             onRefresh={handleRefresh}
-            tintColor={GlobalStyles.colors.redVivid5}
+            tintColor={theme.colors.accent}
           />
         }
         contentContainerStyle={styles.listContent}
@@ -402,66 +404,66 @@ export default function UserProfileView({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bgRoot,
   },
   listContent: {
     flexGrow: 1,
   },
   centered: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    backgroundColor: theme.colors.bgRoot,
     padding: 20,
   },
   errorText: {
     fontSize: 18,
-    fontWeight: "600",
-    color: GlobalStyles.colors.redVivid5,
+    fontWeight: "600" as const,
+    color: theme.colors.danger,
     marginBottom: 8,
   },
   errorSubtext: {
     fontSize: 14,
-    color: GlobalStyles.colors.grey4,
-    textAlign: "center",
+    color: theme.colors.textSecondary,
+    textAlign: "center" as const,
   },
   privateContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     paddingVertical: 60,
   },
   privateText: {
     fontSize: 16,
-    color: GlobalStyles.colors.grey4,
+    color: theme.colors.textSecondary,
   },
   sectionHeader: {
     // paddingHorizontal: 16,
     // paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: GlobalStyles.colors.grey8,
+    borderBottomColor: theme.colors.borderSubtle,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: "600" as const,
+    color: theme.colors.textPrimary,
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     paddingVertical: 60,
   },
   emptyText: {
     fontSize: 14,
-    color: GlobalStyles.colors.grey5,
+    color: theme.colors.textTertiary,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bgRoot,
     paddingTop: 20,
   },
 });

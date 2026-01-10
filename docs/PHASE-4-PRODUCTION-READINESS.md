@@ -336,7 +336,7 @@ Host at `https://ragestate.com/.well-known/assetlinks.json`:
 
 ### Implementation Checklist
 
-- [ ] Configure app.json with schemes and domains
+- [x] Configure app.json with schemes and domains ✅
 - [x] Create `useDeepLinking` hook ✅ (`src/hooks/useDeepLinking.ts`)
 - [x] Implement route mapping (events, users, posts, transfers, shop) ✅
 - [ ] Host apple-app-site-association on ragestate.com

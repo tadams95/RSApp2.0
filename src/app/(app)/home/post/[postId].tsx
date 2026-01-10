@@ -18,9 +18,10 @@ import {
   CommentsList,
   PostCard,
 } from "../../../../components/feed";
-import { GlobalStyles } from "../../../../constants/styles";
+import { useTheme } from "../../../../contexts/ThemeContext";
 import { useComments } from "../../../../hooks/useComments";
 import { likePost, unlikePost } from "../../../../hooks/usePostInteractions";
+import { useThemedStyles } from "../../../../hooks/useThemedStyles";
 import { getPostById, Post } from "../../../../services/feedService";
 
 /**
@@ -32,6 +33,9 @@ export default function PostDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const posthog = usePostHog();
+
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Post state
   const [post, setPost] = useState<Post | null>(null);
@@ -168,7 +172,7 @@ export default function PostDetailScreen() {
       <>
         <Stack.Screen options={{ title: "Post", headerShown: true }} />
         <View style={[styles.container, styles.centered]}>
-          <ActivityIndicator size="large" color={GlobalStyles.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.accent} />
         </View>
       </>
     );
@@ -183,7 +187,7 @@ export default function PostDetailScreen() {
           <MaterialCommunityIcons
             name="alert-circle-outline"
             size={48}
-            color={GlobalStyles.colors.grey5}
+            color={theme.colors.textTertiary}
           />
           <Text style={styles.errorTitle}>Post not found</Text>
           <Text style={styles.errorText}>
@@ -200,8 +204,8 @@ export default function PostDetailScreen() {
         options={{
           title: "Post",
           headerShown: true,
-          headerStyle: { backgroundColor: "#000" },
-          headerTintColor: "#fff",
+          headerStyle: { backgroundColor: theme.colors.bgRoot },
+          headerTintColor: theme.colors.textPrimary,
         }}
       />
       <KeyboardAvoidingView
@@ -216,7 +220,7 @@ export default function PostDetailScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={GlobalStyles.colors.primary}
+              tintColor={theme.colors.accent}
             />
           }
         >
@@ -258,14 +262,14 @@ export default function PostDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../../../constants/themes").Theme) => ({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bgRoot,
   },
   centered: {
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     padding: 32,
   },
   scrollView: {
@@ -276,25 +280,25 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: "600" as const,
+    color: theme.colors.textPrimary,
     marginTop: 16,
     marginBottom: 8,
   },
   errorText: {
     fontSize: 14,
-    color: GlobalStyles.colors.grey5,
-    textAlign: "center",
+    color: theme.colors.textTertiary,
+    textAlign: "center" as const,
   },
   divider: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: GlobalStyles.colors.grey8,
+    borderTopColor: theme.colors.borderSubtle,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   commentsHeader: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
 });

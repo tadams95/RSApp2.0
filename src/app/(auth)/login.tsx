@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -20,9 +19,10 @@ import { useDispatch } from "react-redux";
 import { usePostHog, useScreenTracking } from "../../analytics/PostHogProvider";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import LoginErrorNotice from "../../components/LoginErrorNotice";
-import { GlobalStyles } from "../../constants/styles";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../hooks/AuthContext";
 import { useLoginErrorHandler } from "../../hooks/useLoginErrorHandler";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { loginUser } from "../../utils/auth";
 import { extractFirebaseErrorCode } from "../../utils/firebaseErrorHandler";
 
@@ -35,6 +35,8 @@ export default function LoginScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { track } = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Track screen view
   useScreenTracking("Login Screen", {
@@ -228,7 +230,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your email"
-                placeholderTextColor="#666"
+                placeholderTextColor={theme.colors.textTertiary}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -241,7 +243,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your password"
-                placeholderTextColor="#666"
+                placeholderTextColor={theme.colors.textTertiary}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -303,17 +305,17 @@ export default function LoginScreen() {
 const { width } = Dimensions.get("window");
 const MAX_FORM_WIDTH = 400;
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bgRoot,
   },
   keyboardAvoidingView: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "center" as const,
   },
   contentContainer: {
-    alignSelf: "center",
+    alignSelf: "center" as const,
     width: width > MAX_FORM_WIDTH ? MAX_FORM_WIDTH : width * 0.9,
     paddingHorizontal: 20,
     paddingTop: 30,
@@ -321,45 +323,41 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: "bold",
-    color: "#fff",
+    fontWeight: "bold" as const,
+    color: theme.colors.textPrimary,
     marginBottom: 32,
-    textAlign: "center",
+    textAlign: "center" as const,
     letterSpacing: 1,
   },
   formContainer: {
-    width: "100%",
-    backgroundColor: "#0d0d0d",
+    width: "100%" as const,
+    backgroundColor: theme.colors.bgElev1,
     borderRadius: 12,
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
+    ...theme.shadows.card,
   },
   inputContainer: {
     marginBottom: 22,
   },
   label: {
-    color: GlobalStyles.colors.grey3,
+    color: theme.colors.textSecondary,
     fontSize: 14,
     marginBottom: 8,
-    fontWeight: "500",
+    fontWeight: "500" as const,
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#111",
+    backgroundColor: theme.colors.bgElev2,
     borderRadius: 8,
     padding: 16,
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#222",
+    borderColor: theme.colors.borderSubtle,
   },
   checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     marginBottom: 20,
   },
   checkbox: {
@@ -367,58 +365,58 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: "#444",
+    borderColor: theme.colors.borderStrong,
     marginRight: 10,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   checkboxChecked: {
-    backgroundColor: GlobalStyles.colors.red7,
-    borderColor: GlobalStyles.colors.red7,
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   checkmark: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 14,
   },
   checkboxLabel: {
-    color: "#888",
+    color: theme.colors.textSecondary,
   },
   errorContainer: {
     marginBottom: 16,
-    width: "100%",
+    width: "100%" as const,
     fontSize: 16,
   },
   forgotPassword: {
-    color: GlobalStyles.colors.red7,
-    textAlign: "right",
+    color: theme.colors.accent,
+    textAlign: "right" as const,
     marginBottom: 24,
     fontSize: 16,
   },
   button: {
-    backgroundColor: GlobalStyles.colors.red7,
+    backgroundColor: theme.colors.accent,
     paddingVertical: 16,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: "center" as const,
     marginBottom: 16,
   },
   buttonText: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
     letterSpacing: 1,
   },
   dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     marginVertical: 16,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#333",
+    backgroundColor: theme.colors.borderSubtle,
   },
   dividerText: {
-    color: "#666",
+    color: theme.colors.textTertiary,
     paddingHorizontal: 16,
     fontSize: 14,
   },
@@ -426,9 +424,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingVertical: 14,
     borderRadius: 8,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
+    alignItems: "center" as const,
+    flexDirection: "row" as const,
+    justifyContent: "center" as const,
   },
   googleIcon: {
     width: 20,
@@ -438,20 +436,20 @@ const styles = StyleSheet.create({
   googleButtonText: {
     color: "#333",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   footer: {
-    flexDirection: "row",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    justifyContent: "center" as const,
     marginTop: 24,
   },
   footerText: {
-    color: "#888",
+    color: theme.colors.textSecondary,
     fontSize: 16,
   },
   signupLink: {
-    color: GlobalStyles.colors.red7,
+    color: theme.colors.accent,
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
   },
 });

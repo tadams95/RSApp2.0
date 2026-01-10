@@ -63,10 +63,10 @@ Update `src/constants/styles.ts` with semantic tokens matching web spec.
 
 - [ ] `src/app/(app)/home/index.tsx` - Home screen
 - [ ] `src/app/(app)/account/index.tsx` - Account screen
-- [ ] `src/app/(app)/events/index.tsx` - Events list
-- [ ] `src/app/(app)/events/[id].tsx` - Event detail
-- [ ] `src/app/(app)/events/my-events.tsx` - My events
-- [ ] `src/app/(app)/events/paginated-events.tsx` - Paginated events
+- [x] `src/app/(app)/events/index.tsx` - Events list
+- [x] `src/app/(app)/events/[id].tsx` - Event detail
+- [x] `src/app/(app)/events/my-events.tsx` - My events
+- [x] `src/app/(app)/events/paginated-events.tsx` - Paginated events
 
 ### 2.4 Social Screens (~2 files)
 
@@ -164,7 +164,7 @@ Update `src/constants/styles.ts` with semantic tokens matching web spec.
 
 ### 3.7 Event Components (~1 file)
 
-- [ ] `src/components/events/EventNotFound.tsx`
+- [x] `src/components/events/EventNotFound.tsx`
 
 ### 3.8 Debug Components (~2 files)
 

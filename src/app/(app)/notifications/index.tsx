@@ -19,9 +19,10 @@ import {
   EmptyNotifications,
   NotificationCard,
 } from "../../../components/notifications";
-import { GlobalStyles } from "../../../constants/styles";
+import { useTheme } from "../../../contexts/ThemeContext";
 import { auth } from "../../../firebase/firebase";
 import { useAuth } from "../../../hooks/AuthContext";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import {
   markAllNotificationsRead,
   markNotificationRead,
@@ -34,6 +35,8 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const posthog = usePostHog();
   const { authenticated } = useAuth();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -165,7 +168,7 @@ export default function NotificationsScreen() {
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           {markingAllRead ? (
-            <ActivityIndicator size="small" color={GlobalStyles.colors.text} />
+            <ActivityIndicator size="small" color={theme.colors.textPrimary} />
           ) : (
             <Text style={styles.markAllText}>Mark all read</Text>
           )}
@@ -185,10 +188,7 @@ export default function NotificationsScreen() {
       <View style={[styles.container, { paddingTop: insets.top }]}>
         {renderHeader()}
         <View style={styles.loadingContainer}>
-          <ActivityIndicator
-            size="large"
-            color={GlobalStyles.colors.redVivid5}
-          />
+          <ActivityIndicator size="large" color={theme.colors.accent} />
         </View>
       </View>
     );
@@ -210,8 +210,8 @@ export default function NotificationsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={GlobalStyles.colors.text}
-            colors={[GlobalStyles.colors.redVivid5]}
+            tintColor={theme.colors.textPrimary}
+            colors={[theme.colors.accent]}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -220,40 +220,41 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: GlobalStyles.colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: GlobalStyles.colors.grey7,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: GlobalStyles.colors.text,
-  },
-  markAllButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  markAllText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: GlobalStyles.colors.redVivid5,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyListContent: {
-    flex: 1,
-  },
-});
+const createStyles = (theme: import("../../../constants/themes").Theme) =>
+  ({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.borderSubtle,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    markAllButton: {
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+    },
+    markAllText: {
+      fontSize: 14,
+      fontWeight: "500",
+      color: theme.colors.accent,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    emptyListContent: {
+      flex: 1,
+    },
+  } as const);

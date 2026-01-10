@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../hooks/AuthContext";
 
 // Register the auth component with expo-router
@@ -14,6 +15,7 @@ export { auth as Auth };
 
 export default function AuthLayout() {
   const { isLoading } = useAuth();
+  const { theme } = useTheme();
 
   if (isLoading) {
     return <LoadingOverlay message="Authenticating..." />;
@@ -25,7 +27,7 @@ export default function AuthLayout() {
         screenOptions={{
           headerShown: false,
           animation: "fade",
-          contentStyle: { backgroundColor: "#000" },
+          contentStyle: { backgroundColor: theme.colors.bgRoot },
         }}
       />
     </ErrorBoundary>

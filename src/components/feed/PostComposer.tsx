@@ -17,7 +17,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { GlobalStyles } from "../../constants/styles";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import {
   createPost,
   CreatePostInput,
@@ -81,6 +82,8 @@ export function PostComposer({
   onPostCreated,
 }: PostComposerProps) {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [content, setContent] = useState("");
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [isPublic, setIsPublic] = useState(true);
@@ -461,7 +464,10 @@ export function PostComposer({
             {/* Compression indicator */}
             {item.isCompressing && (
               <View style={styles.compressionOverlay}>
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator
+                  size="small"
+                  color={theme.colors.textPrimary}
+                />
               </View>
             )}
 
@@ -471,7 +477,7 @@ export function PostComposer({
                 <MaterialCommunityIcons
                   name="play-circle"
                   size={24}
-                  color="#fff"
+                  color={theme.colors.textPrimary}
                 />
               </View>
             )}
@@ -485,7 +491,7 @@ export function PostComposer({
               <MaterialCommunityIcons
                 name="close-circle"
                 size={24}
-                color="#fff"
+                color={theme.colors.textPrimary}
               />
             </TouchableOpacity>
           </View>
@@ -520,8 +526,8 @@ export function PostComposer({
             size={24}
             color={
               canAddMedia || canAddVideo
-                ? GlobalStyles.colors.redVivid5
-                : GlobalStyles.colors.grey6
+                ? theme.colors.accent
+                : theme.colors.textTertiary
             }
           />
         </TouchableOpacity>
@@ -534,11 +540,7 @@ export function PostComposer({
           <MaterialCommunityIcons
             name={isPublic ? "earth" : "lock"}
             size={24}
-            color={
-              isPublic
-                ? GlobalStyles.colors.redVivid5
-                : GlobalStyles.colors.grey5
-            }
+            color={isPublic ? theme.colors.accent : theme.colors.textSecondary}
           />
           <Text
             style={[styles.privacyText, !isPublic && styles.privacyTextMuted]}
@@ -575,7 +577,10 @@ export function PostComposer({
             disabled={!isValid || isSubmitting}
           >
             {isSubmitting ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator
+                size="small"
+                color={theme.colors.textPrimary}
+              />
             ) : (
               <Text style={styles.postButtonText}>Post</Text>
             )}
@@ -591,7 +596,7 @@ export function PostComposer({
           <TextInput
             style={styles.textInput}
             placeholder="What's on your mind?"
-            placeholderTextColor={GlobalStyles.colors.grey5}
+            placeholderTextColor={theme.colors.textTertiary}
             multiline
             maxLength={MAX_CONTENT_LENGTH + 50} // Allow slight overage to show warning
             value={content}
@@ -655,57 +660,57 @@ export function PostComposer({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bgRoot,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: GlobalStyles.colors.grey8,
+    borderBottomColor: theme.colors.borderSubtle,
   },
   headerButton: {
     minWidth: 60,
   },
   cancelText: {
     fontSize: 16,
-    color: GlobalStyles.colors.grey4,
+    color: theme.colors.textSecondary,
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: "600" as const,
+    color: theme.colors.textPrimary,
   },
   postButton: {
-    backgroundColor: GlobalStyles.colors.redVivid5,
+    backgroundColor: theme.colors.accent,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
     minWidth: 60,
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   postButtonDisabled: {
-    backgroundColor: GlobalStyles.colors.grey7,
+    backgroundColor: theme.colors.bgElev2,
   },
   postButtonText: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: "600" as const,
+    color: theme.colors.textPrimary,
   },
   scrollView: {
     flex: 1,
   },
   textInput: {
     fontSize: 18,
-    color: "#fff",
+    color: theme.colors.textPrimary,
     padding: 16,
     minHeight: 120,
-    textAlignVertical: "top",
+    textAlignVertical: "top" as const,
   },
   mediaPreviewContainer: {
     paddingHorizontal: 16,
@@ -718,55 +723,55 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 12,
-    overflow: "hidden",
-    position: "relative",
+    overflow: "hidden" as const,
+    position: "relative" as const,
   },
   mediaPreview: {
-    width: "100%",
-    height: "100%",
+    width: "100%" as const,
+    height: "100%" as const,
   },
   compressionOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   videoIndicator: {
-    position: "absolute",
+    position: "absolute" as const,
     bottom: 8,
     left: 8,
   },
   removeButton: {
-    position: "absolute",
+    position: "absolute" as const,
     top: 4,
     right: 4,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     borderRadius: 12,
   },
   toolbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
     paddingHorizontal: 16,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: GlobalStyles.colors.grey8,
+    borderTopColor: theme.colors.borderSubtle,
   },
   charCounter: {
     fontSize: 14,
-    color: GlobalStyles.colors.grey5,
+    color: theme.colors.textSecondary,
   },
   charCounterError: {
-    color: GlobalStyles.colors.redVivid5,
+    color: theme.colors.danger,
   },
   toolbarActions: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     gap: 16,
   },
   toolbarButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     gap: 4,
     padding: 8,
   },
@@ -775,42 +780,42 @@ const styles = StyleSheet.create({
   },
   privacyText: {
     fontSize: 14,
-    color: GlobalStyles.colors.redVivid5,
+    color: theme.colors.accent,
   },
   privacyTextMuted: {
-    color: GlobalStyles.colors.grey5,
+    color: theme.colors.textSecondary,
   },
   progressContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: GlobalStyles.colors.grey8,
+    borderTopColor: theme.colors.borderSubtle,
   },
   progressBarBackground: {
     height: 4,
-    backgroundColor: GlobalStyles.colors.grey8,
+    backgroundColor: theme.colors.bgElev2,
     borderRadius: 2,
-    overflow: "hidden",
+    overflow: "hidden" as const,
     marginBottom: 8,
   },
   progressBarFill: {
-    height: "100%",
-    backgroundColor: GlobalStyles.colors.redVivid5,
+    height: "100%" as const,
+    backgroundColor: theme.colors.accent,
     borderRadius: 2,
   },
   progressText: {
     fontSize: 13,
-    color: GlobalStyles.colors.grey4,
-    textAlign: "center",
+    color: theme.colors.textSecondary,
+    textAlign: "center" as const,
   },
   inputAccessoryToolbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bgRoot,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: GlobalStyles.colors.grey8,
+    borderTopColor: theme.colors.borderSubtle,
   },
 });

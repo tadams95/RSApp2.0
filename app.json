@@ -21,7 +21,12 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "associatedDomains": [
+        "applinks:ragestate.com",
+        "applinks:www.ragestate.com",
+        "webcredentials:ragestate.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -37,7 +42,76 @@
       "versionCode": 18,
       "playIntegrity": {
         "cloudProjectNumber": "930832370585"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "ragestate.com",
+              "pathPrefix": "/events"
+            },
+            {
+              "scheme": "https",
+              "host": "ragestate.com",
+              "pathPrefix": "/user"
+            },
+            {
+              "scheme": "https",
+              "host": "ragestate.com",
+              "pathPrefix": "/post"
+            },
+            {
+              "scheme": "https",
+              "host": "ragestate.com",
+              "pathPrefix": "/transfer"
+            },
+            {
+              "scheme": "https",
+              "host": "ragestate.com",
+              "pathPrefix": "/claim-ticket"
+            },
+            {
+              "scheme": "https",
+              "host": "ragestate.com",
+              "pathPrefix": "/shop"
+            },
+            {
+              "scheme": "https",
+              "host": "www.ragestate.com",
+              "pathPrefix": "/events"
+            },
+            {
+              "scheme": "https",
+              "host": "www.ragestate.com",
+              "pathPrefix": "/user"
+            },
+            {
+              "scheme": "https",
+              "host": "www.ragestate.com",
+              "pathPrefix": "/post"
+            },
+            {
+              "scheme": "https",
+              "host": "www.ragestate.com",
+              "pathPrefix": "/transfer"
+            },
+            {
+              "scheme": "https",
+              "host": "www.ragestate.com",
+              "pathPrefix": "/claim-ticket"
+            },
+            {
+              "scheme": "https",
+              "host": "www.ragestate.com",
+              "pathPrefix": "/shop"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./src/assets/RSLogo2025.png",

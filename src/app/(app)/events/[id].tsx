@@ -25,7 +25,9 @@ import {
 } from "../../../analytics/PostHogProvider";
 import EventNotFound from "../../../components/events/EventNotFound";
 import { ProgressiveImage } from "../../../components/ui";
+import { useTheme } from "../../../contexts/ThemeContext";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
 import { extractDatabaseErrorCode } from "../../../utils/databaseErrorHandler";
 import { PROGRESSIVE_PLACEHOLDERS } from "../../../utils/imageCacheConfig";
@@ -82,6 +84,8 @@ export default function EventDetailScreen() {
   const params = useLocalSearchParams();
   const dispatch = useDispatch();
   const posthog = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Parse event data from params
   const eventData: EventDetail = params.eventData
@@ -352,7 +356,7 @@ export default function EventDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="white" />
+        <ActivityIndicator size="large" color={theme.colors.textPrimary} />
         <Text style={styles.loaderText}>Loading event...</Text>
       </View>
     );
@@ -421,7 +425,11 @@ export default function EventDetailScreen() {
           accessibilityLabel="Go back"
           accessibilityRole="button"
         >
-          <Ionicons name="arrow-back" size={22} color="white" />
+          <Ionicons
+            name="arrow-back"
+            size={22}
+            color={theme.colors.textPrimary}
+          />
         </TouchableOpacity>
       </View>
 
@@ -434,7 +442,7 @@ export default function EventDetailScreen() {
         <View style={styles.imageContainer}>
           {imageIsLoading && (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color="white" />
+              <ActivityIndicator size="large" color={theme.colors.accent} />
             </View>
           )}
           <ProgressiveImage
@@ -478,7 +486,7 @@ export default function EventDetailScreen() {
                 <Ionicons
                   name="calendar-outline"
                   size={20}
-                  color="white"
+                  color={theme.colors.textPrimary}
                   style={styles.icon}
                 />
                 <Text style={styles.detailText}>{eventData.dateTime}</Text>
@@ -491,7 +499,7 @@ export default function EventDetailScreen() {
                 <Ionicons
                   name="location-outline"
                   size={20}
-                  color="white"
+                  color={theme.colors.textPrimary}
                   style={styles.icon}
                 />
                 <Text style={styles.locationText}>{eventData.location}</Text>
@@ -501,7 +509,7 @@ export default function EventDetailScreen() {
                 <Ionicons
                   name="people-outline"
                   size={20}
-                  color="white"
+                  color={theme.colors.textPrimary}
                   style={styles.icon}
                 />
                 <Text style={styles.detailText}>
@@ -565,193 +573,194 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
-const styles = StyleSheet.create({
-  rootContainer: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "black",
-  },
-  loaderText: {
-    color: "white",
-    marginTop: 12,
-    fontFamily,
-    fontSize: 16,
-  },
-  header: {
-    position: "absolute",
-    top: Platform.OS === "ios" ? 50 : 20,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  scrollView: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  scrollViewContent: {
-    paddingBottom: 40,
-  },
-  imageContainer: {
-    height: windowWidth * 1.1,
-    position: "relative",
-    backgroundColor: "#111",
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    zIndex: 10,
-  },
-  eventImage: {
-    width: "100%",
-    height: "100%",
-  },
-  eventInfoContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 20,
-  },
-  titlePriceContainer: {
-    marginBottom: 20,
-  },
-  title: {
-    fontFamily,
-    fontWeight: "700",
-    color: "white",
-    fontSize: 24,
-    marginBottom: 8,
-  },
-  price: {
-    fontFamily,
-    color: "white",
-    fontSize: 18,
-    opacity: 0.9,
-  },
-  sectionContainer: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontFamily,
-    color: "white",
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  detailsContainer: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    padding: 16,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  icon: {
-    marginRight: 12,
-  },
-  detailText: {
-    fontFamily,
-    color: "white",
-    fontSize: 16,
-    flex: 1,
-  },
-  locationText: {
-    fontFamily,
-    color: "#3b82f6",
-    fontSize: 16,
-    flex: 1,
-  },
-  actionButton: {
-    backgroundColor: "#222",
-    borderWidth: 1,
-    borderColor: "white",
-    borderRadius: 8,
-    marginTop: 16,
-    padding: 16,
-    alignItems: "center",
-  },
-  disabledButton: {
-    backgroundColor: "#333",
-    borderColor: "#666",
-    opacity: 0.7,
-  },
-  actionButtonText: {
-    fontFamily,
-    color: "white",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-  },
-  modalContent: {
-    backgroundColor: "#222",
-    borderRadius: 10,
-    padding: 20,
-    alignItems: "center",
-    width: "80%",
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  modalText: {
-    fontFamily,
-    fontSize: 18,
-    color: "white",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  modalButton: {
-    backgroundColor: "#333",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "white",
-    minWidth: 120,
-    alignItems: "center",
-  },
-  modalButtonText: {
-    fontFamily,
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  imageRetryButton: {
-    position: "absolute",
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#444",
-    bottom: 20,
-    alignSelf: "center",
-  },
-  imageRetryText: {
-    fontFamily,
-    color: "white",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-});
+const createStyles = (theme: import("../../../constants/themes").Theme) =>
+  ({
+    rootContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    loaderContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgRoot,
+    },
+    loaderText: {
+      color: theme.colors.textPrimary,
+      marginTop: 12,
+      fontFamily,
+      fontSize: 16,
+    },
+    header: {
+      position: "absolute",
+      top: Platform.OS === "ios" ? 50 : 20,
+      left: 0,
+      right: 0,
+      zIndex: 10,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 16,
+    },
+    backButton: {
+      padding: 8,
+      borderRadius: 20,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    scrollView: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    scrollViewContent: {
+      paddingBottom: 40,
+    },
+    imageContainer: {
+      height: windowWidth * 1.1,
+      position: "relative",
+      backgroundColor: theme.colors.bgElev1,
+    },
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      zIndex: 10,
+    },
+    eventImage: {
+      width: "100%",
+      height: "100%",
+    },
+    eventInfoContainer: {
+      paddingHorizontal: 16,
+      paddingTop: 20,
+      paddingBottom: 20,
+    },
+    titlePriceContainer: {
+      marginBottom: 20,
+    },
+    title: {
+      fontFamily,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      fontSize: 24,
+      marginBottom: 8,
+    },
+    price: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontSize: 18,
+      opacity: 0.9,
+    },
+    sectionContainer: {
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontSize: 18,
+      fontWeight: "600",
+      marginBottom: 12,
+    },
+    detailsContainer: {
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 8,
+      padding: 16,
+    },
+    detailRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderSubtle,
+    },
+    icon: {
+      marginRight: 12,
+    },
+    detailText: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      flex: 1,
+    },
+    locationText: {
+      fontFamily,
+      color: "#3b82f6",
+      fontSize: 16,
+      flex: 1,
+    },
+    actionButton: {
+      backgroundColor: theme.colors.bgElev2,
+      borderWidth: 1,
+      borderColor: theme.colors.textPrimary,
+      borderRadius: 8,
+      marginTop: 16,
+      padding: 16,
+      alignItems: "center",
+    },
+    disabledButton: {
+      backgroundColor: theme.colors.borderSubtle,
+      borderColor: theme.colors.textTertiary,
+      opacity: 0.7,
+    },
+    actionButtonText: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+      fontSize: 16,
+    },
+    modalContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+    },
+    modalContent: {
+      backgroundColor: theme.colors.bgElev2,
+      borderRadius: 10,
+      padding: 20,
+      alignItems: "center",
+      width: "80%",
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    modalText: {
+      fontFamily,
+      fontSize: 18,
+      color: theme.colors.textPrimary,
+      marginBottom: 20,
+      textAlign: "center",
+    },
+    modalButton: {
+      backgroundColor: theme.colors.borderSubtle,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.textPrimary,
+      minWidth: 120,
+      alignItems: "center",
+    },
+    modalButtonText: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    imageRetryButton: {
+      position: "absolute",
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      paddingHorizontal: 15,
+      paddingVertical: 10,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      bottom: 20,
+      alignSelf: "center",
+    },
+    imageRetryText: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+  } as const);

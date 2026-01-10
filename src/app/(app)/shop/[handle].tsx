@@ -21,7 +21,7 @@ import {
   useScreenTracking,
 } from "../../../analytics/PostHogProvider";
 import ErrorBoundary from "../../../components/ErrorBoundary";
-import { AppCarousel } from "../../../components/ui";
+import AppCarousel from "../../../components/ui/AppCarousel";
 import { GlobalStyles } from "../../../constants/styles";
 import { getProductLoadingState, useProduct } from "../../../hooks/useProducts";
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";

@@ -3,7 +3,6 @@ import { useState } from "react";
 import {
   Alert,
   Platform,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -13,7 +12,9 @@ import {
 import { usePostHog, useScreenTracking } from "../../analytics/PostHogProvider";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import PasswordResetErrorNotice from "../../components/PasswordResetErrorNotice";
+import { useTheme } from "../../contexts/ThemeContext";
 import { usePasswordResetErrorHandler } from "../../hooks/usePasswordResetErrorHandler";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { forgotPassword } from "../../utils/auth";
 
 export default function ForgotPasswordScreen() {
@@ -22,6 +23,9 @@ export default function ForgotPasswordScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { track } = usePostHog();
+
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Track screen view
   useScreenTracking("Forgot Password Screen", {
@@ -145,7 +149,7 @@ export default function ForgotPasswordScreen() {
             <TextInput
               style={styles.input}
               placeholder="your.email@example.com"
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.colors.textTertiary}
               autoCapitalize="none"
               keyboardType="email-address"
               onChangeText={(text) => {
@@ -184,41 +188,41 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.9)", // Match modal background if it's a full screen
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    backgroundColor: theme.colors.bgRoot,
     padding: 20,
   },
   errorContainer: {
     marginBottom: 16,
-    width: "100%",
+    width: "100%" as const,
   },
   modalContent: {
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bgRoot,
     padding: 24,
     borderRadius: 12,
-    width: "100%",
+    width: "100%" as const,
     maxWidth: 500,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: theme.colors.borderSubtle,
   },
   headline: {
     fontFamily,
     fontSize: 24,
-    fontWeight: "700",
-    color: "white",
+    fontWeight: "700" as const,
+    color: theme.colors.textPrimary,
     marginBottom: 12,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   subtitle: {
     fontFamily,
     fontSize: 14,
-    color: "#aaa",
+    color: theme.colors.textSecondary,
     marginBottom: 24,
-    textAlign: "center",
+    textAlign: "center" as const,
     lineHeight: 20,
   },
   inputContainer: {
@@ -226,68 +230,68 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily,
-    color: "white",
+    color: theme.colors.textPrimary,
     marginBottom: 6,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "500" as const,
   },
   inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#1a1a1a",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: theme.colors.bgElev1,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#333",
-    overflow: "hidden",
+    borderColor: theme.colors.borderSubtle,
+    overflow: "hidden" as const,
   },
   input: {
     flex: 1,
-    color: "white",
+    color: theme.colors.textPrimary,
     padding: 12,
     fontSize: 16,
     fontFamily,
   },
   inputError: {
-    borderColor: "#ff5252", // Red for errors
+    borderColor: theme.colors.error,
     borderWidth: 1,
   },
   errorText: {
-    color: "#ff5252", // Red for errors
+    color: theme.colors.error,
     fontSize: 12,
     marginTop: 4,
     fontFamily,
   },
   actionContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
     gap: 10,
   },
   actionButton: {
     flex: 1,
     padding: 15,
     borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     borderWidth: 1,
   },
   cancelButton: {
     backgroundColor: "transparent",
-    borderColor: "#555",
+    borderColor: theme.colors.borderStrong,
   },
   confirmButton: {
-    backgroundColor: "#222", // Darker button for confirm
-    borderColor: "#fff",
+    backgroundColor: theme.colors.bgElev2,
+    borderColor: theme.colors.textPrimary,
   },
   cancelButtonText: {
     fontFamily,
-    color: "#ddd",
-    fontWeight: "600",
+    color: theme.colors.textSecondary,
+    fontWeight: "600" as const,
     fontSize: 16,
   },
   confirmButtonText: {
     fontFamily,
-    color: "#fff",
-    fontWeight: "600",
+    color: theme.colors.textPrimary,
+    fontWeight: "600" as const,
     fontSize: 16,
   },
 });

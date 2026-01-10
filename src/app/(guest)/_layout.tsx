@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import ErrorBoundary from "../../components/ErrorBoundary";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // Named export for guest component registration
 export function guest() {
@@ -8,20 +9,22 @@ export function guest() {
 }
 
 export default function GuestLayout() {
+  const { theme } = useTheme();
+
   return (
     <ErrorBoundary>
       <Tabs
         screenOptions={{
           tabBarStyle: {
-            backgroundColor: "black", // Set background color of the tab bar
-            borderTopColor: "#333",
+            backgroundColor: theme.colors.tabBarBackground,
+            borderTopColor: theme.colors.borderSubtle,
           },
           headerStyle: {
-            backgroundColor: "black", // Set background color of the header
+            backgroundColor: theme.colors.bgRoot,
           },
-          headerTintColor: "black", // Changed to black to match the dark theme
-          tabBarActiveTintColor: "white",
-          tabBarInactiveTintColor: "gray",
+          headerTintColor: theme.colors.textPrimary,
+          tabBarActiveTintColor: theme.colors.tabBarActive,
+          tabBarInactiveTintColor: theme.colors.tabBarInactive,
           tabBarShowLabel: false,
         }}
         initialRouteName="shop/index" // Set shop as the initial route

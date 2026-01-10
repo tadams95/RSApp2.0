@@ -18,7 +18,7 @@ import {
   useScreenTracking,
 } from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
-import { AppCarousel } from "../../../components/ui";
+import AppCarousel from "../../../components/ui/AppCarousel";
 import { GlobalStyles } from "../../../constants/styles";
 import { goBack, navigateToAuth } from "../../../utils/navigation";
 

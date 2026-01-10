@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { UserData } from "../../utils/auth";
 import { ImageWithFallback } from "../ui";
 import FollowButton from "./FollowButton";
@@ -25,6 +26,8 @@ export default function ProfileHeader({
   onFollowingPress,
   onFollowChange,
 }: ProfileHeaderProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const displayName = profile?.displayName || "User";
   const username = profile?.username ? `@${profile.username}` : null;
   const bio = profile?.bio || null;
@@ -43,7 +46,7 @@ export default function ProfileHeader({
         <MaterialCommunityIcons
           name="check-decagram"
           size={18}
-          color={GlobalStyles.colors.redVivid5}
+          color={theme.colors.accent}
           style={styles.verifiedBadge}
         />
       );
@@ -53,7 +56,7 @@ export default function ProfileHeader({
         <MaterialCommunityIcons
           name="star-circle"
           size={18}
-          color={GlobalStyles.colors.yellow}
+          color={theme.colors.warning}
           style={styles.verifiedBadge}
         />
       );
@@ -99,7 +102,7 @@ export default function ProfileHeader({
               <MaterialCommunityIcons
                 name="map-marker-outline"
                 size={14}
-                color={GlobalStyles.colors.grey4}
+                color={theme.colors.textSecondary}
               />
               <Text style={styles.location}>{location}</Text>
             </View>
@@ -150,7 +153,7 @@ export default function ProfileHeader({
             <MaterialCommunityIcons
               name="pencil-outline"
               size={16}
-              color="#fff"
+              color={theme.colors.textPrimary}
               style={styles.editIcon}
             />
             <Text style={styles.editButtonText}>Edit Profile</Text>
@@ -181,15 +184,15 @@ export default function ProfileHeader({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 12,
   },
   topSection: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
   },
   avatarContainer: {
     marginRight: 14,
@@ -199,106 +202,106 @@ const styles = StyleSheet.create({
     height: 88,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: GlobalStyles.colors.grey8,
+    borderColor: theme.colors.borderSubtle,
   },
   infoSection: {
     flex: 1,
-    justifyContent: "flex-start",
+    justifyContent: "flex-start" as const,
     paddingTop: 2,
   },
   nameContainer: {
     marginBottom: 2,
   },
   displayNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
   },
   displayName: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#fff",
+    fontWeight: "bold" as const,
+    color: theme.colors.textPrimary,
   },
   verifiedBadge: {
     marginLeft: 6,
   },
   username: {
     fontSize: 14,
-    color: GlobalStyles.colors.grey4,
+    color: theme.colors.textSecondary,
     marginTop: 1,
   },
   bio: {
     fontSize: 13,
-    color: GlobalStyles.colors.grey3,
+    color: theme.colors.textSecondary,
     marginTop: 6,
     lineHeight: 18,
   },
   locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     marginTop: 6,
   },
   location: {
     fontSize: 12,
-    color: GlobalStyles.colors.grey4,
+    color: theme.colors.textSecondary,
     marginLeft: 4,
   },
   // Stats Row Styles
   statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     marginTop: 16,
     paddingVertical: 12,
-    backgroundColor: GlobalStyles.colors.grey9,
+    backgroundColor: theme.colors.bgElev1,
     borderRadius: 10,
   },
   statItem: {
-    alignItems: "center",
+    alignItems: "center" as const,
     paddingHorizontal: 24,
   },
   statsNumber: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#fff",
+    fontWeight: "700" as const,
+    color: theme.colors.textPrimary,
   },
   statsLabel: {
     fontSize: 12,
-    color: GlobalStyles.colors.grey4,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   statsDivider: {
     width: 1,
     height: 28,
-    backgroundColor: GlobalStyles.colors.grey7,
+    backgroundColor: theme.colors.borderSubtle,
   },
   // Action Row Styles
   actionRow: {
     marginTop: 12,
   },
   editButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey6,
+    borderColor: theme.colors.borderStrong,
     backgroundColor: "transparent",
   },
   editIcon: {
     marginRight: 6,
   },
   editButtonText: {
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   followButtonContainer: {
-    width: "100%",
+    width: "100%" as const,
   },
   // Social Links Styles
   socialLinksContainer: {
-    alignItems: "center",
+    alignItems: "center" as const,
     marginTop: 12,
   },
   // Song Section

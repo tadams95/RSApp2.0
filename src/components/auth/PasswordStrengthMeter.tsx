@@ -1,5 +1,7 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 interface PasswordStrengthMeterProps {
   password: string;
@@ -14,6 +16,9 @@ const PasswordStrengthMeter: React.FC<PasswordStrengthMeterProps> = ({
   password,
   testID,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   // Skip rendering if password is empty
   if (!password) return null;
 
@@ -92,53 +97,70 @@ interface RequirementItemProps {
   text: string;
 }
 
-const RequirementItem: React.FC<RequirementItemProps> = ({ met, text }) => (
-  <View style={styles.requirementItem}>
-    <Text style={[styles.checkmark, { color: met ? "#34C759" : "#888" }]}>
-      {met ? "✓" : "○"}
-    </Text>
-    <Text style={[styles.requirementText, { color: met ? "#fff" : "#888" }]}>
-      {text}
-    </Text>
-  </View>
-);
+const RequirementItem: React.FC<RequirementItemProps> = ({ met, text }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
-const styles = StyleSheet.create({
+  return (
+    <View style={styles.requirementItem}>
+      <Text
+        style={[
+          styles.checkmark,
+          { color: met ? "#34C759" : theme.colors.textSecondary },
+        ]}
+      >
+        {met ? "✓" : "○"}
+      </Text>
+      <Text
+        style={[
+          styles.requirementText,
+          {
+            color: met ? theme.colors.textPrimary : theme.colors.textSecondary,
+          },
+        ]}
+      >
+        {text}
+      </Text>
+    </View>
+  );
+};
+
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
     marginVertical: 8,
-    width: "100%",
+    width: "100%" as const,
   },
   strengthBarContainer: {
-    width: "100%",
+    width: "100%" as const,
     height: 6,
-    backgroundColor: "#333",
+    backgroundColor: theme.colors.borderSubtle,
     borderRadius: 3,
-    overflow: "hidden",
+    overflow: "hidden" as const,
     marginBottom: 4,
   },
   strengthBar: {
-    height: "100%",
+    height: "100%" as const,
     borderRadius: 3,
   },
   strengthText: {
     fontSize: 12,
     marginBottom: 8,
-    textAlign: "right",
-    fontWeight: "bold",
+    textAlign: "right" as const,
+    fontWeight: "bold" as const,
   },
   requirementsList: {
     marginTop: 4,
   },
   requirementItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     marginVertical: 2,
   },
   checkmark: {
     fontSize: 12,
     marginRight: 6,
     width: 14,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   requirementText: {
     fontSize: 12,

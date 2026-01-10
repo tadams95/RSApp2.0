@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 interface CommentInputProps {
   onSubmit: (content: string) => Promise<void>;
@@ -21,6 +22,8 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   placeholder = "Add a comment...",
 }) => {
   const [text, setText] = useState("");
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const handleSubmit = async () => {
     const trimmedText = text.trim();
@@ -44,7 +47,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
         value={text}
         onChangeText={setText}
         placeholder={placeholder}
-        placeholderTextColor={GlobalStyles.colors.grey5}
+        placeholderTextColor={theme.colors.textTertiary}
         multiline
         maxLength={500}
         editable={!isSubmitting}
@@ -55,12 +58,14 @@ export const CommentInput: React.FC<CommentInputProps> = ({
         disabled={!canSubmit}
       >
         {isSubmitting ? (
-          <ActivityIndicator size="small" color="#fff" />
+          <ActivityIndicator size="small" color={theme.colors.textPrimary} />
         ) : (
           <MaterialCommunityIcons
             name="send"
             size={20}
-            color={canSubmit ? "#fff" : GlobalStyles.colors.grey6}
+            color={
+              canSubmit ? theme.colors.textPrimary : theme.colors.textTertiary
+            }
           />
         )}
       </TouchableOpacity>
@@ -68,41 +73,41 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
-    flexDirection: "row",
-    alignItems: "flex-end",
+    flexDirection: "row" as const,
+    alignItems: "flex-end" as const,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: GlobalStyles.colors.grey8,
-    backgroundColor: "#000",
+    borderTopColor: theme.colors.borderSubtle,
+    backgroundColor: theme.colors.bgRoot,
   },
   input: {
     flex: 1,
-    backgroundColor: GlobalStyles.colors.grey9,
+    backgroundColor: theme.colors.bgElev1,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
     paddingRight: 48,
-    color: "#fff",
+    color: theme.colors.textPrimary,
     fontSize: 14,
     maxHeight: 100,
     minHeight: 40,
   },
   sendButton: {
-    position: "absolute",
+    position: "absolute" as const,
     right: 22,
     top: 16,
     bottom: 18,
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: GlobalStyles.colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: theme.colors.accent,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   sendButtonDisabled: {
-    backgroundColor: GlobalStyles.colors.grey8,
+    backgroundColor: theme.colors.borderSubtle,
   },
 });

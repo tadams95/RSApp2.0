@@ -17,9 +17,10 @@ import {
   useScreenTracking,
 } from "../../../analytics/PostHogProvider";
 import { PostCard, PostComposer } from "../../../components/feed";
-import { GlobalStyles } from "../../../constants/styles";
+import { useTheme } from "../../../contexts/ThemeContext";
 import { useFeed } from "../../../hooks/useFeed";
 import { likePost, unlikePost } from "../../../hooks/usePostInteractions";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { Post } from "../../../services/feedService";
 
 export default function HomeScreen() {
@@ -30,6 +31,9 @@ export default function HomeScreen() {
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [showComposer, setShowComposer] = useState(false);
+
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Single feed - all public posts (like web version)
   const { posts, isLoading, error, refetch, loadMore, hasMore, isLoadingMore } =
@@ -137,7 +141,7 @@ export default function HomeScreen() {
     if (!isLoadingMore) return null;
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color={GlobalStyles.colors.redVivid5} />
+        <ActivityIndicator size="small" color={theme.colors.accent} />
       </View>
     );
   };
@@ -148,7 +152,7 @@ export default function HomeScreen() {
         <MaterialCommunityIcons
           name="message-text-outline"
           size={48}
-          color={GlobalStyles.colors.grey5}
+          color={theme.colors.textTertiary}
         />
       </View>
       <Text style={styles.emptyTitle}>No Posts Yet</Text>
@@ -201,10 +205,7 @@ export default function HomeScreen() {
       {isLoading ? (
         <View style={styles.loadingContainer}>
           {renderHeader()}
-          <ActivityIndicator
-            size="large"
-            color={GlobalStyles.colors.redVivid5}
-          />
+          <ActivityIndicator size="large" color={theme.colors.accent} />
         </View>
       ) : (
         <FlatList
@@ -222,8 +223,8 @@ export default function HomeScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={GlobalStyles.colors.redVivid5}
-              colors={[GlobalStyles.colors.redVivid5]}
+              tintColor={theme.colors.accent}
+              colors={[theme.colors.accent]}
             />
           }
         />
@@ -251,17 +252,17 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../../constants/themes").Theme) => ({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bgRoot,
   },
   header: {
-    alignItems: "center",
+    alignItems: "center" as const,
     paddingTop: 12,
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: GlobalStyles.colors.grey8,
+    borderBottomColor: theme.colors.borderSubtle,
   },
   logo: {
     width: 48,
@@ -269,17 +270,17 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   footerLoader: {
     paddingVertical: 20,
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     paddingHorizontal: 48,
     paddingBottom: 80,
   },
@@ -290,40 +291,40 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: GlobalStyles.colors.grey8,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: theme.colors.borderSubtle,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     marginBottom: 20,
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: "700",
-    color: "#fff",
+    fontWeight: "700" as const,
+    color: theme.colors.textPrimary,
     marginBottom: 8,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   emptySubtext: {
     fontSize: 15,
-    color: GlobalStyles.colors.grey4,
-    textAlign: "center",
+    color: theme.colors.textSecondary,
+    textAlign: "center" as const,
     lineHeight: 22,
   },
   errorText: {
     fontSize: 13,
-    color: GlobalStyles.colors.redVivid5,
-    textAlign: "center",
+    color: theme.colors.error,
+    textAlign: "center" as const,
     marginTop: 16,
   },
   fab: {
-    position: "absolute",
+    position: "absolute" as const,
     right: 20,
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: GlobalStyles.colors.redVivid5,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: GlobalStyles.colors.redVivid5,
+    backgroundColor: theme.colors.accent,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    shadowColor: theme.colors.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,

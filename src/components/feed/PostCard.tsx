@@ -2,22 +2,26 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { formatDistanceToNowStrict } from "date-fns";
 import { Timestamp } from "firebase/firestore";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { Post } from "../../services/feedService";
 import { ImageWithFallback } from "../ui";
 import { MediaGrid } from "./MediaGrid";
 import { PostActions } from "./PostActions";
 
 // Verification badge component
-const VerifiedBadge = () => (
-  <MaterialCommunityIcons
-    name="check-decagram"
-    size={14}
-    color={GlobalStyles.colors.redVivid5}
-    style={{ marginLeft: 4 }}
-  />
-);
+const VerifiedBadge = () => {
+  const { theme } = useTheme();
+  return (
+    <MaterialCommunityIcons
+      name="check-decagram"
+      size={14}
+      color={theme.colors.accent}
+      style={{ marginLeft: 4 }}
+    />
+  );
+};
 
 interface PostCardProps {
   post: Post;
@@ -42,6 +46,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   onShare,
   onMore,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   const {
     id,
     userId,
@@ -152,7 +159,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               <MaterialCommunityIcons
                 name="dots-horizontal"
                 size={20}
-                color={GlobalStyles.colors.grey5}
+                color={theme.colors.textTertiary}
               />
             </TouchableOpacity>
           </View>
@@ -187,13 +194,15 @@ export const PostCard: React.FC<PostCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+import { StyleSheet } from "react-native";
+
+const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
-    flexDirection: "row",
+    flexDirection: "row" as const,
     padding: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: GlobalStyles.colors.grey8,
-    backgroundColor: "#000",
+    borderBottomColor: theme.colors.borderSubtle,
+    backgroundColor: theme.colors.bgRoot,
   },
   leftColumn: {
     marginRight: 12,
@@ -205,9 +214,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: GlobalStyles.colors.grey7,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: theme.colors.bgElev2,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   avatar: {
     width: 44,
@@ -216,56 +225,56 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#fff",
+    fontWeight: "700" as const,
+    color: theme.colors.textPrimary,
   },
   headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
     marginBottom: 4,
   },
   userInfo: {
-    flexDirection: "column",
+    flexDirection: "column" as const,
     flex: 1,
     marginRight: 4,
   },
   nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
   },
   displayName: {
     fontSize: 15,
-    fontWeight: "700",
-    color: "#fff",
+    fontWeight: "700" as const,
+    color: theme.colors.textPrimary,
   },
   verifiedBadge: {
     marginRight: 4,
   },
   username: {
     fontSize: 14,
-    color: GlobalStyles.colors.grey4,
+    color: theme.colors.textSecondary,
     flexShrink: 1,
   },
   metaInfo: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
   },
   dot: {
     fontSize: 14,
-    color: GlobalStyles.colors.grey5,
+    color: theme.colors.textTertiary,
     marginHorizontal: 4,
   },
   timestamp: {
     fontSize: 14,
-    color: GlobalStyles.colors.grey5,
+    color: theme.colors.textTertiary,
   },
   moreButton: {
     marginLeft: 8,
   },
   content: {
     fontSize: 15,
-    color: "#fff",
+    color: theme.colors.textPrimary,
     lineHeight: 22,
     marginBottom: 8,
   },
