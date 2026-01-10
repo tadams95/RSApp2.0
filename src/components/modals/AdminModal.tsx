@@ -15,6 +15,9 @@ import {
   ViewStyle,
 } from "react-native";
 
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { validateAndCleanupStorageReferences } from "../../utils/storageErrorHandler";
 import ImageWithFallback from "../ui/ImageWithFallback";
 
@@ -53,6 +56,8 @@ const AdminModal: React.FC<AdminModalProps> = ({
   toggleModal,
   admin,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [events, setEvents] = useState<EventData[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
   const [eventAdminViewVisible, setEventAdminViewVisible] =
@@ -296,107 +301,108 @@ interface Styles {
   footerText: TextStyle;
 }
 
-const styles = StyleSheet.create<Styles>({
-  root: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-  },
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  eventContainer: {
-    width: "100%",
-    marginVertical: 10,
-    borderRadius: 8,
-    backgroundColor: "#111",
-    borderWidth: 1,
-    borderColor: "#555",
-    overflow: "hidden",
-  },
-  noEventsContainer: {
-    width: "100%",
-    marginTop: Dimensions.get("window").height * 0.25,
-    borderRadius: 8,
-    backgroundColor: "#111",
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  title: {
-    fontFamily,
-    textAlign: "center",
-    paddingTop: 8,
-    color: "white",
-    fontWeight: "600",
-    fontSize: 18,
-  },
-  subtitle: {
-    fontFamily,
-    textAlign: "center",
-    paddingVertical: 4,
-    color: "#aaa",
-    paddingBottom: 12,
-  },
-  eventImage: {
-    height: Dimensions.get("window").height * 0.25,
-    width: "100%",
-    alignSelf: "center",
-  },
-  actionButton: {
-    marginVertical: 16,
-    borderWidth: 1,
-    padding: 12,
-    borderRadius: 8,
-    width: "50%",
-    alignItems: "center",
-    alignSelf: "center",
-    borderColor: "#555",
-    backgroundColor: "#222",
-  },
-  buttonText: {
-    fontFamily,
-    color: "white",
-    fontWeight: "600",
-  },
-  headline: {
-    fontFamily,
-    paddingTop: 50,
-    paddingBottom: 30,
-    textAlign: "center",
-    alignSelf: "center",
-    fontSize: 24,
-    color: "white",
-    fontWeight: "700",
-  },
-  noEventsText: {
-    fontFamily,
-    textAlign: "center",
-    fontSize: 18,
-    color: "white",
-    fontWeight: "500",
-  },
-  footerText: {
-    textAlign: "center",
-    fontFamily,
-    fontSize: 14,
-    padding: 16,
-    color: "#aaa",
-    fontWeight: "500",
-    marginTop: 20,
-  },
-});
+const createStyles = (theme: Theme): Styles =>
+  StyleSheet.create<Styles>({
+    root: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingVertical: 20,
+      paddingHorizontal: 20,
+    },
+    container: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+    },
+    eventContainer: {
+      width: "100%",
+      marginVertical: 10,
+      borderRadius: 8,
+      backgroundColor: theme.colors.bgElev1,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      overflow: "hidden",
+    },
+    noEventsContainer: {
+      width: "100%",
+      marginTop: Dimensions.get("window").height * 0.25,
+      borderRadius: 8,
+      backgroundColor: theme.colors.bgElev1,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+    title: {
+      fontFamily,
+      textAlign: "center",
+      paddingTop: 8,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+      fontSize: 18,
+    },
+    subtitle: {
+      fontFamily,
+      textAlign: "center",
+      paddingVertical: 4,
+      color: theme.colors.textSecondary,
+      paddingBottom: 12,
+    },
+    eventImage: {
+      height: Dimensions.get("window").height * 0.25,
+      width: "100%",
+      alignSelf: "center",
+    },
+    actionButton: {
+      marginVertical: 16,
+      borderWidth: 1,
+      padding: 12,
+      borderRadius: 8,
+      width: "50%",
+      alignItems: "center",
+      alignSelf: "center",
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.bgElev2,
+    },
+    buttonText: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    headline: {
+      fontFamily,
+      paddingTop: 50,
+      paddingBottom: 30,
+      textAlign: "center",
+      alignSelf: "center",
+      fontSize: 24,
+      color: theme.colors.textPrimary,
+      fontWeight: "700",
+    },
+    noEventsText: {
+      fontFamily,
+      textAlign: "center",
+      fontSize: 18,
+      color: theme.colors.textPrimary,
+      fontWeight: "500",
+    },
+    footerText: {
+      textAlign: "center",
+      fontFamily,
+      fontSize: 14,
+      padding: 16,
+      color: theme.colors.textSecondary,
+      fontWeight: "500",
+      marginTop: 20,
+    },
+  });
 
 export default AdminModal;

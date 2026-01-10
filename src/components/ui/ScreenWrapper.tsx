@@ -1,6 +1,9 @@
 import React from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { View, ViewStyle } from "react-native";
 import { GlobalStyles } from "../../constants/styles";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 interface ScreenWrapperProps {
   children: React.ReactNode;
@@ -16,17 +19,21 @@ interface ScreenWrapperProps {
  */
 export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
   children,
-  backgroundColor = GlobalStyles.colors.background,
+  backgroundColor,
   padding = true,
   style,
   testID,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const bgColor = backgroundColor ?? theme.colors.bgRoot;
+
   return (
     <View
       testID={testID}
       style={[
         styles.container,
-        { backgroundColor },
+        { backgroundColor: bgColor },
         padding && styles.withPadding,
         style,
       ]}
@@ -36,13 +43,14 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  withPadding: {
-    padding: GlobalStyles.spacing.screenPadding,
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      flex: 1,
+    },
+    withPadding: {
+      padding: GlobalStyles.spacing.screenPadding,
+    },
+  } as const);
 
 export default ScreenWrapper;

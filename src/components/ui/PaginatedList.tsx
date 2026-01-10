@@ -4,13 +4,15 @@ import React from "react";
 import {
   ActivityIndicator,
   Platform,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
   ViewStyle,
 } from "react-native";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
 import { usePagination } from "../../hooks/usePagination";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 interface PaginatedListProps<T> {
   collectionPath: string;
@@ -74,6 +76,8 @@ function PaginatedList<T extends { id: string }>({
   paginationControlsStyle,
   itemSeparatorComponent = null,
 }: PaginatedListProps<T>) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const {
     data,
     loading,
@@ -97,7 +101,7 @@ function PaginatedList<T extends { id: string }>({
   // Error handling UI
   const renderError = () => (
     <View style={styles.errorContainer}>
-      <Ionicons name="alert-circle" size={24} color="#ef4444" />
+      <Ionicons name="alert-circle" size={24} color={theme.colors.danger} />
       <Text style={styles.errorText}>{error || errorText}</Text>
       <TouchableOpacity
         style={styles.retryButton}
@@ -115,7 +119,7 @@ function PaginatedList<T extends { id: string }>({
     if (loading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="#ffffff" />
+          <ActivityIndicator size="large" color={theme.colors.textPrimary} />
           <Text style={styles.emptyText}>{loadingText}</Text>
         </View>
       );
@@ -127,7 +131,11 @@ function PaginatedList<T extends { id: string }>({
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="document-text-outline" size={48} color="#999" />
+        <Ionicons
+          name="document-text-outline"
+          size={48}
+          color={theme.colors.textSecondary}
+        />
         <Text style={styles.emptyText}>{emptyText}</Text>
       </View>
     );
@@ -154,7 +162,9 @@ function PaginatedList<T extends { id: string }>({
           <Ionicons
             name="chevron-back"
             size={20}
-            color={hasPrevPage ? "#ffffff" : "#666"}
+            color={
+              hasPrevPage ? theme.colors.textPrimary : theme.colors.textTertiary
+            }
           />
           <Text
             style={[
@@ -188,7 +198,9 @@ function PaginatedList<T extends { id: string }>({
           <Ionicons
             name="chevron-forward"
             size={20}
-            color={hasNextPage ? "#ffffff" : "#666"}
+            color={
+              hasNextPage ? theme.colors.textPrimary : theme.colors.textTertiary
+            }
           />
         </TouchableOpacity>
       </View>
@@ -201,7 +213,7 @@ function PaginatedList<T extends { id: string }>({
 
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#ffffff" />
+        <ActivityIndicator size="small" color={theme.colors.textPrimary} />
         <Text style={styles.footerLoaderText}>Loading more...</Text>
       </View>
     );
@@ -238,115 +250,116 @@ function PaginatedList<T extends { id: string }>({
 }
 
 // Component styles
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  listContent: {
-    padding: 10,
-  },
-  emptyListContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontFamily,
-    fontSize: 16,
-    color: "#999",
-    marginTop: 16,
-    textAlign: "center",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  errorText: {
-    fontFamily,
-    fontSize: 16,
-    color: "#ef4444",
-    marginTop: 10,
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  retryButton: {
-    backgroundColor: "#333",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  retryButtonText: {
-    fontFamily,
-    fontSize: 16,
-    color: "white",
-    fontWeight: "600",
-  },
-  footerLoader: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 10,
-  },
-  footerLoaderText: {
-    fontFamily,
-    fontSize: 14,
-    color: "#999",
-    marginLeft: 10,
-  },
-  paginationControls: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 10,
-    marginTop: 10,
-  },
-  pageButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#222",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  pageButtonText: {
-    fontFamily,
-    fontSize: 14,
-    color: "white",
-    marginHorizontal: 4,
-  },
-  disabledButton: {
-    opacity: 0.5,
-    backgroundColor: "#111",
-    borderColor: "#333",
-  },
-  disabledText: {
-    color: "#666",
-  },
-  pageIndicator: {
-    backgroundColor: "#333",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-  },
-  pageIndicatorText: {
-    fontFamily,
-    fontSize: 14,
-    color: "white",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    listContent: {
+      padding: 10,
+    },
+    emptyListContent: {
+      flexGrow: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: 40,
+    },
+    emptyText: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      marginTop: 16,
+      textAlign: "center",
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    errorText: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.danger,
+      marginTop: 10,
+      marginBottom: 20,
+      textAlign: "center",
+    },
+    retryButton: {
+      backgroundColor: theme.colors.bgElev2,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    retryButtonText: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    footerLoader: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 10,
+    },
+    footerLoaderText: {
+      fontFamily,
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      marginLeft: 10,
+    },
+    paginationControls: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 16,
+      paddingHorizontal: 10,
+      marginTop: 10,
+    },
+    pageButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgElev2,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    pageButtonText: {
+      fontFamily,
+      fontSize: 14,
+      color: theme.colors.textPrimary,
+      marginHorizontal: 4,
+    },
+    disabledButton: {
+      opacity: 0.5,
+      backgroundColor: theme.colors.bgElev1,
+      borderColor: theme.colors.borderSubtle,
+    },
+    disabledText: {
+      color: theme.colors.textTertiary,
+    },
+    pageIndicator: {
+      backgroundColor: theme.colors.bgElev2,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+    },
+    pageIndicatorText: {
+      fontFamily,
+      fontSize: 14,
+      color: theme.colors.textPrimary,
+    },
+  } as const);
 
 export default PaginatedList;

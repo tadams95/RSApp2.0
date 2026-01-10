@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { ImageCacheManager } from "../../utils/imageCacheConfig";
 import { imagePreloader } from "../../utils/imagePreloader";
 
@@ -24,6 +27,8 @@ const ImageCacheMonitor: React.FC<ImageCacheMonitorProps> = ({
   visible = false,
   position = "top-right",
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [cacheInfo, setCacheInfo] = useState<any>(null);
   const [preloadStatus, setPreloadStatus] = useState<any>(null);
   const [expanded, setExpanded] = useState(false);
@@ -143,62 +148,63 @@ const ImageCacheMonitor: React.FC<ImageCacheMonitorProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    borderRadius: 8,
-    minWidth: 120,
-    maxWidth: 200,
-  },
-  header: {
-    padding: 8,
-    alignItems: "center",
-  },
-  headerText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  content: {
-    padding: 8,
-    paddingTop: 0,
-  },
-  title: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  section: {
-    marginBottom: 8,
-  },
-  label: {
-    color: "white",
-    fontSize: 10,
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  value: {
-    color: "#ccc",
-    fontSize: 9,
-  },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  actionButton: {
-    backgroundColor: "#333",
-    padding: 4,
-    borderRadius: 4,
-    flex: 1,
-    marginHorizontal: 2,
-  },
-  actionText: {
-    color: "white",
-    fontSize: 8,
-    textAlign: "center",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      backgroundColor: `${theme.colors.bgElev1}E6`,
+      borderRadius: 8,
+      minWidth: 120,
+      maxWidth: 200,
+    },
+    header: {
+      padding: 8,
+      alignItems: "center",
+    },
+    headerText: {
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontWeight: "bold",
+    },
+    content: {
+      padding: 8,
+      paddingTop: 0,
+    },
+    title: {
+      color: theme.colors.textPrimary,
+      fontSize: 12,
+      fontWeight: "bold",
+      marginBottom: 8,
+    },
+    section: {
+      marginBottom: 8,
+    },
+    label: {
+      color: theme.colors.textPrimary,
+      fontSize: 10,
+      fontWeight: "600",
+      marginBottom: 2,
+    },
+    value: {
+      color: theme.colors.textSecondary,
+      fontSize: 9,
+    },
+    actions: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 8,
+    },
+    actionButton: {
+      backgroundColor: theme.colors.bgElev2,
+      padding: 4,
+      borderRadius: 4,
+      flex: 1,
+      marginHorizontal: 2,
+    },
+    actionText: {
+      color: theme.colors.textPrimary,
+      fontSize: 8,
+      textAlign: "center",
+    },
+  } as const);
 
 export default ImageCacheMonitor;

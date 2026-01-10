@@ -11,12 +11,14 @@ import {
   Image,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from "react-native";
 import { useSelector } from "react-redux";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { selectLocalId } from "../../store/redux/userSlice";
 
 // Define interfaces for our data structures
@@ -93,6 +95,8 @@ const fetchUserPurchases = async (userId: string): Promise<RawPurchase[]> => {
  * HistoryModal component displays the user's purchase history
  */
 const HistoryModal: React.FC = () => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const userId = useSelector(selectLocalId);
   const [userPurchases, setUserPurchases] = useState<RawPurchase[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -204,7 +208,7 @@ const HistoryModal: React.FC = () => {
         accessibilityRole="progressbar"
         accessibilityLabel="Loading purchase history"
       >
-        <ActivityIndicator size="large" color="#ff3c00" />
+        <ActivityIndicator size="large" color={theme.colors.accent} />
         <Text style={styles.loadingText}>Loading your purchase history...</Text>
       </View>
     );
@@ -354,177 +358,178 @@ const fontFamily: string =
     default: "system",
   }) || "system"; // Provide fallback for null/undefined cases
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-    width: "100%",
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  contentContainer: {
-    paddingBottom: 40,
-    width: "100%",
-  },
-  headline: {
-    textAlign: "center",
-    fontFamily,
-    fontSize: 18,
-    marginVertical: 20,
-    color: "white",
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 40,
-    marginVertical: 20,
-    borderWidth: 1,
-    borderColor: "#333",
-    borderRadius: 8,
-    backgroundColor: "#111",
-    width: "100%",
-  },
-  emptyText: {
-    fontFamily,
-    color: "#aaa",
-    textAlign: "center",
-    marginTop: 10,
-    fontSize: 14,
-  },
-  loadingText: {
-    fontFamily,
-    color: "#ccc",
-    marginTop: 16,
-    fontSize: 14,
-  },
-  purchaseContainer: {
-    marginBottom: 24,
-    borderWidth: 1,
-    padding: 14,
-    borderRadius: 12, // Match border radius with MyEvents
-    backgroundColor: "#111", // Match background color with MyEvents
-    elevation: 3,
-    borderColor: "#444", // Match border color with MyEvents
-    shadowOffset: {
-      width: 0,
-      height: 2,
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+      width: "100%",
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    width: "100%",
-  },
-  orderHeader: {
-    flexDirection: "column",
-    marginBottom: 16,
-    width: "100%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-    paddingBottom: 10,
-  },
-  orderInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 6,
-    flexWrap: "wrap",
-  },
-  orderStatus: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 6,
-    flexWrap: "wrap",
-  },
-  orderNumber: {
-    fontWeight: "bold",
-    color: "white",
-    fontFamily,
-    fontSize: 15,
-    flex: 1,
-    marginRight: 8,
-  },
-  orderDate: {
-    color: "#ccc",
-    fontFamily,
-    fontSize: 14,
-    textAlign: "right",
-  },
-  statusText: {
-    color: "#4caf50",
-    fontFamily,
-    fontWeight: "500",
-    flex: 1,
-  },
-  totalText: {
-    color: "#ff3c00",
-    fontFamily,
-    fontWeight: "bold",
-    textAlign: "right",
-  },
-  cartItem: {
-    marginBottom: 16,
-    borderRadius: 12,
-    backgroundColor: "#222",
-    borderWidth: 1,
-    borderColor: "#444",
-    overflow: "hidden",
-  },
-  imageContainer: {
-    width: "100%",
-    aspectRatio: 16 / 9, // Match the aspect ratio with MyEvents
-    overflow: "hidden",
-  },
-  itemDetails: {
-    padding: 16, // Match padding with MyEvents
-  },
-  itemTitle: {
-    fontFamily,
-    fontSize: 16, // Match font size with MyEvents
-    marginBottom: 8,
-    textTransform: "uppercase",
-    color: "white",
-    fontWeight: "600",
-    lineHeight: 22, // Match line height with MyEvents
-  },
-  itemRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    marginBottom: 6,
-  },
-  itemText: {
-    fontFamily,
-    fontSize: 14,
-    color: "#ccc",
-    flex: 1,
-    marginRight: 8,
-  },
-  itemPrice: {
-    fontFamily,
-    fontSize: 14,
-    color: "#ccc",
-    fontWeight: "500",
-    textAlign: "right",
-  },
-  productImage: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#222",
-  },
-  noImage: {
-    backgroundColor: "#333",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  noImageText: {
-    color: "#666",
-    fontFamily,
-  },
-});
+    centered: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 20,
+    },
+    contentContainer: {
+      paddingBottom: 40,
+      width: "100%",
+    },
+    headline: {
+      textAlign: "center",
+      fontFamily,
+      fontSize: 18,
+      marginVertical: 20,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+      textTransform: "uppercase",
+      letterSpacing: 1,
+    },
+    emptyContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 40,
+      marginVertical: 20,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+      borderRadius: 8,
+      backgroundColor: theme.colors.bgElev1,
+      width: "100%",
+    },
+    emptyText: {
+      fontFamily,
+      color: theme.colors.textSecondary,
+      textAlign: "center",
+      marginTop: 10,
+      fontSize: 14,
+    },
+    loadingText: {
+      fontFamily,
+      color: theme.colors.textSecondary,
+      marginTop: 16,
+      fontSize: 14,
+    },
+    purchaseContainer: {
+      marginBottom: 24,
+      borderWidth: 1,
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: theme.colors.bgElev1,
+      elevation: 3,
+      borderColor: theme.colors.borderStrong,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 3,
+      width: "100%",
+    },
+    orderHeader: {
+      flexDirection: "column",
+      marginBottom: 16,
+      width: "100%",
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderSubtle,
+      paddingBottom: 10,
+    },
+    orderInfo: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 6,
+      flexWrap: "wrap",
+    },
+    orderStatus: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 6,
+      flexWrap: "wrap",
+    },
+    orderNumber: {
+      fontWeight: "bold",
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 15,
+      flex: 1,
+      marginRight: 8,
+    },
+    orderDate: {
+      color: theme.colors.textSecondary,
+      fontFamily,
+      fontSize: 14,
+      textAlign: "right",
+    },
+    statusText: {
+      color: theme.colors.success,
+      fontFamily,
+      fontWeight: "500",
+      flex: 1,
+    },
+    totalText: {
+      color: theme.colors.accent,
+      fontFamily,
+      fontWeight: "bold",
+      textAlign: "right",
+    },
+    cartItem: {
+      marginBottom: 16,
+      borderRadius: 12,
+      backgroundColor: theme.colors.bgElev2,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      overflow: "hidden",
+    },
+    imageContainer: {
+      width: "100%",
+      aspectRatio: 16 / 9,
+      overflow: "hidden",
+    },
+    itemDetails: {
+      padding: 16,
+    },
+    itemTitle: {
+      fontFamily,
+      fontSize: 16,
+      marginBottom: 8,
+      textTransform: "uppercase",
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+      lineHeight: 22,
+    },
+    itemRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      flexWrap: "wrap",
+      marginBottom: 6,
+    },
+    itemText: {
+      fontFamily,
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      flex: 1,
+      marginRight: 8,
+    },
+    itemPrice: {
+      fontFamily,
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      fontWeight: "500",
+      textAlign: "right",
+    },
+    productImage: {
+      width: "100%",
+      height: "100%",
+      backgroundColor: theme.colors.bgElev2,
+    },
+    noImage: {
+      backgroundColor: theme.colors.borderSubtle,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    noImageText: {
+      color: theme.colors.textTertiary,
+      fontFamily,
+    },
+  } as const);
 
 export default HistoryModal;

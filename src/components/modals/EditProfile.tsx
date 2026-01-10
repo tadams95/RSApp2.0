@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -17,9 +16,11 @@ import { useRouter } from "expo-router";
 import { doc, getFirestore, setDoc } from "firebase/firestore";
 import { useSelector } from "react-redux";
 import { usePostHog } from "../../analytics/PostHogProvider";
-import { GlobalStyles } from "../../constants/styles";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useMusicTrack } from "../../hooks/useMusicTrack";
 import useProfileUpdateErrorHandler from "../../hooks/useProfileUpdateErrorHandler";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { NotificationManager } from "../../services/notificationManager";
 import { selectLocalId } from "../../store/redux/userSlice";
 import { updateUserData } from "../../utils/auth";
@@ -88,6 +89,8 @@ const EditProfile: React.FC<EditProfileProps> = ({
   onCancel,
   initialData,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   // State variables with proper types
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
@@ -724,7 +727,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
               <MaterialCommunityIcons
                 name="music-note"
                 size={20}
-                color={GlobalStyles.colors.accent}
+                color={theme.colors.accent}
               />
               <Text style={styles.subtitle}>Profile Song</Text>
             </View>
@@ -769,10 +772,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
             {/* Song Preview */}
             {songLoading && (
               <View style={styles.songPreviewContainer}>
-                <ActivityIndicator
-                  size="small"
-                  color={GlobalStyles.colors.accent}
-                />
+                <ActivityIndicator size="small" color={theme.colors.accent} />
                 <Text style={styles.songPreviewText}>Loading preview...</Text>
               </View>
             )}
@@ -816,14 +816,14 @@ const EditProfile: React.FC<EditProfileProps> = ({
                 <MaterialCommunityIcons
                   name="link-variant"
                   size={20}
-                  color={GlobalStyles.colors.accent}
+                  color={theme.colors.accent}
                 />
                 <Text style={styles.subtitle}>Social Links (optional)</Text>
               </View>
               <MaterialCommunityIcons
                 name={socialLinksExpanded ? "chevron-up" : "chevron-down"}
                 size={24}
-                color="#888"
+                color={theme.colors.textTertiary}
               />
             </Pressable>
 
@@ -1082,189 +1082,190 @@ const fontFamily: string =
     default: "system",
   }) || "system"; // Provide fallback for null/undefined
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: "100%",
-  },
-  scrollView: {
-    flex: 1,
-    width: "100%",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: Dimensions.get("window").height * 0.12,
-  },
-  headline: {
-    fontFamily,
-    paddingTop: 10,
-    textAlign: "center",
-    textTransform: "uppercase",
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 20,
-  },
-  subtitle: {
-    fontFamily,
-    paddingBottom: 5,
-    fontSize: 16,
-    color: "white",
-    fontWeight: "500",
-  },
-  input: {
-    backgroundColor: "#222",
-    padding: 14,
-    marginBottom: 16,
-    borderRadius: 8,
-    fontFamily,
-    width: "100%",
-    fontSize: 16,
-    color: "white",
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  inputError: {
-    borderColor: "#FF6B6B", // Red border for error state
-  },
-  errorText: {
-    color: "#FF6B6B",
-    fontSize: 12,
-    marginBottom: 10,
-    marginTop: -8,
-    fontFamily,
-  },
-  errorNoticeContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 10,
-  },
-  editProfileContainer: {
-    paddingTop: 10,
-    width: "100%",
-    paddingHorizontal: 20,
-  },
-  tabContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    marginTop: 20,
-    width: "100%",
-  },
-  tabButton: {
-    backgroundColor: "#222",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#555",
-    width: "48%",
-  },
-  disabledButton: {
-    backgroundColor: "#333",
-    borderColor: "#444",
-    opacity: 0.7,
-  },
-  buttonText: {
-    fontFamily,
-    textAlign: "center",
-    color: "white",
-    fontWeight: "600",
-    textTransform: "uppercase",
-  },
-  // Profile Song styles
-  profileSongSection: {
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  profileSongHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
-  },
-  profileSongHint: {
-    fontFamily,
-    fontSize: 12,
-    color: "#888",
-    marginBottom: 12,
-  },
-  profileSongInputContainer: {
-    position: "relative",
-    width: "100%",
-  },
-  profileSongInput: {
-    paddingRight: 44, // Make room for the clear button
-  },
-  clearSongButton: {
-    position: "absolute",
-    right: 12,
-    top: 12,
-    padding: 4,
-  },
-  songPreviewContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#1a1a1a",
-    borderRadius: 8,
-    marginTop: -8,
-    marginBottom: 8,
-  },
-  songPreviewText: {
-    fontFamily,
-    fontSize: 14,
-    color: "#ccc",
-    flex: 1,
-  },
-  songErrorText: {
-    fontFamily,
-    fontSize: 14,
-    color: "#FF6B6B",
-    flex: 1,
-  },
-  // Social Links styles
-  socialLinksSection: {
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  socialLinksHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: "#1a1a1a",
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  socialLinksHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  socialLinksContent: {
-    marginTop: 8,
-  },
-  socialLinkInputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
-  },
-  socialLinkIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  socialLinkInput: {
-    flex: 1,
-    marginBottom: 0,
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      flex: 1,
+      width: "100%",
+    },
+    scrollView: {
+      flex: 1,
+      width: "100%",
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: Dimensions.get("window").height * 0.12,
+    },
+    headline: {
+      fontFamily,
+      paddingTop: 10,
+      textAlign: "center",
+      textTransform: "uppercase",
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontWeight: "600",
+      marginBottom: 20,
+    },
+    subtitle: {
+      fontFamily,
+      paddingBottom: 5,
+      fontSize: 16,
+      color: theme.colors.textPrimary,
+      fontWeight: "500",
+    },
+    input: {
+      backgroundColor: theme.colors.bgElev2,
+      padding: 14,
+      marginBottom: 16,
+      borderRadius: 8,
+      fontFamily,
+      width: "100%",
+      fontSize: 16,
+      color: theme.colors.textPrimary,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    inputError: {
+      borderColor: theme.colors.danger,
+    },
+    errorText: {
+      color: theme.colors.danger,
+      fontSize: 12,
+      marginBottom: 10,
+      marginTop: -8,
+      fontFamily,
+    },
+    errorNoticeContainer: {
+      paddingHorizontal: 20,
+      marginBottom: 10,
+    },
+    editProfileContainer: {
+      paddingTop: 10,
+      width: "100%",
+      paddingHorizontal: 20,
+    },
+    tabContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      marginTop: 20,
+      width: "100%",
+    },
+    tabButton: {
+      backgroundColor: theme.colors.bgElev2,
+      padding: 14,
+      borderRadius: 8,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      width: "48%",
+    },
+    disabledButton: {
+      backgroundColor: theme.colors.borderSubtle,
+      borderColor: theme.colors.borderStrong,
+      opacity: 0.7,
+    },
+    buttonText: {
+      fontFamily,
+      textAlign: "center",
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+      textTransform: "uppercase",
+    },
+    // Profile Song styles
+    profileSongSection: {
+      marginTop: 8,
+      marginBottom: 8,
+    },
+    profileSongHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 4,
+    },
+    profileSongHint: {
+      fontFamily,
+      fontSize: 12,
+      color: theme.colors.textTertiary,
+      marginBottom: 12,
+    },
+    profileSongInputContainer: {
+      position: "relative",
+      width: "100%",
+    },
+    profileSongInput: {
+      paddingRight: 44,
+    },
+    clearSongButton: {
+      position: "absolute",
+      right: 12,
+      top: 12,
+      padding: 4,
+    },
+    songPreviewContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 8,
+      marginTop: -8,
+      marginBottom: 8,
+    },
+    songPreviewText: {
+      fontFamily,
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      flex: 1,
+    },
+    songErrorText: {
+      fontFamily,
+      fontSize: 14,
+      color: theme.colors.danger,
+      flex: 1,
+    },
+    // Social Links styles
+    socialLinksSection: {
+      marginTop: 16,
+      marginBottom: 8,
+    },
+    socialLinksHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 8,
+      marginBottom: 4,
+    },
+    socialLinksHeaderLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    socialLinksContent: {
+      marginTop: 8,
+    },
+    socialLinkInputRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginBottom: 8,
+    },
+    socialLinkIconContainer: {
+      width: 36,
+      height: 36,
+      borderRadius: 8,
+      backgroundColor: theme.colors.textPrimary,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    socialLinkInput: {
+      flex: 1,
+      marginBottom: 0,
+    },
+  } as const);
 
 export default EditProfile;

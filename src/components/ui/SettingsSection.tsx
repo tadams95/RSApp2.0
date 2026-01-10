@@ -1,6 +1,8 @@
 import React from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { Platform, Text, View } from "react-native";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 interface SettingsSectionProps {
   title: string;
@@ -17,6 +19,9 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   children,
   description,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
@@ -32,36 +37,37 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 24,
-    width: "100%",
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily,
-    color: GlobalStyles.colors.primary,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  description: {
-    fontSize: 13,
-    fontFamily,
-    color: "#999",
-    marginBottom: 12,
-    paddingHorizontal: 4,
-    lineHeight: 18,
-  },
-  content: {
-    backgroundColor: "#111",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#333",
-    overflow: "hidden",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      marginBottom: 24,
+      width: "100%",
+    },
+    title: {
+      fontSize: 14,
+      fontWeight: "600",
+      fontFamily,
+      color: theme.colors.textTertiary,
+      textTransform: "uppercase",
+      letterSpacing: 1,
+      marginBottom: 8,
+      paddingHorizontal: 4,
+    },
+    description: {
+      fontSize: 13,
+      fontFamily,
+      color: theme.colors.textSecondary,
+      marginBottom: 12,
+      paddingHorizontal: 4,
+      lineHeight: 18,
+    },
+    content: {
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+      overflow: "hidden",
+    },
+  } as const);
 
 export default SettingsSection;

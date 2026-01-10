@@ -13,6 +13,9 @@ import {
   ViewStyle,
 } from "react-native";
 
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { validateAndCleanupStorageReferences } from "../../utils/storageErrorHandler";
 import ImageWithFallback from "../ui/ImageWithFallback";
 
@@ -68,6 +71,8 @@ const EventAdminView: React.FC<EventAdminViewProps> = ({
   event,
   toggleModal,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [scanningAllowed, setScanningAllowed] = useState<boolean>(true);
   const [showScanner, setShowScanner] = useState<boolean>(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -345,116 +350,117 @@ interface Styles {
   footerText: TextStyle;
 }
 
-const styles = StyleSheet.create<Styles>({
-  root: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-  },
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  headline: {
-    fontFamily,
-    paddingTop: 50,
-    paddingBottom: 30,
-    textAlign: "center",
-    alignSelf: "center",
-    fontSize: 24,
-    color: "white",
-    fontWeight: "700",
-  },
-  eventInfoCard: {
-    width: "100%",
-    borderRadius: 8,
-    backgroundColor: "#111",
-    borderWidth: 1,
-    borderColor: "#555",
-    overflow: "hidden",
-    marginBottom: 20,
-  },
-  eventImage: {
-    height: Dimensions.get("window").width * 0.5,
-    width: "100%",
-    resizeMode: "cover",
-  },
-  infoSection: {
-    padding: 16,
-  },
-  label: {
-    fontFamily,
-    color: "#aaa",
-    marginTop: 10,
-    marginBottom: 5,
-    fontWeight: "500",
-    fontSize: 14,
-    textTransform: "uppercase",
-  },
-  text: {
-    fontSize: 18,
-    marginBottom: 10,
-    fontFamily,
-    color: "white",
-    fontWeight: "500",
-  },
-  scannerContainer: {
-    width: "100%",
-    height: Dimensions.get("window").width * 0.7,
-    borderRadius: 8,
-    backgroundColor: "#111",
-    borderWidth: 1,
-    borderColor: "#555",
-    overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
-    marginVertical: 20,
-  },
-  scanner: {
-    width: "100%",
-    height: "100%",
-  },
-  actionButton: {
-    marginVertical: 16,
-    borderWidth: 1,
-    padding: 12,
-    borderRadius: 8,
-    width: "70%",
-    alignItems: "center",
-    alignSelf: "center",
-    borderColor: "#555",
-    backgroundColor: "#222",
-  },
-  buttonText: {
-    fontFamily,
-    color: "white",
-    fontWeight: "600",
-  },
-  confirmed: {
-    backgroundColor: `rgba(100, 200, 100, 0.2)`,
-    borderColor: `rgba(100, 200, 100, 0.5)`,
-  },
-  invalid: {
-    backgroundColor: `rgba(255, 0, 0, 0.2)`,
-    borderColor: `rgba(255, 0, 0, 0.5)`,
-  },
-  footerText: {
-    textAlign: "center",
-    fontFamily,
-    fontSize: 14,
-    padding: 16,
-    color: "#aaa",
-    fontWeight: "500",
-    marginTop: 20,
-  },
-});
+const createStyles = (theme: Theme): Styles =>
+  StyleSheet.create<Styles>({
+    root: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingVertical: 20,
+      paddingHorizontal: 20,
+    },
+    container: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+    },
+    headline: {
+      fontFamily,
+      paddingTop: 50,
+      paddingBottom: 30,
+      textAlign: "center",
+      alignSelf: "center",
+      fontSize: 24,
+      color: theme.colors.textPrimary,
+      fontWeight: "700",
+    },
+    eventInfoCard: {
+      width: "100%",
+      borderRadius: 8,
+      backgroundColor: theme.colors.bgElev1,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      overflow: "hidden",
+      marginBottom: 20,
+    },
+    eventImage: {
+      height: Dimensions.get("window").width * 0.5,
+      width: "100%",
+      resizeMode: "cover",
+    },
+    infoSection: {
+      padding: 16,
+    },
+    label: {
+      fontFamily,
+      color: theme.colors.textSecondary,
+      marginTop: 10,
+      marginBottom: 5,
+      fontWeight: "500",
+      fontSize: 14,
+      textTransform: "uppercase",
+    },
+    text: {
+      fontSize: 18,
+      marginBottom: 10,
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontWeight: "500",
+    },
+    scannerContainer: {
+      width: "100%",
+      height: Dimensions.get("window").width * 0.7,
+      borderRadius: 8,
+      backgroundColor: theme.colors.bgElev1,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      overflow: "hidden",
+      justifyContent: "center",
+      alignItems: "center",
+      marginVertical: 20,
+    },
+    scanner: {
+      width: "100%",
+      height: "100%",
+    },
+    actionButton: {
+      marginVertical: 16,
+      borderWidth: 1,
+      padding: 12,
+      borderRadius: 8,
+      width: "70%",
+      alignItems: "center",
+      alignSelf: "center",
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.bgElev2,
+    },
+    buttonText: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    confirmed: {
+      backgroundColor: `rgba(100, 200, 100, 0.2)`,
+      borderColor: `rgba(100, 200, 100, 0.5)`,
+    },
+    invalid: {
+      backgroundColor: `rgba(255, 0, 0, 0.2)`,
+      borderColor: `rgba(255, 0, 0, 0.5)`,
+    },
+    footerText: {
+      textAlign: "center",
+      fontFamily,
+      fontSize: 14,
+      padding: 16,
+      color: theme.colors.textSecondary,
+      fontWeight: "500",
+      marginTop: 20,
+    },
+  });
 
 export default EventAdminView;

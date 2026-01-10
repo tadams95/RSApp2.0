@@ -1,7 +1,10 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { View, ViewStyle } from "react-native";
 import { Button, Surface, Text } from "react-native-paper";
+import type { Theme } from "../constants/themes";
+import { useTheme } from "../contexts/ThemeContext";
+import { useThemedStyles } from "../hooks/useThemedStyles";
 
 interface ErrorMessageProps {
   message: string;
@@ -21,6 +24,9 @@ export const ErrorMessage = ({
   style,
   testID,
 }: ErrorMessageProps) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   const containerStyles = [
     styles.container,
     compact ? styles.compactContainer : null,
@@ -33,7 +39,7 @@ export const ErrorMessage = ({
         <MaterialCommunityIcons
           name="alert-circle"
           size={compact ? 16 : 24}
-          color="#FF6B6B"
+          color={theme.colors.danger}
           style={styles.icon}
         />
         <Text
@@ -76,9 +82,16 @@ export const ErrorScreen = ({
   onGoHome,
   showHomeButton = true,
 }: ErrorScreenProps) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.screenContainer}>
-      <MaterialCommunityIcons name="alert-circle" size={64} color="#FF6B6B" />
+      <MaterialCommunityIcons
+        name="alert-circle"
+        size={64}
+        color={theme.colors.danger}
+      />
 
       <Text variant="headlineMedium" style={styles.screenTitle}>
         {title}
@@ -125,9 +138,16 @@ export const NetworkError = ({
   onRetry,
   message = "Network connection issue. Please check your internet connection.",
 }: NetworkErrorProps) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.networkErrorContainer}>
-      <MaterialCommunityIcons name="wifi-off" size={48} color="#FF6B6B" />
+      <MaterialCommunityIcons
+        name="wifi-off"
+        size={48}
+        color={theme.colors.danger}
+      />
       <Text variant="headlineSmall" style={styles.networkErrorTitle}>
         No Connection
       </Text>
@@ -145,89 +165,90 @@ export const NetworkError = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "rgba(255, 107, 107, 0.1)",
-    borderRadius: 8,
-    padding: 12,
-    marginVertical: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderLeftWidth: 4,
-    borderLeftColor: "#FF6B6B",
-  },
-  compactContainer: {
-    padding: 8,
-    marginVertical: 4,
-  },
-  contentContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  icon: {
-    marginRight: 8,
-  },
-  message: {
-    flexShrink: 1,
-    color: "#FF6B6B",
-  },
-  retryButton: {
-    marginLeft: 8,
-  },
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      backgroundColor: `${theme.colors.danger}15`,
+      borderRadius: 8,
+      padding: 12,
+      marginVertical: 8,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      borderLeftWidth: 4,
+      borderLeftColor: theme.colors.danger,
+    },
+    compactContainer: {
+      padding: 8,
+      marginVertical: 4,
+    },
+    contentContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    icon: {
+      marginRight: 8,
+    },
+    message: {
+      flexShrink: 1,
+      color: theme.colors.danger,
+    },
+    retryButton: {
+      marginLeft: 8,
+    },
 
-  // Full screen error styles
-  screenContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-    padding: 24,
-  },
-  screenTitle: {
-    marginTop: 16,
-    marginBottom: 8,
-    color: "#FFF",
-    textAlign: "center",
-  },
-  screenMessage: {
-    marginBottom: 24,
-    color: "#CCC",
-    textAlign: "center",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    width: "100%",
-  },
-  screenButton: {
-    marginHorizontal: 8,
-    minWidth: 120,
-  },
+    // Full screen error styles
+    screenContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgRoot,
+      padding: 24,
+    },
+    screenTitle: {
+      marginTop: 16,
+      marginBottom: 8,
+      color: theme.colors.textPrimary,
+      textAlign: "center",
+    },
+    screenMessage: {
+      marginBottom: 24,
+      color: theme.colors.textSecondary,
+      textAlign: "center",
+    },
+    buttonContainer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      width: "100%",
+    },
+    screenButton: {
+      marginHorizontal: 8,
+      minWidth: 120,
+    },
 
-  // Network error styles
-  networkErrorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-    padding: 24,
-  },
-  networkErrorTitle: {
-    marginTop: 16,
-    color: "#FFF",
-  },
-  networkErrorMessage: {
-    marginTop: 8,
-    marginBottom: 24,
-    color: "#CCC",
-    textAlign: "center",
-  },
-  networkRetryButton: {
-    marginTop: 8,
-  },
-});
+    // Network error styles
+    networkErrorContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgRoot,
+      padding: 24,
+    },
+    networkErrorTitle: {
+      marginTop: 16,
+      color: theme.colors.textPrimary,
+    },
+    networkErrorMessage: {
+      marginTop: 8,
+      marginBottom: 24,
+      color: theme.colors.textSecondary,
+      textAlign: "center",
+    },
+    networkRetryButton: {
+      marginTop: 8,
+    },
+  } as const);
 
 export default {
   ErrorMessage,

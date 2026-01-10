@@ -1,7 +1,10 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { Button, Divider, Surface, Text } from "react-native-paper";
+import type { Theme } from "../constants/themes";
+import { useTheme } from "../contexts/ThemeContext";
+import { useThemedStyles } from "../hooks/useThemedStyles";
 
 interface ProfileUpdateErrorNoticeProps {
   message: string;
@@ -34,6 +37,9 @@ export const ProfileUpdateErrorNotice: React.FC<
   serverError,
   testID,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   // Check if we have field-specific validation errors to display
   const hasValidationErrors =
     validationErrors && Object.keys(validationErrors).length > 0;
@@ -88,7 +94,7 @@ export const ProfileUpdateErrorNotice: React.FC<
         <MaterialCommunityIcons
           name={serverError ? "server-remove" : "alert-circle"}
           size={24}
-          color="#FF6B6B"
+          color={theme.colors.danger}
         />
         <Text variant="titleMedium" style={styles.title}>
           {hasValidationErrors ? "Validation Error" : "Profile Update Issue"}
@@ -113,7 +119,7 @@ export const ProfileUpdateErrorNotice: React.FC<
                     <MaterialCommunityIcons
                       name="account-alert"
                       size={16}
-                      color="#FF6B6B"
+                      color={theme.colors.danger}
                     />
                     <Text style={styles.validationErrorText}>
                       <Text style={styles.fieldName}>
@@ -141,7 +147,7 @@ export const ProfileUpdateErrorNotice: React.FC<
                         field.includes("email") ? "email-alert" : "phone-alert"
                       }
                       size={16}
-                      color="#FF6B6B"
+                      color={theme.colors.danger}
                     />
                     <Text style={styles.validationErrorText}>
                       <Text style={styles.fieldName}>
@@ -165,7 +171,7 @@ export const ProfileUpdateErrorNotice: React.FC<
                     <MaterialCommunityIcons
                       name="alert"
                       size={16}
-                      color="#FF6B6B"
+                      color={theme.colors.danger}
                     />
                     <Text style={styles.validationErrorText}>
                       <Text style={styles.fieldName}>
@@ -195,7 +201,7 @@ export const ProfileUpdateErrorNotice: React.FC<
             mode="outlined"
             onPress={secondaryAction.onPress}
             style={styles.secondaryButton}
-            textColor="#FF6B6B"
+            textColor={theme.colors.danger}
           >
             {secondaryAction.text}
           </Button>
@@ -206,7 +212,7 @@ export const ProfileUpdateErrorNotice: React.FC<
             mode="contained"
             onPress={onRetry}
             style={styles.retryButton}
-            buttonColor="#FF6B6B"
+            buttonColor={theme.colors.danger}
           >
             {hasValidationErrors ? "Dismiss" : "Try Again"}
           </Button>
@@ -216,81 +222,82 @@ export const ProfileUpdateErrorNotice: React.FC<
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "rgba(255, 107, 107, 0.1)",
-    borderRadius: 8,
-    padding: 16,
-    marginVertical: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: "#FF6B6B",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  title: {
-    marginLeft: 8,
-    color: "#FF6B6B",
-    fontWeight: "bold",
-  },
-  message: {
-    color: "#FF6B6B",
-    marginBottom: 12,
-  },
-  validationErrorsContainer: {
-    backgroundColor: "rgba(255, 107, 107, 0.05)",
-    borderRadius: 4,
-    padding: 12,
-    marginBottom: 12,
-  },
-  errorSection: {
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontWeight: "bold",
-    color: "#FF6B6B",
-    marginBottom: 4,
-    fontSize: 13,
-  },
-  validationError: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-    paddingLeft: 8,
-  },
-  validationErrorText: {
-    color: "#FF6B6B",
-    marginLeft: 4,
-    fontSize: 13,
-  },
-  fieldName: {
-    fontWeight: "bold",
-  },
-  divider: {
-    backgroundColor: "rgba(255, 107, 107, 0.3)",
-    marginVertical: 8,
-  },
-  validationHelp: {
-    color: "#FF6B6B",
-    fontSize: 12,
-    fontStyle: "italic",
-    marginTop: 4,
-  },
-  actionContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 8,
-    marginTop: 4,
-  },
-  retryButton: {
-    minWidth: 100,
-  },
-  secondaryButton: {
-    minWidth: 100,
-    borderColor: "#FF6B6B",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      backgroundColor: `${theme.colors.danger}15`,
+      borderRadius: 8,
+      padding: 16,
+      marginVertical: 12,
+      borderLeftWidth: 4,
+      borderLeftColor: theme.colors.danger,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    title: {
+      marginLeft: 8,
+      color: theme.colors.danger,
+      fontWeight: "bold",
+    },
+    message: {
+      color: theme.colors.danger,
+      marginBottom: 12,
+    },
+    validationErrorsContainer: {
+      backgroundColor: `${theme.colors.danger}08`,
+      borderRadius: 4,
+      padding: 12,
+      marginBottom: 12,
+    },
+    errorSection: {
+      marginBottom: 10,
+    },
+    sectionTitle: {
+      fontWeight: "bold",
+      color: theme.colors.danger,
+      marginBottom: 4,
+      fontSize: 13,
+    },
+    validationError: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 6,
+      paddingLeft: 8,
+    },
+    validationErrorText: {
+      color: theme.colors.danger,
+      marginLeft: 4,
+      fontSize: 13,
+    },
+    fieldName: {
+      fontWeight: "bold",
+    },
+    divider: {
+      backgroundColor: `${theme.colors.danger}4D`,
+      marginVertical: 8,
+    },
+    validationHelp: {
+      color: theme.colors.danger,
+      fontSize: 12,
+      fontStyle: "italic",
+      marginTop: 4,
+    },
+    actionContainer: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: 8,
+      marginTop: 4,
+    },
+    retryButton: {
+      minWidth: 100,
+    },
+    secondaryButton: {
+      minWidth: 100,
+      borderColor: theme.colors.danger,
+    },
+  } as const);
 
 export default ProfileUpdateErrorNotice;

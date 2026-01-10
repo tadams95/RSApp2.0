@@ -1,6 +1,9 @@
 import React from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useNotifications } from "../../hooks/useNotifications";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import {
   testAccountSecurityNotifications,
   testCartAbandonmentNotification,
@@ -16,6 +19,8 @@ import {
 } from "../../utils/notificationTesting";
 
 const NotificationTestPanel: React.FC = () => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const {
     permissionStatus,
     expoPushToken,
@@ -215,7 +220,12 @@ const NotificationTestPanel: React.FC = () => {
         <Text
           style={[
             styles.statusValue,
-            { color: permissionStatus === "granted" ? "green" : "red" },
+            {
+              color:
+                permissionStatus === "granted"
+                  ? theme.colors.success
+                  : theme.colors.danger,
+            },
           ]}
         >
           {permissionStatus || "Unknown"}
@@ -384,65 +394,67 @@ const NotificationTestPanel: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: "#f5f5f5",
-    margin: 10,
-    borderRadius: 8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-  },
-  statusRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  statusLabel: {
-    fontWeight: "600",
-    color: "#333",
-  },
-  statusValue: {
-    color: "#666",
-    flex: 1,
-    textAlign: "right",
-    fontSize: 12,
-  },
-  button: {
-    backgroundColor: "#007bff",
-    padding: 12,
-    borderRadius: 6,
-    marginVertical: 5,
-    alignItems: "center",
-  },
-  secondaryButton: {
-    backgroundColor: "#6c757d",
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "600",
-  },
-  section: {
-    marginTop: 20,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: "#ddd",
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#333",
-  },
-  status: {
-    textAlign: "center",
-    color: "#666",
-    fontStyle: "italic",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      padding: 20,
+      backgroundColor: theme.colors.bgElev1,
+      margin: 10,
+      borderRadius: 8,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginBottom: 15,
+      textAlign: "center",
+      color: theme.colors.textPrimary,
+    },
+    statusRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 10,
+    },
+    statusLabel: {
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    statusValue: {
+      color: theme.colors.textSecondary,
+      flex: 1,
+      textAlign: "right",
+      fontSize: 12,
+    },
+    button: {
+      backgroundColor: theme.colors.accent,
+      padding: 12,
+      borderRadius: 6,
+      marginVertical: 5,
+      alignItems: "center",
+    },
+    secondaryButton: {
+      backgroundColor: theme.colors.bgElev2,
+    },
+    buttonText: {
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    section: {
+      marginTop: 20,
+      paddingTop: 15,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.borderSubtle,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: "bold",
+      marginBottom: 10,
+      color: theme.colors.textPrimary,
+    },
+    status: {
+      textAlign: "center",
+      color: theme.colors.textSecondary,
+      fontStyle: "italic",
+    },
+  } as const);
 
 export default NotificationTestPanel;

@@ -10,12 +10,13 @@ import React from "react";
 import {
   Animated,
   Dimensions,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { useNetworkStatus } from "../../utils/networkStatus";
 
 const { width } = Dimensions.get("window");
@@ -33,6 +34,8 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({
   syncStatus = "idle",
   showConnectionQuality = true,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const {
     isOnline,
     connectionQuality,
@@ -82,8 +85,8 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({
       return {
         icon: "cloud-offline-outline" as const,
         message: "You're offline. Some features may be limited.",
-        color: GlobalStyles.colors.grey3,
-        backgroundColor: "rgba(80, 80, 80, 0.95)",
+        color: theme.colors.textSecondary,
+        backgroundColor: theme.colors.bgElev2,
       };
     }
 
@@ -91,7 +94,7 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({
       return {
         icon: "cellular-outline" as const,
         message: "Slow connection detected. Loading may be slower.",
-        color: "#ff9500",
+        color: theme.colors.warning,
         backgroundColor: "rgba(255, 149, 0, 0.1)",
       };
     }
@@ -100,7 +103,7 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({
       return {
         icon: "warning-outline" as const,
         message: "Using cellular data. Data charges may apply.",
-        color: "#ff9500",
+        color: theme.colors.warning,
         backgroundColor: "rgba(255, 149, 0, 0.1)",
       };
     }
@@ -119,13 +122,13 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({
       case "success":
         return {
           icon: "checkmark-circle-outline" as const,
-          color: "#28a745",
+          color: theme.colors.success,
           message: "Synced",
         };
       case "error":
         return {
           icon: "alert-circle-outline" as const,
-          color: "#dc3545",
+          color: theme.colors.danger,
           message: "Sync failed",
         };
       default:
@@ -148,7 +151,7 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({
           height: bannerHeight,
           opacity: fadeAnim,
           backgroundColor:
-            bannerContent?.backgroundColor || "rgba(0, 0, 0, 0.8)",
+            bannerContent?.backgroundColor || theme.colors.bgElev1,
         },
       ]}
     >
@@ -191,7 +194,11 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({
               accessibilityLabel="Retry connection"
               accessibilityRole="button"
             >
-              <Ionicons name="refresh-outline" size={16} color="white" />
+              <Ionicons
+                name="refresh-outline"
+                size={16}
+                color={theme.colors.textPrimary}
+              />
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
           )}
@@ -201,70 +208,71 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    width: width,
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
-  },
-  content: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  leftContent: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  rightContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  icon: {
-    marginRight: 8,
-  },
-  message: {
-    fontSize: 14,
-    fontWeight: "500",
-    flex: 1,
-  },
-  syncContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  syncIcon: {
-    // Animation could be added here for syncing state
-  },
-  syncText: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  retryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    gap: 4,
-  },
-  retryText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      width: width,
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1000,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderSubtle,
+    },
+    content: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+    leftContent: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    rightContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    icon: {
+      marginRight: 8,
+    },
+    message: {
+      fontSize: 14,
+      fontWeight: "500",
+      flex: 1,
+    },
+    syncContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    syncIcon: {
+      // Animation could be added here for syncing state
+    },
+    syncText: {
+      fontSize: 12,
+      fontWeight: "500",
+    },
+    retryButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 4,
+      gap: 4,
+    },
+    retryText: {
+      color: theme.colors.textPrimary,
+      fontSize: 12,
+      fontWeight: "600",
+    },
+  } as const);
 
 /**
  * Hook for managing network status banner visibility and sync status

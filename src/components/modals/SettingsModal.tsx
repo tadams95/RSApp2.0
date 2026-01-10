@@ -21,13 +21,15 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   View,
 } from "react-native";
 import { usePostHog } from "../../analytics/PostHogProvider";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
 import { auth } from "../../firebase/firebase";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { AnalyticsPreferences } from "../../utils/analyticsPreferences";
 import { logError } from "../../utils/logError";
 import { extractStorageErrorCode } from "../../utils/storageErrorHandler";
@@ -59,6 +61,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   handleClose,
 }) => {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [adminModalVisible, setAdminModalVisible] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [admin, setAdmin] = useState<AdminUser | null>(null);
@@ -435,12 +439,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               accessibilityLabel="Notification settings"
             >
               <View style={styles.navigationButtonContent}>
-                <Ionicons name="notifications-outline" size={20} color="#fff" />
+                <Ionicons
+                  name="notifications-outline"
+                  size={20}
+                  color={theme.colors.textPrimary}
+                />
                 <Text style={styles.navigationButtonText}>
                   Notification Settings
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#666" />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.textTertiary}
+              />
             </Pressable>
 
             {/* Appearance Settings Link */}
@@ -454,10 +466,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               accessibilityLabel="Appearance settings"
             >
               <View style={styles.navigationButtonContent}>
-                <Ionicons name="color-palette-outline" size={20} color="#fff" />
+                <Ionicons
+                  name="color-palette-outline"
+                  size={20}
+                  color={theme.colors.textPrimary}
+                />
                 <Text style={styles.navigationButtonText}>Appearance</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#666" />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.textTertiary}
+              />
             </Pressable>
 
             {/* Analytics Privacy Toggle */}
@@ -472,7 +492,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 value={analyticsEnabled}
                 onValueChange={handleAnalyticsToggle}
                 disabled={loadingAnalytics}
-                trackColor={{ false: "#767577", true: "#4caf50" }}
+                trackColor={{
+                  false: theme.colors.bgElev2,
+                  true: theme.colors.success,
+                }}
                 thumbColor={analyticsEnabled ? "#ffffff" : "#f4f3f4"}
                 accessibilityLabel="Toggle analytics tracking"
                 accessibilityHint="When enabled, usage data is collected to improve the app"
@@ -526,122 +549,123 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
-const styles = StyleSheet.create({
-  modal: {
-    margin: 0,
-    backgroundColor: "#000",
-  },
-  scrollView: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  modalContainer: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#000",
-  },
-  modalHeader: {
-    alignItems: "center",
-    marginBottom: 30,
-    marginTop: 50,
-  },
-  headerText: {
-    fontSize: 24,
-    fontWeight: "700",
-    fontFamily,
-    color: "white",
-    textTransform: "uppercase",
-  },
-  content: {
-    alignItems: "center",
-  },
-  actionButton: {
-    marginVertical: 12,
-    borderWidth: 1,
-    padding: 16,
-    borderRadius: 8,
-    width: "80%",
-    alignItems: "center",
-    borderColor: "#555",
-    backgroundColor: "#222",
-  },
-  navigationButton: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginVertical: 12,
-    borderWidth: 1,
-    padding: 16,
-    borderRadius: 8,
-    width: "80%",
-    borderColor: "#555",
-    backgroundColor: "#222",
-  },
-  navigationButtonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  navigationButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontFamily,
-    fontWeight: "600",
-  },
-  deleteActionButton: {
-    marginVertical: 12,
-    borderWidth: 1,
-    padding: 16,
-    borderRadius: 8,
-    width: "80%",
-    alignItems: "center",
-    borderColor: "#ff3b30",
-    backgroundColor: "#222",
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontFamily,
-    fontWeight: "600",
-    textTransform: "uppercase",
-  },
-  deleteButtonText: {
-    color: "#ff3b30",
-    fontSize: 16,
-    fontFamily,
-    fontWeight: "600",
-    textTransform: "uppercase",
-  },
-  settingsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "80%",
-    marginVertical: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: "#555",
-    borderRadius: 8,
-    backgroundColor: "#222",
-  },
-  settingsLabelContainer: {
-    flex: 1,
-    marginRight: 16,
-  },
-  settingsLabel: {
-    color: "white",
-    fontSize: 16,
-    fontFamily,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  settingsDescription: {
-    color: "#999",
-    fontSize: 12,
-    fontFamily,
-    lineHeight: 16,
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    modal: {
+      margin: 0,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    scrollView: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    modalContainer: {
+      flex: 1,
+      padding: 20,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    modalHeader: {
+      alignItems: "center",
+      marginBottom: 30,
+      marginTop: 50,
+    },
+    headerText: {
+      fontSize: 24,
+      fontWeight: "700",
+      fontFamily,
+      color: theme.colors.textPrimary,
+      textTransform: "uppercase",
+    },
+    content: {
+      alignItems: "center",
+    },
+    actionButton: {
+      marginVertical: 12,
+      borderWidth: 1,
+      padding: 16,
+      borderRadius: 8,
+      width: "80%",
+      alignItems: "center",
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.bgElev2,
+    },
+    navigationButton: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginVertical: 12,
+      borderWidth: 1,
+      padding: 16,
+      borderRadius: 8,
+      width: "80%",
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.bgElev2,
+    },
+    navigationButtonContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    navigationButtonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontFamily,
+      fontWeight: "600",
+    },
+    deleteActionButton: {
+      marginVertical: 12,
+      borderWidth: 1,
+      padding: 16,
+      borderRadius: 8,
+      width: "80%",
+      alignItems: "center",
+      borderColor: theme.colors.danger,
+      backgroundColor: theme.colors.bgElev2,
+    },
+    buttonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontFamily,
+      fontWeight: "600",
+      textTransform: "uppercase",
+    },
+    deleteButtonText: {
+      color: theme.colors.danger,
+      fontSize: 16,
+      fontFamily,
+      fontWeight: "600",
+      textTransform: "uppercase",
+    },
+    settingsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      width: "80%",
+      marginVertical: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      borderRadius: 8,
+      backgroundColor: theme.colors.bgElev2,
+    },
+    settingsLabelContainer: {
+      flex: 1,
+      marginRight: 16,
+    },
+    settingsLabel: {
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontFamily,
+      fontWeight: "600",
+      marginBottom: 4,
+    },
+    settingsDescription: {
+      color: theme.colors.textSecondary,
+      fontSize: 12,
+      fontFamily,
+      lineHeight: 16,
+    },
+  } as const);
 
 export default SettingsModal;

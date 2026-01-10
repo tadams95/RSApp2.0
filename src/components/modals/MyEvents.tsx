@@ -9,12 +9,14 @@ import {
   Modal,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import ImageWithFallback from "../ui/ImageWithFallback";
 
 import {
@@ -78,6 +80,8 @@ interface EventTicketCardProps {
   imageUrl: string;
   eventDate?: string;
   toggleTransferModal: () => void;
+  styles: ReturnType<typeof createStyles>;
+  theme: Theme;
 }
 
 interface RecipientData {
@@ -117,6 +121,8 @@ const EventTicketCard: React.FC<EventTicketCardProps> = ({
   imageUrl,
   eventDate,
   toggleTransferModal,
+  styles,
+  theme,
 }) => (
   <TouchableOpacity
     style={styles.cardContainer}
@@ -152,7 +158,11 @@ const EventTicketCard: React.FC<EventTicketCardProps> = ({
           style={styles.transferSection}
           onPress={toggleTransferModal}
         >
-          <MaterialCommunityIcons name="send" size={20} color="white" />
+          <MaterialCommunityIcons
+            name="send"
+            size={20}
+            color={theme.colors.textPrimary}
+          />
           <Text style={styles.transferText}>Transfer Ticket</Text>
         </TouchableOpacity>
       </View>
@@ -161,6 +171,8 @@ const EventTicketCard: React.FC<EventTicketCardProps> = ({
 );
 
 const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [eventsData, setEventsData] = useState<EventWithRagers[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -917,7 +929,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
       >
         <ActivityIndicator
           size="large"
-          color="#ffffff"
+          color={theme.colors.textPrimary}
           style={{ marginVertical: 20 }}
         />
       </View>
@@ -937,7 +949,11 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
+          <MaterialCommunityIcons
+            name="arrow-left"
+            size={24}
+            color={theme.colors.textPrimary}
+          />
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
       )}
@@ -947,7 +963,11 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
       {/* Show offline banner if applicable */}
       {isOffline && (
         <View style={styles.errorBanner}>
-          <MaterialCommunityIcons name="wifi-off" size={20} color="#ffcc00" />
+          <MaterialCommunityIcons
+            name="wifi-off"
+            size={20}
+            color={theme.colors.warning}
+          />
           <Text style={styles.errorText}>
             You're offline. Some data may not be current.
           </Text>
@@ -960,7 +980,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
           <MaterialCommunityIcons
             name="alert-circle"
             size={24}
-            color="#ff6666"
+            color={theme.colors.danger}
           />
           <Text style={styles.errorMessageText}>{errorMessage}</Text>
           <TouchableOpacity
@@ -975,7 +995,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
       {loading ? (
         <ActivityIndicator
           size="large"
-          color="#ffffff"
+          color={theme.colors.textPrimary}
           style={{ marginVertical: 20 }}
         />
       ) : dataFetchFailed ? (
@@ -984,7 +1004,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
           <MaterialCommunityIcons
             name="ticket-confirmation"
             size={40}
-            color="#555"
+            color={theme.colors.borderStrong}
           />
           <Text style={styles.noTicketsText}>Could not load your tickets</Text>
           <TouchableOpacity
@@ -1009,7 +1029,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
                   <MaterialCommunityIcons
                     name="clock-outline"
                     size={18}
-                    color="#FF6B35"
+                    color={theme.colors.accent}
                   />
                   <Text style={styles.pendingSectionTitle}>
                     Pending Transfers
@@ -1065,6 +1085,8 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
                       event.id // Using the event ID directly which is more reliable
                     )
                   }
+                  styles={styles}
+                  theme={theme}
                 />
               ))}
             </View>
@@ -1117,7 +1139,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ isStandaloneScreen = false }) => {
                   <MaterialCommunityIcons
                     name="arrow-left"
                     size={24}
-                    color="white"
+                    color={theme.colors.textPrimary}
                   />
                 </TouchableOpacity>
               )}
@@ -1282,419 +1304,420 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingVertical: 10,
-    width: "100%",
-  },
-  headline: {
-    fontFamily,
-    textAlign: "center",
-    textTransform: "uppercase",
-    marginVertical: 16,
-    color: "white",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  noTicketsText: {
-    color: "#aaa",
-    textAlign: "center",
-    fontFamily,
-    marginTop: 16,
-  },
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      flex: 1,
+      paddingVertical: 10,
+      width: "100%",
+    },
+    headline: {
+      fontFamily,
+      textAlign: "center",
+      textTransform: "uppercase",
+      marginVertical: 16,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+      fontSize: 16,
+    },
+    noTicketsText: {
+      color: theme.colors.textSecondary,
+      textAlign: "center",
+      fontFamily,
+      marginTop: 16,
+    },
 
-  // Error handling styles
-  errorBanner: {
-    flexDirection: "row",
-    backgroundColor: "rgba(255, 204, 0, 0.15)",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  errorText: {
-    color: "#ffcc00",
-    fontFamily,
-    marginLeft: 8,
-    fontSize: 14,
-  },
-  errorContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
-  },
-  errorMessageText: {
-    color: "#ff6666",
-    fontFamily,
-    textAlign: "center",
-    marginVertical: 8,
-    fontSize: 14,
-  },
-  retryButton: {
-    backgroundColor: "#333",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  retryButtonText: {
-    color: "white",
-    fontFamily,
-    fontWeight: "600",
-  },
-  centeredContent: {
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
-    paddingBottom: 40,
-  },
+    // Error handling styles
+    errorBanner: {
+      flexDirection: "row",
+      backgroundColor: "rgba(255, 204, 0, 0.15)",
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 6,
+      marginHorizontal: 16,
+      marginBottom: 16,
+      alignItems: "center",
+    },
+    errorText: {
+      color: theme.colors.warning,
+      fontFamily,
+      marginLeft: 8,
+      fontSize: 14,
+    },
+    errorContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 16,
+    },
+    errorMessageText: {
+      color: theme.colors.danger,
+      fontFamily,
+      textAlign: "center",
+      marginVertical: 8,
+      fontSize: 14,
+    },
+    retryButton: {
+      backgroundColor: theme.colors.borderSubtle,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 6,
+      marginTop: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    retryButtonText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontWeight: "600",
+    },
+    centeredContent: {
+      alignItems: "center",
+      justifyContent: "center",
+      flex: 1,
+      paddingBottom: 40,
+    },
 
-  // Updated card styles for larger vertical size
-  cardsContainer: {
-    alignItems: "center", // Center cards horizontally
-    paddingVertical: 12,
-  },
-  // Pending transfers section styles
-  pendingSection: {
-    width: screenWidth * 0.9,
-    marginBottom: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  pendingSectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  pendingTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  pendingSectionTitle: {
-    color: "white",
-    fontFamily,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  pendingBadge: {
-    backgroundColor: "#FF6B35",
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    minWidth: 20,
-    alignItems: "center",
-  },
-  pendingBadgeText: {
-    color: "white",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  viewAllLink: {
-    color: "#FF6B35",
-    fontFamily,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  cardWrapper: {
-    width: "100%",
-    alignItems: "center", // Center the card
-  },
-  cardContainer: {
-    width: screenWidth * 0.9, // 90% of screen width
-    backgroundColor: "#1a1a1a",
-    marginVertical: 12,
-    borderRadius: 16,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#333",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  cardContent: {
-    width: "100%",
-  },
-  imageSection: {
-    position: "relative",
-  },
-  cardImage: {
-    width: "100%",
-    height: 200,
-    resizeMode: "cover",
-  },
-  dateContainer: {
-    position: "absolute",
-    right: 10,
-    top: 10,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  dateText: {
-    color: "white",
-    fontSize: 13,
-    fontWeight: "600",
-    fontFamily,
-  },
-  cardDetails: {
-    padding: 20,
-    flexDirection: "column",
-    justifyContent: "space-between",
-    gap: 16,
-  },
-  eventTitle: {
-    color: "white",
-    fontFamily,
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 6,
-    lineHeight: 24,
-  },
-  transferSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#333",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  transferText: {
-    color: "white",
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily,
-  },
-  innerContainer: {
-    marginVertical: 6,
-    marginHorizontal: 0,
-    borderRadius: 8,
-    backgroundColor: "#1a1a1a",
-    borderWidth: 1,
-    borderColor: "#333",
-    overflow: "hidden",
-  },
-  itemContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    padding: 12,
-  },
-  tinyLogo: {
-    width: 36,
-    height: 36,
-    borderRadius: 4,
-  },
-  text: {
-    color: "white",
-    fontFamily,
-    fontWeight: "500",
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-  },
-  modalContent: {
-    backgroundColor: "#1a1a1a",
-    borderRadius: 8,
-    width: "80%",
-    padding: 20,
-    alignItems: "center",
-    elevation: 5,
-    height: modalContentHeight,
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  ticketInfoContainer: {
-    alignItems: "center",
-    marginVertical: 16,
-  },
-  ticketName: {
-    fontFamily,
-    fontWeight: "700",
-    fontSize: 18,
-    marginBottom: 12,
-    textAlign: "center",
-    color: "white",
-  },
-  ticketImage: {
-    width: 100,
-    height: 100,
-    marginBottom: 12,
-    borderRadius: 8,
-  },
-  ticketQuantity: {
-    fontFamily,
-    fontSize: 16,
-    textAlign: "center",
-    fontWeight: "500",
-    color: "white",
-  },
-  cameraContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
-    marginVertical: 16,
-  },
-  camera: {
-    height: 200,
-    width: 200,
-    borderRadius: 8,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  cancelButton: {
-    backgroundColor: "#222",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    width: "100%",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#555",
-    marginTop: 16,
-  },
-  cancelButtonText: {
-    fontFamily,
-    color: "white",
-    fontWeight: "600",
-    textTransform: "uppercase",
-    textAlign: "center",
-  },
-  buttonText: {
-    fontWeight: "600",
-    color: "white",
-    textTransform: "uppercase",
-    textAlign: "center",
-    fontFamily,
-  },
-  actionButton: {
-    backgroundColor: "#222",
-    borderColor: "#555",
-    alignSelf: "center",
-    alignItems: "center",
-    width: "50%",
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    margin: 10,
-  },
-  modalText: {
-    fontWeight: "700",
-    color: "white",
-    textAlign: "center",
-    fontSize: 20,
-    fontFamily,
-  },
-  permissionContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 200,
-    width: 200,
-    borderRadius: 8,
-    backgroundColor: "#222",
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  permissionText: {
-    color: "white",
-    textAlign: "center",
-    marginBottom: 16,
-    fontFamily,
-    padding: 8,
-  },
-  permissionButton: {
-    backgroundColor: "#333",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  permissionButtonText: {
-    color: "white",
-    fontFamily,
-    fontWeight: "600",
-  },
-  // Standalone screen styles
-  standaloneContainer: {
-    flex: 1,
-    paddingTop: Platform.OS === "ios" ? 50 : 30,
-    paddingHorizontal: 16,
-    width: "100%",
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingVertical: 8,
-  },
-  backButtonText: {
-    color: "white",
-    fontFamily,
-    fontSize: 16,
-    marginLeft: 8,
-  },
-  // Modal header styles for transfer modes
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    marginBottom: 16,
-    position: "relative",
-    minHeight: 32,
-  },
-  modalBackButton: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-    padding: 4,
-  },
-  // Container styles for transfer modes
-  methodPickerContainer: {
-    width: "100%",
-    marginVertical: 8,
-  },
-  usernameFormContainer: {
-    width: "100%",
-    flex: 1,
-    minHeight: 300,
-    marginVertical: 8,
-    overflow: "hidden",
-  },
-  emailFormContainer: {
-    width: "100%",
-    marginTop: 8,
-  },
-  recipientPreviewContainer: {
-    width: "100%",
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
+    // Updated card styles for larger vertical size
+    cardsContainer: {
+      alignItems: "center",
+      paddingVertical: 12,
+    },
+    // Pending transfers section styles
+    pendingSection: {
+      width: screenWidth * 0.9,
+      marginBottom: 16,
+      paddingBottom: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderSubtle,
+    },
+    pendingSectionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    pendingTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    pendingSectionTitle: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 15,
+      fontWeight: "600",
+    },
+    pendingBadge: {
+      backgroundColor: theme.colors.accent,
+      borderRadius: 10,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      minWidth: 20,
+      alignItems: "center",
+    },
+    pendingBadgeText: {
+      color: theme.colors.textPrimary,
+      fontSize: 11,
+      fontWeight: "700",
+    },
+    viewAllLink: {
+      color: theme.colors.accent,
+      fontFamily,
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    cardWrapper: {
+      width: "100%",
+      alignItems: "center",
+    },
+    cardContainer: {
+      width: screenWidth * 0.9,
+      backgroundColor: theme.colors.bgElev1,
+      marginVertical: 12,
+      borderRadius: 16,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+      elevation: 4,
+      shadowColor: theme.colors.bgRoot,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    },
+    cardContent: {
+      width: "100%",
+    },
+    imageSection: {
+      position: "relative",
+    },
+    cardImage: {
+      width: "100%",
+      height: 200,
+      resizeMode: "cover",
+    },
+    dateContainer: {
+      position: "absolute",
+      right: 10,
+      top: 10,
+      backgroundColor: "rgba(0,0,0,0.7)",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 6,
+    },
+    dateText: {
+      color: theme.colors.textPrimary,
+      fontSize: 13,
+      fontWeight: "600",
+      fontFamily,
+    },
+    cardDetails: {
+      padding: 20,
+      flexDirection: "column",
+      justifyContent: "space-between",
+      gap: 16,
+    },
+    eventTitle: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 6,
+      lineHeight: 24,
+    },
+    transferSection: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.colors.borderSubtle,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    transferText: {
+      color: theme.colors.textPrimary,
+      marginLeft: 8,
+      fontSize: 14,
+      fontWeight: "600",
+      fontFamily,
+    },
+    innerContainer: {
+      marginVertical: 6,
+      marginHorizontal: 0,
+      borderRadius: 8,
+      backgroundColor: theme.colors.bgElev1,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+      overflow: "hidden",
+    },
+    itemContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      width: "100%",
+      padding: 12,
+    },
+    tinyLogo: {
+      width: 36,
+      height: 36,
+      borderRadius: 4,
+    },
+    text: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontWeight: "500",
+    },
+    modalContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.8)",
+    },
+    modalContent: {
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 8,
+      width: "80%",
+      padding: 20,
+      alignItems: "center",
+      elevation: 5,
+      height: modalContentHeight,
+      justifyContent: "space-between",
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+    },
+    ticketInfoContainer: {
+      alignItems: "center",
+      marginVertical: 16,
+    },
+    ticketName: {
+      fontFamily,
+      fontWeight: "700",
+      fontSize: 18,
+      marginBottom: 12,
+      textAlign: "center",
+      color: theme.colors.textPrimary,
+    },
+    ticketImage: {
+      width: 100,
+      height: 100,
+      marginBottom: 12,
+      borderRadius: 8,
+    },
+    ticketQuantity: {
+      fontFamily,
+      fontSize: 16,
+      textAlign: "center",
+      fontWeight: "500",
+      color: theme.colors.textPrimary,
+    },
+    cameraContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      width: "100%",
+      marginVertical: 16,
+    },
+    camera: {
+      height: 200,
+      width: 200,
+      borderRadius: 8,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+    },
+    cancelButton: {
+      backgroundColor: theme.colors.bgElev2,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 8,
+      width: "100%",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      marginTop: 16,
+    },
+    cancelButtonText: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+      textTransform: "uppercase",
+      textAlign: "center",
+    },
+    buttonText: {
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+      textTransform: "uppercase",
+      textAlign: "center",
+      fontFamily,
+    },
+    actionButton: {
+      backgroundColor: theme.colors.bgElev2,
+      borderColor: theme.colors.borderStrong,
+      alignSelf: "center",
+      alignItems: "center",
+      width: "50%",
+      borderRadius: 8,
+      padding: 12,
+      borderWidth: 1,
+      margin: 10,
+    },
+    modalText: {
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      textAlign: "center",
+      fontSize: 20,
+      fontFamily,
+    },
+    permissionContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      height: 200,
+      width: 200,
+      borderRadius: 8,
+      backgroundColor: theme.colors.bgElev2,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    permissionText: {
+      color: theme.colors.textPrimary,
+      textAlign: "center",
+      marginBottom: 16,
+      fontFamily,
+      padding: 8,
+    },
+    permissionButton: {
+      backgroundColor: theme.colors.borderSubtle,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    permissionButtonText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontWeight: "600",
+    },
+    // Standalone screen styles
+    standaloneContainer: {
+      flex: 1,
+      paddingTop: Platform.OS === "ios" ? 50 : 30,
+      paddingHorizontal: 16,
+      width: "100%",
+    },
+    backButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 16,
+      paddingVertical: 8,
+    },
+    backButtonText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 16,
+      marginLeft: 8,
+    },
+    // Modal header styles for transfer modes
+    modalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "100%",
+      marginBottom: 16,
+      position: "relative",
+      minHeight: 32,
+    },
+    modalBackButton: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      bottom: 0,
+      justifyContent: "center",
+      padding: 4,
+    },
+    // Container styles for transfer modes
+    methodPickerContainer: {
+      width: "100%",
+      marginVertical: 8,
+    },
+    usernameFormContainer: {
+      width: "100%",
+      flex: 1,
+      minHeight: 300,
+      marginVertical: 8,
+      overflow: "hidden",
+    },
+    emailFormContainer: {
+      width: "100%",
+      marginTop: 8,
+    },
+    recipientPreviewContainer: {
+      width: "100%",
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+  } as const);
 
 export default MyEvents;

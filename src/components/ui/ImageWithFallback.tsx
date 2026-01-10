@@ -3,12 +3,13 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ImageSourcePropType,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import {
   CACHE_POLICIES,
   ImageCacheOptions,
@@ -81,7 +82,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   style,
   renderFallback,
   showLoadingIndicator = true,
-  loadingIndicatorColor = GlobalStyles.colors.red4,
+  loadingIndicatorColor,
   loadingIndicatorSize = "small",
   onLoadSuccess,
   onLoadError,
@@ -95,6 +96,9 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   testID,
   ...props
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const indicatorColor = loadingIndicatorColor ?? theme.colors.accent;
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
@@ -237,7 +241,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         <ActivityIndicator
           style={styles.loadingIndicator}
           size={loadingIndicatorSize}
-          color={loadingIndicatorColor}
+          color={indicatorColor}
         />
       )}
 
@@ -256,46 +260,47 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    position: "relative",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  loadingIndicator: {
-    position: "absolute",
-  },
-  errorContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    padding: 8,
-    alignItems: "center",
-  },
-  errorText: {
-    color: "white",
-    fontSize: 12,
-    textAlign: "center",
-  },
-  retryButton: {
-    position: "absolute",
-    backgroundColor: GlobalStyles.colors.red4,
-    paddingHorizontal: 15,
-    paddingVertical: 6,
-    borderRadius: 4,
-  },
-  retryButtonText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      position: "relative",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    image: {
+      width: "100%",
+      height: "100%",
+      resizeMode: "cover",
+    },
+    loadingIndicator: {
+      position: "absolute",
+    },
+    errorContainer: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      padding: 8,
+      alignItems: "center",
+    },
+    errorText: {
+      color: theme.colors.textPrimary,
+      fontSize: 12,
+      textAlign: "center",
+    },
+    retryButton: {
+      position: "absolute",
+      backgroundColor: theme.colors.accent,
+      paddingHorizontal: 15,
+      paddingVertical: 6,
+      borderRadius: 4,
+    },
+    retryButtonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 12,
+      fontWeight: "bold",
+    },
+  } as const);
 
 export default ImageWithFallback;

@@ -1,6 +1,8 @@
 import React from "react";
-import { StyleSheet, Switch, Text, View } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { Switch, Text, View } from "react-native";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 interface SettingsToggleProps {
   label: string;
@@ -23,6 +25,9 @@ export function SettingsToggle({
   onValueChange,
   disabled = false,
 }: SettingsToggleProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={[styles.container, disabled && styles.disabled]}>
       <View style={styles.textContainer}>
@@ -34,8 +39,8 @@ export function SettingsToggle({
         onValueChange={onValueChange}
         disabled={disabled}
         trackColor={{
-          false: GlobalStyles.colors.grey6,
-          true: GlobalStyles.colors.primary,
+          false: theme.colors.bgElev2,
+          true: theme.colors.accent,
         }}
         thumbColor="#FFFFFF"
       />
@@ -43,34 +48,35 @@ export function SettingsToggle({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: GlobalStyles.colors.background,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: GlobalStyles.colors.border,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  textContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  label: {
-    fontSize: 16,
-    color: GlobalStyles.colors.text,
-  },
-  description: {
-    fontSize: 13,
-    color: GlobalStyles.colors.textSecondary,
-    marginTop: 4,
-    lineHeight: 18,
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      backgroundColor: theme.colors.bgElev1,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.colors.borderSubtle,
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+    textContainer: {
+      flex: 1,
+      marginRight: 12,
+    },
+    label: {
+      fontSize: 16,
+      color: theme.colors.textPrimary,
+    },
+    description: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+      lineHeight: 18,
+    },
+  } as const);
 
 export default SettingsToggle;

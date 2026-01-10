@@ -15,7 +15,6 @@ import {
   Dimensions,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -24,8 +23,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import { ImageWithFallback } from "../../../components/ui";
+import type { Theme } from "../../../constants/themes";
+import { useTheme } from "../../../contexts/ThemeContext";
 import { useAuth } from "../../../hooks/AuthContext";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { useUserProfileWithHelpers } from "../../../hooks/useUserProfile";
 import {
   selectLocalId,
@@ -84,6 +86,8 @@ enum UploadState {
 // Convert to default export
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [showEditProfileModal, setShowEditProfileModal] =
@@ -480,7 +484,7 @@ export default function AccountScreen() {
       <View style={styles.uploadOverlay}>
         {uploadState === UploadState.UPLOADING && (
           <>
-            <ActivityIndicator size="large" color="#ffffff" />
+            <ActivityIndicator size="large" color={theme.colors.textPrimary} />
             <Text style={styles.uploadStatusText}>
               {uploadProgress <= 25 ? "Compressing..." : "Uploading..."}{" "}
               {uploadProgress.toFixed(0)}%
@@ -543,7 +547,7 @@ export default function AccountScreen() {
         {/* Show loading indicator while fetching profile data */}
         {isLoadingProfile ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#ffffff" />
+            <ActivityIndicator size="large" color={theme.colors.textPrimary} />
             <Text style={styles.loadingText}>Loading profile...</Text>
           </View>
         ) : profileError ? (
@@ -592,7 +596,7 @@ export default function AccountScreen() {
                     style={styles.profilePicture}
                     resizeMode="cover"
                     showLoadingIndicator={true}
-                    loadingIndicatorColor="#ff3c00"
+                    loadingIndicatorColor={theme.colors.accent}
                     loadingIndicatorSize="large"
                     maxRetries={3}
                     showRetryButton={imageError !== null}
@@ -752,187 +756,188 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingVertical: 10, // Reduced from 20px to maximize content area
-    paddingHorizontal: 15, // Reduced from 20px to be more efficient
-  },
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#000",
-  },
-  loadingText: {
-    color: "white",
-    fontSize: 16,
-    marginTop: 16,
-    fontFamily,
-  },
-  errorText: {
-    color: "#ff6b6b",
-    fontSize: 16,
-    marginTop: 16,
-    marginBottom: 16,
-    textAlign: "center",
-    fontFamily,
-  },
-  modalContainer: {
-    width: "100%",
-    flex: 1,
-    marginTop: 20,
-    alignItems: "center",
-    justifyContent: "flex-start",
-  },
-  nameTag: {
-    fontFamily,
-    fontWeight: "700",
-    fontSize: 24,
-    marginTop: 16,
-    marginBottom: 8,
-    color: "white",
-  },
-  profilePictureContainer: {
-    borderRadius: 10,
-    overflow: "hidden",
-    borderWidth: 2,
-    borderColor: "#333",
-    marginTop: 20,
-    position: "relative",
-  },
-  profilePicture: {
-    width: Dimensions.get("window").width * 0.45,
-    height: Dimensions.get("window").width * 0.45,
-  },
-  uploadOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 10,
-  },
-  uploadStatusText: {
-    color: "white",
-    marginTop: 10,
-    fontSize: 14,
-    fontFamily,
-    textAlign: "center",
-    paddingHorizontal: 10,
-  },
-  uploadSubtext: {
-    color: "rgba(255, 255, 255, 0.8)",
-    marginTop: 5,
-    fontSize: 12,
-    fontFamily,
-    textAlign: "center",
-    paddingHorizontal: 10,
-    fontStyle: "italic",
-  },
-  uploadSuccessIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#4CAF50",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  uploadSuccessIconText: {
-    color: "white",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  uploadErrorIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#FF5252",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  uploadErrorIconText: {
-    color: "white",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  retryButton: {
-    marginTop: 15,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    backgroundColor: "#333",
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  retryButtonText: {
-    color: "white",
-    fontSize: 14,
-    fontFamily,
-    fontWeight: "600",
-  },
-  footerText: {
-    textAlign: "center",
-    fontFamily,
-    fontSize: 14,
-    padding: 16,
-    color: "#aaa",
-    fontWeight: "500",
-  },
-  actionButton: {
-    marginVertical: 16,
-    borderWidth: 1,
-    padding: 12,
-    borderRadius: 8,
-    width: "50%",
-    alignItems: "center",
-    borderColor: "#555",
-    backgroundColor: "#222",
-  },
-  buttonText: {
-    fontFamily,
-    color: "white",
-    fontWeight: "600",
-  },
-  tabContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 16,
-    marginBottom: 8,
-    width: "100%",
-  },
-  tabButton: {
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#555",
-    backgroundColor: "#111",
-    flex: 1,
-    marginHorizontal: 4,
-    height: 45,
-  },
-  activeTabButton: {
-    borderColor: "#ff3c00",
-    backgroundColor: "#222",
-  },
-  activeButtonText: {
-    color: "#ff3c00",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    root: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingVertical: 10, // Reduced from 20px to maximize content area
+      paddingHorizontal: 15, // Reduced from 20px to be more efficient
+    },
+    container: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.bgRoot,
+    },
+    loadingText: {
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      marginTop: 16,
+      fontFamily,
+    },
+    errorText: {
+      color: theme.colors.danger,
+      fontSize: 16,
+      marginTop: 16,
+      marginBottom: 16,
+      textAlign: "center",
+      fontFamily,
+    },
+    modalContainer: {
+      width: "100%",
+      flex: 1,
+      marginTop: 20,
+      alignItems: "center",
+      justifyContent: "flex-start",
+    },
+    nameTag: {
+      fontFamily,
+      fontWeight: "700",
+      fontSize: 24,
+      marginTop: 16,
+      marginBottom: 8,
+      color: theme.colors.textPrimary,
+    },
+    profilePictureContainer: {
+      borderRadius: 10,
+      overflow: "hidden",
+      borderWidth: 2,
+      borderColor: theme.colors.borderSubtle,
+      marginTop: 20,
+      position: "relative",
+    },
+    profilePicture: {
+      width: Dimensions.get("window").width * 0.45,
+      height: Dimensions.get("window").width * 0.45,
+    },
+    uploadOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      justifyContent: "center",
+      alignItems: "center",
+      borderRadius: 10,
+    },
+    uploadStatusText: {
+      color: theme.colors.textPrimary,
+      marginTop: 10,
+      fontSize: 14,
+      fontFamily,
+      textAlign: "center",
+      paddingHorizontal: 10,
+    },
+    uploadSubtext: {
+      color: theme.colors.textSecondary,
+      marginTop: 5,
+      fontSize: 12,
+      fontFamily,
+      textAlign: "center",
+      paddingHorizontal: 10,
+      fontStyle: "italic",
+    },
+    uploadSuccessIcon: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: theme.colors.success,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    uploadSuccessIconText: {
+      color: theme.colors.textPrimary,
+      fontSize: 24,
+      fontWeight: "bold",
+    },
+    uploadErrorIcon: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: theme.colors.danger,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    uploadErrorIconText: {
+      color: theme.colors.textPrimary,
+      fontSize: 24,
+      fontWeight: "bold",
+    },
+    retryButton: {
+      marginTop: 15,
+      paddingHorizontal: 20,
+      paddingVertical: 8,
+      backgroundColor: theme.colors.borderSubtle,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    retryButtonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      fontFamily,
+      fontWeight: "600",
+    },
+    footerText: {
+      textAlign: "center",
+      fontFamily,
+      fontSize: 14,
+      padding: 16,
+      color: theme.colors.textSecondary,
+      fontWeight: "500",
+    },
+    actionButton: {
+      marginVertical: 16,
+      borderWidth: 1,
+      padding: 12,
+      borderRadius: 8,
+      width: "50%",
+      alignItems: "center",
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.bgElev2,
+    },
+    buttonText: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    tabContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 16,
+      marginBottom: 8,
+      width: "100%",
+    },
+    tabButton: {
+      padding: 12,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.bgElev1,
+      flex: 1,
+      marginHorizontal: 4,
+      height: 45,
+    },
+    activeTabButton: {
+      borderColor: theme.colors.accent,
+      backgroundColor: theme.colors.bgElev2,
+    },
+    activeButtonText: {
+      color: theme.colors.accent,
+    },
+  } as const);

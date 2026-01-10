@@ -1,6 +1,7 @@
 import { ImageProps as ExpoImageProps } from "expo-image";
 import React, { useCallback, useRef, useState } from "react";
 import { ImageSourcePropType, View, ViewStyle } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
 import ImageWithFallback from "./ImageWithFallback";
 
 // Define the props interface locally since it's not exported from ImageWithFallback
@@ -59,6 +60,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
   cacheType = "LAZY_LIST",
   ...imageProps
 }) => {
+  const { theme } = useTheme();
   const [shouldLoad, setShouldLoad] = useState(!lazy);
   const viewRef = useRef<View>(null);
 
@@ -89,7 +91,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
   return (
     <View
       ref={viewRef}
-      style={[containerStyle, { backgroundColor: "#1a1a1a" }]}
+      style={[containerStyle, { backgroundColor: theme.colors.bgElev1 }]}
       onLayout={handleLayout}
     >
       {placeholder}

@@ -4,12 +4,14 @@ import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useImageCompression } from "../../hooks/useImageCompression";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import {
   COMPRESSION_PRESETS,
   ImageCompressionOptions,
@@ -80,6 +82,8 @@ export const CompressedImageUploader: React.FC<
   accessibilityLabel = "Select image",
   accessibilityHint = "Tap to select and upload an image",
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -178,7 +182,7 @@ export const CompressedImageUploader: React.FC<
       <View style={[styles.overlay, overlayStyle]}>
         {isCompressing && (
           <>
-            <ActivityIndicator size="large" color="#ffffff" />
+            <ActivityIndicator size="large" color={theme.colors.textPrimary} />
             <Text style={styles.overlayText}>
               Compressing... {compressionProgress.toFixed(0)}%
             </Text>
@@ -187,7 +191,7 @@ export const CompressedImageUploader: React.FC<
 
         {isUploading && (
           <>
-            <ActivityIndicator size="large" color="#ffffff" />
+            <ActivityIndicator size="large" color={theme.colors.textPrimary} />
             <Text style={styles.overlayText}>
               Uploading... {uploadProgress.toFixed(0)}%
             </Text>
@@ -239,67 +243,68 @@ export const CompressedImageUploader: React.FC<
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    position: "relative",
-    overflow: "hidden",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  overlayText: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-    marginTop: 8,
-  },
-  subText: {
-    color: "rgba(255, 255, 255, 0.8)",
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 4,
-    fontStyle: "italic",
-  },
-  errorIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#ff4444",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorIconText: {
-    color: "#ffffff",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  retryButton: {
-    marginTop: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#333",
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  retryButtonText: {
-    color: "#ffffff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      position: "relative",
+      overflow: "hidden",
+    },
+    image: {
+      width: "100%",
+      height: "100%",
+    },
+    overlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.75)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 16,
+    },
+    overlayText: {
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      fontWeight: "600",
+      textAlign: "center",
+      marginTop: 8,
+    },
+    subText: {
+      color: "rgba(255, 255, 255, 0.8)",
+      fontSize: 12,
+      textAlign: "center",
+      marginTop: 4,
+      fontStyle: "italic",
+    },
+    errorIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.danger,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    errorIconText: {
+      color: theme.colors.textPrimary,
+      fontSize: 20,
+      fontWeight: "bold",
+    },
+    retryButton: {
+      marginTop: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: theme.colors.bgElev2,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    retryButtonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 12,
+      fontWeight: "600",
+    },
+  } as const);
 
 export default CompressedImageUploader;

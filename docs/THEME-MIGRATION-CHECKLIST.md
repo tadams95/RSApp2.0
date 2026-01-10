@@ -157,62 +157,62 @@ const styles = useThemedStyles((theme) => ({
 
 ---
 
-## 🔲 Phase E: Supporting Components (Priority 9-13)
+## ✅ Phase E: Supporting Components (Priority 9-13)
 
 ### Priority 9: Account & Settings
 
 | Status | File                                    | Tokens to Apply                                                   |
 | ------ | --------------------------------------- | ----------------------------------------------------------------- |
-| [ ]    | `src/app/(app)/account/index.tsx`       | `bgRoot` screen, `bgElev1` menu sections                          |
-| [ ]    | `src/components/ui/SettingsSection.tsx` | `bgElev1` section, `borderSubtle` borders, `textTertiary` headers |
-| [ ]    | `src/components/ui/SettingsToggle.tsx`  | `bgElev2` track, `accent` when on, `textPrimary` label            |
+| [x]    | `src/app/(app)/account/index.tsx`       | `bgRoot` screen, `bgElev1` menu sections                          |
+| [x]    | `src/components/ui/SettingsSection.tsx` | `bgElev1` section, `borderSubtle` borders, `textTertiary` headers |
+| [x]    | `src/components/ui/SettingsToggle.tsx`  | `bgElev2` track, `accent` when on, `textPrimary` label            |
 
-### Priority 10: Modal Components
+### Priority 10: Modal Components ✅ COMPLETE
 
 | Status | File                                       | Tokens to Apply                                                              |
 | ------ | ------------------------------------------ | ---------------------------------------------------------------------------- |
-| [ ]    | `src/components/modals/EditProfile.tsx`    | `bgElev1` modal, `radius.composer` (20px), `shadows.modal`, `bgElev2` inputs |
-| [ ]    | `src/components/modals/SettingsModal.tsx`  | `bgElev1` modal, `borderSubtle` dividers, `textPrimary` options              |
-| [ ]    | `src/components/modals/QRModal.tsx`        | `bgElev1` modal, white QR background preserved                               |
-| [ ]    | `src/components/modals/HistoryModal.tsx`   | `bgElev1` modal, `bgElev2` list items                                        |
-| [ ]    | `src/components/modals/AdminModal.tsx`     | `bgElev1` modal, `danger` destructive actions                                |
-| [ ]    | `src/components/modals/EventAdminView.tsx` | `bgElev1` container, admin action buttons                                    |
-| [ ]    | `src/components/modals/MyEvents.tsx`       | `bgElev1` modal, event list theming                                          |
+| [x]    | `src/components/modals/EditProfile.tsx`    | `bgElev1` modal, `radius.composer` (20px), `shadows.modal`, `bgElev2` inputs |
+| [x]    | `src/components/modals/SettingsModal.tsx`  | `bgElev1` modal, `borderSubtle` dividers, `textPrimary` options              |
+| [x]    | `src/components/modals/QRModal.tsx`        | `bgElev1` modal, white QR background preserved                               |
+| [x]    | `src/components/modals/HistoryModal.tsx`   | `bgElev1` modal, `bgElev2` list items                                        |
+| [x]    | `src/components/modals/AdminModal.tsx`     | `bgElev1` modal, `danger` destructive actions                                |
+| [x]    | `src/components/modals/EventAdminView.tsx` | `bgElev1` container, admin action buttons                                    |
+| [x]    | `src/components/modals/MyEvents.tsx`       | `bgElev1` modal, event list theming                                          |
 
-### Priority 11: Shared UI Components
+### Priority 11: Shared UI Components ✅ COMPLETE
 
 | Status | File                                            | Tokens to Apply                                                    |
 | ------ | ----------------------------------------------- | ------------------------------------------------------------------ |
-| [ ]    | `src/components/ui/ContentContainer.tsx`        | `bgRoot` or `bgElev1` based on context                             |
-| [ ]    | `src/components/ui/ScreenWrapper.tsx`           | `bgRoot` wrapper, SafeArea theming                                 |
-| [ ]    | `src/components/ui/ProfileFormInput.tsx`        | `bgElev2` input, `borderSubtle` border, `textTertiary` placeholder |
-| [ ]    | `src/components/ui/NetworkStatusBanner.tsx`     | `warning` background for offline, `success` for reconnected        |
-| [ ]    | `src/components/ui/PaginatedList.tsx`           | Loading indicator `accent`, empty state `textSecondary`            |
-| [ ]    | `src/components/ui/LazyImage.tsx`               | `bgElev2` placeholder                                              |
-| [ ]    | `src/components/ui/ProgressiveImage.tsx`        | `bgElev2` loading state                                            |
-| [ ]    | `src/components/ui/ImageWithFallback.tsx`       | `bgElev2` fallback background                                      |
-| [ ]    | `src/components/ui/AppCarousel.tsx`             | `bgElev1` container, pagination dots `accent`/`textTertiary`       |
-| [ ]    | `src/components/ui/CompressedImageUploader.tsx` | `bgElev2` upload area, `borderSubtle` dashed border                |
+| [x]    | `src/components/ui/ContentContainer.tsx`        | `bgRoot` or `bgElev1` based on context                             |
+| [x]    | `src/components/ui/ScreenWrapper.tsx`           | `bgRoot` wrapper, SafeArea theming                                 |
+| [x]    | `src/components/ui/ProfileFormInput.tsx`        | `bgElev2` input, `borderSubtle` border, `textTertiary` placeholder |
+| [x]    | `src/components/ui/NetworkStatusBanner.tsx`     | `warning` background for offline, `success` for reconnected        |
+| [x]    | `src/components/ui/PaginatedList.tsx`           | Loading indicator `accent`, empty state `textSecondary`            |
+| [x]    | `src/components/ui/LazyImage.tsx`               | `bgElev1` placeholder                                              |
+| [x]    | `src/components/ui/ProgressiveImage.tsx`        | `bgElev2` loading state                                            |
+| [x]    | `src/components/ui/ImageWithFallback.tsx`       | `bgElev2` fallback background                                      |
+| [x]    | `src/components/ui/AppCarousel.tsx`             | `bgElev1` container, pagination dots `accent`/`textTertiary`       |
+| [x]    | `src/components/ui/CompressedImageUploader.tsx` | `bgElev2` upload area, `borderSubtle` dashed border                |
 
-### Priority 12: Error & Status Components
+### Priority 12: Error & Status Components ✅
 
 | Status | File                                                  | Tokens to Apply                                                  |
 | ------ | ----------------------------------------------------- | ---------------------------------------------------------------- |
-| [ ]    | `src/components/ErrorBoundary.tsx`                    | `bgRoot` screen, `danger` icon, `textPrimary` message            |
-| [ ]    | `src/components/ErrorUI.tsx`                          | `bgElev1` error card, `danger` accent                            |
-| [ ]    | `src/components/LoadingOverlay.tsx`                   | Semi-transparent `bgRoot`, `accent` spinner                      |
-| [ ]    | `src/components/LoginErrorNotice.tsx`                 | `danger` background/border, `textPrimary` on danger              |
-| [ ]    | `src/components/SignupErrorNotice.tsx`                | Same as LoginErrorNotice                                         |
-| [ ]    | `src/components/PasswordResetErrorNotice.tsx`         | Same as LoginErrorNotice                                         |
-| [ ]    | `src/components/ProfileUpdateErrorNotice.tsx`         | `danger` styling                                                 |
-| [ ]    | `src/components/RealtimeDatabaseConnectionStatus.tsx` | `success` connected, `warning` connecting, `danger` disconnected |
+| [x]    | `src/components/ErrorBoundary.tsx`                    | `bgRoot` screen, `danger` icon, `textPrimary` message            |
+| [x]    | `src/components/ErrorUI.tsx`                          | `bgElev1` error card, `danger` accent                            |
+| [x]    | `src/components/LoadingOverlay.tsx`                   | Semi-transparent `bgRoot`, `accent` spinner                      |
+| [x]    | `src/components/LoginErrorNotice.tsx`                 | `danger` background/border, `textPrimary` on danger              |
+| [x]    | `src/components/SignupErrorNotice.tsx`                | Same as LoginErrorNotice                                         |
+| [x]    | `src/components/PasswordResetErrorNotice.tsx`         | Same as LoginErrorNotice                                         |
+| [x]    | `src/components/ProfileUpdateErrorNotice.tsx`         | `danger` styling                                                 |
+| [x]    | `src/components/RealtimeDatabaseConnectionStatus.tsx` | `success` connected, `warning` connecting, `danger` disconnected |
 
-### Priority 13: Debug Components (Optional)
+### Priority 13: Debug Components (Optional) ✅
 
 | Status | File                                             | Tokens to Apply                        |
 | ------ | ------------------------------------------------ | -------------------------------------- |
-| [ ]    | `src/components/debug/ImageCacheMonitor.tsx`     | `bgElev1` panel, `textSecondary` stats |
-| [ ]    | `src/components/debug/NotificationTestPanel.tsx` | `bgElev1` panel, `accent` test buttons |
+| [x]    | `src/components/debug/ImageCacheMonitor.tsx`     | `bgElev1` panel, `textSecondary` stats |
+| [x]    | `src/components/debug/NotificationTestPanel.tsx` | `bgElev1` panel, `accent` test buttons |
 
 ---
 

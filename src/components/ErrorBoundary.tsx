@@ -3,6 +3,8 @@ import { router } from "expo-router";
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { Button, Card, Surface, Text } from "react-native-paper";
+import type { Theme } from "../constants/themes";
+import { ThemeContext } from "../contexts/ThemeContext";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -80,61 +82,69 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         return this.props.fallbackComponent;
       }
 
-      // Default error UI
+      // Default error UI - use ThemeContext.Consumer for class component
       return (
-        <Surface style={styles.container}>
-          <Card style={styles.errorCard}>
-            <Card.Content style={styles.content}>
-              <View style={styles.iconContainer}>
-                <MaterialCommunityIcons
-                  name="alert-circle"
-                  size={64}
-                  color="#FF6B6B"
-                />
-              </View>
+        <ThemeContext.Consumer>
+          {({ theme }) => {
+            const styles = createStyles(theme);
+            return (
+              <Surface style={styles.container}>
+                <Card style={styles.errorCard}>
+                  <Card.Content style={styles.content}>
+                    <View style={styles.iconContainer}>
+                      <MaterialCommunityIcons
+                        name="alert-circle"
+                        size={64}
+                        color={theme.colors.danger}
+                      />
+                    </View>
 
-              <Text variant="headlineMedium" style={styles.title}>
-                Something went wrong
-              </Text>
-
-              <Text variant="bodyLarge" style={styles.message}>
-                We encountered an error while trying to display this content.
-              </Text>
-
-              {__DEV__ && this.state.error && (
-                <View style={styles.devErrorContainer}>
-                  <Text variant="bodySmall" style={styles.errorName}>
-                    {this.state.error.toString()}
-                  </Text>
-
-                  <ScrollView style={styles.stackTraceContainer}>
-                    <Text variant="bodySmall" style={styles.stackTrace}>
-                      {this.state.errorInfo?.componentStack || ""}
+                    <Text variant="headlineMedium" style={styles.title}>
+                      Something went wrong
                     </Text>
-                  </ScrollView>
-                </View>
-              )}
 
-              <View style={styles.buttonContainer}>
-                <Button
-                  mode="contained"
-                  onPress={this.resetErrorBoundary}
-                  style={styles.button}
-                >
-                  Try Again
-                </Button>
+                    <Text variant="bodyLarge" style={styles.message}>
+                      We encountered an error while trying to display this
+                      content.
+                    </Text>
 
-                <Button
-                  mode="outlined"
-                  onPress={this.navigateToHome}
-                  style={styles.button}
-                >
-                  Go Home
-                </Button>
-              </View>
-            </Card.Content>
-          </Card>
-        </Surface>
+                    {__DEV__ && this.state.error && (
+                      <View style={styles.devErrorContainer}>
+                        <Text variant="bodySmall" style={styles.errorName}>
+                          {this.state.error.toString()}
+                        </Text>
+
+                        <ScrollView style={styles.stackTraceContainer}>
+                          <Text variant="bodySmall" style={styles.stackTrace}>
+                            {this.state.errorInfo?.componentStack || ""}
+                          </Text>
+                        </ScrollView>
+                      </View>
+                    )}
+
+                    <View style={styles.buttonContainer}>
+                      <Button
+                        mode="contained"
+                        onPress={this.resetErrorBoundary}
+                        style={styles.button}
+                      >
+                        Try Again
+                      </Button>
+
+                      <Button
+                        mode="outlined"
+                        onPress={this.navigateToHome}
+                        style={styles.button}
+                      >
+                        Go Home
+                      </Button>
+                    </View>
+                  </Card.Content>
+                </Card>
+              </Surface>
+            );
+          }}
+        </ThemeContext.Consumer>
       );
     }
 
@@ -153,66 +163,67 @@ const areKeysChanged = (prevKeys: any[], nextKeys: any[]): boolean => {
   return false;
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  errorCard: {
-    width: "100%",
-    maxWidth: 500,
-    backgroundColor: "#1A1A1A", // Dark theme card
-    borderRadius: 12,
-  },
-  content: {
-    alignItems: "center",
-  },
-  iconContainer: {
-    marginBottom: 16,
-  },
-  title: {
-    marginBottom: 8,
-    textAlign: "center",
-    color: "#FFFFFF",
-  },
-  message: {
-    marginBottom: 24,
-    textAlign: "center",
-    color: "#CCCCCC",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    width: "100%",
-    marginTop: 16,
-  },
-  button: {
-    marginHorizontal: 8,
-    minWidth: 120,
-  },
-  devErrorContainer: {
-    width: "100%",
-    padding: 12,
-    backgroundColor: "#2A2A2A",
-    borderRadius: 8,
-    marginVertical: 16,
-  },
-  errorName: {
-    color: "#FF6B6B",
-    marginBottom: 8,
-    fontWeight: "bold",
-  },
-  stackTraceContainer: {
-    maxHeight: 200,
-  },
-  stackTrace: {
-    color: "#BBBBBB",
-    fontFamily: "monospace",
-    fontSize: 10,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 16,
+    },
+    errorCard: {
+      width: "100%",
+      maxWidth: 500,
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 12,
+    },
+    content: {
+      alignItems: "center",
+    },
+    iconContainer: {
+      marginBottom: 16,
+    },
+    title: {
+      marginBottom: 8,
+      textAlign: "center",
+      color: theme.colors.textPrimary,
+    },
+    message: {
+      marginBottom: 24,
+      textAlign: "center",
+      color: theme.colors.textSecondary,
+    },
+    buttonContainer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      width: "100%",
+      marginTop: 16,
+    },
+    button: {
+      marginHorizontal: 8,
+      minWidth: 120,
+    },
+    devErrorContainer: {
+      width: "100%",
+      padding: 12,
+      backgroundColor: theme.colors.bgElev2,
+      borderRadius: 8,
+      marginVertical: 16,
+    },
+    errorName: {
+      color: theme.colors.danger,
+      marginBottom: 8,
+      fontWeight: "bold",
+    },
+    stackTraceContainer: {
+      maxHeight: 200,
+    },
+    stackTrace: {
+      color: theme.colors.textSecondary,
+      fontFamily: "monospace",
+      fontSize: 10,
+    },
+  });
 
 export default ErrorBoundary;

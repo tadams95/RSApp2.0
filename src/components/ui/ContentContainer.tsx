@@ -1,6 +1,9 @@
 import React from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { View, ViewStyle } from "react-native";
 import { GlobalStyles } from "../../constants/styles";
+import type { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 interface ContentContainerProps {
   children: React.ReactNode;
@@ -21,6 +24,8 @@ export const ContentContainer: React.FC<ContentContainerProps> = ({
   centered = false,
   testID,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const paddingValue =
     typeof padding === "string" ? GlobalStyles.spacing[padding] : padding;
 
@@ -34,11 +39,12 @@ export const ContentContainer: React.FC<ContentContainerProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  centered: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    centered: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  } as const);
 
 export default ContentContainer;

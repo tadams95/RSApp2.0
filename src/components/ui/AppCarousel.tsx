@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { Dimensions, StyleSheet, View, ViewStyle } from "react-native";
+import { Dimensions, View, ViewStyle } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
+import type { Theme } from "../../constants/themes";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 interface AppCarouselProps {
   data: any[];
@@ -32,6 +34,8 @@ const AppCarousel: React.FC<AppCarouselProps> = ({
   scrollAnimationDuration = 1000,
   ...rest
 }) => {
+  const styles = useThemedStyles(createStyles);
+
   // Internal state to track current index if no external state is provided
   const [internalIndex, setInternalIndex] = useState(currentIndex);
 
@@ -87,28 +91,29 @@ const AppCarousel: React.FC<AppCarouselProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    position: "relative",
-  },
-  paginationContainer: {
-    position: "absolute",
-    bottom: 10,
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.4)",
-  },
-  paginationActiveDot: {
-    backgroundColor: "#fff",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      position: "relative",
+    },
+    paginationContainer: {
+      position: "absolute",
+      bottom: 10,
+      width: "100%",
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    paginationDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      marginHorizontal: 4,
+      backgroundColor: theme.colors.textTertiary,
+    },
+    paginationActiveDot: {
+      backgroundColor: theme.colors.textPrimary,
+    },
+  } as const);
 
 export default AppCarousel;

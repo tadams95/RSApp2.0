@@ -69,6 +69,9 @@ interface ProgressiveImageProps extends Omit<ExpoImageProps, "source"> {
  * 2. High-res image loads in background with expo-image caching
  * 3. Smooth fade transition when high-res is ready
  * 4. Fallback handling if both images fail
+ *
+ * Note: This component uses inline styles for positioning as it requires
+ * absolute positioning which doesn't benefit from theming.
  */
 const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   source,
