@@ -19,7 +19,6 @@ import {
   Modal,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -60,7 +59,8 @@ import {
   CartOperationErrorBoundary,
   CheckoutPaymentErrorBoundary,
 } from "../../../components/shopify";
-import { GlobalStyles } from "../../../constants/styles";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import {
   selectExpoPushToken,
   selectLocalId,
@@ -68,6 +68,7 @@ import {
   selectUserEmail,
   selectUserName,
 } from "../../../store/redux/userSlice";
+import type { Theme } from "../../../styles/theme";
 import { CartItemMetadata, EventDetails } from "../../../types/cart";
 
 // Import our new utility functions and components
@@ -148,6 +149,8 @@ interface OrderDetails {
 export default function CartScreen() {
   const dispatch = useDispatch();
   const posthog = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const cartItems = useSelector(selectCartItems) as unknown as CartItem[];
   const [totalPrice, setTotalPrice] = useState<number>(0);
   // Only show order summary when actually checking out or when cart has items
@@ -1043,17 +1046,17 @@ export default function CartScreen() {
         // Add appearance option for consistent styling with address sheet
         appearance: {
           colors: {
-            primary: GlobalStyles.colors.red4,
-            background: "#000000",
-            componentBackground: "#222222", // Match address sheet styling
-            componentBorder: "#4a4a4c", // Match address sheet styling
-            componentDivider: GlobalStyles.colors.grey7,
-            primaryText: "#FFFFFF",
-            secondaryText: "#FFFFFF", // Better visibility for all text
-            componentText: "#FFFFFF", // Explicit setting for input text
+            primary: theme.colors.accent,
+            background: theme.colors.bgRoot,
+            componentBackground: theme.colors.bgElev2, // Match address sheet styling
+            componentBorder: theme.colors.borderStrong, // Match address sheet styling
+            componentDivider: theme.colors.borderSubtle,
+            primaryText: theme.colors.textPrimary,
+            secondaryText: theme.colors.textPrimary, // Better visibility for all text
+            componentText: theme.colors.textPrimary, // Explicit setting for input text
             placeholderText: "#a0a0a8", // Lighter gray for better visibility
             icon: "#c0c0c8", // Brighter icons
-            error: GlobalStyles.colors.redVivid4, // Brighter error color
+            error: theme.colors.danger, // Brighter error color
           },
           font: {
             scale: 1.1, // Increased text size for better readability
@@ -1438,17 +1441,17 @@ export default function CartScreen() {
   // Address sheet appearance configuration - enhanced for dark theme text readability
   const addressSheetAppearance = {
     colors: {
-      primary: GlobalStyles.colors.red4, // Brand color for buttons and accents
-      background: "#000000", // Match app's dark background (fixed hex code)
-      componentBackground: "#222222", // Slightly lighter than before for better contrast with white text
-      componentBorder: "#4a4a4c", // More visible border for better field definition
-      componentDivider: GlobalStyles.colors.grey7, // Slightly lighter divider for better visibility
-      primaryText: "#FFFFFF", // Main text color - bright white
-      secondaryText: "#FFFFFF", // Secondary text also white for maximum visibility
-      componentText: "#FFFFFF", // User input text - white for maximum contrast
+      primary: theme.colors.accent, // Brand color for buttons and accents
+      background: theme.colors.bgRoot, // Match app's dark background
+      componentBackground: theme.colors.bgElev2, // Slightly lighter than before for better contrast with white text
+      componentBorder: theme.colors.borderStrong, // More visible border for better field definition
+      componentDivider: theme.colors.borderSubtle, // Slightly lighter divider for better visibility
+      primaryText: theme.colors.textPrimary, // Main text color - bright white
+      secondaryText: theme.colors.textPrimary, // Secondary text also white for maximum visibility
+      componentText: theme.colors.textPrimary, // User input text - white for maximum contrast
       placeholderText: "#a0a0a8", // Lighter gray placeholder for better visibility against dark background
       icon: "#c0c0c8", // Even brighter icon color for improved visibility
-      error: GlobalStyles.colors.redVivid4, // Brighter error color for better visibility
+      error: theme.colors.danger, // Brighter error color for better visibility
     },
     fonts: {
       scale: 1.1, // Increased text size for enhanced readability
@@ -1848,7 +1851,7 @@ export default function CartScreen() {
                   style={[
                     styles.checkoutButton,
                     {
-                      backgroundColor: GlobalStyles.colors.red4,
+                      backgroundColor: theme.colors.accent,
                       flex: 1,
                       marginLeft: 0,
                       borderWidth: 0,
@@ -1943,307 +1946,308 @@ const fontFamily = Platform.select({
   default: "system",
 });
 
-const styles = StyleSheet.create({
-  rootContainer: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 50 : 20,
-    paddingBottom: 16,
-    backgroundColor: "black",
-  },
-  headerTitle: {
-    color: "white",
-    fontFamily,
-    fontSize: 22,
-    fontWeight: "600",
-  },
-  clearButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  clearButtonText: {
-    color: GlobalStyles.colors.red4,
-    fontFamily,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  scrollView: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  emptyCartContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "black",
-    paddingBottom: 100,
-    paddingTop: 10,
-  },
-  emptyCartText: {
-    color: "white",
-    fontFamily,
-    fontSize: 18,
-    fontWeight: "500",
-    marginTop: 20,
-    marginBottom: 30,
-  },
-  shopButton: {
-    backgroundColor: "#222",
-    borderWidth: 1,
-    borderColor: "white",
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  shopButtonText: {
-    color: "white",
-    fontFamily,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  cartItemCard: {
-    flexDirection: "row",
-    backgroundColor: "#111",
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    overflow: "hidden",
-  },
-  itemImage: {
-    width: windowWidth * 0.3,
-    height: "100%",
-  },
-  itemDetailsContainer: {
-    flex: 1,
-    padding: 12,
-    justifyContent: "space-between",
-  },
-  itemTitle: {
-    color: "white",
-    fontFamily,
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  itemMetaContainer: {
-    marginBottom: 8,
-  },
-  itemType: {
-    color: GlobalStyles.colors.red4,
-    fontFamily,
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 4,
-  },
-  itemMeta: {
-    color: "#999",
-    fontFamily,
-    fontSize: 14,
-    marginBottom: 2,
-  },
-  itemMetaValue: {
-    color: "white",
-    fontWeight: "500",
-  },
-  itemBottomRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  itemPrice: {
-    color: "white",
-    fontFamily,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  removeButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 4,
-  },
-  removeButtonText: {
-    color: GlobalStyles.colors.red4,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  orderSummaryContainer: {
-    backgroundColor: "#111",
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderTopWidth: 1,
-    borderTopColor: "#333",
-  },
-  orderSummaryTitle: {
-    color: "white",
-    fontFamily,
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 15,
-  },
-  orderSummaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  orderSummaryLabel: {
-    color: "#999",
-    fontFamily,
-    fontSize: 14,
-  },
-  orderSummaryValue: {
-    color: "white",
-    fontFamily,
-    fontSize: 14,
-  },
-  totalRow: {
-    marginTop: 10,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: "#333",
-  },
-  totalLabel: {
-    color: "white",
-    fontFamily,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  totalValue: {
-    color: "white",
-    fontFamily,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  totalPrice: {
-    color: "white",
-    fontFamily,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  checkoutContainer: {
-    backgroundColor: "#111",
-    padding: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#333",
-  },
-  priceContainer: {
-    flexDirection: "column",
-  },
-  checkoutButton: {
-    backgroundColor: GlobalStyles.colors.red4,
-    borderWidth: 0,
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
-    flex: 1,
-    marginLeft: 0, // No margin needed now that it takes full width
-  },
-  checkoutButtonText: {
-    color: "white",
-    fontFamily,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#111",
-    borderRadius: 12,
-    padding: 20,
-    width: "80%",
-    alignItems: "center",
-  },
-  cartItemWithError: {
-    borderColor: GlobalStyles.colors.red4,
-    borderWidth: 1,
-  },
-  errorText: {
-    color: GlobalStyles.colors.red4,
-    fontFamily,
-    fontSize: 14,
-    marginVertical: 4,
-  },
-  generalErrorContainer: {
-    backgroundColor: "rgba(255, 0, 0, 0.1)",
-    padding: 12,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.red4,
-  },
-  modalTitle: {
-    color: "white",
-    fontFamily,
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 15,
-  },
-  modalText: {
-    color: "white",
-    fontFamily,
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  modalButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  modalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    width: "48%",
-    alignItems: "center",
-  },
-  cancelButton: {
-    backgroundColor: "#333",
-  },
-  confirmButton: {
-    backgroundColor: GlobalStyles.colors.red4,
-  },
-  cancelButtonText: {
-    color: "white",
-    fontFamily,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  confirmButtonText: {
-    color: "white",
-    fontFamily,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000000",
-  },
-  loadingText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    rootContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingTop: Platform.OS === "ios" ? 50 : 20,
+      paddingBottom: 16,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    headerTitle: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 22,
+      fontWeight: "600",
+    },
+    clearButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+    },
+    clearButtonText: {
+      color: theme.colors.accent,
+      fontFamily,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    scrollView: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    emptyCartContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgRoot,
+      paddingBottom: 100,
+      paddingTop: 10,
+    },
+    emptyCartText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 18,
+      fontWeight: "500",
+      marginTop: 20,
+      marginBottom: 30,
+    },
+    shopButton: {
+      backgroundColor: theme.colors.bgElev2,
+      borderWidth: 1,
+      borderColor: theme.colors.textPrimary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+    },
+    shopButtonText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    cartItemCard: {
+      flexDirection: "row",
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 12,
+      marginHorizontal: 16,
+      marginBottom: 16,
+      overflow: "hidden",
+    },
+    itemImage: {
+      width: windowWidth * 0.3,
+      height: "100%",
+    },
+    itemDetailsContainer: {
+      flex: 1,
+      padding: 12,
+      justifyContent: "space-between",
+    },
+    itemTitle: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 16,
+      fontWeight: "600",
+      marginBottom: 8,
+    },
+    itemMetaContainer: {
+      marginBottom: 8,
+    },
+    itemType: {
+      color: theme.colors.accent,
+      fontFamily,
+      fontSize: 14,
+      fontWeight: "500",
+      marginBottom: 4,
+    },
+    itemMeta: {
+      color: theme.colors.textSecondary,
+      fontFamily,
+      fontSize: 14,
+      marginBottom: 2,
+    },
+    itemMetaValue: {
+      color: theme.colors.textPrimary,
+      fontWeight: "500",
+    },
+    itemBottomRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    itemPrice: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    removeButton: {
+      paddingVertical: 6,
+      paddingHorizontal: 8,
+      backgroundColor: "rgba(255,255,255,0.1)",
+      borderRadius: 4,
+    },
+    removeButtonText: {
+      color: theme.colors.accent,
+      fontFamily,
+      fontSize: 12,
+      fontWeight: "500",
+    },
+    orderSummaryContainer: {
+      backgroundColor: theme.colors.bgElev1,
+      paddingHorizontal: 16,
+      paddingVertical: 20,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.borderSubtle,
+    },
+    orderSummaryTitle: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 18,
+      fontWeight: "600",
+      marginBottom: 15,
+    },
+    orderSummaryRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 10,
+    },
+    orderSummaryLabel: {
+      color: theme.colors.textSecondary,
+      fontFamily,
+      fontSize: 14,
+    },
+    orderSummaryValue: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 14,
+    },
+    totalRow: {
+      marginTop: 10,
+      paddingTop: 15,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.borderSubtle,
+    },
+    totalLabel: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    totalValue: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 18,
+      fontWeight: "700",
+    },
+    totalPrice: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 18,
+      fontWeight: "700",
+    },
+    checkoutContainer: {
+      backgroundColor: theme.colors.bgElev1,
+      padding: 16,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.borderSubtle,
+    },
+    priceContainer: {
+      flexDirection: "column",
+    },
+    checkoutButton: {
+      backgroundColor: theme.colors.accent,
+      borderWidth: 0,
+      borderRadius: 8,
+      padding: 15,
+      alignItems: "center",
+      flex: 1,
+      marginLeft: 0, // No margin needed now that it takes full width
+    },
+    checkoutButtonText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalContent: {
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 12,
+      padding: 20,
+      width: "80%",
+      alignItems: "center",
+    },
+    cartItemWithError: {
+      borderColor: theme.colors.danger,
+      borderWidth: 1,
+    },
+    errorText: {
+      color: theme.colors.danger,
+      fontFamily,
+      fontSize: 14,
+      marginVertical: 4,
+    },
+    generalErrorContainer: {
+      backgroundColor: "rgba(255, 0, 0, 0.1)",
+      padding: 12,
+      marginHorizontal: 16,
+      marginVertical: 8,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.danger,
+    },
+    modalTitle: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 18,
+      fontWeight: "600",
+      marginBottom: 15,
+    },
+    modalText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 16,
+      textAlign: "center",
+      marginBottom: 20,
+    },
+    modalButtonsContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      width: "100%",
+    },
+    modalButton: {
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      width: "48%",
+      alignItems: "center",
+    },
+    cancelButton: {
+      backgroundColor: theme.colors.borderSubtle,
+    },
+    confirmButton: {
+      backgroundColor: theme.colors.accent,
+    },
+    cancelButtonText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 16,
+      fontWeight: "500",
+    },
+    confirmButtonText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgRoot,
+    },
+    loadingText: {
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontWeight: "500",
+    },
+    disabledButton: {
+      opacity: 0.5,
+    },
+  } as const);

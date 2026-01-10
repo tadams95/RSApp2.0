@@ -133,15 +133,15 @@ const styles = useThemedStyles((theme) => ({
 
 ### Priority 7: Shop Components
 
-| Status | File                                    | Tokens to Apply                                            |
-| ------ | --------------------------------------- | ---------------------------------------------------------- |
-| [ ]    | `src/app/(app)/shop/index.tsx`          | `bgRoot` grid, `bgElev1` product cards                     |
-| [ ]    | `src/app/(app)/shop/[handle].tsx`       | `bgRoot` collection page                                   |
-| [ ]    | `src/app/(app)/shop/ProductDetail.tsx`  | `bgRoot` screen, `bgElev1` info card, `accent` add-to-cart |
-| [ ]    | `src/app/(app)/shop/ProductWrapper.tsx` | Pass theme to child components                             |
-| [ ]    | `src/app/(app)/shop/paginated-shop.tsx` | `bgRoot` container, loading states                         |
-| [ ]    | `src/app/(app)/cart/` (all files)       | `bgRoot` screen, `bgElev1` cart items, `accent` checkout   |
-| [ ]    | `src/components/shopify/*.tsx`          | Error boundaries with `danger` styling                     |
+| Status | File                                    | Tokens to Apply                                                                |
+| ------ | --------------------------------------- | ------------------------------------------------------------------------------ |
+| [x]    | `src/app/(app)/shop/index.tsx`          | `bgRoot` grid, `bgElev1` product cards                                         |
+| [x]    | `src/app/(app)/shop/[handle].tsx`       | `bgRoot` collection page                                                       |
+| [x]    | `src/app/(app)/shop/ProductDetail.tsx`  | `bgRoot` screen, `bgElev1` info card, `accent` add-to-cart                     |
+| [x]    | `src/app/(app)/shop/ProductWrapper.tsx` | Pass theme to child components                                                 |
+| [x]    | `src/app/(app)/shop/paginated-shop.tsx` | `bgRoot` container, loading states                                             |
+| [x]    | `src/app/(app)/cart/` (all files)       | `bgRoot` screen, `bgElev1` cart items, `accent` checkout                       |
+| [x]    | `src/components/shopify/*.tsx`          | Error boundaries with `danger` styling (kept light theme for error visibility) |
 
 ### Priority 8: Transfer Components
 

@@ -7,7 +7,6 @@ import {
   ImageStyle,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   TextStyle,
   TouchableOpacity,
@@ -22,12 +21,14 @@ import {
 } from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { LazyImage } from "../../../components/ui";
-import { GlobalStyles } from "../../../constants/styles";
+import { useTheme } from "../../../contexts/ThemeContext";
 import {
   getProductLoadingState,
   useProducts,
 } from "../../../hooks/useProducts";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { selectCartItemCount } from "../../../store/redux/cartSlice";
+import type { Theme } from "../../../styles/theme";
 // Import offline product management
 import { useOfflineProducts } from "../../../utils/offlineProducts";
 
@@ -65,6 +66,8 @@ export default function ShopScreen() {
   const posthog = usePostHog();
   const insets = useSafeAreaInsets();
   const cartItemCount = useSelector(selectCartItemCount);
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Use React Query for product fetching
   const productsQuery = useProducts();
@@ -236,7 +239,11 @@ export default function ShopScreen() {
         onPress={() => router.push("/cart")}
         activeOpacity={0.7}
       >
-        <MaterialCommunityIcons name="cart-outline" size={26} color="#fff" />
+        <MaterialCommunityIcons
+          name="cart-outline"
+          size={26}
+          color={theme.colors.textPrimary}
+        />
         {cartItemCount > 0 && (
           <View style={styles.cartBadge}>
             <Text style={styles.cartBadgeText}>
@@ -350,170 +357,169 @@ interface Styles {
   emptyText: TextStyle;
 }
 
-const styles = StyleSheet.create<Styles>({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: GlobalStyles.colors.grey8,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    fontFamily,
-  },
-  cartButton: {
-    padding: 4,
-    position: "relative",
-  },
-  cartBadge: {
-    position: "absolute",
-    top: -2,
-    right: -4,
-    backgroundColor: GlobalStyles.colors.redVivid5,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 4,
-  },
-  cartBadgeText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "bold",
-    fontFamily,
-  },
-  flashListContent: {
-    padding: 10,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  title: {
-    fontFamily,
-    textAlign: "center",
-    paddingTop: 8,
-    color: "white",
-    fontWeight: "500",
-  },
-  price: {
-    fontFamily,
-    textAlign: "center",
-    color: "white",
-    paddingVertical: 4,
-  },
-  image: {
-    height: windowWidth > 600 ? 375 : 200,
-    width: "100%",
-    alignSelf: "center",
-    borderRadius: 8,
-    // Explicitly set overflow to a compatible value for Image
-    overflow: "hidden",
-  },
-  itemsContainer: {
-    flex: 1,
-    marginBottom: 16,
-    marginHorizontal: 5,
-    borderRadius: 8,
-    backgroundColor: "black", // Card background
-    borderWidth: 1,
-    borderColor: "#222", // Subtle border for dark theme
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-    padding: 20,
-  },
-  errorText: {
-    color: "white",
-    fontFamily,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: "#333",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: "white",
-    fontFamily,
-  },
-  skeletonContainer: {
-    // backgroundColor: '#1a1a1a', // Already on itemsContainer
-    borderRadius: 8,
-    overflow: "hidden", // Ensures children conform to border radius
-  },
-  skeletonImage: {
-    height: windowWidth > 600 ? 375 : 200,
-    width: "100%",
-    backgroundColor: "#1a1a1a", // Darker skeleton color
-  },
-  skeletonText: {
-    height: 16,
-    width: "80%",
-    backgroundColor: "#1a1a1a",
-    marginVertical: 8,
-    alignSelf: "center",
-    borderRadius: 4,
-  },
-  skeletonPrice: {
-    height: 14,
-    width: "40%",
-    backgroundColor: "#1a1a1a",
-    marginVertical: 4,
-    alignSelf: "center",
-    borderRadius: 4,
-  },
-  outOfStock: {
-    opacity: 0.7, // Keep some opacity to indicate it's still a product
-  },
-  imageContainer: {
-    position: "relative",
-    width: "100%",
-    backgroundColor: "#111", // Placeholder background for images
-    borderRadius: 8, // Match item container
-    overflow: "hidden", // Clip image to rounded corners
-  },
-  soldOutBadge: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: [{ translateX: -45 }, { translateY: -15 }], // Adjust for text length
-    backgroundColor: "rgba(200, 0, 0, 0.85)", // More vibrant red
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 5,
-  },
-  soldOutText: {
-    color: "white",
-    fontWeight: "bold",
-    fontFamily,
-    fontSize: 12, // Slightly smaller for badge
-  },
-  emptyText: {
-    color: "#777",
-    textAlign: "center",
-    fontFamily,
-    marginTop: 50,
-    width: "100%",
-  },
-});
+const createStyles = (theme: Theme): Styles =>
+  ({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingBottom: 12,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.colors.borderSubtle,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: theme.colors.textPrimary,
+      fontFamily,
+    },
+    cartButton: {
+      padding: 4,
+      position: "relative",
+    },
+    cartBadge: {
+      position: "absolute",
+      top: -2,
+      right: -4,
+      backgroundColor: theme.colors.accent,
+      borderRadius: 10,
+      minWidth: 18,
+      height: 18,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 4,
+    },
+    cartBadgeText: {
+      color: theme.colors.textPrimary,
+      fontSize: 11,
+      fontWeight: "bold",
+      fontFamily,
+    },
+    flashListContent: {
+      padding: 10,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    title: {
+      fontFamily,
+      textAlign: "center",
+      paddingTop: 8,
+      color: theme.colors.textPrimary,
+      fontWeight: "500",
+    },
+    price: {
+      fontFamily,
+      textAlign: "center",
+      color: theme.colors.textPrimary,
+      paddingVertical: 4,
+    },
+    image: {
+      height: windowWidth > 600 ? 375 : 200,
+      width: "100%",
+      alignSelf: "center",
+      borderRadius: 8,
+      overflow: "hidden",
+    },
+    itemsContainer: {
+      flex: 1,
+      marginBottom: 16,
+      marginHorizontal: 5,
+      borderRadius: 8,
+      backgroundColor: theme.colors.bgRoot,
+      borderWidth: 1,
+      borderColor: theme.colors.bgElev2,
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgRoot,
+      padding: 20,
+    },
+    errorText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      textAlign: "center",
+      marginBottom: 16,
+    },
+    retryButton: {
+      backgroundColor: theme.colors.borderSubtle,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+    },
+    retryButtonText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+    },
+    skeletonContainer: {
+      borderRadius: 8,
+      overflow: "hidden",
+    },
+    skeletonImage: {
+      height: windowWidth > 600 ? 375 : 200,
+      width: "100%",
+      backgroundColor: theme.colors.bgElev2,
+    },
+    skeletonText: {
+      height: 16,
+      width: "80%",
+      backgroundColor: theme.colors.bgElev2,
+      marginVertical: 8,
+      alignSelf: "center",
+      borderRadius: 4,
+    },
+    skeletonPrice: {
+      height: 14,
+      width: "40%",
+      backgroundColor: theme.colors.bgElev2,
+      marginVertical: 4,
+      alignSelf: "center",
+      borderRadius: 4,
+    },
+    outOfStock: {
+      opacity: 0.7,
+    },
+    imageContainer: {
+      position: "relative",
+      width: "100%",
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 8,
+      overflow: "hidden",
+    },
+    soldOutBadge: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: [{ translateX: -45 }, { translateY: -15 }],
+      backgroundColor: "rgba(200, 0, 0, 0.85)",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 5,
+    },
+    soldOutText: {
+      color: theme.colors.textPrimary,
+      fontWeight: "bold",
+      fontFamily,
+      fontSize: 12,
+    },
+    emptyText: {
+      color: theme.colors.textTertiary,
+      textAlign: "center",
+      fontFamily,
+      marginTop: 50,
+      width: "100%",
+    },
+  } as const);

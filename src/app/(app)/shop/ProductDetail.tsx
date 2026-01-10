@@ -9,7 +9,6 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -22,10 +21,12 @@ import {
 } from "../../../components/shopify";
 import { ImageWithFallback } from "../../../components/ui";
 import AppCarousel from "../../../components/ui/AppCarousel";
-import { GlobalStyles } from "../../../constants/styles";
+import { useTheme } from "../../../contexts/ThemeContext";
 import { useErrorHandler } from "../../../hooks/useErrorHandler";
 import { getProductLoadingState, useProduct } from "../../../hooks/useProducts"; // Use React Query hook
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
+import type { Theme } from "../../../styles/theme";
 
 // Define types based on your Shopify product structure (similar to ShopScreen)
 interface ShopifyProductImage {
@@ -62,6 +63,8 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
   const dispatch = useDispatch();
   const { error, setError, clearError } = useErrorHandler();
   const { track } = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Use React Query for product fetching
   const productQuery = useProduct(handle);
@@ -283,7 +286,7 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={GlobalStyles.colors.red7} />
+        <ActivityIndicator size="large" color={theme.colors.accent} />
       </View>
     );
   }
@@ -339,7 +342,11 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
 
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-            <Ionicons name="arrow-back" size={22} color="white" />
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color={theme.colors.textPrimary}
+            />
           </TouchableOpacity>
         </View>
 
@@ -378,7 +385,11 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
                     <Text style={styles.optionText}>
                       {selectedSize || "Select Size"}
                     </Text>
-                    <Ionicons name="chevron-down" size={16} color="white" />
+                    <Ionicons
+                      name="chevron-down"
+                      size={16}
+                      color={theme.colors.textPrimary}
+                    />
                   </TouchableOpacity>
                 </View>
               )}
@@ -392,7 +403,11 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
                     <Text style={styles.optionText}>
                       {selectedColor || "Select Color"}
                     </Text>
-                    <Ionicons name="chevron-down" size={16} color="white" />
+                    <Ionicons
+                      name="chevron-down"
+                      size={16}
+                      color={theme.colors.textPrimary}
+                    />
                   </TouchableOpacity>
                 </View>
               )}
@@ -405,7 +420,11 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
                   <Text style={styles.optionText}>
                     {selectedQuantity || "Select Quantity"}
                   </Text>
-                  <Ionicons name="chevron-down" size={16} color="white" />
+                  <Ionicons
+                    name="chevron-down"
+                    size={16}
+                    color={theme.colors.textPrimary}
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -434,7 +453,11 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Select Size</Text>
                 <TouchableOpacity onPress={() => setSizeModalVisible(false)}>
-                  <Ionicons name="close" size={24} color="white" />
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={theme.colors.textPrimary}
+                  />
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.modalScroll}>
@@ -464,7 +487,11 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Select Color</Text>
                 <TouchableOpacity onPress={() => setColorModalVisible(false)}>
-                  <Ionicons name="close" size={24} color="white" />
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={theme.colors.textPrimary}
+                  />
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.modalScroll}>
@@ -496,7 +523,11 @@ export default function ProductDetailScreen({ handle }: ProductDetailProps) {
                 <TouchableOpacity
                   onPress={() => setQuantityModalVisible(false)}
                 >
-                  <Ionicons name="close" size={24} color="white" />
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={theme.colors.textPrimary}
+                  />
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.modalScroll}>
@@ -553,235 +584,254 @@ const fontFamily = Platform.select({
 });
 
 // Styles adapted from ProductDetailScreen.js - review and adjust as needed for dark theme and consistency
-const styles = StyleSheet.create({
-  rootContainer: {
-    flex: 1,
-    backgroundColor: "black",
-    paddingTop: 0, // Ensure no top padding
-    marginTop: 0, // Ensure no top margin
-  },
-  header: {
-    position: "absolute",
-    top: Platform.OS === "ios" ? 50 : 20, // Adjust for status bar
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    flexDirection: "row",
-    justifyContent: "space-between", // Aligns back button to left, counter to right
-    alignItems: "center",
-    paddingHorizontal: 16,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.5)",
-  }, // Semi-transparent background
-  imageNavContainer: {
-    // For next/prev image buttons
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
-  },
-  imageNavButton: {
-    backgroundColor: "rgba(0,0,0,0.4)",
-    padding: 8,
-    borderRadius: 20,
-  },
-  imageCounterText: {
-    color: "white",
-    fontFamily,
-    fontSize: 14,
-    fontWeight: "600",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-    alignSelf: "center",
-  },
-  scrollView: { flex: 1, backgroundColor: "black" },
-  scrollViewContent: { paddingBottom: 40 }, // Ensure space for content below fold
-  swiperContainer: {
-    height: windowWidth * 1.1, // Match guest version height exactly
-    position: "relative",
-    backgroundColor: "#111",
-  }, // Darker placeholder
-  pagination: {
-    bottom: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-    padding: 20,
-  },
-  errorMessage: {
-    width: "100%",
-  },
-  errorText: {
-    color: "white",
-    fontFamily,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: "#333",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  retryButtonText: { color: "white", fontFamily },
-  images: { width: "100%", height: "100%" },
-  productInfoContainer: { padding: 20, backgroundColor: "#0d0d0d" }, // Slightly off-black for info section
-  titlePriceContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 15,
-  },
-  title: {
-    fontFamily,
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "white",
-    flex: 3,
-    marginRight: 10,
-  },
-  price: {
-    fontFamily,
-    fontSize: 20,
-    fontWeight: "600",
-    color: GlobalStyles.colors.red7 || "#ff3c00",
-    flex: 1,
-    textAlign: "right",
-  }, // Use red color to match guest version
-  sectionContainer: {
-    marginBottom: 20,
-    borderTopWidth: 1,
-    borderTopColor: "#222",
-    paddingTop: 15,
-  },
-  sectionTitle: {
-    fontFamily,
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 10,
-  },
-  descriptionContainer: { maxHeight: 100 }, // Limit description height, consider a "Read More" option
-  description: { fontFamily, fontSize: 14, color: "#ccc", lineHeight: 20 },
-  optionContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#222",
-  },
-  optionLabel: { fontFamily, fontSize: 15, color: "white" },
-  optionSelector: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#1a1a1a",
-    borderRadius: 5,
-  },
-  optionText: { fontFamily, fontSize: 15, color: "white", marginRight: 8 },
-  actionButton: {
-    backgroundColor: GlobalStyles.colors.red7 || "#ff3c00",
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  actionButtonText: {
-    fontFamily,
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "white",
-  }, // White text to match guest version
-  // Modal Styles (keep them consistent)
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.7)",
-  },
-  modalContent: {
-    backgroundColor: "#1a1a1a",
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-    padding: 20,
-    maxHeight: windowHeight * 0.5,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-    paddingBottom: 10,
-  },
-  modalTitle: { fontFamily, fontSize: 18, fontWeight: "bold", color: "white" },
-  modalScroll: { maxHeight: windowHeight * 0.3 },
-  modalItem: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  modalItemText: {
-    fontFamily,
-    fontSize: 16,
-    color: "white",
-    textAlign: "center",
-  },
-  confirmationModalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.8)",
-  },
-  confirmationModalContent: {
-    backgroundColor: "#1e1e1e",
-    padding: 30,
-    borderRadius: 10,
-    alignItems: "center",
-    width: "80%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  confirmationModalText: {
-    fontFamily,
-    fontSize: 16,
-    color: "white",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  confirmationButton: {
-    backgroundColor: GlobalStyles.colors.red7 || "#ff3c00",
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    borderRadius: 5,
-  },
-  confirmationButtonText: {
-    fontFamily,
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "white",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    rootContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+      paddingTop: 0, // Ensure no top padding
+      marginTop: 0, // Ensure no top margin
+    },
+    header: {
+      position: "absolute",
+      top: Platform.OS === "ios" ? 50 : 20, // Adjust for status bar
+      left: 0,
+      right: 0,
+      zIndex: 10,
+      flexDirection: "row",
+      justifyContent: "space-between", // Aligns back button to left, counter to right
+      alignItems: "center",
+      paddingHorizontal: 16,
+    },
+    backButton: {
+      padding: 8,
+      borderRadius: 20,
+      backgroundColor: "rgba(0,0,0,0.5)",
+    }, // Semi-transparent background
+    imageNavContainer: {
+      // For next/prev image buttons
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      position: "absolute",
+      bottom: 20,
+      left: 20,
+      right: 20,
+    },
+    imageNavButton: {
+      backgroundColor: "rgba(0,0,0,0.4)",
+      padding: 8,
+      borderRadius: 20,
+    },
+    imageCounterText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      fontSize: 14,
+      fontWeight: "600",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 15,
+      alignSelf: "center",
+    },
+    scrollView: { flex: 1, backgroundColor: theme.colors.bgRoot },
+    scrollViewContent: { paddingBottom: 40 }, // Ensure space for content below fold
+    swiperContainer: {
+      height: windowWidth * 1.1, // Match guest version height exactly
+      position: "relative",
+      backgroundColor: theme.colors.bgElev1,
+    }, // Darker placeholder
+    pagination: {
+      bottom: 20,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgRoot,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgRoot,
+      padding: 20,
+    },
+    errorMessage: {
+      width: "100%",
+    },
+    errorText: {
+      color: theme.colors.textPrimary,
+      fontFamily,
+      textAlign: "center",
+      marginBottom: 16,
+    },
+    retryButton: {
+      backgroundColor: theme.colors.borderSubtle,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+    },
+    retryButtonText: { color: theme.colors.textPrimary, fontFamily },
+    images: { width: "100%", height: "100%" },
+    productInfoContainer: {
+      padding: 20,
+      backgroundColor: theme.colors.bgElev1,
+    }, // Slightly off-black for info section
+    titlePriceContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: 15,
+    },
+    title: {
+      fontFamily,
+      fontSize: 22,
+      fontWeight: "bold",
+      color: theme.colors.textPrimary,
+      flex: 3,
+      marginRight: 10,
+    },
+    price: {
+      fontFamily,
+      fontSize: 20,
+      fontWeight: "600",
+      color: theme.colors.accent,
+      flex: 1,
+      textAlign: "right",
+    }, // Use accent color
+    sectionContainer: {
+      marginBottom: 20,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.bgElev2,
+      paddingTop: 15,
+    },
+    sectionTitle: {
+      fontFamily,
+      fontSize: 16,
+      fontWeight: "bold",
+      color: theme.colors.textPrimary,
+      marginBottom: 10,
+    },
+    descriptionContainer: { maxHeight: 100 }, // Limit description height, consider a "Read More" option
+    description: {
+      fontFamily,
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+    },
+    optionContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.bgElev2,
+    },
+    optionLabel: { fontFamily, fontSize: 15, color: theme.colors.textPrimary },
+    optionSelector: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      backgroundColor: theme.colors.bgElev2,
+      borderRadius: 5,
+    },
+    optionText: {
+      fontFamily,
+      fontSize: 15,
+      color: theme.colors.textPrimary,
+      marginRight: 8,
+    },
+    actionButton: {
+      backgroundColor: theme.colors.accent,
+      paddingVertical: 15,
+      borderRadius: 8,
+      alignItems: "center",
+      marginTop: 20,
+    },
+    actionButtonText: {
+      fontFamily,
+      fontSize: 16,
+      fontWeight: "bold",
+      color: theme.colors.textPrimary,
+    }, // White text to match guest version
+    // Modal Styles (keep them consistent)
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: "rgba(0,0,0,0.7)",
+    },
+    modalContent: {
+      backgroundColor: theme.colors.bgElev2,
+      borderTopLeftRadius: 15,
+      borderTopRightRadius: 15,
+      padding: 20,
+      maxHeight: windowHeight * 0.5,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderSubtle,
+      paddingBottom: 10,
+    },
+    modalTitle: {
+      fontFamily,
+      fontSize: 18,
+      fontWeight: "bold",
+      color: theme.colors.textPrimary,
+    },
+    modalScroll: { maxHeight: windowHeight * 0.3 },
+    modalItem: {
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderSubtle,
+    },
+    modalItemText: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.textPrimary,
+      textAlign: "center",
+    },
+    confirmationModalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0,0,0,0.8)",
+    },
+    confirmationModalContent: {
+      backgroundColor: theme.colors.bgElev2,
+      padding: 30,
+      borderRadius: 10,
+      alignItems: "center",
+      width: "80%",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    confirmationModalText: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.textPrimary,
+      textAlign: "center",
+      marginBottom: 20,
+    },
+    confirmationButton: {
+      backgroundColor: theme.colors.accent,
+      paddingVertical: 10,
+      paddingHorizontal: 30,
+      borderRadius: 5,
+    },
+    confirmationButtonText: {
+      fontFamily,
+      fontSize: 16,
+      fontWeight: "bold",
+      color: theme.colors.textPrimary,
+    },
+  } as const);

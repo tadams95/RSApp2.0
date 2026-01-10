@@ -7,7 +7,6 @@ import {
   Dimensions,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -15,8 +14,11 @@ import {
 
 import { useScreenTracking } from "../../../analytics/PostHogProvider";
 import { LazyImage } from "../../../components/ui";
+import { useTheme } from "../../../contexts/ThemeContext";
 import { useShopifyPagination } from "../../../hooks/useShopifyPagination";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { ShopifyProduct } from "../../../services/shopifyService";
+import type { Theme } from "../../../styles/theme";
 
 // Default font family for styling consistency
 const fontFamily =
@@ -38,6 +40,9 @@ export default function PaginatedShopScreen() {
     userType: "authenticated",
     screenType: "pagination",
   });
+
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const handleProductPress = (product: ShopifyProduct) => {
     // Check if variants is defined before calling every
@@ -153,7 +158,7 @@ export default function PaginatedShopScreen() {
   // Error handling UI
   const renderError = () => (
     <View style={styles.errorContainer}>
-      <Ionicons name="alert-circle" size={24} color="#ef4444" />
+      <Ionicons name="alert-circle" size={24} color={theme.colors.danger} />
       <Text style={styles.errorText}>
         {error || "An error occurred while loading products."}
       </Text>
@@ -173,7 +178,7 @@ export default function PaginatedShopScreen() {
     if (loading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="#ffffff" />
+          <ActivityIndicator size="large" color={theme.colors.textPrimary} />
           <Text style={styles.emptyText}>Loading products...</Text>
         </View>
       );
@@ -185,7 +190,11 @@ export default function PaginatedShopScreen() {
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="cube-outline" size={48} color="#999" />
+        <Ionicons
+          name="cube-outline"
+          size={48}
+          color={theme.colors.textSecondary}
+        />
         <Text style={styles.emptyText}>No products available</Text>
       </View>
     );
@@ -209,7 +218,9 @@ export default function PaginatedShopScreen() {
           <Ionicons
             name="chevron-back"
             size={20}
-            color={hasPrevPage ? "#ffffff" : "#666"}
+            color={
+              hasPrevPage ? theme.colors.textPrimary : theme.colors.textTertiary
+            }
           />
           <Text
             style={[
@@ -243,7 +254,9 @@ export default function PaginatedShopScreen() {
           <Ionicons
             name="chevron-forward"
             size={20}
-            color={hasNextPage ? "#ffffff" : "#666"}
+            color={
+              hasNextPage ? theme.colors.textPrimary : theme.colors.textTertiary
+            }
           />
         </TouchableOpacity>
       </View>
@@ -284,187 +297,188 @@ export default function PaginatedShopScreen() {
 }
 
 // Component styles
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  listContent: {
-    padding: 10,
-  },
-  emptyListContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  header: {
-    paddingVertical: 16,
-    marginBottom: 10,
-  },
-  headerTitle: {
-    fontFamily,
-    fontSize: 24,
-    fontWeight: "700",
-    color: "white",
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontFamily,
-    fontSize: 16,
-    color: "#999",
-    marginBottom: 10,
-  },
-  productCard: {
-    backgroundColor: "#111",
-    borderRadius: 12,
-    overflow: "hidden",
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  imageContainer: {
-    height: 180,
-    position: "relative",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  productContent: {
-    padding: 16,
-  },
-  productTitle: {
-    fontFamily,
-    fontSize: 18,
-    fontWeight: "600",
-    color: "white",
-  },
-  priceTag: {
-    position: "absolute",
-    bottom: 12,
-    right: 12,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
-  },
-  priceText: {
-    fontFamily,
-    fontWeight: "700",
-    color: "white",
-    fontSize: 16,
-  },
-  soldOutTag: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,0,0,0.5)",
-  },
-  soldOutText: {
-    fontFamily,
-    fontWeight: "700",
-    color: "#ff4444",
-    fontSize: 14,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  outOfStock: {
-    opacity: 0.6,
-  },
-  // Pagination styles
-  paginationControls: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 10,
-    marginTop: 10,
-  },
-  pageButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#222",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  pageButtonText: {
-    fontFamily,
-    fontSize: 14,
-    color: "white",
-    marginHorizontal: 4,
-  },
-  disabledButton: {
-    opacity: 0.5,
-    backgroundColor: "#111",
-    borderColor: "#333",
-  },
-  disabledText: {
-    color: "#666",
-  },
-  pageIndicator: {
-    backgroundColor: "#333",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-  },
-  pageIndicatorText: {
-    fontFamily,
-    fontSize: 14,
-    color: "white",
-  },
-  // Error state styles
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  errorText: {
-    fontFamily,
-    fontSize: 16,
-    color: "#ef4444",
-    marginTop: 10,
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  retryButton: {
-    backgroundColor: "#333",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  retryButtonText: {
-    fontFamily,
-    fontSize: 16,
-    color: "white",
-    fontWeight: "600",
-  },
-  // Empty state styles
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontFamily,
-    fontSize: 16,
-    color: "#999",
-    marginTop: 16,
-    textAlign: "center",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    listContent: {
+      padding: 10,
+    },
+    emptyListContent: {
+      flexGrow: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    header: {
+      paddingVertical: 16,
+      marginBottom: 10,
+    },
+    headerTitle: {
+      fontFamily,
+      fontSize: 24,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: 8,
+    },
+    headerSubtitle: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      marginBottom: 10,
+    },
+    productCard: {
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 12,
+      overflow: "hidden",
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+    },
+    imageContainer: {
+      height: 180,
+      position: "relative",
+    },
+    image: {
+      width: "100%",
+      height: "100%",
+      resizeMode: "cover",
+    },
+    productContent: {
+      padding: 16,
+    },
+    productTitle: {
+      fontFamily,
+      fontSize: 18,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    priceTag: {
+      position: "absolute",
+      bottom: 12,
+      right: 12,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.3)",
+    },
+    priceText: {
+      fontFamily,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+    },
+    soldOutTag: {
+      position: "absolute",
+      top: 12,
+      left: 12,
+      backgroundColor: "rgba(0,0,0,0.7)",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: "rgba(255,0,0,0.5)",
+    },
+    soldOutText: {
+      fontFamily,
+      fontWeight: "700",
+      color: theme.colors.danger,
+      fontSize: 14,
+    },
+    pressed: {
+      opacity: 0.8,
+    },
+    outOfStock: {
+      opacity: 0.6,
+    },
+    // Pagination styles
+    paginationControls: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 16,
+      paddingHorizontal: 10,
+      marginTop: 10,
+    },
+    pageButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgElev2,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    pageButtonText: {
+      fontFamily,
+      fontSize: 14,
+      color: theme.colors.textPrimary,
+      marginHorizontal: 4,
+    },
+    disabledButton: {
+      opacity: 0.5,
+      backgroundColor: theme.colors.bgElev1,
+      borderColor: theme.colors.borderSubtle,
+    },
+    disabledText: {
+      color: theme.colors.textTertiary,
+    },
+    pageIndicator: {
+      backgroundColor: theme.colors.borderSubtle,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+    },
+    pageIndicatorText: {
+      fontFamily,
+      fontSize: 14,
+      color: theme.colors.textPrimary,
+    },
+    // Error state styles
+    errorContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    errorText: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.danger,
+      marginTop: 10,
+      marginBottom: 20,
+      textAlign: "center",
+    },
+    retryButton: {
+      backgroundColor: theme.colors.borderSubtle,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    retryButtonText: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    // Empty state styles
+    emptyContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: 40,
+    },
+    emptyText: {
+      fontFamily,
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      marginTop: 16,
+      textAlign: "center",
+    },
+  } as const);
