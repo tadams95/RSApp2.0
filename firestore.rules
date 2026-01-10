@@ -376,7 +376,7 @@ service cloud.firestore {
     }
 
     // Notifications: preferences document
-    match /users/{userId}/settings/notificationPrefs {
+    match /users/{userId}/settings/notifications {
       allow read, create, update: if isAuthenticated() && request.auth.uid == userId;
       allow delete: if false; // keep explicit; users can toggle fields instead
     }

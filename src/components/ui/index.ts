@@ -5,6 +5,7 @@
 export { default as CompressedImageUploader } from "./CompressedImageUploader";
 export { default as ImageWithFallback } from "./ImageWithFallback";
 export { default as LazyImage } from "./LazyImage";
+export { LinkedText } from "./LinkedText";
 export {
   NetworkStatusBanner,
   useNetworkStatusBanner,

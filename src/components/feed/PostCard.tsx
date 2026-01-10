@@ -6,7 +6,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { Post } from "../../services/feedService";
-import { ImageWithFallback } from "../ui";
+import { ImageWithFallback, LinkedText } from "../ui";
 import { MediaGrid } from "./MediaGrid";
 import { PostActions } from "./PostActions";
 
@@ -28,6 +28,7 @@ interface PostCardProps {
   isLiked?: boolean;
   onPress?: () => void;
   onProfilePress?: (userId: string) => void;
+  onMentionPress?: (username: string) => void;
   onLike?: (postId: string) => void;
   onComment?: (postId: string) => void;
   onRepost?: (postId: string) => void;
@@ -40,6 +41,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   isLiked = false,
   onPress,
   onProfilePress,
+  onMentionPress,
   onLike,
   onComment,
   onRepost,
@@ -166,7 +168,13 @@ export const PostCard: React.FC<PostCardProps> = ({
         </View>
 
         {/* Content */}
-        {content ? <Text style={styles.content}>{content}</Text> : null}
+        {content ? (
+          <LinkedText
+            text={content}
+            style={styles.content}
+            onMentionPress={onMentionPress}
+          />
+        ) : null}
 
         {/* Media */}
         {mediaUrls && mediaUrls.length > 0 && (

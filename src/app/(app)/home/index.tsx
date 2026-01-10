@@ -1,9 +1,11 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { doc, getDoc, getFirestore } from "firebase/firestore";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -146,6 +148,37 @@ export default function HomeScreen() {
     );
   };
 
+  // Handle @mention tap - lookup userId from username and navigate to profile
+  const handleMentionPress = useCallback(
+    async (username: string) => {
+      try {
+        const db = getFirestore();
+        // Lookup userId from usernames collection
+        const usernameDoc = await getDoc(
+          doc(db, "usernames", username.toLowerCase())
+        );
+
+        if (usernameDoc.exists()) {
+          const data = usernameDoc.data();
+          const userId = data.uid || data.userId || data.oderId;
+
+          if (userId) {
+            posthog.capture("mention_tapped", { username, user_id: userId });
+            router.push(`/profile/${userId}`);
+            return;
+          }
+        }
+
+        // User not found
+        Alert.alert("User Not Found", `@${username} doesn't exist.`);
+      } catch (error) {
+        console.error("Error looking up username:", error);
+        Alert.alert("Error", "Could not find user profile.");
+      }
+    },
+    [router, posthog]
+  );
+
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIconContainer}>
@@ -184,6 +217,7 @@ export default function HomeScreen() {
           });
           router.push(`/profile/${userId}`);
         }}
+        onMentionPress={handleMentionPress}
         onLike={handleLike}
         onComment={() => {
           posthog.capture("comment_opened_from_feed", { post_id: item.id });

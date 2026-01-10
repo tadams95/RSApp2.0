@@ -2,22 +2,28 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ResizeMode, Video } from "expo-av";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   InputAccessoryView,
   Modal,
+  NativeSyntheticEvent,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TextInputSelectionChangeEventData,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../contexts/ThemeContext";
+import {
+  TextSelection,
+  useMentionDetection,
+} from "../../hooks/useMentionDetection";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 import {
   createPost,
@@ -28,6 +34,8 @@ import {
   compressImage,
   COMPRESSION_PRESETS,
 } from "../../utils/imageCompression";
+import { MentionAutocomplete } from "./MentionAutocomplete";
+import { MentionUser } from "./MentionUserRow";
 
 // Constants
 const MAX_CONTENT_LENGTH = 500;
@@ -92,6 +100,22 @@ export function PostComposer({
     null
   );
 
+  // Mention autocomplete state
+  const [selection, setSelection] = useState<TextSelection>({
+    start: 0,
+    end: 0,
+  });
+  const [confirmedMentions, setConfirmedMentions] = useState<Set<string>>(
+    new Set()
+  );
+  const {
+    showAutocomplete,
+    mentionQuery,
+    handleTextChange,
+    insertMention,
+    clearMention,
+  } = useMentionDetection();
+
   // Calculate remaining characters
   const remainingChars = MAX_CONTENT_LENGTH - content.length;
   const isOverLimit = remainingChars < 0;
@@ -110,6 +134,93 @@ export function PostComposer({
     !isOverLimit &&
     !isCompressing;
 
+  // Handle mention selection from autocomplete
+  const handleMentionSelect = useCallback(
+    (user: MentionUser) => {
+      const newContent = insertMention(content, user.username);
+      setContent(newContent);
+      // Track this as a confirmed mention
+      setConfirmedMentions((prev) =>
+        new Set(prev).add(user.username.toLowerCase())
+      );
+      // Move cursor to end of inserted mention
+      const newCursorPos = newContent.length;
+      setSelection({ start: newCursorPos, end: newCursorPos });
+      clearMention();
+    },
+    [content, insertMention, clearMention]
+  );
+
+  // Render text with highlighted @mentions (only confirmed ones)
+  const renderHighlightedText = useMemo(() => {
+    if (!content) return null;
+
+    // Regex to match @mentions (@ followed by word characters)
+    const mentionRegex = /@(\w+)/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = mentionRegex.exec(content)) !== null) {
+      const username = match[1].toLowerCase();
+      const isConfirmed = confirmedMentions.has(username);
+
+      // Add text before the mention
+      if (match.index > lastIndex) {
+        parts.push(
+          <Text key={`text-${lastIndex}`} style={styles.highlightedText}>
+            {content.slice(lastIndex, match.index)}
+          </Text>
+        );
+      }
+      // Add the mention - highlighted only if confirmed
+      parts.push(
+        <Text
+          key={`mention-${match.index}`}
+          style={isConfirmed ? styles.mentionHighlight : styles.highlightedText}
+        >
+          {match[0]}
+        </Text>
+      );
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text after last mention
+    if (lastIndex < content.length) {
+      parts.push(
+        <Text key={`text-${lastIndex}`} style={styles.highlightedText}>
+          {content.slice(lastIndex)}
+        </Text>
+      );
+    }
+
+    return parts.length > 0 ? parts : null;
+  }, [
+    content,
+    confirmedMentions,
+    styles.highlightedText,
+    styles.mentionHighlight,
+  ]);
+
+  // Handle text input changes with mention detection
+  const handleContentChange = useCallback(
+    (text: string) => {
+      setContent(text);
+      handleTextChange(text, selection);
+    },
+    [selection, handleTextChange]
+  );
+
+  // Handle selection changes in text input
+  const handleSelectionChange = useCallback(
+    (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
+      const newSelection = e.nativeEvent.selection;
+      setSelection(newSelection);
+      handleTextChange(content, newSelection);
+    },
+    [content, handleTextChange]
+  );
+
   // Reset form state
   const resetForm = useCallback(() => {
     setContent("");
@@ -117,7 +228,9 @@ export function PostComposer({
     setIsPublic(true);
     setIsSubmitting(false);
     setUploadProgress(null);
-  }, []);
+    setConfirmedMentions(new Set());
+    clearMention();
+  }, [clearMention]);
 
   // Handle close
   const handleClose = useCallback(() => {
@@ -592,21 +705,42 @@ export function PostComposer({
           style={styles.scrollView}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Text Input */}
-          <TextInput
-            style={styles.textInput}
-            placeholder="What's on your mind?"
-            placeholderTextColor={theme.colors.textTertiary}
-            multiline
-            maxLength={MAX_CONTENT_LENGTH + 50} // Allow slight overage to show warning
-            value={content}
-            onChangeText={setContent}
-            autoFocus
-            autoCapitalize="none"
-            inputAccessoryViewID={
-              Platform.OS === "ios" ? INPUT_ACCESSORY_VIEW_ID : undefined
-            }
-          />
+          {/* Text Input with Mention Highlighting */}
+          <View style={styles.textInputContainer}>
+            {/* Highlighted text overlay - renders @mentions in accent color */}
+            <Text style={styles.textInputOverlay} pointerEvents="none">
+              {renderHighlightedText || (
+                <Text style={styles.placeholderText}>What's on your mind?</Text>
+              )}
+            </Text>
+            {/* Actual TextInput with transparent text */}
+            <TextInput
+              style={styles.textInput}
+              placeholder=""
+              multiline
+              maxLength={MAX_CONTENT_LENGTH + 50}
+              value={content}
+              onChangeText={handleContentChange}
+              onSelectionChange={handleSelectionChange}
+              selection={selection}
+              autoFocus
+              autoCapitalize="none"
+              inputAccessoryViewID={
+                Platform.OS === "ios" ? INPUT_ACCESSORY_VIEW_ID : undefined
+              }
+            />
+          </View>
+
+          {/* Mention Autocomplete Dropdown */}
+          {showAutocomplete && (
+            <MentionAutocomplete
+              query={mentionQuery}
+              visible={showAutocomplete}
+              onSelect={handleMentionSelect}
+              onDismiss={clearMention}
+              maxHeight={180}
+            />
+          )}
 
           {/* Media Preview */}
           {renderMediaPreview()}
@@ -705,9 +839,40 @@ const createStyles = (theme: import("../../constants/themes").Theme) => ({
   scrollView: {
     flex: 1,
   },
+  textInputContainer: {
+    position: "relative" as const,
+    minHeight: 120,
+  },
+  textInputOverlay: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    fontSize: 18,
+    lineHeight: 24,
+    color: "transparent" as const, // Base is transparent, children have color
+  },
+  highlightedText: {
+    fontSize: 18,
+    lineHeight: 24,
+    color: theme.colors.textPrimary,
+  },
+  mentionHighlight: {
+    fontSize: 18,
+    lineHeight: 24,
+    color: theme.colors.accent,
+    fontWeight: "500" as const,
+  },
+  placeholderText: {
+    fontSize: 18,
+    lineHeight: 24,
+    color: theme.colors.textTertiary,
+  },
   textInput: {
     fontSize: 18,
-    color: theme.colors.textPrimary,
+    color: "transparent" as const,
+    caretColor: theme.colors.textPrimary,
     padding: 16,
     minHeight: 120,
     textAlignVertical: "top" as const,

@@ -1,8 +1,10 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { doc, getDoc, getFirestore } from "firebase/firestore";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
@@ -161,6 +163,39 @@ export default function PostDetailScreen() {
     [router]
   );
 
+  // Handle @mention tap - lookup userId from username and navigate to profile
+  const handleMentionPress = useCallback(
+    async (username: string) => {
+      try {
+        const db = getFirestore();
+        const usernameDoc = await getDoc(
+          doc(db, "usernames", username.toLowerCase())
+        );
+
+        if (usernameDoc.exists()) {
+          const data = usernameDoc.data();
+          const userId = data.uid || data.userId || data.oderId;
+
+          if (userId) {
+            posthog.capture("mention_tapped", {
+              username,
+              user_id: userId,
+              source: "post_detail",
+            });
+            router.push(`/profile/${userId}`);
+            return;
+          }
+        }
+
+        Alert.alert("User Not Found", `@${username} doesn't exist.`);
+      } catch (error) {
+        console.error("Error looking up username:", error);
+        Alert.alert("Error", "Could not find user profile.");
+      }
+    },
+    [router, posthog]
+  );
+
   // Navigate to comment (shows post)
   const handleCommentPress = useCallback(() => {
     // Already on post detail, no-op or scroll to comments
@@ -230,6 +265,7 @@ export default function PostDetailScreen() {
             isLiked={isLiked}
             onPress={() => {}}
             onProfilePress={handleProfilePress}
+            onMentionPress={handleMentionPress}
             onLike={handleLike}
             onComment={handleCommentPress}
           />
