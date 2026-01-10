@@ -443,6 +443,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               <Ionicons name="chevron-forward" size={20} color="#666" />
             </Pressable>
 
+            {/* Appearance Settings Link */}
+            <Pressable
+              style={styles.navigationButton}
+              onPress={() => {
+                handleClose();
+                router.push("/(app)/account/appearance");
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Appearance settings"
+            >
+              <View style={styles.navigationButtonContent}>
+                <Ionicons name="color-palette-outline" size={20} color="#fff" />
+                <Text style={styles.navigationButtonText}>Appearance</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666" />
+            </Pressable>
+
             {/* Analytics Privacy Toggle */}
             <View style={styles.settingsRow}>
               <View style={styles.settingsLabelContainer}>

@@ -18,9 +18,11 @@ import { Provider } from "react-redux";
 import { PostHogProvider } from "../analytics/PostHogProvider";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { queryClient } from "../config/reactQuery";
+import { ThemeProvider, useTheme } from "../contexts/ThemeContext";
 import { AuthProvider } from "../hooks/AuthContext";
 import { MusicPlayerProvider } from "../hooks/MusicPlayerContext";
 import { SoundCloudPlayerProvider } from "../hooks/SoundCloudPlayerContext";
+import { initializeAppCheck } from "../services/appCheckService";
 import {
   setupBackgroundHandler,
   setupForegroundHandler,
@@ -79,6 +81,9 @@ export default function RootLayout() {
       try {
         // Initialize image cache configuration
         initializeImageCache();
+
+        // Initialize Firebase App Check for security
+        await initializeAppCheck();
 
         // Preload critical images for better UX
         await imagePreloader.preloadCriticalImages();
@@ -252,21 +257,35 @@ export default function RootLayout() {
                 console.error("Root error boundary caught error:", error);
               }}
             >
-              <AuthProvider>
-                <MusicPlayerProvider>
-                  <SoundCloudPlayerProvider>
-                    <View style={{ flex: 1, backgroundColor: "#000" }}>
-                      <StatusBar style="light" />
-                      <Slot />
-                    </View>
-                  </SoundCloudPlayerProvider>
-                </MusicPlayerProvider>
-              </AuthProvider>
+              <ThemeProvider>
+                <AuthProvider>
+                  <MusicPlayerProvider>
+                    <SoundCloudPlayerProvider>
+                      <ThemedAppContainer />
+                    </SoundCloudPlayerProvider>
+                  </MusicPlayerProvider>
+                </AuthProvider>
+              </ThemeProvider>
             </ErrorBoundary>
           </PaperProvider>
         </QueryClientProvider>
       </Provider>
     </PostHogProvider>
+  );
+}
+
+/**
+ * ThemedAppContainer
+ * Inner component that can access the ThemeContext
+ */
+function ThemedAppContainer() {
+  const { theme, isDark } = useTheme();
+
+  return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.bgRoot }}>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Slot />
+    </View>
   );
 }
 

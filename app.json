@@ -2,7 +2,7 @@
   "expo": {
     "name": "RageState",
     "slug": "ragestate-app",
-    "version": "2.47.0",
+    "version": "2.48.0",
     "orientation": "portrait",
     "icon": "./src/assets/RSLogo2025.png",
     "userInterfaceStyle": "light",
@@ -34,7 +34,10 @@
         "android.permission.CAMERA"
       ],
       "package": "com.tyrelle.ragestate",
-      "versionCode": 18
+      "versionCode": 18,
+      "playIntegrity": {
+        "cloudProjectNumber": "930832370585"
+      }
     },
     "web": {
       "favicon": "./src/assets/RSLogo2025.png",
@@ -78,7 +81,16 @@
         }
       ],
       "expo-router",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "@react-native-firebase/app-check"
     ],
     "extra": {
       "eas": {
@@ -87,7 +99,7 @@
     },
     "owner": "tyrelle",
     "scheme": "ragestate",
-    "runtimeVersion": "2.47.0",
+    "runtimeVersion": "2.48.0",
     "updates": {
       "url": "https://u.expo.dev/0b623ccd-8529-45cb-bc54-dd7265c22a26"
     }

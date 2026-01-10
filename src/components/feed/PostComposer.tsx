@@ -6,7 +6,7 @@ import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
+  InputAccessoryView,
   Modal,
   Platform,
   ScrollView,
@@ -34,6 +34,7 @@ const MIN_CONTENT_LENGTH = 1; // Must have at least 1 char if no media
 const MAX_IMAGES = 4;
 const MAX_VIDEO = 1;
 const MAX_VIDEO_SIZE_MB = 100; // 100MB max for videos
+const INPUT_ACCESSORY_VIEW_ID = "post-composer-toolbar";
 
 // Helper to format error messages
 const getErrorMessage = (error: unknown): string => {
@@ -493,6 +494,62 @@ export function PostComposer({
     );
   };
 
+  // Render the toolbar content (shared between InputAccessoryView and regular View)
+  const renderToolbarContent = () => (
+    <>
+      {/* Character Counter */}
+      <Text
+        style={[styles.charCounter, isOverLimit && styles.charCounterError]}
+      >
+        {remainingChars}
+      </Text>
+
+      {/* Media Buttons */}
+      <View style={styles.toolbarActions}>
+        {/* Add Media */}
+        <TouchableOpacity
+          style={[
+            styles.toolbarButton,
+            !canAddMedia && !canAddVideo && styles.toolbarButtonDisabled,
+          ]}
+          onPress={showMediaOptions}
+          disabled={!canAddMedia && !canAddVideo}
+        >
+          <MaterialCommunityIcons
+            name="image-plus"
+            size={24}
+            color={
+              canAddMedia || canAddVideo
+                ? GlobalStyles.colors.redVivid5
+                : GlobalStyles.colors.grey6
+            }
+          />
+        </TouchableOpacity>
+
+        {/* Privacy Toggle */}
+        <TouchableOpacity
+          style={styles.toolbarButton}
+          onPress={() => setIsPublic(!isPublic)}
+        >
+          <MaterialCommunityIcons
+            name={isPublic ? "earth" : "lock"}
+            size={24}
+            color={
+              isPublic
+                ? GlobalStyles.colors.redVivid5
+                : GlobalStyles.colors.grey5
+            }
+          />
+          <Text
+            style={[styles.privacyText, !isPublic && styles.privacyTextMuted]}
+          >
+            {isPublic ? "Public" : "Followers"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+
   return (
     <Modal
       visible={visible}
@@ -500,139 +557,100 @@ export function PostComposer({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-      >
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
 
-            <Text style={styles.headerTitle}>New Post</Text>
+          <Text style={styles.headerTitle}>New Post</Text>
 
-            <TouchableOpacity
-              onPress={handleSubmit}
-              style={[
-                styles.postButton,
-                (!isValid || isSubmitting) && styles.postButtonDisabled,
-              ]}
-              disabled={!isValid || isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.postButtonText}>Post</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Content Area */}
-          <ScrollView
-            style={styles.scrollView}
-            keyboardShouldPersistTaps="handled"
+          <TouchableOpacity
+            onPress={handleSubmit}
+            style={[
+              styles.postButton,
+              (!isValid || isSubmitting) && styles.postButtonDisabled,
+            ]}
+            disabled={!isValid || isSubmitting}
           >
-            {/* Text Input */}
-            <TextInput
-              style={styles.textInput}
-              placeholder="What's on your mind?"
-              placeholderTextColor={GlobalStyles.colors.grey5}
-              multiline
-              maxLength={MAX_CONTENT_LENGTH + 50} // Allow slight overage to show warning
-              value={content}
-              onChangeText={setContent}
-              autoFocus
-              autoCapitalize="none"
-            />
-
-            {/* Media Preview */}
-            {renderMediaPreview()}
-          </ScrollView>
-
-          {/* Upload Progress Indicator */}
-          {isSubmitting && (
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBarBackground}>
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    { width: `${uploadProgress?.overallProgress ?? 0}%` },
-                  ]}
-                />
-              </View>
-              <Text style={styles.progressText}>
-                {uploadProgress && uploadProgress.totalFiles > 0
-                  ? `Uploading ${uploadProgress.completedFiles + 1} of ${
-                      uploadProgress.totalFiles
-                    } (${Math.round(uploadProgress.overallProgress)}%)`
-                  : "Creating post..."}
-              </Text>
-            </View>
-          )}
-
-          {/* Bottom Toolbar */}
-          <View style={[styles.toolbar, { paddingBottom: insets.bottom + 8 }]}>
-            {/* Character Counter */}
-            <Text
-              style={[
-                styles.charCounter,
-                isOverLimit && styles.charCounterError,
-              ]}
-            >
-              {remainingChars}
-            </Text>
-
-            {/* Media Buttons */}
-            <View style={styles.toolbarActions}>
-              {/* Add Media */}
-              <TouchableOpacity
-                style={[
-                  styles.toolbarButton,
-                  !canAddMedia && !canAddVideo && styles.toolbarButtonDisabled,
-                ]}
-                onPress={showMediaOptions}
-                disabled={!canAddMedia && !canAddVideo}
-              >
-                <MaterialCommunityIcons
-                  name="image-plus"
-                  size={24}
-                  color={
-                    canAddMedia || canAddVideo
-                      ? GlobalStyles.colors.redVivid5
-                      : GlobalStyles.colors.grey6
-                  }
-                />
-              </TouchableOpacity>
-
-              {/* Privacy Toggle */}
-              <TouchableOpacity
-                style={styles.toolbarButton}
-                onPress={() => setIsPublic(!isPublic)}
-              >
-                <MaterialCommunityIcons
-                  name={isPublic ? "earth" : "lock"}
-                  size={24}
-                  color={
-                    isPublic
-                      ? GlobalStyles.colors.redVivid5
-                      : GlobalStyles.colors.grey5
-                  }
-                />
-                <Text
-                  style={[
-                    styles.privacyText,
-                    !isPublic && styles.privacyTextMuted,
-                  ]}
-                >
-                  {isPublic ? "Public" : "Followers"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.postButtonText}>Post</Text>
+            )}
+          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+
+        {/* Content Area */}
+        <ScrollView
+          style={styles.scrollView}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Text Input */}
+          <TextInput
+            style={styles.textInput}
+            placeholder="What's on your mind?"
+            placeholderTextColor={GlobalStyles.colors.grey5}
+            multiline
+            maxLength={MAX_CONTENT_LENGTH + 50} // Allow slight overage to show warning
+            value={content}
+            onChangeText={setContent}
+            autoFocus
+            autoCapitalize="none"
+            inputAccessoryViewID={
+              Platform.OS === "ios" ? INPUT_ACCESSORY_VIEW_ID : undefined
+            }
+          />
+
+          {/* Media Preview */}
+          {renderMediaPreview()}
+        </ScrollView>
+
+        {/* Upload Progress Indicator */}
+        {isSubmitting && (
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBarBackground}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  { width: `${uploadProgress?.overallProgress ?? 0}%` },
+                ]}
+              />
+            </View>
+            <Text style={styles.progressText}>
+              {uploadProgress && uploadProgress.totalFiles > 0
+                ? `Uploading ${uploadProgress.completedFiles + 1} of ${
+                    uploadProgress.totalFiles
+                  } (${Math.round(uploadProgress.overallProgress)}%)`
+                : "Creating post..."}
+            </Text>
+          </View>
+        )}
+
+        {/* Bottom Toolbar - Android only (iOS uses InputAccessoryView) */}
+        {Platform.OS !== "ios" && (
+          <View
+            style={[
+              styles.toolbar,
+              {
+                paddingBottom: insets.bottom + 4,
+              },
+            ]}
+          >
+            {renderToolbarContent()}
+          </View>
+        )}
+      </View>
+
+      {/* iOS InputAccessoryView - automatically positions above keyboard */}
+      {Platform.OS === "ios" && (
+        <InputAccessoryView nativeID={INPUT_ACCESSORY_VIEW_ID}>
+          <View style={styles.inputAccessoryToolbar}>
+            {renderToolbarContent()}
+          </View>
+        </InputAccessoryView>
+      )}
     </Modal>
   );
 }
@@ -667,7 +685,7 @@ const styles = StyleSheet.create({
     backgroundColor: GlobalStyles.colors.redVivid5,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 6,
     minWidth: 60,
     alignItems: "center",
   },
@@ -784,5 +802,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: GlobalStyles.colors.grey4,
     textAlign: "center",
+  },
+  inputAccessoryToolbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#000",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: GlobalStyles.colors.grey8,
   },
 });

@@ -28,12 +28,19 @@ This phase includes migrating ~75 files from hardcoded dark-mode styling to a to
 - Basic app builds for iOS/Android via EAS
 - Development environment functional
 - Core features implemented
+- ✅ Theme token system created (`src/constants/themes.ts`)
+- ✅ ThemeContext and ThemeProvider implemented (`src/contexts/ThemeContext.tsx`)
+- ✅ `useThemedStyles` hook created (`src/hooks/useThemedStyles.ts`)
+- ✅ App wrapped in ThemeProvider with theme-aware StatusBar
+- ✅ Appearance settings screen created (`src/app/(app)/account/appearance.tsx`)
+- ✅ App Check service scaffolded (`src/services/appCheckService.ts`)
+- ✅ Deep linking hook created (`src/hooks/useDeepLinking.ts`)
 
 **What's Missing:**
 
-- Firebase App Check
-- Universal/App Links
-- Light/Dark mode theming
+- Firebase App Check package installation & Firebase Console setup
+- Universal/App Links hosting (apple-app-site-association, assetlinks.json)
+- Theme migration for ~75 component files
 - Performance optimization
 - Crash reporting
 - App Store assets
@@ -146,11 +153,12 @@ export default function RootLayout() {
 
 ### Implementation Checklist
 
-- [ ] Install `@react-native-firebase/app-check`
-- [ ] Configure iOS DeviceCheck
-- [ ] Configure Android Play Integrity
-- [ ] Add debug tokens for development
-- [ ] Initialize App Check in `_layout.tsx`
+- [x] Create `appCheckService.ts` with initialization logic ✅
+- [x] Install `@react-native-firebase/app-check` package ✅
+- [x] Configure iOS DeviceCheck in app.json ✅ (via expo-build-properties with static frameworks)
+- [x] Configure Android Play Integrity in app.json ✅ (cloudProjectNumber: 930832370585)
+- [x] Add debug tokens for development (env variable) ✅ (EXPO_PUBLIC_APP_CHECK_DEBUG_TOKEN in .env.example)
+- [x] Call `initializeAppCheck()` in `_layout.tsx` ✅
 - [ ] Enable enforcement in Firebase Console
 - [ ] Test with real devices
 - [ ] Verify Cloud Functions accept tokens
@@ -329,10 +337,10 @@ Host at `https://ragestate.com/.well-known/assetlinks.json`:
 ### Implementation Checklist
 
 - [ ] Configure app.json with schemes and domains
-- [ ] Create `useDeepLinking` hook
-- [ ] Implement route mapping
-- [ ] Host apple-app-site-association
-- [ ] Host assetlinks.json
+- [x] Create `useDeepLinking` hook ✅ (`src/hooks/useDeepLinking.ts`)
+- [x] Implement route mapping (events, users, posts, transfers, shop) ✅
+- [ ] Host apple-app-site-association on ragestate.com
+- [ ] Host assetlinks.json on ragestate.com
 - [ ] Test custom scheme links
 - [ ] Test Universal Links (iOS)
 - [ ] Test App Links (Android)
@@ -675,13 +683,13 @@ export default function AppearanceSettings() {
 
 ### Implementation Checklist
 
-- [ ] Create theme definitions (light/dark)
-- [ ] Create ThemeContext and ThemeProvider
-- [ ] Create `useThemedStyles` hook
-- [ ] Migrate existing components to themed styles
-- [ ] Add appearance settings screen
-- [ ] Update StatusBar based on theme
-- [ ] Update navigation bar colors
+- [x] Create theme definitions (light/dark) ✅ (`src/constants/themes.ts`)
+- [x] Create ThemeContext and ThemeProvider ✅ (`src/contexts/ThemeContext.tsx`)
+- [x] Create `useThemedStyles` hook ✅ (`src/hooks/useThemedStyles.ts`)
+- [ ] Migrate existing components to themed styles (~75 files)
+- [x] Add appearance settings screen ✅ (`src/app/(app)/account/appearance.tsx`)
+- [x] Update StatusBar based on theme ✅ (in `_layout.tsx`)
+- [ ] Update navigation bar colors (tab bars, headers)
 - [ ] Test all screens in both modes
 
 ---
@@ -893,15 +901,16 @@ export default function AppearanceSettings() {
 
 ## 4.3.4 Migration Strategy
 
-### Phase A: Foundation (Day 1)
+### Phase A: Foundation (Day 1) ✅ COMPLETE
 
-1. Create `src/constants/themes.ts` with full token system
-2. Create `src/contexts/ThemeContext.tsx`
-3. Create `src/hooks/useThemedStyles.ts`
-4. Wrap app in `ThemeProvider` in `src/app/_layout.tsx`
-5. Add appearance settings in `src/app/(app)/account/`
+1. ✅ Create `src/constants/themes.ts` with full token system
+2. ✅ Create `src/contexts/ThemeContext.tsx`
+3. ✅ Create `src/hooks/useThemedStyles.ts`
+4. ✅ Wrap app in `ThemeProvider` in `src/app/_layout.tsx`
+5. ✅ Add appearance settings in `src/app/(app)/account/appearance.tsx`
+6. ✅ Add appearance link in SettingsModal
 
-### Phase B: Critical Screens (Days 2-3)
+### Phase B: Critical Screens (Days 2-3) — NEXT
 
 1. Tab bar and navigation (`_layout.tsx` files)
 2. Auth screens (login, signup, complete-profile)
@@ -1157,29 +1166,47 @@ class ErrorBoundary extends React.Component {
 
 ## Files to Create/Update
 
-### New Files to Create
+### New Files Created ✅
 
 ```
 src/
 ├── constants/
-│   └── themes.ts                # Light/Dark theme definitions (aligned with web spec)
+│   └── themes.ts                # ✅ Light/Dark theme definitions (aligned with web spec)
 ├── contexts/
-│   └── ThemeContext.tsx         # Theme provider and context
+│   └── ThemeContext.tsx         # ✅ Theme provider and context
 ├── hooks/
-│   ├── useDeepLinking.ts        # Deep link handler
-│   └── useThemedStyles.ts       # StyleSheet factory hook
+│   ├── useDeepLinking.ts        # ✅ Deep link handler with route mapping
+│   └── useThemedStyles.ts       # ✅ StyleSheet factory hook
+├── services/
+│   └── appCheckService.ts       # ✅ Firebase App Check (awaiting package install)
+└── app/(app)/account/
+    └── appearance.tsx           # ✅ Theme selection screen
+```
+
+### Files Still to Create
+
+```
+src/
 └── services/
-    ├── appCheckService.ts       # Firebase App Check
-    └── errorReporting.ts        # Sentry integration
+    └── errorReporting.ts        # Sentry integration (4.5)
+```
+
+### Files Updated ✅
+
+```
+src/app/
+└── _layout.tsx                  # ✅ ThemeProvider wrapper, theme-aware StatusBar
+
+src/components/modals/
+└── SettingsModal.tsx            # ✅ Added appearance settings navigation link
 ```
 
 ### Files to Update (Theme Migration)
 
-**Layout Files (4 files)**
+**Layout Files (3 remaining)**
 
 ```
 src/app/
-├── _layout.tsx                  # Add ThemeProvider, StatusBar
 ├── (app)/_layout.tsx            # Theme tab bar
 ├── (auth)/_layout.tsx           # Theme auth layout
 └── (guest)/_layout.tsx          # Theme guest layout
