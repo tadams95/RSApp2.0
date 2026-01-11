@@ -146,17 +146,51 @@ async function createNotification({
   return notifRef.id;
 }
 
+// Helper: resolve actor UID to display name (username preferred, fallback to displayName)
+async function getActorDisplayName(actorId) {
+  if (!actorId) return null;
+  try {
+    // Try profiles collection first (has username)
+    const profileSnap = await db.collection('profiles').doc(actorId).get();
+    if (profileSnap.exists) {
+      const profile = profileSnap.data();
+      if (profile.username) return `@${profile.username}`;
+      if (profile.displayName) return profile.displayName;
+    }
+    // Fallback to customers collection
+    const customerSnap = await db.collection('customers').doc(actorId).get();
+    if (customerSnap.exists) {
+      const customer = customerSnap.data();
+      if (customer.username) return `@${customer.username}`;
+      if (customer.displayName) return customer.displayName;
+      if (customer.firstName) return customer.firstName;
+    }
+    // Fallback to users collection
+    const userSnap = await db.collection('users').doc(actorId).get();
+    if (userSnap.exists) {
+      const user = userSnap.data();
+      if (user.username) return `@${user.username}`;
+      if (user.displayName) return user.displayName;
+    }
+    return null;
+  } catch (err) {
+    logger.warn('getActorDisplayName failed', { actorId, err: err.message });
+    return null;
+  }
+}
+
 // --- postLikes onCreate -> post owner gets post_liked ---
 exports.onPostLikeCreateNotify = onDocumentCreated('postLikes/{likeId}', async (event) => {
   try {
     const like = event.data?.data() || {};
     const { postId, userId: actorId, postOwnerId } = like; // ensure like doc includes postOwnerId for efficiency
     if (!postId || !postOwnerId) return null;
+    const actorName = await getActorDisplayName(actorId);
     await createNotification({
       uid: postOwnerId,
       type: 'post_liked',
       title: 'New like',
-      body: 'Someone liked your post',
+      body: actorName ? `${actorName} liked your post` : 'Someone liked your post',
       data: { postId, actorId: actorId || null },
       link: `/post/${postId}`,
       deepLink: `ragestate://post/${postId}`,
@@ -173,11 +207,12 @@ exports.onPostCommentCreateNotify = onDocumentCreated('postComments/{commentId}'
     const c = event.data?.data() || {};
     const { postId, userId: actorId, postOwnerId, content } = c;
     if (!postId || !postOwnerId) return null;
+    const actorName = await getActorDisplayName(actorId);
     await createNotification({
       uid: postOwnerId,
       type: 'comment_added',
       title: 'New comment',
-      body: 'Someone commented on your post',
+      body: actorName ? `${actorName} commented on your post` : 'Someone commented on your post',
       data: { postId, actorId: actorId || null, commentId: event.params.commentId || null },
       link: `/post/${postId}`,
       deepLink: `ragestate://post/${postId}`,
@@ -201,7 +236,7 @@ exports.onPostCommentCreateNotify = onDocumentCreated('postComments/{commentId}'
               uid: targetUid,
               type: 'mention',
               title: 'You were mentioned',
-              body: 'Someone mentioned you in a comment',
+              body: actorName ? `${actorName} mentioned you in a comment` : 'Someone mentioned you in a comment',
               data: {
                 postId,
                 actorId: actorId || null,
@@ -242,11 +277,12 @@ exports.onPostCreateNotifyMentions = onDocumentCreated('posts/{postId}', async (
         if (!snap.exists) return null;
         const targetUid = snap.data().uid;
         if (!targetUid || targetUid === authorId) return null; // skip self-mention
+        const authorName = await getActorDisplayName(authorId);
         return createNotification({
           uid: targetUid,
           type: 'mention',
           title: 'You were mentioned',
-          body: 'Someone mentioned you in a post',
+          body: authorName ? `${authorName} mentioned you in a post` : 'Someone mentioned you in a post',
           data: { postId, actorId: authorId },
           link: `/post/${postId}`,
           deepLink: `ragestate://post/${postId}`,
@@ -265,11 +301,12 @@ exports.onFollowCreateNotify = onDocumentCreated('follows/{followId}', async (ev
     const f = event.data?.data() || {};
     const { followerId: actorId, followedId: targetUid } = f;
     if (!actorId || !targetUid) return null;
+    const actorName = await getActorDisplayName(actorId);
     await createNotification({
       uid: targetUid,
       type: 'new_follower',
       title: 'New follower',
-      body: 'You have a new follower',
+      body: actorName ? `${actorName} started following you` : 'You have a new follower',
       data: { actorId },
       link: `/profile/${actorId}`,
       deepLink: `ragestate://profile/${actorId}`,
@@ -286,11 +323,12 @@ exports.onRepostCreateNotify = onDocumentCreated('postReposts/{repostId}', async
     const repost = event.data?.data() || {};
     const { postId, userId: actorId, originalAuthorId } = repost;
     if (!postId || !originalAuthorId) return null;
+    const actorName = await getActorDisplayName(actorId);
     await createNotification({
       uid: originalAuthorId,
       type: 'post_reposted',
       title: 'Your post was reposted',
-      body: 'Someone reposted your post',
+      body: actorName ? `${actorName} reposted your post` : 'Someone reposted your post',
       data: { postId, actorId: actorId || null },
       link: `/post/${postId}`,
       deepLink: `ragestate://post/${postId}`,
