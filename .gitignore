@@ -105,9 +105,12 @@ dist/
 .env.test.local
 .env.production.local
 
-# Firebase config
-google-services.json
-GoogleService-Info.plist
+# Firebase config (ignore root copies, track ones in native folders)
+/google-services.json
+/GoogleService-Info.plist
+# Allow tracking in native project folders
+!ios/RageState/GoogleService-Info.plist
+!android/app/google-services.json
 
 # Temporary files
 *.tmp
