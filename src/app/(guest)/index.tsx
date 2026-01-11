@@ -1,14 +1,12 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 import React from "react";
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Platform, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useScreenTracking } from "../../analytics/PostHogProvider";
+import { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { navigateToAuth } from "../../utils/navigation";
 
 /**
@@ -21,30 +19,28 @@ const GuestAccountPage: React.FC = () => {
     user_type: "guest",
   });
 
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(createStyles);
+
   const handleNavigateToAuth = () => {
     navigateToAuth();
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <Stack.Screen
         options={{
-          title: "RAGESTATE ACCOUNT",
-          headerShown: true,
-          headerTintColor: "white",
-          headerStyle: {
-            backgroundColor: "black",
-          },
-          headerTitleStyle: {
-            color: "white",
-            fontFamily,
-            fontWeight: "700",
-          },
+          headerShown: false,
         }}
       />
 
       <View style={styles.accountContainer}>
-        <MaterialCommunityIcons name="account-circle" size={80} color="white" />
+        <MaterialCommunityIcons
+          name="account-circle"
+          size={80}
+          color={theme.colors.textPrimary}
+        />
         <Text style={styles.welcomeText}>Guest Access</Text>
 
         <Text style={styles.infoText}>
@@ -53,7 +49,11 @@ const GuestAccountPage: React.FC = () => {
 
         <View style={styles.benefitsList}>
           <View style={styles.benefitItem}>
-            <MaterialCommunityIcons name="shopping" size={24} color="white" />
+            <MaterialCommunityIcons
+              name="shopping"
+              size={24}
+              color={theme.colors.textPrimary}
+            />
             <Text style={styles.benefitText}>Make purchases in the shop</Text>
           </View>
 
@@ -61,18 +61,26 @@ const GuestAccountPage: React.FC = () => {
             <MaterialCommunityIcons
               name="calendar-check"
               size={24}
-              color="white"
+              color={theme.colors.textPrimary}
             />
             <Text style={styles.benefitText}>Register for events</Text>
           </View>
 
           <View style={styles.benefitItem}>
-            <MaterialCommunityIcons name="heart" size={24} color="white" />
+            <MaterialCommunityIcons
+              name="heart"
+              size={24}
+              color={theme.colors.textPrimary}
+            />
             <Text style={styles.benefitText}>Save favorite items</Text>
           </View>
 
           <View style={styles.benefitItem}>
-            <MaterialCommunityIcons name="history" size={24} color="white" />
+            <MaterialCommunityIcons
+              name="history"
+              size={24}
+              color={theme.colors.textPrimary}
+            />
             <Text style={styles.benefitText}>Track order history</Text>
           </View>
         </View>
@@ -99,71 +107,71 @@ const fontFamily =
     default: "system",
   }) || "system";
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => ({
   container: {
     flex: 1,
-    backgroundColor: "black",
-    padding: 20,
+    backgroundColor: theme.colors.bgRoot,
+    padding: theme.spacing.xl,
   },
   accountContainer: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     paddingVertical: 40,
   },
   welcomeText: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "white",
+    fontSize: theme.typography.sizes.display,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
     fontFamily,
-    marginTop: 20,
-    marginBottom: 20,
-    textAlign: "center",
+    marginTop: theme.spacing.xl,
+    marginBottom: theme.spacing.xl,
+    textAlign: "center" as const,
   },
   infoText: {
-    color: "#ccc",
-    fontSize: 16,
-    textAlign: "center",
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.sizes.body,
+    textAlign: "center" as const,
     marginBottom: 30,
     fontFamily,
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.xl,
   },
   benefitsList: {
-    width: "100%",
-    marginTop: 20,
+    width: "100%" as const,
+    marginTop: theme.spacing.xl,
   },
   benefitItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     marginVertical: 10,
-    backgroundColor: "#222",
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: theme.colors.bgElev2,
+    padding: theme.spacing.lg,
+    borderRadius: theme.radius.button,
   },
   benefitText: {
-    color: "white",
-    fontSize: 16,
+    color: theme.colors.textPrimary,
+    fontSize: theme.typography.sizes.body,
     fontFamily,
-    marginLeft: 15,
+    marginLeft: theme.spacing.lg,
   },
   footer: {
-    marginTop: "auto",
-    paddingVertical: 20,
-    width: "100%",
+    marginTop: "auto" as const,
+    paddingVertical: theme.spacing.xl,
+    width: "100%" as const,
   },
   authButton: {
-    backgroundColor: "#333",
+    backgroundColor: theme.colors.bgElev2,
     borderWidth: 1,
-    borderColor: "white",
-    width: "100%",
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
+    borderColor: theme.colors.borderStrong,
+    width: "100%" as const,
+    padding: theme.spacing.lg,
+    borderRadius: theme.radius.button,
+    alignItems: "center" as const,
   },
   authButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
+    color: theme.colors.textPrimary,
+    fontSize: theme.typography.sizes.body,
+    fontWeight: theme.typography.weights.semibold,
     fontFamily,
   },
 });

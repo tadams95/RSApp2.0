@@ -281,15 +281,15 @@ const createStyles = (theme: import("../../constants/themes").Theme) => ({
     marginTop: 6,
   },
   errorContainer: {
-    backgroundColor: "rgba(231, 76, 60, 0.1)",
+    backgroundColor: `${theme.colors.danger}1A`,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "rgba(231, 76, 60, 0.3)",
+    borderColor: `${theme.colors.danger}4D`,
   },
   errorText: {
-    color: theme.colors.error,
+    color: theme.colors.danger,
     fontSize: 14,
     textAlign: "center" as const,
   },

@@ -1,10 +1,13 @@
 import { Image } from "expo-image";
 import { Link } from "expo-router";
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { Pressable, Text, View } from "react-native";
+import { Theme } from "../../constants/themes";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 export default function EntryScreen() {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.container}>
       <View style={styles.backgroundDecoration} />
@@ -42,81 +45,81 @@ export default function EntryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => ({
   container: {
     flex: 1,
-    backgroundColor: "#000",
-    position: "relative",
+    backgroundColor: theme.colors.bgRoot,
+    position: "relative" as const,
   },
   backgroundDecoration: {
-    position: "absolute",
+    position: "absolute" as const,
     top: 0,
     right: 0,
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: theme.colors.bgElev1,
     opacity: 0.5,
     transform: [{ translateX: 100 }, { translateY: -50 }],
   },
   contentContainer: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: theme.spacing.xxl,
     paddingTop: 80,
     paddingBottom: 40,
-    justifyContent: "center",
+    justifyContent: "center" as const,
   },
   logoContainer: {
-    alignItems: "center",
+    alignItems: "center" as const,
     marginBottom: 60,
   },
   logo: {
     width: 160,
     height: 160,
-    marginBottom: 16,
-  },
+    marginBottom: theme.spacing.lg,
+  } as const,
   tagline: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#fff",
+    fontSize: theme.typography.sizes.body,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textPrimary,
     letterSpacing: 2,
     opacity: 0.8,
   },
   buttonsContainer: {
-    width: "100%",
-    paddingHorizontal: 12,
+    width: "100%" as const,
+    paddingHorizontal: theme.spacing.md,
   },
   button: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
     paddingVertical: 18,
-    borderRadius: 12,
-    backgroundColor: GlobalStyles.colors.red7,
-    alignItems: "center",
-    shadowColor: GlobalStyles.colors.red7,
+    borderRadius: theme.radius.button,
+    backgroundColor: theme.colors.accent,
+    alignItems: "center" as const,
+    shadowColor: theme.colors.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+    color: "#fff", // Always white on accent button for contrast
+    fontSize: theme.typography.sizes.body,
+    fontWeight: theme.typography.weights.bold,
     letterSpacing: 1.5,
   },
   guestButton: {
     backgroundColor: "transparent",
     paddingVertical: 18,
-    borderRadius: 12,
-    alignItems: "center",
+    borderRadius: theme.radius.button,
+    alignItems: "center" as const,
     borderWidth: 1,
-    borderColor: "#333",
-    marginTop: 8,
+    borderColor: theme.colors.borderSubtle,
+    marginTop: theme.spacing.sm,
   },
   guestButtonText: {
-    color: "#aaa",
-    fontSize: 16,
-    fontWeight: "600",
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.sizes.body,
+    fontWeight: theme.typography.weights.semibold,
     letterSpacing: 1.5,
   },
 });

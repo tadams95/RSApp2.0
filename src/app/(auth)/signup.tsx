@@ -758,13 +758,13 @@ const createStyles = (theme: import("../../constants/themes").Theme) => ({
     fontFamily,
   },
   inputError: {
-    borderColor: theme.colors.error,
+    borderColor: theme.colors.danger,
   },
   eyeIcon: {
     padding: 10,
   },
   errorText: {
-    color: theme.colors.error,
+    color: theme.colors.danger,
     fontSize: 12,
     marginTop: 5,
   },

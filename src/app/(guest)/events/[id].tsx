@@ -8,7 +8,6 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -18,8 +17,10 @@ import {
   useScreenTracking,
 } from "../../../analytics/PostHogProvider";
 import { ProgressiveImage } from "../../../components/ui";
+import { Theme } from "../../../constants/themes";
 import { useEventAttendingCountWithHelpers } from "../../../hooks/useEvents";
 import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { PROGRESSIVE_PLACEHOLDERS } from "../../../utils/imageCacheConfig";
 import { logError } from "../../../utils/logError";
 import { goBack, navigateToAuth } from "../../../utils/navigation";
@@ -39,6 +40,7 @@ const GuestEventView: React.FC = () => {
   // Get route parameters from Expo Router
   const params = useLocalSearchParams<Record<string, string>>();
   const posthog = usePostHog();
+  const { styles, theme } = useThemedStyles(createStyles);
 
   const eventName = params.name as string;
   const eventImgURL = params.imgURL as string;
@@ -195,7 +197,11 @@ const GuestEventView: React.FC = () => {
           accessibilityLabel="Go back"
           accessibilityRole="button"
         >
-          <Ionicons name="arrow-back" size={22} color="white" />
+          <Ionicons
+            name="arrow-back"
+            size={22}
+            color={theme.colors.textPrimary}
+          />
         </TouchableOpacity>
       </View>
 
@@ -208,7 +214,10 @@ const GuestEventView: React.FC = () => {
         <View style={styles.imageContainer}>
           {imageIsLoading && (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color="white" />
+              <ActivityIndicator
+                size="large"
+                color={theme.colors.textPrimary}
+              />
             </View>
           )}
           <ProgressiveImage
@@ -257,7 +266,7 @@ const GuestEventView: React.FC = () => {
                 <Ionicons
                   name="calendar-outline"
                   size={20}
-                  color="white"
+                  color={theme.colors.textPrimary}
                   style={styles.icon}
                 />
                 <Text style={styles.detailText}>{eventDateTime}</Text>
@@ -273,7 +282,7 @@ const GuestEventView: React.FC = () => {
                 <Ionicons
                   name="location-outline"
                   size={20}
-                  color="white"
+                  color={theme.colors.textPrimary}
                   style={styles.icon}
                 />
                 <Text style={styles.locationText}>{eventLocation}</Text>
@@ -290,7 +299,7 @@ const GuestEventView: React.FC = () => {
                 <Ionicons
                   name="people-outline"
                   size={20}
-                  color="white"
+                  color={theme.colors.textPrimary}
                   style={styles.icon}
                 />
                 <Text style={styles.detailText}>
@@ -306,7 +315,7 @@ const GuestEventView: React.FC = () => {
                   <Ionicons
                     name="information-circle-outline"
                     size={20}
-                    color="white"
+                    color={theme.colors.textPrimary}
                     style={styles.icon}
                   />
                   <Text style={styles.detailText}>{eventDescription}</Text>
@@ -349,20 +358,20 @@ const fontFamily: string =
     default: "system",
   }) || "system";
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => ({
   rootContainer: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: theme.colors.bgRoot,
   },
   header: {
-    position: "absolute",
+    position: "absolute" as const,
     top: Platform.OS === "ios" ? 50 : 20,
     left: 0,
     right: 0,
     zIndex: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
     paddingHorizontal: 16,
   },
   backButton: {
@@ -372,26 +381,30 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: theme.colors.bgRoot,
   },
   scrollViewContent: {
     paddingBottom: 40,
   },
   imageContainer: {
     height: windowWidth * 1.1,
-    position: "relative",
-    backgroundColor: "#111",
+    position: "relative" as const,
+    backgroundColor: theme.colors.bgElev1,
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     zIndex: 10,
   },
   eventImage: {
-    width: "100%",
-    height: "100%",
+    width: "100%" as const,
+    height: "100%" as const,
   },
   eventInfoContainer: {
     paddingHorizontal: 16,
@@ -403,14 +416,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily,
-    fontWeight: "700",
-    color: "white",
+    fontWeight: "700" as const,
+    color: theme.colors.textPrimary,
     fontSize: 24,
     marginBottom: 8,
   },
   price: {
     fontFamily,
-    color: "white",
+    color: theme.colors.textPrimary,
     fontSize: 18,
     opacity: 0.9,
   },
@@ -419,29 +432,29 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily,
-    color: "white",
+    color: theme.colors.textPrimary,
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "600" as const,
     marginBottom: 12,
   },
   detailsContainer: {
-    backgroundColor: "#111",
+    backgroundColor: theme.colors.bgElev1,
     borderRadius: 8,
     padding: 16,
   },
   detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#333",
+    borderBottomColor: theme.colors.borderSubtle,
   },
   icon: {
     marginRight: 12,
   },
   detailText: {
     fontFamily,
-    color: "white",
+    color: theme.colors.textPrimary,
     fontSize: 16,
     flex: 1,
   },
@@ -452,41 +465,41 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionButton: {
-    backgroundColor: "#222",
+    backgroundColor: theme.colors.bgElev2,
     borderWidth: 1,
-    borderColor: "white",
+    borderColor: theme.colors.textPrimary,
     borderRadius: 8,
     marginTop: 16,
     padding: 16,
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   actionButtonText: {
     fontFamily,
-    color: "white",
-    fontWeight: "600",
+    color: theme.colors.textPrimary,
+    fontWeight: "600" as const,
     fontSize: 16,
   },
   imageRetryButton: {
-    position: "absolute",
+    position: "absolute" as const,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#444",
+    borderColor: theme.colors.borderSubtle,
     bottom: 20,
-    alignSelf: "center",
+    alignSelf: "center" as const,
   },
   imageRetryText: {
     fontFamily,
-    color: "white",
+    color: theme.colors.textPrimary,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   disclaimerText: {
     fontFamily,
-    color: "#999",
-    textAlign: "center",
+    color: theme.colors.textSecondary,
+    textAlign: "center" as const,
     fontSize: 12,
     marginHorizontal: 10,
     marginTop: 16,

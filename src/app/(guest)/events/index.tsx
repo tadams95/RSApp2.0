@@ -9,12 +9,14 @@ import {
   Animated,
   Dimensions,
   Platform,
-  StyleSheet,
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { Theme } from "../../../constants/themes";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { navigateToGuestEvent } from "../../../utils/navigation";
 
 // Import our enhanced components and hooks
@@ -41,6 +43,8 @@ const GuestEvent: React.FC = () => {
   const { events, isLoading, error, refetch, hasEvents, isEmpty, hasError } =
     useEventsWithHelpers();
   const posthog = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const [isOffline, setIsOffline] = useState(false);
   const flatListRef = useRef<Animated.FlatList>(null);
@@ -233,7 +237,7 @@ const GuestEvent: React.FC = () => {
 
         {isImageLoading && (
           <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color="white" />
+            <ActivityIndicator size="large" color={theme.colors.textPrimary} />
           </View>
         )}
 
@@ -250,18 +254,30 @@ const GuestEvent: React.FC = () => {
 
           <View style={styles.detailsContainer}>
             <View style={styles.detailRow}>
-              <Ionicons name="calendar-outline" size={18} color="white" />
+              <Ionicons
+                name="calendar-outline"
+                size={18}
+                color={theme.colors.textPrimary}
+              />
               <Text style={styles.detailText}>{formattedDate}</Text>
             </View>
 
             <View style={styles.detailRow}>
-              <Ionicons name="cash-outline" size={18} color="white" />
+              <Ionicons
+                name="cash-outline"
+                size={18}
+                color={theme.colors.textPrimary}
+              />
               <Text style={styles.detailText}>{priceDisplay}</Text>
             </View>
 
             {item.location && (
               <View style={styles.detailRow}>
-                <Ionicons name="location-outline" size={18} color="white" />
+                <Ionicons
+                  name="location-outline"
+                  size={18}
+                  color={theme.colors.textPrimary}
+                />
                 <Text style={styles.detailText}>{item.location}</Text>
               </View>
             )}
@@ -294,7 +310,7 @@ const GuestEvent: React.FC = () => {
         accessibilityLabel="Loading events"
         accessibilityRole="progressbar"
       >
-        <ActivityIndicator size="large" color="white" />
+        <ActivityIndicator size="large" color={theme.colors.textPrimary} />
         <Text style={styles.loaderText}>Loading events...</Text>
       </View>
     );
@@ -304,7 +320,7 @@ const GuestEvent: React.FC = () => {
   if (isOffline) {
     return (
       <View style={styles.emptyContainer} accessibilityLabel="Network error">
-        <Ionicons name="cloud-offline" size={70} color="#ef4444" />
+        <Ionicons name="cloud-offline" size={70} color={theme.colors.danger} />
         <Text style={styles.emptyTitle}>You're Offline</Text>
         <Text style={styles.emptySubtitle}>
           Please check your connection and try again
@@ -332,7 +348,11 @@ const GuestEvent: React.FC = () => {
         style={styles.emptyContainer}
         accessibilityLabel="Error loading events"
       >
-        <Ionicons name="alert-circle-outline" size={70} color="#ef4444" />
+        <Ionicons
+          name="alert-circle-outline"
+          size={70}
+          color={theme.colors.danger}
+        />
         <Text style={styles.emptyTitle}>Couldn't Load Events</Text>
         <Text style={styles.emptySubtitle}>
           {error?.message || "Please try again"}
@@ -351,7 +371,11 @@ const GuestEvent: React.FC = () => {
         style={styles.emptyContainer}
         accessibilityLabel="No events available"
       >
-        <Ionicons name="calendar-outline" size={70} color="#555" />
+        <Ionicons
+          name="calendar-outline"
+          size={70}
+          color={theme.colors.textTertiary}
+        />
         <Text style={styles.emptyTitle}>No Events Available</Text>
         <Text style={styles.emptySubtitle}>
           Check back soon for upcoming events
@@ -446,21 +470,21 @@ const fontFamily: string =
     default: "system",
   }) || "system";
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => ({
   container: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: theme.colors.bgRoot,
   },
   loaderContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "black",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    backgroundColor: theme.colors.bgRoot,
   },
   retryButton: {
-    backgroundColor: "#222",
+    backgroundColor: theme.colors.bgElev2,
     borderWidth: 1,
-    borderColor: "white",
+    borderColor: theme.colors.textPrimary,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 24,
@@ -468,12 +492,12 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     fontFamily,
-    color: "white",
+    color: theme.colors.textPrimary,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   errorBanner: {
-    position: "absolute",
+    position: "absolute" as const,
     top: Platform.OS === "ios" ? 50 : 30,
     left: 0,
     right: 0,
@@ -483,12 +507,12 @@ const styles = StyleSheet.create({
   },
   errorBannerText: {
     fontFamily,
-    color: "white",
-    textAlign: "center",
+    color: theme.colors.textPrimary,
+    textAlign: "center" as const,
     fontSize: 14,
   },
   loaderText: {
-    color: "white",
+    color: theme.colors.textPrimary,
     marginTop: 12,
     fontFamily,
     fontSize: 16,
@@ -496,55 +520,59 @@ const styles = StyleSheet.create({
   eventSlide: {
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
-    position: "relative",
+    position: "relative" as const,
   },
   eventImage: {
-    width: "100%",
-    height: "100%",
-    position: "absolute",
+    width: "100%" as const,
+    height: "100%" as const,
+    position: "absolute" as const,
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   gradient: {
-    position: "absolute",
+    position: "absolute" as const,
     bottom: 0,
     left: 0,
     right: 0,
-    height: "70%", // Increased to cover more of the screen
+    height: "70%" as const,
   },
   eventContent: {
-    position: "absolute",
-    bottom: Platform.OS === "ios" ? 165 : 95, // Significantly increased for all devices
+    position: "absolute" as const,
+    bottom: Platform.OS === "ios" ? 165 : 95,
     left: 0,
     right: 0,
     padding: 20,
   },
   eventName: {
     fontFamily,
-    fontWeight: "700",
-    fontSize: 24, // Further reduced for better fit
-    color: "white",
-    marginBottom: 10, // Further reduced spacing
+    fontWeight: "700" as const,
+    fontSize: 24,
+    color: theme.colors.textPrimary,
+    marginBottom: 10,
     textShadowColor: "rgba(0, 0, 0, 0.75)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 5,
   },
   detailsContainer: {
-    marginBottom: 14, // Further reduced spacing
+    marginBottom: 14,
   },
   detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6, // Further reduced spacing
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    marginBottom: 6,
   },
   detailText: {
     fontFamily,
     fontSize: 16,
-    color: "white",
+    color: theme.colors.textPrimary,
     marginLeft: 8,
     textShadowColor: "rgba(0, 0, 0, 0.75)",
     textShadowOffset: { width: 0, height: 1 },
@@ -553,67 +581,67 @@ const styles = StyleSheet.create({
   viewButton: {
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderWidth: 1.5,
-    borderColor: "white",
+    borderColor: theme.colors.textPrimary,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    alignSelf: "flex-start",
+    alignSelf: "flex-start" as const,
   },
   viewButtonText: {
     fontFamily,
-    fontWeight: "600",
-    color: "white",
+    fontWeight: "600" as const,
+    color: theme.colors.textPrimary,
     fontSize: 14,
   },
   headerContainer: {
-    position: "absolute",
+    position: "absolute" as const,
     top: Platform.OS === "ios" ? 50 : 30,
     zIndex: 10,
-    width: "100%",
+    width: "100%" as const,
     paddingHorizontal: 20,
   },
   headerTitle: {
     fontFamily,
     fontSize: 22,
-    fontWeight: "700",
-    color: "white",
+    fontWeight: "700" as const,
+    color: theme.colors.textPrimary,
     textShadowColor: "rgba(0, 0, 0, 0.75)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 5,
   },
   emptyContainer: {
     flex: 1,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: theme.colors.bgRoot,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     padding: 20,
   },
   emptyTitle: {
     fontFamily,
     fontSize: 22,
-    fontWeight: "600",
-    color: "white",
+    fontWeight: "600" as const,
+    color: theme.colors.textPrimary,
     marginTop: 16,
   },
   emptySubtitle: {
     fontFamily,
     fontSize: 16,
-    color: "#999",
+    color: theme.colors.textSecondary,
     marginTop: 8,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   paginationWrapper: {
-    position: "absolute",
+    position: "absolute" as const,
     right: 15,
-    top: "50%",
+    top: "50%" as const,
     transform: [{ translateY: -50 }],
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   paginationDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "white",
+    backgroundColor: theme.colors.textPrimary,
     marginVertical: 3,
   },
 });

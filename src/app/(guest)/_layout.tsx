@@ -34,7 +34,7 @@ export default function GuestLayout() {
           name="shop/index"
           options={{
             title: "Shop",
-            headerTitle: "RAGESTATE SHOP",
+            headerShown: false,
             tabBarIcon: ({ color }) => (
               <MaterialCommunityIcons name="shopping" color={color} size={24} />
             ),
@@ -44,7 +44,7 @@ export default function GuestLayout() {
           name="events/index"
           options={{
             title: "Events",
-            headerTitle: "RAGESTATE EVENTS",
+            headerShown: false,
             tabBarIcon: ({ color }) => (
               <MaterialCommunityIcons name="calendar" color={color} size={24} />
             ),
@@ -54,7 +54,7 @@ export default function GuestLayout() {
           name="index"
           options={{
             title: "Account",
-            headerTitle: "RAGESTATE ACCOUNT",
+            headerShown: false,
             tabBarIcon: ({ color }) => (
               <MaterialCommunityIcons name="account" color={color} size={24} />
             ),

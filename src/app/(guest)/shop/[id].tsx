@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -8,7 +8,6 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -19,7 +18,9 @@ import {
 } from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import AppCarousel from "../../../components/ui/AppCarousel";
-import { GlobalStyles } from "../../../constants/styles";
+import { Theme } from "../../../constants/themes";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { goBack, navigateToAuth } from "../../../utils/navigation";
 
 // Define types for product data
@@ -65,6 +66,8 @@ export default function GuestProductDetail() {
   // Get params from URL
   const params = useLocalSearchParams();
   const { track } = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Parse the serialized product data
   const data: ProductData = JSON.parse(params.data as string);
@@ -74,6 +77,23 @@ export default function GuestProductDetail() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [imagesLoaded, setImagesLoaded] = useState<number>(0);
   const [activeIndex, setActiveIndex] = useState<number>(0);
+
+  // Extract unique available sizes and colors
+  const availableSizes = useMemo(() => {
+    if (!variants) return [];
+    const sizes = variants
+      .filter((v) => v.available && v.size)
+      .map((v) => v.size as string);
+    return Array.from(new Set(sizes));
+  }, [variants]);
+
+  const availableColors = useMemo(() => {
+    if (!variants) return [];
+    const colors = variants
+      .filter((v) => v.available && v.color && v.color !== "Default")
+      .map((v) => v.color);
+    return Array.from(new Set(colors));
+  }, [variants]);
 
   const totalImages = images ? images.length : 0;
 
@@ -189,10 +209,7 @@ export default function GuestProductDetail() {
         <View style={styles.swiperContainer}>
           {isLoading && (
             <View style={styles.loaderContainer}>
-              <ActivityIndicator
-                size="large"
-                color={GlobalStyles.colors.red7}
-              />
+              <ActivityIndicator size="large" color={theme.colors.accent} />
             </View>
           )}
 
@@ -231,7 +248,7 @@ export default function GuestProductDetail() {
       <View style={styles.swiperContainer}>
         {isLoading && (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color={GlobalStyles.colors.red7} />
+            <ActivityIndicator size="large" color={theme.colors.accent} />
           </View>
         )}
 
@@ -265,7 +282,11 @@ export default function GuestProductDetail() {
             accessibilityLabel="Go back"
             accessibilityRole="button"
           >
-            <Ionicons name="arrow-back" size={22} color="white" />
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color={theme.colors.textPrimary}
+            />
           </TouchableOpacity>
         </View>
 
@@ -292,31 +313,42 @@ export default function GuestProductDetail() {
               </View>
             )}
 
-            {variants && variants.length > 0 && (
+            {(availableSizes.length > 0 || availableColors.length > 0) && (
               <View style={styles.sectionContainer}>
                 <Text style={styles.sectionTitle}>Available Options</Text>
-                <View style={styles.variantsList}>
-                  {variants
-                    .filter((variant) => variant.available)
-                    .map((variant, index) => (
-                      <View key={index} style={styles.optionContainer}>
-                        <Text style={styles.optionText}>
-                          {variant.size && `Size: ${variant.size}`}
-                          {variant.size && variant.color && " | "}
-                          {variant.color &&
-                            variant.color !== "Default" &&
-                            `Color: ${variant.color}`}
-                        </Text>
-                      </View>
-                    ))}
 
-                  {variants.filter((variant) => variant.available).length ===
-                    0 && (
+                {availableSizes.length > 0 && (
+                  <View style={styles.optionGroup}>
+                    <Text style={styles.optionLabel}>Sizes</Text>
+                    <View style={styles.chipContainer}>
+                      {availableSizes.map((size, index) => (
+                        <View key={index} style={styles.chip}>
+                          <Text style={styles.chipText}>{size}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {availableColors.length > 0 && (
+                  <View style={styles.optionGroup}>
+                    <Text style={styles.optionLabel}>Colors</Text>
+                    <View style={styles.chipContainer}>
+                      {availableColors.map((color, index) => (
+                        <View key={index} style={styles.chip}>
+                          <Text style={styles.chipText}>{color}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {availableSizes.length === 0 &&
+                  availableColors.length === 0 && (
                     <Text style={styles.soldOutText}>
                       All options are currently sold out
                     </Text>
                   )}
-                </View>
               </View>
             )}
 
@@ -345,20 +377,20 @@ export default function GuestProductDetail() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => ({
   rootContainer: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: theme.colors.bgRoot,
   },
   header: {
-    position: "absolute",
-    top: Platform.OS === "ios" ? 50 : 20, // Adjust for status bar
+    position: "absolute" as const,
+    top: Platform.OS === "ios" ? 50 : 20,
     left: 0,
     right: 0,
     zIndex: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
     paddingHorizontal: 16,
   },
   backButton: {
@@ -368,50 +400,50 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: theme.colors.bgRoot,
   },
   scrollViewContent: {
     paddingBottom: 40,
   },
   swiperContainer: {
     height: windowWidth * 1.1,
-    position: "relative",
-    backgroundColor: "#111",
+    position: "relative" as const,
+    backgroundColor: theme.colors.bgElev1,
   },
   pagination: {
     bottom: 20,
   },
   loaderContainer: {
-    position: "absolute",
+    position: "absolute" as const,
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     backgroundColor: "rgba(0,0,0,0.3)",
     zIndex: 10,
   },
   images: {
-    width: "100%",
-    height: "100%",
+    width: "100%" as const,
+    height: "100%" as const,
   },
   noImageContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#222",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    backgroundColor: theme.colors.bgElev2,
   },
   noImageText: {
-    color: "#999",
+    color: theme.colors.textSecondary,
     fontFamily,
     fontSize: 16,
   },
   imageNavContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    position: "absolute",
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
+    position: "absolute" as const,
     bottom: 20,
     left: 20,
     right: 20,
@@ -422,67 +454,96 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   imageCounterText: {
-    color: "white",
+    color: theme.colors.textPrimary,
     fontFamily,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
     backgroundColor: "rgba(0,0,0,0.5)",
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 15,
-    alignSelf: "center",
+    alignSelf: "center" as const,
   },
   productInfoContainer: {
     padding: 20,
-    backgroundColor: "#0d0d0d",
+    backgroundColor: theme.colors.bgElev1,
   },
   titlePriceContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "flex-start" as const,
     marginBottom: 15,
   },
   title: {
     fontFamily,
     fontSize: 22,
-    fontWeight: "bold",
-    color: "white",
+    fontWeight: "bold" as const,
+    color: theme.colors.textPrimary,
     flex: 3,
     marginRight: 10,
   },
   price: {
     fontFamily,
     fontSize: 20,
-    fontWeight: "600",
-    color: GlobalStyles.colors.red7 || "#ff3c00",
+    fontWeight: "600" as const,
+    color: theme.colors.accent,
     flex: 1,
-    textAlign: "right",
+    textAlign: "right" as const,
   },
   sectionContainer: {
     marginBottom: 20,
     borderTopWidth: 1,
-    borderTopColor: "#222",
+    borderTopColor: theme.colors.bgElev2,
     paddingTop: 15,
   },
   sectionTitle: {
     fontFamily,
     fontSize: 16,
-    fontWeight: "bold",
-    color: "white",
+    fontWeight: "bold" as const,
+    color: theme.colors.textPrimary,
     marginBottom: 10,
   },
   description: {
     fontFamily,
     fontSize: 14,
-    color: "#ccc",
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   variantsList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+  },
+  optionGroup: {
+    marginBottom: 16,
+  },
+  optionLabel: {
+    fontFamily,
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: theme.colors.textSecondary,
+    marginBottom: 8,
+  },
+  chipContainer: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    gap: 8,
+  },
+  chip: {
+    backgroundColor: theme.colors.bgElev2,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+  },
+  chipText: {
+    color: theme.colors.textPrimary,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: "500" as const,
   },
   optionContainer: {
-    backgroundColor: "#222",
+    backgroundColor: theme.colors.bgElev2,
     borderRadius: 4,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -490,37 +551,37 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   optionText: {
-    color: "#ccc",
+    color: theme.colors.textSecondary,
     fontFamily,
     fontSize: 14,
   },
   soldOutText: {
-    color: "#ff6666",
+    color: theme.colors.danger,
     fontFamily,
     fontSize: 14,
     marginTop: 8,
   },
   actionButton: {
-    backgroundColor: GlobalStyles.colors.red7 || "#ff3c00",
+    backgroundColor: theme.colors.accent,
     paddingVertical: 15,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: "center" as const,
     marginTop: 20,
   },
   disabledButton: {
-    backgroundColor: "#333",
+    backgroundColor: theme.colors.bgElev2,
   },
   actionButtonText: {
     fontFamily,
     fontSize: 16,
-    fontWeight: "bold",
-    color: "white",
+    fontWeight: "bold" as const,
+    color: theme.colors.textPrimary,
   },
   reminderText: {
-    color: "#aaa",
+    color: theme.colors.textSecondary,
     fontFamily,
     fontSize: 12,
-    textAlign: "center",
+    textAlign: "center" as const,
     marginTop: 12,
   },
 });

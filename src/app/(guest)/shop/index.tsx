@@ -1,23 +1,19 @@
 import { FlashList } from "@shopify/flash-list";
 import React, { useCallback, useEffect, useMemo } from "react";
-import {
-  Dimensions,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Dimensions, Platform, Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   usePostHog,
   useScreenTracking,
 } from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
 import { LazyImage } from "../../../components/ui";
+import { Theme } from "../../../constants/themes";
 import {
   getProductLoadingState,
   useProducts,
 } from "../../../hooks/useProducts";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { navigateToGuestProduct } from "../../../utils/navigation";
 
 // Define interfaces for Shopify products
@@ -88,6 +84,8 @@ const fontFamily: string =
 
 const GuestShop: React.FC = () => {
   const posthog = usePostHog();
+  const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(createStyles);
 
   // Use React Query for product fetching
   const productsQuery = useProducts();
@@ -238,7 +236,9 @@ const GuestShop: React.FC = () => {
               product.variants &&
               product.variants[0] &&
               product.variants[0].price
-                ? `, $${product.variants[0].price.amount}0 ${product.variants[0].price.currencyCode}`
+                ? `, $${parseFloat(product.variants[0].price.amount).toFixed(
+                    2
+                  )} ${product.variants[0].price.currencyCode}`
                 : ""
             }${isOutOfStock ? ", Sold Out" : ""}`}
             accessibilityRole="button"
@@ -269,7 +269,9 @@ const GuestShop: React.FC = () => {
               {product.variants &&
               product.variants[0] &&
               product.variants[0].price
-                ? `$${product.variants[0].price.amount}0 ${product.variants[0].price.currencyCode}`
+                ? `$${parseFloat(product.variants[0].price.amount).toFixed(
+                    2
+                  )} ${product.variants[0].price.currencyCode}`
                 : "Price unavailable"}
             </Text>
           </Pressable>
@@ -309,7 +311,7 @@ const GuestShop: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <View style={styles.errorContainer}>
+      <View style={[styles.errorContainer, { paddingTop: insets.top }]}>
         <Text style={styles.errorText}>{error}</Text>
         <Pressable
           style={styles.retryButton}
@@ -328,7 +330,7 @@ const GuestShop: React.FC = () => {
   if (isLoading && !isRefreshing && products.length === 0) {
     return (
       <ProductFetchErrorBoundary>
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
           <FlashList
             data={renderSkeletonItems()}
             renderItem={renderSkeletonItem}
@@ -344,7 +346,7 @@ const GuestShop: React.FC = () => {
 
   return (
     <ProductFetchErrorBoundary>
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <FlashList
           data={products}
           renderItem={renderItem}
@@ -367,43 +369,43 @@ const GuestShop: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => ({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bgRoot,
   },
   flashListContent: {
     padding: 10,
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     padding: 20,
   },
   emptyText: {
-    color: "#777",
-    textAlign: "center",
+    color: theme.colors.textTertiary,
+    textAlign: "center" as const,
     fontFamily,
     marginTop: 50,
   },
   title: {
     fontFamily,
-    textAlign: "center",
+    textAlign: "center" as const,
     paddingTop: 8,
-    color: "white",
-    fontWeight: "500",
+    color: theme.colors.textPrimary,
+    fontWeight: "500" as const,
   },
   price: {
     fontFamily,
-    textAlign: "center",
-    color: "white",
+    textAlign: "center" as const,
+    color: theme.colors.textPrimary,
     paddingVertical: 4,
   },
   image: {
     height: windowWidth > 600 ? 375 : 200,
-    width: "100%",
-    alignSelf: "center",
+    width: "100%" as const,
+    alignSelf: "center" as const,
     borderRadius: 8,
   },
   itemsContainer: {
@@ -411,9 +413,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginHorizontal: 5,
     borderRadius: 8,
-    backgroundColor: "black",
+    backgroundColor: theme.colors.bgRoot,
     elevation: 3,
-    shadowColor: "#999",
+    shadowColor: theme.colors.textSecondary,
     shadowRadius: 3,
     shadowOffset: { width: 1, height: 1 },
     shadowOpacity: 0.25,
@@ -423,70 +425,70 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     height: windowHeight * 0.5,
   },
   errorContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     height: windowHeight * 0.5,
     padding: 20,
   },
   errorText: {
-    color: "white",
+    color: theme.colors.textPrimary,
     fontFamily,
-    textAlign: "center",
+    textAlign: "center" as const,
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: "#333",
+    backgroundColor: theme.colors.bgElev2,
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: "white",
+    color: theme.colors.textPrimary,
     fontFamily,
   },
   skeletonContainer: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: theme.colors.bgElev2,
     borderRadius: 8,
   },
   skeletonImage: {
     height: windowWidth > 600 ? 375 : 200,
-    width: "100%",
+    width: "100%" as const,
     borderRadius: 8,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: theme.colors.bgElev2,
   },
   skeletonText: {
     height: 16,
-    width: "80%",
-    backgroundColor: "#1a1a1a",
+    width: "80%" as const,
+    backgroundColor: theme.colors.bgElev2,
     marginVertical: 8,
-    alignSelf: "center",
+    alignSelf: "center" as const,
     borderRadius: 4,
   },
   skeletonPrice: {
     height: 14,
-    width: "40%",
-    backgroundColor: "#1a1a1a",
+    width: "40%" as const,
+    backgroundColor: theme.colors.bgElev2,
     marginVertical: 4,
-    alignSelf: "center",
+    alignSelf: "center" as const,
     borderRadius: 4,
   },
   outOfStock: {
     opacity: 0.7,
   },
   imageContainer: {
-    position: "relative",
-    width: "100%",
+    position: "relative" as const,
+    width: "100%" as const,
   },
   soldOutBadge: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
+    position: "absolute" as const,
+    top: "50%" as const,
+    left: "50%" as const,
     transform: [{ translateX: -40 }, { translateY: -15 }],
     backgroundColor: "rgba(220, 38, 38, 0.8)",
     paddingVertical: 5,
@@ -494,8 +496,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   soldOutText: {
-    color: "white",
-    fontWeight: "bold",
+    color: theme.colors.textPrimary,
+    fontWeight: "bold" as const,
     fontFamily,
     fontSize: 14,
   },

@@ -183,4 +183,7 @@ export function useIsDarkMode(): boolean {
   return isDark;
 }
 
+// Named export for class components using ThemeContext.Consumer
+export { ThemeContext };
+
 export default ThemeContext;
