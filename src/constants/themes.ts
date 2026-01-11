@@ -41,6 +41,8 @@ export interface ThemeColors {
   success: string;
   warning: string;
   danger: string;
+  warningMuted: string;
+  dangerMuted: string;
 
   // Reactions
   reactionFire: string;
@@ -215,6 +217,8 @@ export const darkTheme: Theme = {
     success: "#3ddc85",
     warning: "#ffb347",
     danger: "#ff4d4d",
+    warningMuted: "rgba(233, 185, 73, 0.15)",
+    dangerMuted: "rgba(239, 68, 68, 0.15)",
 
     // Reactions
     reactionFire: "#ff8a1f",
@@ -305,6 +309,8 @@ export const lightTheme: Theme = {
     success: "#22a55a",
     warning: "#e6a020",
     danger: "#e53935",
+    warningMuted: "rgba(230, 160, 32, 0.15)",
+    dangerMuted: "rgba(229, 57, 53, 0.15)",
 
     // Reactions (preserved)
     reactionFire: "#ff8a1f",

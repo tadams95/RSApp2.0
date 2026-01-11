@@ -2,15 +2,18 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Stack, router } from "expo-router";
 import React from "react";
 import { TouchableOpacity } from "react-native";
+import { useTheme } from "../../../contexts/ThemeContext";
 
 export default function TransferLayout() {
+  const { theme } = useTheme();
+
   return (
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: "#000",
+          backgroundColor: theme.colors.bgRoot,
         },
-        headerTintColor: "#fff",
+        headerTintColor: theme.colors.textPrimary,
         headerTitleStyle: {
           fontWeight: "600",
         },
@@ -20,7 +23,11 @@ export default function TransferLayout() {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={{ marginRight: 16 }}
           >
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={24}
+              color={theme.colors.textPrimary}
+            />
           </TouchableOpacity>
         ),
       }}

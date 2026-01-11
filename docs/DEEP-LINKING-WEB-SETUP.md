@@ -34,7 +34,7 @@ Create a `.well-known` folder at the root of your web app's public directory. Bo
     "apps": [],
     "details": [
       {
-        "appID": "TEAM_ID.com.tyrelle.ragestateapp",
+        "appID": "HCH4289654.com.tyrelle.ragestateapp",
         "paths": [
           "/events/*",
           "/event/*",
@@ -52,24 +52,16 @@ Create a `.well-known` folder at the root of your web app's public directory. Bo
     ]
   },
   "webcredentials": {
-    "apps": ["TEAM_ID.com.tyrelle.ragestateapp"]
+    "apps": ["HCH4289654.com.tyrelle.ragestateapp"]
   }
 }
 ```
 
-#### ⚠️ IMPORTANT: Replace `TEAM_ID`
+#### ✅ Team ID Configured
 
-You need your **Apple Team ID** from [Apple Developer Portal](https://developer.apple.com/account):
+**Apple Team ID**: `HCH4289654`
 
-1. Go to Membership Details
-2. Copy your 10-character Team ID (e.g., `ABC123XYZ9`)
-3. Replace `TEAM_ID` in the file above
-
-**Example with real Team ID:**
-
-```json
-"appID": "ABC123XYZ9.com.tyrelle.ragestateapp"
-```
+The JSON above is ready to deploy - no modifications needed!
 
 #### Server Configuration
 
@@ -222,10 +214,10 @@ When these URLs are opened on a mobile device with the app installed:
 
 ## Checklist
 
-- [ ] Get Apple Team ID from developer.apple.com _(pending enrollment)_
+- [x] Get Apple Team ID from developer.apple.com ✅ `HCH4289654`
 - [x] Get Android SHA256 fingerprint via `eas credentials` ✅
-- [ ] Create `/.well-known/apple-app-site-association` file _(needs Team ID)_
-- [ ] Create `/.well-known/assetlinks.json` file _(ready to deploy!)_
+- [x] Create `/.well-known/apple-app-site-association` file ✅ (ready to deploy!)
+- [x] Create `/.well-known/assetlinks.json` file ✅ (ready to deploy!)
 - [ ] Configure server to serve AASA with correct Content-Type
 - [ ] Deploy to ragestate.com
 - [ ] Validate AASA at branch.io/resources/aasa-validator

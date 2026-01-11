@@ -20,9 +20,11 @@ import {
   View,
 } from "react-native";
 import { usePostHog } from "../../../analytics/PostHogProvider";
-import { GlobalStyles } from "../../../constants/styles";
+import { Theme } from "../../../constants/themes";
+import { useTheme } from "../../../contexts/ThemeContext";
 import { db } from "../../../firebase/firebase";
 import { useAuth } from "../../../hooks/AuthContext";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 
 // ============================================
 // Types
@@ -109,6 +111,8 @@ export default function ClaimTransferScreen() {
   const { authenticated } = useAuth();
   const posthog = usePostHog();
   const auth = getAuth();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const [transfer, setTransfer] = useState<TicketTransfer | null>(null);
   const [status, setStatus] = useState<ClaimStatus>("loading");
@@ -304,7 +308,7 @@ export default function ClaimTransferScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={GlobalStyles.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.accent} />
           <Text style={styles.loadingText}>Loading transfer details...</Text>
         </View>
       </View>
@@ -319,7 +323,7 @@ export default function ClaimTransferScreen() {
           <MaterialCommunityIcons
             name="ticket-confirmation-outline"
             size={64}
-            color={GlobalStyles.colors.grey5}
+            color={theme.colors.textTertiary}
           />
           <Text style={styles.errorTitle}>Transfer Not Found</Text>
           <Text style={styles.errorText}>{errorMessage}</Text>
@@ -342,7 +346,7 @@ export default function ClaimTransferScreen() {
           <MaterialCommunityIcons
             name="clock-alert-outline"
             size={64}
-            color={GlobalStyles.colors.yellow}
+            color={theme.colors.warning}
           />
           <Text style={styles.errorTitle}>Transfer Expired</Text>
           <Text style={styles.errorText}>{errorMessage}</Text>
@@ -365,7 +369,7 @@ export default function ClaimTransferScreen() {
           <MaterialCommunityIcons
             name="check-circle-outline"
             size={64}
-            color="#22c55e"
+            color={theme.colors.success}
           />
           <Text style={styles.successTitle}>Already Claimed</Text>
           <Text style={styles.errorText}>{errorMessage}</Text>
@@ -389,7 +393,7 @@ export default function ClaimTransferScreen() {
           <MaterialCommunityIcons
             name="ticket-confirmation"
             size={48}
-            color={GlobalStyles.colors.primary}
+            color={theme.colors.accent}
             style={styles.ticketIcon}
           />
 
@@ -399,7 +403,7 @@ export default function ClaimTransferScreen() {
             <MaterialCommunityIcons
               name="account-arrow-left"
               size={20}
-              color={GlobalStyles.colors.grey5}
+              color={theme.colors.textTertiary}
             />
             <Text style={styles.infoLabel}>From:</Text>
             <Text style={styles.infoValue}>
@@ -412,7 +416,7 @@ export default function ClaimTransferScreen() {
               <MaterialCommunityIcons
                 name="clock-outline"
                 size={16}
-                color={GlobalStyles.colors.yellow}
+                color={theme.colors.warning}
               />
               <Text style={styles.expirationText}>
                 {getTimeRemaining(transfer.expiresAt)}
@@ -426,7 +430,7 @@ export default function ClaimTransferScreen() {
           <MaterialCommunityIcons
             name="information-outline"
             size={18}
-            color={GlobalStyles.colors.primary}
+            color={theme.colors.accent}
           />
           <Text style={styles.noticeText}>
             Once claimed, this ticket will be added to your My Events and can be
@@ -441,10 +445,14 @@ export default function ClaimTransferScreen() {
           disabled={claiming}
         >
           {claiming ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={theme.colors.textPrimary} />
           ) : (
             <>
-              <MaterialCommunityIcons name="check" size={20} color="#fff" />
+              <MaterialCommunityIcons
+                name="check"
+                size={20}
+                color={theme.colors.textPrimary}
+              />
               <Text style={styles.primaryButtonText}>Claim Ticket</Text>
             </>
           )}
@@ -467,148 +475,149 @@ export default function ClaimTransferScreen() {
 // Styles
 // ============================================
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: GlobalStyles.colors.background,
-  },
-  centerContent: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "center",
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: GlobalStyles.colors.textSecondary,
-  },
-  errorTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: GlobalStyles.colors.text,
-    marginTop: 16,
-    textAlign: "center",
-  },
-  successTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#22c55e",
-    marginTop: 16,
-    textAlign: "center",
-  },
-  errorText: {
-    fontSize: 15,
-    color: GlobalStyles.colors.textSecondary,
-    marginTop: 8,
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  transferCard: {
-    backgroundColor: GlobalStyles.colors.surface,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.border,
-    marginBottom: 20,
-  },
-  ticketIcon: {
-    marginBottom: 16,
-  },
-  eventName: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: GlobalStyles.colors.text,
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: GlobalStyles.colors.textSecondary,
-  },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: GlobalStyles.colors.text,
-  },
-  expirationBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(233, 185, 73, 0.15)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginTop: 8,
-  },
-  expirationText: {
-    fontSize: 13,
-    color: GlobalStyles.colors.yellow,
-    fontWeight: "500",
-  },
-  noticeContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: "rgba(255, 107, 53, 0.1)",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 24,
-    gap: 10,
-  },
-  noticeText: {
-    flex: 1,
-    fontSize: 13,
-    color: GlobalStyles.colors.primary,
-    lineHeight: 18,
-  },
-  primaryButton: {
-    backgroundColor: GlobalStyles.colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#fff",
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  secondaryButton: {
-    backgroundColor: GlobalStyles.colors.grey8,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    marginTop: 20,
-  },
-  secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: GlobalStyles.colors.text,
-  },
-  cancelLink: {
-    alignItems: "center",
-    marginTop: 16,
-    paddingVertical: 12,
-  },
-  cancelLinkText: {
-    fontSize: 16,
-    color: GlobalStyles.colors.textSecondary,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    centerContent: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 32,
+    },
+    content: {
+      flex: 1,
+      padding: 20,
+      justifyContent: "center",
+    },
+    loadingText: {
+      marginTop: 16,
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+    },
+    errorTitle: {
+      fontSize: 22,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginTop: 16,
+      textAlign: "center",
+    },
+    successTitle: {
+      fontSize: 22,
+      fontWeight: "700",
+      color: theme.colors.success,
+      marginTop: 16,
+      textAlign: "center",
+    },
+    errorText: {
+      fontSize: 15,
+      color: theme.colors.textSecondary,
+      marginTop: 8,
+      textAlign: "center",
+      lineHeight: 22,
+    },
+    transferCard: {
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 16,
+      padding: 24,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+      marginBottom: 20,
+    },
+    ticketIcon: {
+      marginBottom: 16,
+    },
+    eventName: {
+      fontSize: 22,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      textAlign: "center",
+      marginBottom: 20,
+    },
+    infoRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 12,
+    },
+    infoLabel: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+    },
+    infoValue: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    expirationBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: theme.colors.warningMuted,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      marginTop: 8,
+    },
+    expirationText: {
+      fontSize: 13,
+      color: theme.colors.warning,
+      fontWeight: "500",
+    },
+    noticeContainer: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      backgroundColor: theme.colors.accentMuted,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 24,
+      gap: 10,
+    },
+    noticeText: {
+      flex: 1,
+      fontSize: 13,
+      color: theme.colors.accent,
+      lineHeight: 18,
+    },
+    primaryButton: {
+      backgroundColor: theme.colors.accent,
+      borderRadius: 12,
+      paddingVertical: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    primaryButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    buttonDisabled: {
+      opacity: 0.5,
+    },
+    secondaryButton: {
+      backgroundColor: theme.colors.bgElev2,
+      borderRadius: 12,
+      paddingVertical: 16,
+      paddingHorizontal: 24,
+      marginTop: 20,
+    },
+    secondaryButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    cancelLink: {
+      alignItems: "center",
+      marginTop: 16,
+      paddingVertical: 12,
+    },
+    cancelLinkText: {
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+    },
+  });

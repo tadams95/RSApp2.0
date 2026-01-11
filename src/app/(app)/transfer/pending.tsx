@@ -13,7 +13,9 @@ import {
   View,
 } from "react-native";
 import { usePostHog } from "../../../analytics/PostHogProvider";
-import { GlobalStyles } from "../../../constants/styles";
+import { Theme } from "../../../constants/themes";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import {
   cancelTransfer,
   getPendingTransfers,
@@ -79,6 +81,8 @@ interface PendingTransferCardProps {
   onResendEmail?: (transferId: string) => void;
   cancelling: boolean;
   resending?: boolean;
+  styles: ReturnType<typeof createStyles>;
+  theme: Theme;
 }
 
 function PendingTransferCard({
@@ -87,6 +91,8 @@ function PendingTransferCard({
   onResendEmail,
   cancelling,
   resending = false,
+  styles,
+  theme,
 }: PendingTransferCardProps) {
   const recipientDisplay =
     transfer.recipientUsername ||
@@ -111,7 +117,7 @@ function PendingTransferCard({
         <MaterialCommunityIcons
           name="ticket-outline"
           size={20}
-          color={GlobalStyles.colors.primary}
+          color={theme.colors.accent}
         />
         <Text style={styles.eventName} numberOfLines={1}>
           {transfer.eventName}
@@ -125,7 +131,7 @@ function PendingTransferCard({
           <MaterialCommunityIcons
             name="account-arrow-right"
             size={18}
-            color={GlobalStyles.colors.grey5}
+            color={theme.colors.textTertiary}
           />
           <Text style={styles.infoLabel}>To:</Text>
           <Text style={styles.infoValue} numberOfLines={1}>
@@ -140,7 +146,7 @@ function PendingTransferCard({
           <MaterialCommunityIcons
             name="clock-outline"
             size={18}
-            color={GlobalStyles.colors.grey5}
+            color={theme.colors.textTertiary}
           />
           <Text style={styles.infoLabel}>Sent:</Text>
           <Text style={styles.infoValue}>{formatDate(transfer.createdAt)}</Text>
@@ -156,9 +162,7 @@ function PendingTransferCard({
           <MaterialCommunityIcons
             name={isExpired ? "clock-alert-outline" : "timer-sand"}
             size={14}
-            color={
-              isExpired ? GlobalStyles.colors.error : GlobalStyles.colors.yellow
-            }
+            color={isExpired ? theme.colors.danger : theme.colors.warning}
           />
           <Text
             style={[
@@ -182,16 +186,13 @@ function PendingTransferCard({
               disabled={resending}
             >
               {resending ? (
-                <ActivityIndicator
-                  size="small"
-                  color={GlobalStyles.colors.primary}
-                />
+                <ActivityIndicator size="small" color={theme.colors.accent} />
               ) : (
                 <>
                   <MaterialCommunityIcons
                     name="email-send-outline"
                     size={18}
-                    color={GlobalStyles.colors.primary}
+                    color={theme.colors.accent}
                   />
                   <Text style={styles.resendButtonText}>Resend Email</Text>
                 </>
@@ -206,16 +207,13 @@ function PendingTransferCard({
             disabled={cancelling}
           >
             {cancelling ? (
-              <ActivityIndicator
-                size="small"
-                color={GlobalStyles.colors.error}
-              />
+              <ActivityIndicator size="small" color={theme.colors.danger} />
             ) : (
               <>
                 <MaterialCommunityIcons
                   name="close-circle-outline"
                   size={18}
-                  color={GlobalStyles.colors.error}
+                  color={theme.colors.danger}
                 />
                 <Text style={styles.cancelButtonText}>Cancel Transfer</Text>
               </>
@@ -234,6 +232,8 @@ function PendingTransferCard({
 export default function PendingTransfersScreen() {
   const auth = getAuth();
   const posthog = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -390,7 +390,7 @@ export default function PendingTransfersScreen() {
       <MaterialCommunityIcons
         name="send-check"
         size={64}
-        color={GlobalStyles.colors.grey5}
+        color={theme.colors.textTertiary}
       />
       <Text style={styles.emptyTitle}>No Pending Transfers</Text>
       <Text style={styles.emptyText}>
@@ -420,6 +420,8 @@ export default function PendingTransfersScreen() {
       }
       cancelling={cancellingId === item.id}
       resending={resendingId === item.id}
+      styles={styles}
+      theme={theme}
     />
   );
 
@@ -428,7 +430,7 @@ export default function PendingTransfersScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={GlobalStyles.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.accent} />
           <Text style={styles.loadingText}>Loading transfers...</Text>
         </View>
       </View>
@@ -450,7 +452,7 @@ export default function PendingTransfersScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadTransfers(true)}
-            tintColor={GlobalStyles.colors.primary}
+            tintColor={theme.colors.accent}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -463,183 +465,184 @@ export default function PendingTransfersScreen() {
 // Styles
 // ============================================
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: GlobalStyles.colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: GlobalStyles.colors.textSecondary,
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  emptyListContent: {
-    flex: 1,
-  },
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    loadingText: {
+      marginTop: 16,
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+    },
+    listContent: {
+      padding: 16,
+      paddingBottom: 32,
+    },
+    emptyListContent: {
+      flex: 1,
+    },
 
-  // Card styles
-  card: {
-    backgroundColor: GlobalStyles.colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.border,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 14,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: GlobalStyles.colors.border,
-  },
-  eventName: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: "700",
-    color: GlobalStyles.colors.text,
-  },
-  cardBody: {
-    gap: 10,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: GlobalStyles.colors.textSecondary,
-    width: 40,
-  },
-  infoValue: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
-    color: GlobalStyles.colors.text,
-  },
+    // Card styles
+    card: {
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 14,
+      paddingBottom: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderSubtle,
+    },
+    eventName: {
+      flex: 1,
+      fontSize: 17,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    cardBody: {
+      gap: 10,
+    },
+    infoRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    infoLabel: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      width: 40,
+    },
+    infoValue: {
+      flex: 1,
+      fontSize: 14,
+      fontWeight: "500",
+      color: theme.colors.textPrimary,
+    },
 
-  // Status badge
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    marginTop: 4,
-  },
-  pendingBadge: {
-    backgroundColor: "rgba(233, 185, 73, 0.15)",
-  },
-  expiredBadge: {
-    backgroundColor: "rgba(239, 68, 68, 0.15)",
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  pendingText: {
-    color: GlobalStyles.colors.yellow,
-  },
-  expiredText: {
-    color: GlobalStyles.colors.error,
-  },
+    // Status badge
+    statusBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      gap: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 12,
+      marginTop: 4,
+    },
+    pendingBadge: {
+      backgroundColor: theme.colors.warningMuted,
+    },
+    expiredBadge: {
+      backgroundColor: theme.colors.dangerMuted,
+    },
+    statusText: {
+      fontSize: 12,
+      fontWeight: "600",
+    },
+    pendingText: {
+      color: theme.colors.warning,
+    },
+    expiredText: {
+      color: theme.colors.danger,
+    },
 
-  // Button row
-  buttonRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-start",
-    gap: 12,
-    paddingTop: 14,
-    marginTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: GlobalStyles.colors.border,
-  },
+    // Button row
+    buttonRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "flex-start",
+      gap: 12,
+      paddingTop: 14,
+      marginTop: 14,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.borderSubtle,
+    },
 
-  // Resend button
-  resendButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.primary,
-  },
-  resendButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: GlobalStyles.colors.primary,
-  },
+    // Resend button
+    resendButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.accent,
+    },
+    resendButtonText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: theme.colors.accent,
+    },
 
-  // Cancel button
-  cancelButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.error,
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: GlobalStyles.colors.error,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
+    // Cancel button
+    cancelButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.danger,
+    },
+    cancelButtonText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: theme.colors.danger,
+    },
+    buttonDisabled: {
+      opacity: 0.5,
+    },
 
-  // Empty state
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: GlobalStyles.colors.text,
-    marginTop: 16,
-    textAlign: "center",
-  },
-  emptyText: {
-    fontSize: 15,
-    color: GlobalStyles.colors.textSecondary,
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 22,
-  },
-  emptyButton: {
-    backgroundColor: GlobalStyles.colors.grey8,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    marginTop: 24,
-  },
-  emptyButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: GlobalStyles.colors.text,
-  },
-});
+    // Empty state
+    emptyContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 32,
+    },
+    emptyTitle: {
+      fontSize: 20,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginTop: 16,
+      textAlign: "center",
+    },
+    emptyText: {
+      fontSize: 15,
+      color: theme.colors.textSecondary,
+      textAlign: "center",
+      marginTop: 8,
+      lineHeight: 22,
+    },
+    emptyButton: {
+      backgroundColor: theme.colors.bgElev2,
+      borderRadius: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 24,
+      marginTop: 24,
+    },
+    emptyButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+  });

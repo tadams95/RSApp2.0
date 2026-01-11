@@ -147,8 +147,9 @@ const styles = useThemedStyles((theme) => ({
 
 | Status | File                                               | Tokens to Apply                                               |
 | ------ | -------------------------------------------------- | ------------------------------------------------------------- |
-| [ ]    | `src/app/(app)/transfer/claim.tsx`                 | `bgRoot` screen, `bgElev1` claim card, `success` confirmation |
-| [ ]    | `src/app/(app)/transfer/pending.tsx`               | `bgRoot` list, `warning` pending status                       |
+| [x]    | `src/app/(app)/transfer/_layout.tsx`               | `bgRoot` header, `textPrimary` header text                    |
+| [x]    | `src/app/(app)/transfer/claim.tsx`                 | `bgRoot` screen, `bgElev1` claim card, `success` confirmation |
+| [x]    | `src/app/(app)/transfer/pending.tsx`               | `bgRoot` list, `warning` pending status                       |
 | [ ]    | `src/components/transfer/EmailTransferForm.tsx`    | `bgElev1` form, `bgElev2` inputs, `borderSubtle` borders      |
 | [ ]    | `src/components/transfer/UsernameTransferForm.tsx` | Same as EmailTransferForm                                     |
 | [ ]    | `src/components/transfer/PendingTransferCard.tsx`  | `bgElev1` card, `warning` pending badge                       |
