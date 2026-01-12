@@ -154,15 +154,41 @@ async function fetchUserProfile(userId: string): Promise<UserData | null> {
     return null;
   }
 
-  // Other user's profile: try profiles collection first (public), then customers
+  // Other user's profile: fetch from both customers and profiles collections
   try {
     const userDocRef = doc(db, "customers", userId);
     const docSnapshot = await getDoc(userDocRef);
 
+    // Also fetch from /profiles to get socialLinks and profileSongUrl
+    let profileData = {};
+    try {
+      const profileRef = doc(db, "profiles", userId);
+      const profileSnapshot = await getDoc(profileRef);
+      if (profileSnapshot.exists()) {
+        profileData = profileSnapshot.data();
+      }
+    } catch (error) {
+      console.log("Could not fetch profile data for other user:", error);
+    }
+
     if (docSnapshot.exists()) {
       const data = docSnapshot.data();
+      // Merge: customers data takes priority, but include socialLinks and profileSongUrl from profiles
       return {
+        ...profileData,
         ...data,
+        socialLinks: (profileData as any).socialLinks || data.socialLinks,
+        profileSongUrl:
+          data.profileSongUrl || (profileData as any).profileSongUrl,
+        userId,
+        stats: computedStats,
+      } as UserData;
+    }
+
+    // If no customers doc, try profiles only
+    if (Object.keys(profileData).length > 0) {
+      return {
+        ...profileData,
         userId,
         stats: computedStats,
       } as UserData;
