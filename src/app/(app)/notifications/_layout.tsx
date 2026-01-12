@@ -1,17 +1,19 @@
 import { Stack } from "expo-router";
-import { GlobalStyles } from "../../../constants/styles";
+import { useTheme } from "../../../contexts/ThemeContext";
 
 export default function NotificationsLayout() {
+  const { theme } = useTheme();
+
   return (
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: GlobalStyles.colors.background,
+          backgroundColor: theme.colors.bgRoot,
         },
-        headerTintColor: GlobalStyles.colors.text,
+        headerTintColor: theme.colors.textPrimary,
         headerBackTitle: "Back",
         contentStyle: {
-          backgroundColor: GlobalStyles.colors.background,
+          backgroundColor: theme.colors.bgRoot,
         },
       }}
     >
@@ -20,6 +22,13 @@ export default function NotificationsLayout() {
         options={{
           title: "Notifications",
           headerShown: false, // Will add custom header with "Mark all read" action
+        }}
+      />
+      <Stack.Screen
+        name="profile/[userId]"
+        options={{
+          title: "",
+          headerShadowVisible: false,
         }}
       />
     </Stack>

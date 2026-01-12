@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useSegments } from "expo-router";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -20,6 +20,7 @@ export default function UserCard({
   onPress,
 }: UserCardProps) {
   const router = useRouter();
+  const segments = useSegments();
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
@@ -27,7 +28,9 @@ export default function UserCard({
     if (onPress) {
       onPress();
     } else {
-      router.push(`/profile/${user.userId}`);
+      // Navigate within current tab's stack for proper back button
+      const currentTab = segments[1] || "home"; // Get current tab (home, notifications, account, etc.)
+      router.push(`/${currentTab}/profile/${user.userId}`);
     }
   };
 

@@ -158,7 +158,7 @@ export default function PostDetailScreen() {
   // Navigate to user profile
   const handleProfilePress = useCallback(
     (userId: string) => {
-      router.push(`/profile/${userId}`);
+      router.push(`/home/profile/${userId}`);
     },
     [router]
   );
@@ -182,7 +182,7 @@ export default function PostDetailScreen() {
               user_id: userId,
               source: "post_detail",
             });
-            router.push(`/profile/${userId}`);
+            router.push(`/home/profile/${userId}`);
             return;
           }
         }

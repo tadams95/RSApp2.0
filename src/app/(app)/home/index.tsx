@@ -164,7 +164,7 @@ export default function HomeScreen() {
 
           if (userId) {
             posthog.capture("mention_tapped", { username, user_id: userId });
-            router.push(`/profile/${userId}`);
+            router.push(`/home/profile/${userId}`);
             return;
           }
         }
@@ -215,7 +215,7 @@ export default function HomeScreen() {
           posthog.capture("profile_opened_from_feed", {
             profile_user_id: userId,
           });
-          router.push(`/profile/${userId}`);
+          router.push(`/home/profile/${userId}`);
         }}
         onMentionPress={handleMentionPress}
         onLike={handleLike}

@@ -121,7 +121,7 @@ export default function NotificationsScreen() {
       } else if (data.eventId) {
         router.push(`/events/${data.eventId}`);
       } else if (data.actorId) {
-        router.push(`/profile/${data.actorId}`);
+        router.push(`/notifications/profile/${data.actorId}`);
       }
     },
     [posthog, router]

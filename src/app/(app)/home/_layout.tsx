@@ -30,6 +30,13 @@ export default function HomeLayout() {
           title: "Post",
         }}
       />
+      <Stack.Screen
+        name="profile/[userId]"
+        options={{
+          title: "",
+          headerShadowVisible: false,
+        }}
+      />
     </Stack>
   );
 }

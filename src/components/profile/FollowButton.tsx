@@ -126,7 +126,7 @@ const createStyles = (theme: import("../../constants/themes").Theme) => ({
   button: {
     paddingVertical: 8,
     paddingHorizontal: 20,
-    borderRadius: 20,
+    borderRadius: 8,
     minWidth: 100,
     alignItems: "center" as const,
     justifyContent: "center" as const,

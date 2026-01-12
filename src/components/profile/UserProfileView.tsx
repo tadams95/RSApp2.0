@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useRouter, useSegments } from "expo-router";
 import { getAuth } from "firebase/auth";
 import {
   collection,
@@ -202,6 +202,7 @@ export default function UserProfileView({
   isOwnProfile,
 }: UserProfileViewProps) {
   const router = useRouter();
+  const segments = useSegments();
   const [showEditModal, setShowEditModal] = useState(false);
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -262,7 +263,9 @@ export default function UserProfileView({
 
   const handleProfilePress = (targetUserId: string) => {
     if (targetUserId !== userId) {
-      router.push(`/profile/${targetUserId}`);
+      // Navigate within current tab's stack for proper back button
+      const currentTab = segments[1] || "home";
+      router.push(`/${currentTab}/profile/${targetUserId}`);
     }
   };
 
