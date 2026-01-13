@@ -24,6 +24,14 @@ import { getUserData } from "../utils/auth";
 import { getFollowing } from "./followService";
 
 // Types - matches actual Firestore schema
+export interface RepostOf {
+  postId: string;
+  authorId: string;
+  authorName?: string;
+  authorPhoto?: string;
+  authorUsername?: string;
+}
+
 export interface Post {
   id: string;
   // Author fields (actual Firestore field names)
@@ -45,6 +53,8 @@ export interface Post {
   likeCount: number;
   commentCount: number;
   repostCount?: number;
+  // Repost info (if this post is a repost of another)
+  repostOf?: RepostOf;
   // Timestamps
   timestamp: Timestamp;
   updatedAt?: Timestamp;

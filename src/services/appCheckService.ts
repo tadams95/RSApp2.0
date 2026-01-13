@@ -110,6 +110,23 @@ export async function initializeAppCheck(): Promise<void> {
 
     if (__DEV__) {
       console.log("✅ Firebase App Check initialized (debug mode)");
+
+      // Try to get and log the debug token for registration in Firebase Console
+      try {
+        const tokenResult = await appCheck().getToken(true);
+        if (tokenResult?.token) {
+          console.log("📋 App Check token retrieved successfully");
+          // The debug token is logged by the native SDK - check Xcode/Android Studio logs
+          console.log(
+            "💡 If using debug provider, find the debug token in native logs (Xcode/Android Studio)"
+          );
+          console.log(
+            "💡 Add the debug token to Firebase Console > App Check > Apps > Manage debug tokens"
+          );
+        }
+      } catch (tokenError) {
+        console.warn("Could not get App Check token:", tokenError);
+      }
     }
   } catch (error) {
     appCheckState.error = error as Error;

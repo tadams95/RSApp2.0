@@ -26,6 +26,7 @@ const VerifiedBadge = () => {
 interface PostCardProps {
   post: Post;
   isLiked?: boolean;
+  isReposted?: boolean;
   onPress?: () => void;
   onProfilePress?: (userId: string) => void;
   onMentionPress?: (username: string) => void;
@@ -39,6 +40,7 @@ interface PostCardProps {
 export const PostCard: React.FC<PostCardProps> = ({
   post,
   isLiked = false,
+  isReposted = false,
   onPress,
   onProfilePress,
   onMentionPress,
@@ -67,7 +69,21 @@ export const PostCard: React.FC<PostCardProps> = ({
     likeCount,
     commentCount,
     repostCount,
+    repostOf,
   } = post;
+
+  // Check if this is a repost
+  const isRepostPost = !!repostOf;
+
+  // For reposts, show original author's info
+  const displayName = isRepostPost
+    ? repostOf.authorName || "User"
+    : userDisplayName;
+  const displayUsername = isRepostPost
+    ? repostOf.authorUsername
+    : usernameLower;
+  const displayPhoto = isRepostPost ? repostOf.authorPhoto : userProfilePicture;
+  const displayUserId = isRepostPost ? repostOf.authorId : userId;
 
   // Format timestamp
   const getTimeAgo = () => {
@@ -93,6 +109,11 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleProfilePress = () => {
+    onProfilePress?.(displayUserId);
+  };
+
+  // Navigate to reposter's profile
+  const handleReposterPress = () => {
     onProfilePress?.(userId);
   };
 
@@ -103,100 +124,123 @@ export const PostCard: React.FC<PostCardProps> = ({
       activeOpacity={0.7}
       disabled={!onPress}
     >
-      <View style={styles.leftColumn}>
-        <TouchableOpacity onPress={handleProfilePress}>
-          {userProfilePicture ? (
-            <ImageWithFallback
-              source={{ uri: userProfilePicture }}
-              style={styles.avatar}
-              resizeMode="cover"
-              maxRetries={1}
-              renderFallback={() => (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarInitial}>
-                    {userDisplayName?.charAt(0).toUpperCase() || "?"}
-                  </Text>
-                </View>
-              )}
-            />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>
-                {userDisplayName?.charAt(0).toUpperCase() || "?"}
-              </Text>
-            </View>
-          )}
+      {/* Repost indicator header */}
+      {isRepostPost && (
+        <TouchableOpacity
+          style={styles.repostHeader}
+          onPress={handleReposterPress}
+          hitSlop={{ top: 5, bottom: 5, left: 10, right: 10 }}
+        >
+          <MaterialCommunityIcons
+            name="repeat"
+            size={14}
+            color={theme.colors.textTertiary}
+            style={styles.repostIcon}
+          />
+          <Text style={styles.repostText}>
+            {usernameLower ? `@${usernameLower}` : userDisplayName || "User"}{" "}
+            reposted
+          </Text>
         </TouchableOpacity>
-      </View>
+      )}
 
-      <View style={styles.rightColumn}>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            style={styles.userInfo}
-            onPress={handleProfilePress}
-            hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}
-          >
-            <View style={styles.nameRow}>
-              <Text style={styles.displayName} numberOfLines={1}>
-                {userDisplayName}
-              </Text>
-              {userVerified && <VerifiedBadge />}
-            </View>
-            {usernameLower && (
-              <Text style={styles.username} numberOfLines={1}>
-                @{usernameLower}
-              </Text>
+      <View style={styles.postContent}>
+        <View style={styles.leftColumn}>
+          <TouchableOpacity onPress={handleProfilePress}>
+            {displayPhoto ? (
+              <ImageWithFallback
+                source={{ uri: displayPhoto }}
+                style={styles.avatar}
+                resizeMode="cover"
+                maxRetries={1}
+                renderFallback={() => (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarInitial}>
+                      {displayName?.charAt(0).toUpperCase() || "?"}
+                    </Text>
+                  </View>
+                )}
+              />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitial}>
+                  {displayName?.charAt(0).toUpperCase() || "?"}
+                </Text>
+              </View>
             )}
           </TouchableOpacity>
-
-          <View style={styles.metaInfo}>
-            <Text style={styles.dot}>·</Text>
-            <Text style={styles.timestamp}>{getTimeAgo()}</Text>
-            <TouchableOpacity
-              style={styles.moreButton}
-              onPress={() => onMore?.(id)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialCommunityIcons
-                name="dots-horizontal"
-                size={20}
-                color={theme.colors.textTertiary}
-              />
-            </TouchableOpacity>
-          </View>
         </View>
 
-        {/* Content */}
-        {content ? (
-          <LinkedText
-            text={content}
-            style={styles.content}
-            onMentionPress={onMentionPress}
-          />
-        ) : null}
+        <View style={styles.rightColumn}>
+          {/* Header */}
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              style={styles.userInfo}
+              onPress={handleProfilePress}
+              hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}
+            >
+              <View style={styles.nameRow}>
+                <Text style={styles.displayName} numberOfLines={1}>
+                  {displayName}
+                </Text>
+                {!isRepostPost && userVerified && <VerifiedBadge />}
+              </View>
+              {displayUsername && (
+                <Text style={styles.username} numberOfLines={1}>
+                  @{displayUsername}
+                </Text>
+              )}
+            </TouchableOpacity>
 
-        {/* Media */}
-        {mediaUrls && mediaUrls.length > 0 && (
-          <MediaGrid
-            mediaUrls={mediaUrls}
-            mediaTypes={mediaTypes || []}
-            optimizedMediaUrls={optimizedMediaUrls}
-            isProcessing={isProcessing}
-          />
-        )}
+            <View style={styles.metaInfo}>
+              <Text style={styles.dot}>·</Text>
+              <Text style={styles.timestamp}>{getTimeAgo()}</Text>
+              <TouchableOpacity
+                style={styles.moreButton}
+                onPress={() => onMore?.(id)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <MaterialCommunityIcons
+                  name="dots-horizontal"
+                  size={20}
+                  color={theme.colors.textTertiary}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
 
-        {/* Actions */}
-        <PostActions
-          likeCount={likeCount || 0}
-          commentCount={commentCount || 0}
-          repostCount={repostCount || 0}
-          isLiked={isLiked}
-          onLikePress={() => onLike?.(id)}
-          onCommentPress={() => onComment?.(id)}
-          onRepostPress={() => onRepost?.(id)}
-          onSharePress={() => onShare?.(id)}
-        />
+          {/* Content */}
+          {content ? (
+            <LinkedText
+              text={content}
+              style={styles.content}
+              onMentionPress={onMentionPress}
+            />
+          ) : null}
+
+          {/* Media */}
+          {mediaUrls && mediaUrls.length > 0 && (
+            <MediaGrid
+              mediaUrls={mediaUrls}
+              mediaTypes={mediaTypes || []}
+              optimizedMediaUrls={optimizedMediaUrls}
+              isProcessing={isProcessing}
+            />
+          )}
+
+          {/* Actions */}
+          <PostActions
+            likeCount={likeCount || 0}
+            commentCount={commentCount || 0}
+            repostCount={repostCount || 0}
+            isLiked={isLiked}
+            isReposted={isReposted}
+            onLikePress={() => onLike?.(id)}
+            onCommentPress={() => onComment?.(id)}
+            onRepostPress={() => onRepost?.(id)}
+            onSharePress={() => onShare?.(id)}
+          />
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -206,11 +250,28 @@ import { StyleSheet } from "react-native";
 
 const createStyles = (theme: import("../../constants/themes").Theme) => ({
   container: {
-    flexDirection: "row" as const,
+    flexDirection: "column" as const,
     padding: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.borderSubtle,
     backgroundColor: theme.colors.bgRoot,
+  },
+  repostHeader: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    marginBottom: 8,
+    marginLeft: 56, // Align with content (avatar width + margin)
+  },
+  repostIcon: {
+    marginRight: 6,
+  },
+  repostText: {
+    fontSize: 13,
+    color: theme.colors.textTertiary,
+    fontWeight: "500" as const,
+  },
+  postContent: {
+    flexDirection: "row" as const,
   },
   leftColumn: {
     marginRight: 12,

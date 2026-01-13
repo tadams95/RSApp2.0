@@ -284,10 +284,14 @@ service cloud.firestore {
     match /postReposts/{repostId} {
       allow read: if true;
       // Create: auth user can repost; validate ownership and required fields
+      // repostPostId points to the new post created for the repost (for Cloud Function fan-out)
+      // originalAuthorId tracks the original post's author
       allow create: if isAuthenticated()
         && request.resource.data.userId == request.auth.uid
         && isString(request.resource.data.postId)
-        && isTimestamp(request.resource.data.timestamp);
+        && isTimestamp(request.resource.data.timestamp)
+        && (!request.resource.data.keys().hasAny(['repostPostId']) || isString(request.resource.data.repostPostId))
+        && (!request.resource.data.keys().hasAny(['originalAuthorId']) || isString(request.resource.data.originalAuthorId));
       // Update: immutable after creation (postId/userId cannot change)
       allow update: if false;
       // Delete: only the user who created the repost

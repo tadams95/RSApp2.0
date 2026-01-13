@@ -21,7 +21,12 @@ import {
 import { PostCard, PostComposer } from "../../../components/feed";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { useFeed } from "../../../hooks/useFeed";
-import { likePost, unlikePost } from "../../../hooks/usePostInteractions";
+import {
+  likePost,
+  repostPost,
+  unlikePost,
+  unrepostPost,
+} from "../../../hooks/usePostInteractions";
 import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { Post } from "../../../services/feedService";
 
@@ -32,6 +37,8 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [repostedPosts, setRepostedPosts] = useState<Set<string>>(new Set());
+  const [repostCounts, setRepostCounts] = useState<Record<string, number>>({});
   const [showComposer, setShowComposer] = useState(false);
 
   const { theme } = useTheme();
@@ -62,6 +69,8 @@ export default function HomeScreen() {
     setRefreshing(true);
     setLikedPosts(new Set());
     setLikeCounts({});
+    setRepostedPosts(new Set());
+    setRepostCounts({});
     refetch();
     setTimeout(() => setRefreshing(false), 500);
   }, [refetch]);
@@ -120,6 +129,65 @@ export default function HomeScreen() {
       }
     },
     [likedPosts, likeCounts, posts]
+  );
+
+  // Handle repost/unrepost with optimistic updates
+  const handleRepost = useCallback(
+    async (postId: string) => {
+      const currentlyReposted = repostedPosts.has(postId);
+      const post = posts.find((p) => p.id === postId);
+      const currentCount = repostCounts[postId] ?? post?.repostCount ?? 0;
+
+      // Optimistic update
+      setRepostedPosts((prev) => {
+        const next = new Set(prev);
+        if (currentlyReposted) {
+          next.delete(postId);
+        } else {
+          next.add(postId);
+        }
+        return next;
+      });
+      setRepostCounts((prev) => ({
+        ...prev,
+        [postId]: currentlyReposted
+          ? Math.max(0, currentCount - 1)
+          : currentCount + 1,
+      }));
+
+      try {
+        if (currentlyReposted) {
+          await unrepostPost(postId);
+          posthog.capture("post_unreposted", { post_id: postId });
+        } else {
+          if (!post) {
+            throw new Error("Post not found");
+          }
+          await repostPost(postId, post);
+          posthog.capture("post_reposted", {
+            post_id: postId,
+            author_id: post?.userId,
+          });
+        }
+      } catch (err) {
+        // Rollback on error
+        setRepostedPosts((prev) => {
+          const next = new Set(prev);
+          if (currentlyReposted) {
+            next.add(postId);
+          } else {
+            next.delete(postId);
+          }
+          return next;
+        });
+        setRepostCounts((prev) => ({
+          ...prev,
+          [postId]: currentCount,
+        }));
+        console.error("Failed to toggle repost:", err);
+      }
+    },
+    [repostedPosts, repostCounts, posts, posthog]
   );
 
   // Load more posts when reaching end
@@ -198,15 +266,19 @@ export default function HomeScreen() {
 
   const renderPost = ({ item }: { item: Post }) => {
     const isLiked = likedPosts.has(item.id);
+    const isReposted = repostedPosts.has(item.id);
     const displayLikeCount = likeCounts[item.id] ?? item.likeCount;
+    const displayRepostCount = repostCounts[item.id] ?? item.repostCount;
 
     return (
       <PostCard
         post={{
           ...item,
           likeCount: displayLikeCount,
+          repostCount: displayRepostCount,
         }}
         isLiked={isLiked}
+        isReposted={isReposted}
         onPress={() => {
           posthog.capture("post_opened", { post_id: item.id });
           router.push(`/home/post/${item.id}`);
@@ -223,7 +295,7 @@ export default function HomeScreen() {
           posthog.capture("comment_opened_from_feed", { post_id: item.id });
           router.push(`/home/post/${item.id}`);
         }}
-        onRepost={(postId) => console.log("Repost pressed:", postId)}
+        onRepost={handleRepost}
         onShare={(postId) => {
           posthog.capture("share_initiated", { post_id: postId });
           console.log("Share pressed:", postId);
