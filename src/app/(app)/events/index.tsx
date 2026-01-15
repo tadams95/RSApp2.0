@@ -240,7 +240,8 @@ export default function EventsScreen() {
 
           {/* Gradient overlay for better text visibility */}
           <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.7)", "rgba(0,0,0,0.9)"]}
+            colors={["transparent", "rgba(0,0,0,0.5)", "rgba(0,0,0,0.85)"]}
+            locations={[0, 0.5, 1]}
             style={styles.gradient}
           />
 
@@ -252,70 +253,79 @@ export default function EventsScreen() {
           </View>
 
           <View style={styles.eventContent}>
-            <Text style={styles.eventName}>{item.name || "Unnamed Event"}</Text>
-
-            <View style={styles.detailsContainer}>
-              <View style={styles.detailRow}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={18}
-                  color={theme.colors.textPrimary}
-                />
-                <Text style={styles.detailText}>{formattedDate}</Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Ionicons
-                  name="location-outline"
-                  size={18}
-                  color={theme.colors.textPrimary}
-                />
-                <Text style={styles.detailText}>
-                  {item.location || "Location TBA"}
-                </Text>
-              </View>
-
-              {remainingTickets > 0 ? (
-                <View style={styles.detailRow}>
-                  <Ionicons
-                    name="ticket-outline"
-                    size={18}
-                    color={theme.colors.success}
-                  />
-                  <Text
-                    style={[styles.detailText, { color: theme.colors.success }]}
-                  >
-                    Tickets available
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.detailRow}>
-                  <Ionicons
-                    name="alert-circle-outline"
-                    size={18}
-                    color={theme.colors.danger}
-                  />
-                  <Text
-                    style={[styles.detailText, { color: theme.colors.danger }]}
-                  >
-                    Sold out
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.viewButton,
-                remainingTickets <= 0 && styles.disabledButton,
-              ]}
-              onPress={() => handleEventPress(item)}
-              disabled={remainingTickets <= 0}
-            >
-              <Text style={styles.viewButtonText}>
-                {remainingTickets > 0 ? "VIEW EVENT" : "SOLD OUT"}
+            <View style={styles.eventCard}>
+              <Text style={styles.eventName}>
+                {item.name || "Unnamed Event"}
               </Text>
-            </TouchableOpacity>
+
+              <View style={styles.detailsContainer}>
+                <View style={styles.detailRow}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={16}
+                      color={theme.colors.textPrimary}
+                    />
+                  </View>
+                  <Text style={styles.detailText}>{formattedDate}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons
+                      name="location-outline"
+                      size={16}
+                      color={theme.colors.textPrimary}
+                    />
+                  </View>
+                  <Text style={styles.detailText} numberOfLines={2}>
+                    {item.location || "Location TBA"}
+                  </Text>
+                </View>
+
+                {remainingTickets > 0 ? (
+                  <View style={styles.detailRow}>
+                    <View style={[styles.iconContainer, styles.successIconBg]}>
+                      <Ionicons
+                        name="ticket-outline"
+                        size={16}
+                        color={theme.colors.success}
+                      />
+                    </View>
+                    <Text style={[styles.detailText, styles.successText]}>
+                      Tickets available
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.detailRow}>
+                    <View style={[styles.iconContainer, styles.dangerIconBg]}>
+                      <Ionicons
+                        name="alert-circle-outline"
+                        size={16}
+                        color={theme.colors.danger}
+                      />
+                    </View>
+                    <Text style={[styles.detailText, styles.dangerText]}>
+                      Sold out
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.viewButton,
+                  remainingTickets <= 0 && styles.disabledButton,
+                ]}
+                onPress={() => handleEventPress(item)}
+                disabled={remainingTickets <= 0}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.viewButtonText}>
+                  {remainingTickets > 0 ? "VIEW EVENT" : "SOLD OUT"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       );
@@ -578,54 +588,83 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       bottom: Platform.OS === "ios" ? 165 : 95,
       left: 0,
       right: 0,
-      padding: 20,
+      paddingHorizontal: 16,
+    },
+    eventCard: {
+      backgroundColor: "rgba(20, 20, 20, 0.85)",
+      borderRadius: 16,
+      padding: 18,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.12)",
+      // Subtle shadow for depth
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
     },
     eventName: {
       fontFamily,
       fontWeight: "700",
-      fontSize: 24,
+      fontSize: 22,
       color: theme.colors.textPrimary,
-      marginBottom: 10,
-      textShadowColor: "rgba(0, 0, 0, 0.75)",
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 5,
+      marginBottom: 14,
+      letterSpacing: 0.3,
     },
     detailsContainer: {
-      marginBottom: 14,
+      marginBottom: 16,
+      gap: 10,
     },
     detailRow: {
       flexDirection: "row",
       alignItems: "center",
-      marginBottom: 6,
+    },
+    iconContainer: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      backgroundColor: "rgba(255, 255, 255, 0.1)",
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: 10,
+    },
+    successIconBg: {
+      backgroundColor: "rgba(76, 175, 80, 0.15)",
+    },
+    dangerIconBg: {
+      backgroundColor: "rgba(244, 67, 54, 0.15)",
     },
     detailText: {
       fontFamily,
-      fontSize: 16,
+      fontSize: 15,
       color: theme.colors.textPrimary,
-      marginLeft: 8,
-      textShadowColor: "rgba(0, 0, 0, 0.75)",
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 3,
       flexShrink: 1,
+      opacity: 0.95,
+    },
+    successText: {
+      color: theme.colors.success,
+      fontWeight: "600",
+    },
+    dangerText: {
+      color: theme.colors.danger,
+      fontWeight: "600",
     },
     viewButton: {
-      backgroundColor: "rgba(255, 255, 255, 0.2)",
-      borderWidth: 1.5,
-      borderColor: theme.colors.textPrimary,
-      paddingVertical: 12,
-      paddingHorizontal: 20,
-      borderRadius: 8,
+      backgroundColor: theme.colors.accent || "rgba(255, 255, 255, 0.15)",
+      paddingVertical: 14,
+      paddingHorizontal: 24,
+      borderRadius: 10,
       alignSelf: "flex-start",
     },
     disabledButton: {
-      borderColor: theme.colors.textSecondary,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backgroundColor: "rgba(80, 80, 80, 0.6)",
     },
     viewButtonText: {
       fontFamily,
-      fontWeight: "600",
+      fontWeight: "700",
       color: theme.colors.textPrimary,
       fontSize: 14,
+      letterSpacing: 0.5,
     },
     emptyContainer: {
       flex: 1,

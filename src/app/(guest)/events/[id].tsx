@@ -45,9 +45,9 @@ const GuestEventView: React.FC = () => {
     error: eventError,
   } = useEvent(eventId);
 
-  // Use React Query for attending count
+  // Use eventId (document ID like 'harvest-rage') to query ragers subcollection
   const { attendingCount, isLoading: attendingLoading } =
-    useEventAttendingCountWithHelpers(eventData?.name || "");
+    useEventAttendingCountWithHelpers(eventId || "");
 
   // Format date from Timestamp for display
   const formattedDateTime =

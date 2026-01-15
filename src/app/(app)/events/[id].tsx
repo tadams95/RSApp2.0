@@ -94,9 +94,8 @@ export default function EventDetailScreen() {
     isLoading: eventLoading,
     error: eventError,
   } = useEvent(eventId);
-  const { data: attendingCount = 0 } = useEventAttendingCount(
-    eventData?.name || ""
-  );
+  // Use eventId (document ID like 'harvest-rage') to query ragers subcollection
+  const { data: attendingCount = 0 } = useEventAttendingCount(eventId || "");
 
   const [addToCartConfirmationVisible, setAddToCartConfirmationVisible] =
     useState<boolean>(false);
@@ -357,12 +356,13 @@ export default function EventDetailScreen() {
             <Text style={styles.sectionTitle}>Event Details</Text>
             <View style={styles.detailsContainer}>
               <View style={styles.detailRow}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={20}
-                  color={theme.colors.textPrimary}
-                  style={styles.icon}
-                />
+                <View style={styles.iconContainer}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={theme.colors.textPrimary}
+                  />
+                </View>
                 <Text style={styles.detailText}>{formattedDateTime}</Text>
               </View>
 
@@ -370,22 +370,24 @@ export default function EventDetailScreen() {
                 onPress={handleOpenMaps}
                 style={styles.detailRow}
               >
-                <Ionicons
-                  name="location-outline"
-                  size={20}
-                  color={theme.colors.textPrimary}
-                  style={styles.icon}
-                />
+                <View style={styles.iconContainer}>
+                  <Ionicons
+                    name="location-outline"
+                    size={18}
+                    color={theme.colors.accent || theme.colors.textPrimary}
+                  />
+                </View>
                 <Text style={styles.locationText}>{eventData.location}</Text>
               </TouchableOpacity>
 
               <View style={styles.detailRow}>
-                <Ionicons
-                  name="people-outline"
-                  size={20}
-                  color={theme.colors.textPrimary}
-                  style={styles.icon}
-                />
+                <View style={styles.iconContainer}>
+                  <Ionicons
+                    name="people-outline"
+                    size={18}
+                    color={theme.colors.textPrimary}
+                  />
+                </View>
                 <Text style={styles.detailText}>
                   {`${attendingCount} attending`}
                 </Text>
@@ -536,51 +538,62 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       marginBottom: 12,
     },
     detailsContainer: {
-      backgroundColor: theme.colors.bgElev1,
-      borderRadius: 8,
-      padding: 16,
+      backgroundColor: "rgba(20, 20, 20, 0.85)",
+      borderRadius: 16,
+      padding: 18,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.12)",
+      // Subtle shadow for depth
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
     },
     detailRow: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: 8,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.borderSubtle,
+      paddingVertical: 6,
     },
-    icon: {
+    iconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      backgroundColor: "rgba(255, 255, 255, 0.1)",
+      justifyContent: "center",
+      alignItems: "center",
       marginRight: 12,
     },
     detailText: {
       fontFamily,
+      fontSize: 15,
       color: theme.colors.textPrimary,
-      fontSize: 16,
-      flex: 1,
+      flexShrink: 1,
+      opacity: 0.95,
     },
     locationText: {
       fontFamily,
-      color: "#3b82f6",
-      fontSize: 16,
-      flex: 1,
+      color: theme.colors.accent || "#3b82f6",
+      fontSize: 15,
+      flexShrink: 1,
     },
     actionButton: {
-      backgroundColor: theme.colors.bgElev2,
-      borderWidth: 1,
-      borderColor: theme.colors.textPrimary,
-      borderRadius: 8,
+      backgroundColor: theme.colors.accent || "rgba(255, 255, 255, 0.15)",
+      borderRadius: 10,
       marginTop: 16,
-      padding: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 24,
       alignItems: "center",
     },
     disabledButton: {
-      backgroundColor: theme.colors.borderSubtle,
-      borderColor: theme.colors.textTertiary,
-      opacity: 0.7,
+      backgroundColor: "rgba(80, 80, 80, 0.6)",
     },
     actionButtonText: {
       fontFamily,
+      fontWeight: "700",
       color: theme.colors.textPrimary,
-      fontWeight: "600",
-      fontSize: 16,
+      fontSize: 14,
+      letterSpacing: 0.5,
     },
     modalContainer: {
       flex: 1,

@@ -114,20 +114,21 @@ export function useAllEvents(): UseQueryResult<EventData[], Error> {
 
 /**
  * Hook to fetch attending count for a specific event
- * Used by guest event detail screen to show how many people are attending
+ * Uses eventId (document ID like 'harvest-rage') to query the ragers subcollection
  */
 export function useEventAttendingCount(
-  eventName: string
+  eventId: string
 ): UseQueryResult<number, Error> {
   return useQuery({
-    queryKey: [...queryKeys.events.detail(eventName), "attendingCount"],
+    queryKey: [...queryKeys.events.detail(eventId), "attendingCount"],
     queryFn: async (): Promise<number> => {
       try {
         const firestore = getFirestore();
+        // Path: events/{eventId}/ragers
         const ragersCollectionRef = collection(
           firestore,
           "events",
-          eventName,
+          eventId,
           "ragers"
         );
         const querySnapshot = await getDocs(ragersCollectionRef);
@@ -136,12 +137,12 @@ export function useEventAttendingCount(
         const errorMessage = handleEventFetchError(
           error,
           "useEventAttendingCount.queryFn",
-          { eventName }
+          { eventId }
         );
         throw new Error(errorMessage);
       }
     },
-    enabled: !!eventName, // Only run query if eventName is provided
+    enabled: !!eventId, // Only run query if eventId is provided
     ...queryOptions.events,
   });
 }
@@ -167,14 +168,15 @@ export function useEventsWithHelpers() {
 
 /**
  * Helper hook for attending count with error handling
+ * @param eventId - The event document ID (e.g., 'harvest-rage')
  */
-export function useEventAttendingCountWithHelpers(eventName: string) {
+export function useEventAttendingCountWithHelpers(eventId: string) {
   const {
     data: attendingCount,
     isLoading,
     error,
     refetch,
-  } = useEventAttendingCount(eventName);
+  } = useEventAttendingCount(eventId);
 
   return {
     attendingCount: attendingCount || 0,

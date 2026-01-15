@@ -146,8 +146,12 @@
           "recordAudioAndroid": true
         }
       ],
-      "@react-native-firebase/app",
-      "@react-native-firebase/messaging",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.930832370585-tvmm4moku77su7v4rp5adp3ql520gi73"
+        }
+      ],
       [
         "@react-native-google-signin/google-signin",
         {
@@ -163,8 +167,7 @@
             "useFrameworks": "static"
           }
         }
-      ],
-      "@react-native-firebase/app-check"
+      ]
     ],
     "extra": {
       "eas": {
