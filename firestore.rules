@@ -205,11 +205,18 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAny(['likeCount']) || request.resource.data.likeCount == 0)
         && (!request.resource.data.keys().hasAny(['commentCount']) || request.resource.data.commentCount == 0)
         && (!request.resource.data.keys().hasAny(['repostCount']) || request.resource.data.repostCount == 0)
-        // repostOf: optional object with postId, authorId, authorName, authorPhoto (all strings)
+        // repostOf: optional object with postId, authorId (required), plus optional author info and quote repost fields
         && (!request.resource.data.keys().hasAny(['repostOf']) || (
           request.resource.data.repostOf is map
           && isString(request.resource.data.repostOf.postId)
           && isString(request.resource.data.repostOf.authorId)
+          // Optional author display fields
+          && (!request.resource.data.repostOf.keys().hasAny(['authorName']) || isString(request.resource.data.repostOf.authorName))
+          && (!request.resource.data.repostOf.keys().hasAny(['authorPhoto']) || isString(request.resource.data.repostOf.authorPhoto))
+          && (!request.resource.data.repostOf.keys().hasAny(['authorUsername']) || isString(request.resource.data.repostOf.authorUsername))
+          // Quote repost fields (for embedded preview)
+          && (!request.resource.data.repostOf.keys().hasAny(['originalContent']) || isString(request.resource.data.repostOf.originalContent))
+          && (!request.resource.data.repostOf.keys().hasAny(['originalMediaUrls']) || isList(request.resource.data.repostOf.originalMediaUrls))
         ));
 
       // Update: only author; lock immutable/counter fields from client edits

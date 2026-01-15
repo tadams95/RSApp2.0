@@ -172,11 +172,13 @@ const POST_REPOSTS_COLLECTION = "postReposts";
 
 /**
  * Repost a post - creates a new post document with repostOf field
- * and a record in postReposts collection for tracking
+ * and a record in postReposts collection for tracking.
+ * If quoteText is provided, creates a quote repost with user commentary.
  */
 export async function repostPost(
   postId: string,
-  originalPost: Post
+  originalPost: Post,
+  quoteText?: string
 ): Promise<boolean> {
   const currentUser = auth.currentUser;
   if (!currentUser) {
@@ -212,16 +214,29 @@ export async function repostPost(
   }
 
   // Build repostOf metadata from original post
+  const isQuoteRepost = quoteText && quoteText.trim().length > 0;
   const repostOf: RepostOf = {
     postId: originalPost.id,
     authorId: originalPost.userId,
     authorName: originalPost.userDisplayName,
     authorPhoto: originalPost.userProfilePicture,
     authorUsername: originalPost.usernameLower,
+    // Include original content for quote repost preview
+    // Only include originalMediaUrls if there are actual media URLs (Firestore rejects undefined)
+    ...(isQuoteRepost
+      ? {
+          originalContent: originalPost.content || "",
+          ...(originalPost.mediaUrls && originalPost.mediaUrls.length > 0
+            ? { originalMediaUrls: originalPost.mediaUrls.slice(0, 2) }
+            : {}),
+        }
+      : {}),
   };
 
   // Step 1: Create a new post document representing the repost
   // Only include fields allowed by Firestore rules (no mediaTypes, optimizedMediaUrls)
+  // For quote reposts: content = user's commentary, no media (original shown in preview)
+  // For regular reposts: content = original content, include original media
   const newRepostPost = await addDoc(collection(db, POSTS_COLLECTION), {
     userId: currentUser.uid,
     userDisplayName: reposterDisplayName,
@@ -229,8 +244,8 @@ export async function repostPost(
     ...(reposterUsername ? { usernameLower: reposterUsername } : {}),
     // userProfilePicture must be a string or omitted (rules don't allow null)
     ...(reposterPhoto ? { userProfilePicture: reposterPhoto } : {}),
-    content: originalPost.content || "", // Carry over original content
-    mediaUrls: originalPost.mediaUrls || [],
+    content: isQuoteRepost ? quoteText.trim() : originalPost.content || "",
+    mediaUrls: isQuoteRepost ? [] : originalPost.mediaUrls || [],
     // Note: mediaTypes and optimizedMediaUrls are NOT included
     // - mediaTypes is not in Firestore rules
     // - optimizedMediaUrls can only be set by Cloud Function

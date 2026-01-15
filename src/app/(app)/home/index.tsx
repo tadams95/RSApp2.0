@@ -4,9 +4,11 @@ import { useRouter } from "expo-router";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActionSheetIOS,
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   RefreshControl,
   StyleSheet,
   Text,
@@ -18,7 +20,11 @@ import {
   usePostHog,
   useScreenTracking,
 } from "../../../analytics/PostHogProvider";
-import { PostCard, PostComposer } from "../../../components/feed";
+import {
+  PostCard,
+  PostComposer,
+  QuoteRepostComposer,
+} from "../../../components/feed";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { useFeed } from "../../../hooks/useFeed";
 import {
@@ -40,6 +46,7 @@ export default function HomeScreen() {
   const [repostedPosts, setRepostedPosts] = useState<Set<string>>(new Set());
   const [repostCounts, setRepostCounts] = useState<Record<string, number>>({});
   const [showComposer, setShowComposer] = useState(false);
+  const [quoteRepostTarget, setQuoteRepostTarget] = useState<Post | null>(null);
 
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -107,7 +114,7 @@ export default function HomeScreen() {
           await likePost(postId);
           posthog.capture("post_liked", {
             post_id: postId,
-            author_id: post?.userId,
+            author_id: post?.userId || "",
           });
         }
       } catch (err) {
@@ -188,6 +195,51 @@ export default function HomeScreen() {
       }
     },
     [repostedPosts, repostCounts, posts, posthog]
+  );
+
+  // Show action sheet for repost options (Repost vs Quote Repost)
+  const handleRepostOptions = useCallback(
+    (post: Post) => {
+      const currentlyReposted = repostedPosts.has(post.id);
+
+      posthog.capture("repost_options_opened", { post_id: post.id });
+
+      if (Platform.OS === "ios") {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: [
+              "Cancel",
+              currentlyReposted ? "Undo Repost" : "Repost",
+              "Quote Repost",
+            ],
+            cancelButtonIndex: 0,
+            destructiveButtonIndex: currentlyReposted ? 1 : undefined,
+          },
+          (buttonIndex) => {
+            if (buttonIndex === 1) {
+              handleRepost(post.id);
+            } else if (buttonIndex === 2) {
+              setQuoteRepostTarget(post);
+            }
+          }
+        );
+      } else {
+        // Android fallback using Alert
+        Alert.alert("Repost", "Choose an option", [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: currentlyReposted ? "Undo Repost" : "Repost",
+            style: currentlyReposted ? "destructive" : "default",
+            onPress: () => handleRepost(post.id),
+          },
+          {
+            text: "Quote Repost",
+            onPress: () => setQuoteRepostTarget(post),
+          },
+        ]);
+      }
+    },
+    [repostedPosts, handleRepost, posthog]
   );
 
   // Load more posts when reaching end
@@ -295,7 +347,7 @@ export default function HomeScreen() {
           posthog.capture("comment_opened_from_feed", { post_id: item.id });
           router.push(`/home/post/${item.id}`);
         }}
-        onRepost={handleRepost}
+        onRepost={() => handleRepostOptions(item)}
         onShare={(postId) => {
           posthog.capture("share_initiated", { post_id: postId });
           console.log("Share pressed:", postId);
@@ -351,6 +403,16 @@ export default function HomeScreen() {
         onClose={() => setShowComposer(false)}
         onPostCreated={() => {
           posthog.capture("post_composer_opened");
+          refetch();
+        }}
+      />
+
+      {/* Quote Repost Composer Modal */}
+      <QuoteRepostComposer
+        visible={quoteRepostTarget !== null}
+        post={quoteRepostTarget}
+        onClose={() => setQuoteRepostTarget(null)}
+        onQuotePosted={() => {
           refetch();
         }}
       />
@@ -417,7 +479,7 @@ const createStyles = (theme: import("../../../constants/themes").Theme) => ({
   },
   errorText: {
     fontSize: 13,
-    color: theme.colors.error,
+    color: "#ff4444",
     textAlign: "center" as const,
     marginTop: 16,
   },

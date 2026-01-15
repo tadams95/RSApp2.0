@@ -30,6 +30,9 @@ export interface RepostOf {
   authorName?: string;
   authorPhoto?: string;
   authorUsername?: string;
+  // Quote repost fields (for embedded preview)
+  originalContent?: string;
+  originalMediaUrls?: string[];
 }
 
 export interface Post {
