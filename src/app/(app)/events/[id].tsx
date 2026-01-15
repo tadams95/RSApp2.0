@@ -61,7 +61,13 @@ type Styles = {
   actionButtonText: TextStyle;
   modalContainer: ViewStyle;
   modalContent: ViewStyle;
+  modalIconContainer: ViewStyle;
   modalText: TextStyle;
+  modalButtonRow: ViewStyle;
+  modalSecondaryButton: ViewStyle;
+  modalSecondaryButtonText: TextStyle;
+  modalPrimaryButton: ViewStyle;
+  modalPrimaryButtonText: TextStyle;
   modalButton: ViewStyle;
   modalButtonText: TextStyle;
   imageRetryButton: ViewStyle;
@@ -207,6 +213,11 @@ export default function EventDetailScreen() {
 
   const closeAddToCartConfirmation = () => {
     setAddToCartConfirmationVisible(false);
+  };
+
+  const handleViewCart = () => {
+    setAddToCartConfirmationVisible(false);
+    router.push("/cart");
   };
 
   const handleOpenMaps = () => {
@@ -424,15 +435,33 @@ export default function EventDetailScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalText}>
-              Event successfully added to cart!
-            </Text>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={closeAddToCartConfirmation}
-            >
-              <Text style={styles.modalButtonText}>OK</Text>
-            </TouchableOpacity>
+            {/* Success Icon */}
+            <View style={styles.modalIconContainer}>
+              <Ionicons
+                name="checkmark-circle"
+                size={48}
+                color={theme.colors.success}
+              />
+            </View>
+
+            <Text style={styles.modalText}>Event added to cart!</Text>
+
+            {/* Button Row */}
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={styles.modalSecondaryButton}
+                onPress={closeAddToCartConfirmation}
+              >
+                <Text style={styles.modalSecondaryButtonText}>Continue</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalPrimaryButton}
+                onPress={handleViewCart}
+              >
+                <Text style={styles.modalPrimaryButtonText}>View Cart</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -481,7 +510,7 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
     backButton: {
       padding: 8,
       borderRadius: 20,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backgroundColor: theme.colors.overlay || "rgba(0, 0, 0, 0.5)",
     },
     scrollView: {
       flex: 1,
@@ -499,7 +528,7 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       ...StyleSheet.absoluteFillObject,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      backgroundColor: theme.colors.overlay || "rgba(0, 0, 0, 0.7)",
       zIndex: 10,
     },
     eventImage: {
@@ -538,17 +567,13 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       marginBottom: 12,
     },
     detailsContainer: {
-      backgroundColor: "rgba(20, 20, 20, 0.85)",
+      backgroundColor: theme.colors.bgElev1,
       borderRadius: 16,
       padding: 18,
       borderWidth: 1,
-      borderColor: "rgba(255, 255, 255, 0.12)",
+      borderColor: theme.colors.borderSubtle,
       // Subtle shadow for depth
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 8,
+      ...theme.shadows?.card,
     },
     detailRow: {
       flexDirection: "row",
@@ -559,7 +584,7 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       width: 32,
       height: 32,
       borderRadius: 8,
-      backgroundColor: "rgba(255, 255, 255, 0.1)",
+      backgroundColor: theme.colors.bgHover || theme.colors.bgElev2,
       justifyContent: "center",
       alignItems: "center",
       marginRight: 12,
@@ -586,7 +611,8 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       alignItems: "center",
     },
     disabledButton: {
-      backgroundColor: "rgba(80, 80, 80, 0.6)",
+      backgroundColor: theme.colors.borderSubtle,
+      opacity: 0.6,
     },
     actionButtonText: {
       fontFamily,
@@ -599,23 +625,63 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      backgroundColor: theme.colors.overlay || "rgba(0, 0, 0, 0.7)",
     },
     modalContent: {
       backgroundColor: theme.colors.bgElev2,
-      borderRadius: 10,
-      padding: 20,
+      borderRadius: 16,
+      padding: 24,
       alignItems: "center",
-      width: "80%",
+      width: "85%",
+      maxWidth: 340,
       borderWidth: 1,
-      borderColor: theme.colors.borderStrong,
+      borderColor: theme.colors.borderSubtle,
+      ...theme.shadows?.modal,
+    },
+    modalIconContainer: {
+      marginBottom: 12,
     },
     modalText: {
       fontFamily,
       fontSize: 18,
+      fontWeight: "600",
       color: theme.colors.textPrimary,
       marginBottom: 20,
       textAlign: "center",
+    },
+    modalButtonRow: {
+      flexDirection: "row",
+      gap: 12,
+      width: "100%",
+    },
+    modalSecondaryButton: {
+      flex: 1,
+      backgroundColor: theme.colors.bgHover || theme.colors.bgElev1,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: 10,
+      alignItems: "center",
+    },
+    modalSecondaryButtonText: {
+      fontFamily,
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    modalPrimaryButton: {
+      flex: 1,
+      backgroundColor: theme.colors.accent || "rgba(255, 255, 255, 0.15)",
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: 10,
+      alignItems: "center",
+    },
+    modalPrimaryButtonText: {
+      fontFamily,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      letterSpacing: 0.5,
     },
     modalButton: {
       backgroundColor: theme.colors.borderSubtle,

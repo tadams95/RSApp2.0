@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect } from "react";
@@ -9,25 +8,22 @@ import {
   Pressable,
   Text,
   TextStyle,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useSelector } from "react-redux";
 import {
   usePostHog,
   useScreenTracking,
 } from "../../../analytics/PostHogProvider";
 import { ProductFetchErrorBoundary } from "../../../components/shopify";
-import { LazyImage } from "../../../components/ui";
+import { CartIconBadge, LazyImage } from "../../../components/ui";
 import { useTheme } from "../../../contexts/ThemeContext";
 import {
   getProductLoadingState,
   useProducts,
 } from "../../../hooks/useProducts";
 import { useThemedStyles } from "../../../hooks/useThemedStyles";
-import { selectCartItemCount } from "../../../store/redux/cartSlice";
 import type { Theme } from "../../../styles/theme";
 // Import offline product management
 import { useOfflineProducts } from "../../../utils/offlineProducts";
@@ -65,7 +61,6 @@ export default function ShopScreen() {
   const router = useRouter();
   const posthog = usePostHog();
   const insets = useSafeAreaInsets();
-  const cartItemCount = useSelector(selectCartItemCount);
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
@@ -234,24 +229,7 @@ export default function ShopScreen() {
   const renderHeader = () => (
     <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
       <Text style={styles.headerTitle}>Shop</Text>
-      <TouchableOpacity
-        style={styles.cartButton}
-        onPress={() => router.push("/cart")}
-        activeOpacity={0.7}
-      >
-        <MaterialCommunityIcons
-          name="cart-outline"
-          size={26}
-          color={theme.colors.textPrimary}
-        />
-        {cartItemCount > 0 && (
-          <View style={styles.cartBadge}>
-            <Text style={styles.cartBadgeText}>
-              {cartItemCount > 9 ? "9+" : cartItemCount}
-            </Text>
-          </View>
-        )}
-      </TouchableOpacity>
+      <CartIconBadge size={26} color={theme.colors.textPrimary} />
     </View>
   );
 
@@ -376,28 +354,6 @@ const createStyles = (theme: Theme): Styles =>
       fontSize: 24,
       fontWeight: "bold",
       color: theme.colors.textPrimary,
-      fontFamily,
-    },
-    cartButton: {
-      padding: 4,
-      position: "relative",
-    },
-    cartBadge: {
-      position: "absolute",
-      top: -2,
-      right: -4,
-      backgroundColor: theme.colors.accent,
-      borderRadius: 10,
-      minWidth: 18,
-      height: 18,
-      justifyContent: "center",
-      alignItems: "center",
-      paddingHorizontal: 4,
-    },
-    cartBadgeText: {
-      color: theme.colors.textPrimary,
-      fontSize: 11,
-      fontWeight: "bold",
       fontFamily,
     },
     flashListContent: {
