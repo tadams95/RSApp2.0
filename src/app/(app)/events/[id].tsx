@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { collection, getDocs, getFirestore } from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -26,10 +27,9 @@ import {
 import EventNotFound from "../../../components/events/EventNotFound";
 import { ProgressiveImage } from "../../../components/ui";
 import { useTheme } from "../../../contexts/ThemeContext";
-import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
+import { useEvent, useEventAttendingCount } from "../../../hooks/useEvents";
 import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
-import { extractDatabaseErrorCode } from "../../../utils/databaseErrorHandler";
 import { PROGRESSIVE_PLACEHOLDERS } from "../../../utils/imageCacheConfig";
 import logError from "../../../utils/logError";
 
@@ -81,153 +81,94 @@ interface EventDetail {
 }
 
 export default function EventDetailScreen() {
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{ id: string }>();
   const dispatch = useDispatch();
   const posthog = usePostHog();
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  // Parse event data from params
-  const eventData: EventDetail = params.eventData
-    ? JSON.parse(decodeURIComponent(params.eventData as string))
-    : null;
+  // Fetch event data fresh using the hook (matches Shop pattern)
+  const eventId = params.id;
+  const {
+    data: eventData,
+    isLoading: eventLoading,
+    error: eventError,
+  } = useEvent(eventId);
+  const { data: attendingCount = 0 } = useEventAttendingCount(
+    eventData?.name || ""
+  );
 
-  const [attendingCount, setAttendingCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [addToCartConfirmationVisible, setAddToCartConfirmationVisible] =
     useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [dataNotFound, setDataNotFound] = useState<boolean>(false);
-  const [errorCode, setErrorCode] = useState<string | null>(null);
-  const [retryAttempts, setRetryAttempts] = useState<number>(0);
 
-  // Use the Firebase image hook for improved error handling and caching
-  const {
-    imageSource,
-    isLoading: imageIsLoading,
-    error: imageError,
-    reload: reloadImage,
-  } = useFirebaseImage(eventData?.imgURL || null, {
-    fallbackImage: require("../../../assets/BlurHero_2.png"),
-    cacheExpiry: 3600000, // 1 hour cache
-  });
+  // Format date from Timestamp for display
+  const formattedDateTime =
+    eventData?.dateTime instanceof Timestamp
+      ? format(eventData.dateTime.toDate(), "MMM dd, yyyy hh:mm a")
+      : "Date TBD";
+
+  // Get image URL directly - it's already a full HTTPS URL from Firestore
+  const imageUrl =
+    typeof eventData?.imgURL === "string" && eventData.imgURL.trim() !== ""
+      ? eventData.imgURL
+      : null;
 
   // Track screen view for analytics
   useScreenTracking("Event Detail", {
-    eventId: Array.isArray(params.id) ? params.id[0] : params.id,
-    eventName: eventData?.name,
-    eventLocation: eventData?.location,
-    eventPrice: eventData?.price,
+    eventId: eventId || null,
+    eventName: eventData?.name || null,
+    eventLocation: eventData?.location || null,
+    eventPrice: eventData?.price || null,
     userType: "authenticated",
     attendingCount: attendingCount,
-    isLoading: isLoading,
-    hasImage: !!eventData?.imgURL,
-    hasError: !!error,
-    errorCode: errorCode,
+    isLoading: eventLoading,
+    hasImage: !!imageUrl,
+    hasError: !!eventError,
   });
 
   // Track detailed event_viewed analytics
   useEffect(() => {
-    if (eventData && !isLoading) {
-      const eventId = Array.isArray(params.id) ? params.id[0] : params.id;
-
+    if (eventData && !eventLoading) {
       posthog.capture("event_viewed", {
         event_id: eventId,
         event_name: eventData.name || "Unknown Event",
-        event_date: eventData.dateTime || null,
+        event_date: formattedDateTime,
         event_location: eventData.location || "Unknown Location",
         event_price: eventData.price || 0,
         event_description_length: eventData.description
           ? eventData.description.length
           : 0,
         has_event_description: !!eventData.description,
-        has_event_image: !!eventData.imgURL,
+        has_event_image: !!imageUrl,
         attending_count: attendingCount,
         user_type: "authenticated",
         viewing_context: "detail_screen",
         event_quantity_available: eventData.quantity || 0,
         is_event_sold_out: (eventData.quantity || 0) <= 0,
-        event_date_from_now_days: eventData.dateTime
-          ? Math.ceil(
-              (new Date(eventData.dateTime).getTime() - Date.now()) /
-                (1000 * 60 * 60 * 24)
-            )
-          : null,
+        event_date_from_now_days:
+          eventData.dateTime instanceof Timestamp
+            ? Math.ceil(
+                (eventData.dateTime.toDate().getTime() - Date.now()) /
+                  (1000 * 60 * 60 * 24)
+              )
+            : null,
         screen_load_time: Date.now(),
       });
     }
-  }, [eventData, isLoading, attendingCount, params.id, posthog]);
-
-  useEffect(() => {
-    const fetchAttendingCount = async () => {
-      if (!eventData) {
-        // Check if we have a valid event ID parameter but no event data
-        if (params.id && !params.eventData) {
-          setError(`Event with ID ${params.id} could not be found`);
-          setDataNotFound(true);
-          setErrorCode("not-found");
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const firestore = getFirestore();
-        const ragersCollectionRef = collection(
-          firestore,
-          "events",
-          eventData.name,
-          "ragers"
-        );
-        const querySnapshot = await getDocs(ragersCollectionRef);
-        const count = querySnapshot.size;
-
-        // Reset error states if successful
-        setAttendingCount(count);
-        setError(null);
-        setErrorCode(null);
-      } catch (error) {
-        // Use our enhanced logging utility
-        logError(error, "EventDetailScreen.fetchAttendingCount", {
-          eventId: params.id,
-          eventName: eventData?.name,
-          retryAttempt: retryAttempts,
-        });
-
-        // Extract the specific error code using our utility
-        const code = extractDatabaseErrorCode(error);
-        setErrorCode(code);
-
-        // Provide specific error messages based on the error type
-        if (code === "permission-denied") {
-          setError("You don't have permission to view this event's details.");
-        } else if (code === "not-found") {
-          setError(
-            `Event "${eventData.name}" could not be found or may have been removed.`
-          );
-          setDataNotFound(true);
-        } else if (
-          code === "unavailable" ||
-          code === "network-request-failed"
-        ) {
-          setError(
-            "Network error. Please check your connection and try again."
-          );
-        } else {
-          setError("Failed to load event details. Please try again later.");
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAttendingCount();
-  }, [eventData, params.id, retryAttempts]);
+  }, [
+    eventData,
+    eventLoading,
+    attendingCount,
+    eventId,
+    posthog,
+    formattedDateTime,
+    imageUrl,
+  ]);
 
   const handleAddToCart = () => {
     if (!eventData || eventData.quantity <= 0) return;
 
-    const { name, dateTime, location, price, imgURL } = eventData;
+    const { name, location, price, imgURL } = eventData;
 
     // Create cart item with required fields and event details
     const cartItem: CartItem = {
@@ -236,13 +177,13 @@ export default function EventDetailScreen() {
       selectedQuantity: 1,
       selectedColor: "", // Required by CartItem interface
       selectedSize: "", // Required by CartItem interface
-      image: imgURL,
+      image: typeof imgURL === "string" ? imgURL : "",
       price: {
         amount: parseFloat(price.toString()),
         currencyCode: "USD",
       },
       eventDetails: {
-        dateTime: dateTime,
+        dateTime: formattedDateTime,
         location: location,
       },
     };
@@ -253,9 +194,9 @@ export default function EventDetailScreen() {
 
     // Track ticket add to cart event
     posthog.capture("ticket_add_to_cart", {
-      event_id: Array.isArray(params.id) ? params.id[0] : params.id,
+      event_id: eventId,
       event_name: eventData.name,
-      event_date: eventData.dateTime,
+      event_date: formattedDateTime,
       event_location: eventData.location,
       ticket_type: "general_admission", // Default ticket type
       ticket_price: eventData.price,
@@ -274,7 +215,7 @@ export default function EventDetailScreen() {
 
     // Track location button tap
     posthog.capture("event_location_tapped", {
-      event_id: Array.isArray(params.id) ? params.id[0] : params.id,
+      event_id: eventId,
       event_name: eventData.name,
       event_location: eventData.location,
       user_type: "authenticated",
@@ -306,7 +247,7 @@ export default function EventDetailScreen() {
   const handleImageLoadSuccess = () => {
     // Track successful hero image load
     posthog.capture("event_hero_image_loaded", {
-      event_id: Array.isArray(params.id) ? params.id[0] : params.id,
+      event_id: eventId,
       event_name: eventData?.name || "Unknown Event",
       user_type: "authenticated",
       image_load_success: true,
@@ -317,7 +258,7 @@ export default function EventDetailScreen() {
   const handleImageLoadError = (error: Error) => {
     // Track hero image interaction error
     posthog.capture("event_hero_image_error", {
-      event_id: Array.isArray(params.id) ? params.id[0] : params.id,
+      event_id: eventId,
       event_name: eventData?.name || "Unknown Event",
       user_type: "authenticated",
       error_type: "image_load_failure",
@@ -326,34 +267,13 @@ export default function EventDetailScreen() {
 
     // Log image loading error
     logError(error, "EventDetailScreen.imageLoading", {
-      eventId: params.id,
+      eventId: eventId,
       eventName: eventData?.name,
     });
   };
 
-  const handleRetryLoad = () => {
-    setIsLoading(true);
-    setError(null);
-
-    // If we've already tried multiple times and it's a "not-found" error,
-    // don't keep retrying the same failed operation
-    if (errorCode === "not-found" && retryAttempts > 2) {
-      setError("This event doesn't exist or has been removed.");
-      setIsLoading(false);
-      return;
-    }
-
-    // Reload the image if there was an image error
-    if (imageError) {
-      reloadImage();
-    }
-
-    // Increment retry counter to trigger the useEffect
-    setRetryAttempts((prev) => prev + 1);
-  };
-
   // Show loading state
-  if (isLoading) {
+  if (eventLoading) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color={theme.colors.textPrimary} />
@@ -363,51 +283,17 @@ export default function EventDetailScreen() {
   }
 
   // Show error state for missing event data
-  if (!eventData || dataNotFound || error) {
-    // For network errors, make primary action retry
-    if (errorCode === "unavailable" || errorCode === "network-request-failed") {
-      return (
-        <EventNotFound
-          onGoBack={handleBackPress}
-          onBrowseEvents={handleRetryLoad}
-          errorMessage={
-            error ||
-            "Connection error. Please check your network and try again."
-          }
-          primaryButtonText="Retry"
-          secondaryButtonText="Go Back"
-          errorCode={errorCode}
-        />
-      );
-    }
-
-    // For permission errors
-    if (errorCode === "permission-denied") {
-      return (
-        <EventNotFound
-          onGoBack={handleBackPress}
-          onBrowseEvents={handleBrowseEvents}
-          errorMessage={
-            error || "You don't have permission to view this event."
-          }
-          primaryButtonText="Browse Other Events"
-          secondaryButtonText="Go Back"
-          errorCode={errorCode}
-        />
-      );
-    }
-
-    // Default case for not found or other errors
+  if (!eventData || eventError) {
     return (
       <EventNotFound
         onGoBack={handleBackPress}
         onBrowseEvents={handleBrowseEvents}
         errorMessage={
-          error || "This event couldn't be found or may no longer be available."
+          eventError?.message ||
+          "This event couldn't be found or may no longer be available."
         }
         primaryButtonText="Browse Events"
         secondaryButtonText="Go Back"
-        errorCode={errorCode}
       />
     );
   }
@@ -440,34 +326,22 @@ export default function EventDetailScreen() {
       >
         {/* Image Section */}
         <View style={styles.imageContainer}>
-          {imageIsLoading && (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color={theme.colors.accent} />
-            </View>
-          )}
           <ProgressiveImage
-            source={imageSource}
+            source={
+              imageUrl
+                ? { uri: imageUrl }
+                : require("../../../assets/BlurHero_2.png")
+            }
             lowResSource={PROGRESSIVE_PLACEHOLDERS.EVENT}
             style={styles.eventImage}
             onHighResLoad={handleImageLoadSuccess}
             onLoadError={handleImageLoadError}
             fallbackSource={require("../../../assets/BlurHero_2.png")}
             cacheType="EVENT"
-            cacheId={`event-${params.id}`}
-            resizeMode="cover"
+            cacheId={`event-${eventId}`}
+            contentFit="cover"
             accessibilityLabel={`Image for ${eventData.name} event`}
           />
-
-          {imageError && (
-            <TouchableOpacity
-              style={styles.imageRetryButton}
-              onPress={reloadImage}
-              accessibilityLabel="Retry loading image"
-              accessibilityRole="button"
-            >
-              <Text style={styles.imageRetryText}>Retry</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* Event Info Section */}
@@ -489,7 +363,7 @@ export default function EventDetailScreen() {
                   color={theme.colors.textPrimary}
                   style={styles.icon}
                 />
-                <Text style={styles.detailText}>{eventData.dateTime}</Text>
+                <Text style={styles.detailText}>{formattedDateTime}</Text>
               </View>
 
               <TouchableOpacity
@@ -513,7 +387,7 @@ export default function EventDetailScreen() {
                   style={styles.icon}
                 />
                 <Text style={styles.detailText}>
-                  {isLoading ? "Loading..." : `${attendingCount} attending`}
+                  {`${attendingCount} attending`}
                 </Text>
               </View>
             </View>

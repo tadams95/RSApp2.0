@@ -110,22 +110,9 @@ const GuestEvent: React.FC = () => {
       selection_method: "event_card_tap",
     });
 
-    // Format date for display and navigation
-    const formattedDateTime = format(
-      event.dateTime.toDate(),
-      "MMM dd, yyyy hh:mm a"
-    );
-
-    // Navigate using our utility function
-    navigateToGuestEvent({
-      id: event.id || event.name,
-      name: event.name,
-      dateTime: formattedDateTime,
-      price: event.price.toString(),
-      imgURL: event.imgURL,
-      description: event.description || "",
-      location: event.location || "",
-    });
+    // Navigate using our utility function - pass only the ID (matches Shop pattern)
+    const eventId = event.id || event.name;
+    navigateToGuestEvent(eventId);
   };
 
   // Scroll depth tracking handler

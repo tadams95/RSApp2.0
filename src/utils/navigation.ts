@@ -118,29 +118,10 @@ export function navigateToEvent(event: {
 
 /**
  * Navigate to the guest event detail screen
- * @param event The event data object
+ * @param eventId The event ID
  */
-export function navigateToGuestEvent(event: {
-  id?: string;
-  name: string;
-  dateTime: string;
-  price: string | number;
-  imgURL: string;
-  description?: string;
-  location?: string;
-}): void {
-  router.push({
-    pathname: "/(guest)/events/[id]",
-    params: {
-      id: event.id || event.name,
-      name: event.name,
-      dateTime: event.dateTime,
-      price: event.price.toString(),
-      imgURL: event.imgURL,
-      description: event.description || "",
-      location: event.location || "",
-    },
-  });
+export function navigateToGuestEvent(eventId: string): void {
+  router.push(`/(guest)/events/${eventId}`);
 }
 
 /**

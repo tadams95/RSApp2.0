@@ -274,12 +274,12 @@ interface QuoteRepostComposerProps {
 
 ### Phase 6: Testing & Polish
 
-- [ ] **6.1** Test regular repost still works
-- [ ] **6.2** Test quote repost creation flow
-- [ ] **6.3** Test quote repost display in feed
-- [ ] **6.4** Test quote repost on profile page
-- [ ] **6.5** Test tapping embedded preview (optional: navigate to original)
-- [ ] **6.6** Add PostHog analytics events:
+- [x] **6.1** Test regular repost still works
+- [x] **6.2** Test quote repost creation flow
+- [x] **6.3** Test quote repost display in feed
+- [x] **6.4** Test quote repost on profile page
+- [x] **6.5** Test tapping embedded preview (optional: navigate to original)
+- [x] **6.6** Add PostHog analytics events:
   - `quote_repost_composer_opened`
   - `quote_repost_created`
 
@@ -455,10 +455,10 @@ export const repostPost = async (
 
 ## Acceptance Criteria
 
-- [ ] User can choose between "Repost" and "Quote Repost" via action sheet
-- [ ] Quote composer displays original post as non-editable preview
-- [ ] Quote reposts appear in feed with user's commentary above embedded preview
-- [ ] Quote reposts display correctly on profile pages
-- [ ] Regular repost functionality unchanged
-- [ ] All new posts comply with existing Firestore security rules
-- [ ] Analytics events fire correctly
+- [x] User can choose between "Repost" and "Quote Repost" via action sheet
+- [x] Quote composer displays original post as non-editable preview
+- [x] Quote reposts appear in feed with user's commentary above embedded preview
+- [x] Quote reposts display correctly on profile pages
+- [x] Regular repost functionality unchanged
+- [x] All new posts comply with existing Firestore security rules
+- [x] Analytics events fire correctly

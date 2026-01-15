@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import { format } from "date-fns";
 import { Stack, useLocalSearchParams } from "expo-router";
+import { Timestamp } from "firebase/firestore";
 import React, { useEffect } from "react";
 import {
   ActivityIndicator,
@@ -18,110 +20,103 @@ import {
 } from "../../../analytics/PostHogProvider";
 import { ProgressiveImage } from "../../../components/ui";
 import { Theme } from "../../../constants/themes";
-import { useEventAttendingCountWithHelpers } from "../../../hooks/useEvents";
-import { useFirebaseImage } from "../../../hooks/useFirebaseImage";
+import { useTheme } from "../../../contexts/ThemeContext";
+import {
+  useEvent,
+  useEventAttendingCountWithHelpers,
+} from "../../../hooks/useEvents";
 import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { PROGRESSIVE_PLACEHOLDERS } from "../../../utils/imageCacheConfig";
 import { logError } from "../../../utils/logError";
 import { goBack, navigateToAuth } from "../../../utils/navigation";
 
-// Define interfaces for the component props and parameters
-interface EventDetailParams {
-  id: string;
-  name: string;
-  dateTime: string;
-  price: string;
-  imgURL: string;
-  description?: string;
-  location: string;
-}
-
 const GuestEventView: React.FC = () => {
   // Get route parameters from Expo Router
-  const params = useLocalSearchParams<Record<string, string>>();
+  const params = useLocalSearchParams<{ id: string }>();
   const posthog = usePostHog();
-  const { styles, theme } = useThemedStyles(createStyles);
+  const styles = useThemedStyles(createStyles);
+  const { theme } = useTheme();
 
-  const eventName = params.name as string;
-  const eventImgURL = params.imgURL as string;
-  const eventLocation = params.location as string;
-  const eventPrice = params.price as string;
-  const eventDateTime = params.dateTime as string;
-  const eventDescription = params.description as string;
+  // Fetch event data fresh using the hook (matches Shop pattern)
+  const eventId = params.id;
+  const {
+    data: eventData,
+    isLoading: eventLoading,
+    error: eventError,
+  } = useEvent(eventId);
 
   // Use React Query for attending count
-  const { attendingCount, isLoading, error, refetch } =
-    useEventAttendingCountWithHelpers(eventName);
+  const { attendingCount, isLoading: attendingLoading } =
+    useEventAttendingCountWithHelpers(eventData?.name || "");
 
-  // Use the Firebase image hook for improved error handling and caching
-  const {
-    imageSource,
-    isLoading: imageIsLoading,
-    error: imageError,
-    reload: reloadImage,
-  } = useFirebaseImage(eventImgURL || null, {
-    fallbackImage: require("../../../assets/BlurHero_2.png"),
-    cacheExpiry: 3600000, // 1 hour cache
-  });
+  // Format date from Timestamp for display
+  const formattedDateTime =
+    eventData?.dateTime instanceof Timestamp
+      ? format(eventData.dateTime.toDate(), "MMM dd, yyyy hh:mm a")
+      : "Date TBD";
+
+  // Get image URL directly - it's already a full HTTPS URL from Firestore
+  const imageUrl =
+    typeof eventData?.imgURL === "string" && eventData.imgURL.trim() !== ""
+      ? eventData.imgURL
+      : null;
 
   // Track screen view for analytics
   useScreenTracking("Guest Event Detail", {
-    eventId: params.id,
-    eventName: eventName,
-    eventLocation: eventLocation,
-    eventPrice: eventPrice,
+    eventId: eventId || null,
+    eventName: eventData?.name || null,
+    eventLocation: eventData?.location || null,
+    eventPrice: eventData?.price || null,
     userType: "guest",
     attendingCount: attendingCount,
-    isLoading: isLoading,
-    hasImage: !!eventImgURL,
+    isLoading: eventLoading,
+    hasImage: !!imageUrl,
   });
 
   // Track detailed event_viewed analytics for guest users
   useEffect(() => {
-    if (eventName && !isLoading) {
+    if (eventData && !eventLoading) {
       posthog.capture("event_viewed", {
-        event_id: params.id,
-        event_name: eventName || "Unknown Event",
-        event_date: eventDateTime || null,
-        event_location: eventLocation || "Unknown Location",
-        event_price: parseFloat(eventPrice) || 0,
-        event_description_length: eventDescription
-          ? eventDescription.length
+        event_id: eventId || null,
+        event_name: eventData.name || "Unknown Event",
+        event_date: formattedDateTime,
+        event_location: eventData.location || "Unknown Location",
+        event_price: eventData.price || 0,
+        event_description_length: eventData.description
+          ? eventData.description.length
           : 0,
-        has_event_description: !!eventDescription,
-        has_event_image: !!eventImgURL,
+        has_event_description: !!eventData.description,
+        has_event_image: !!imageUrl,
         attending_count: attendingCount,
         user_type: "guest",
         viewing_context: "detail_screen",
-        event_date_from_now_days: eventDateTime
-          ? Math.ceil(
-              (new Date(eventDateTime).getTime() - Date.now()) /
-                (1000 * 60 * 60 * 24)
-            )
-          : null,
+        event_date_from_now_days:
+          eventData.dateTime instanceof Timestamp
+            ? Math.ceil(
+                (eventData.dateTime.toDate().getTime() - Date.now()) /
+                  (1000 * 60 * 60 * 24)
+              )
+            : null,
         screen_load_time: Date.now(),
       });
     }
   }, [
-    eventName,
-    isLoading,
+    eventData,
+    eventLoading,
     attendingCount,
-    params.id,
+    eventId,
     posthog,
-    eventDateTime,
-    eventLocation,
-    eventPrice,
-    eventDescription,
-    eventImgURL,
+    formattedDateTime,
+    imageUrl,
   ]);
 
   const handleGuestCheckout = (): void => {
     // Track guest checkout attempt
     posthog.capture("guest_event_checkout_attempt", {
-      event_id: params.id,
-      event_name: eventName,
-      event_location: eventLocation,
-      event_price: parseFloat(eventPrice) || 0,
+      event_id: eventId || null,
+      event_name: eventData?.name || null,
+      event_location: eventData?.location || null,
+      event_price: eventData?.price || 0,
       user_type: "guest",
       conversion_trigger: "event_detail_checkout",
     });
@@ -134,19 +129,19 @@ const GuestEventView: React.FC = () => {
   };
 
   const handleOpenMaps = (): void => {
-    if (!eventLocation) return;
+    if (!eventData?.location) return;
 
     // Track location button tap for guest users
     posthog.capture("event_location_tapped", {
-      event_id: params.id,
-      event_name: eventName,
-      event_location: eventLocation,
+      event_id: eventId,
+      event_name: eventData.name,
+      event_location: eventData.location,
       user_type: "guest",
       platform: Platform.OS,
       interaction_type: "location_button",
     });
 
-    const address = eventLocation;
+    const address = eventData.location;
     const encodedAddress = encodeURIComponent(address);
 
     let url: string;
@@ -162,8 +157,8 @@ const GuestEventView: React.FC = () => {
   const handleImageLoadSuccess = (): void => {
     // Track successful hero image load for guest users
     posthog.capture("event_hero_image_loaded", {
-      event_id: params.id,
-      event_name: eventName || "Unknown Event",
+      event_id: eventId,
+      event_name: eventData?.name || "Unknown Event",
       user_type: "guest",
       image_load_success: true,
       has_fallback_used: false,
@@ -173,16 +168,38 @@ const GuestEventView: React.FC = () => {
   const handleImageLoadError = (error: Error): void => {
     // Log image loading error
     logError(error, "GuestEventView.imageLoading", {
-      eventId: params.id,
-      eventName: eventName,
+      eventId: eventId,
+      eventName: eventData?.name,
     });
   };
+
+  // Show loading state
+  if (eventLoading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color={theme.colors.textPrimary} />
+        <Text style={styles.loaderText}>Loading event...</Text>
+      </View>
+    );
+  }
+
+  // Show error state for missing event data
+  if (!eventData || eventError) {
+    return (
+      <View style={styles.loaderContainer}>
+        <Text style={styles.loaderText}>Event not found</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={handleBackPress}>
+          <Text style={styles.actionButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.rootContainer}>
       <Stack.Screen
         options={{
-          title: eventName || "Event Details",
+          title: eventData.name || "Event Details",
           headerShown: false,
         }}
       />
@@ -212,37 +229,22 @@ const GuestEventView: React.FC = () => {
       >
         {/* Image Section */}
         <View style={styles.imageContainer}>
-          {imageIsLoading && (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator
-                size="large"
-                color={theme.colors.textPrimary}
-              />
-            </View>
-          )}
           <ProgressiveImage
-            source={imageSource}
+            source={
+              imageUrl
+                ? { uri: imageUrl }
+                : require("../../../assets/BlurHero_2.png")
+            }
             lowResSource={PROGRESSIVE_PLACEHOLDERS.EVENT}
             style={styles.eventImage}
             onHighResLoad={handleImageLoadSuccess}
             onLoadError={handleImageLoadError}
             fallbackSource={require("../../../assets/BlurHero_2.png")}
             cacheType="EVENT"
-            cacheId={`guest-event-${params.id}`}
-            resizeMode="cover"
-            accessibilityLabel={`Image for ${eventName} event`}
+            cacheId={`guest-event-${eventId}`}
+            contentFit="cover"
+            accessibilityLabel={`Image for ${eventData.name} event`}
           />
-
-          {imageError && (
-            <TouchableOpacity
-              style={styles.imageRetryButton}
-              onPress={reloadImage}
-              accessibilityLabel="Retry loading image"
-              accessibilityRole="button"
-            >
-              <Text style={styles.imageRetryText}>Retry</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* Event Info Section */}
@@ -250,9 +252,9 @@ const GuestEventView: React.FC = () => {
           {/* Title and Price */}
           <View style={styles.titlePriceContainer}>
             <Text style={styles.title} accessibilityRole="header">
-              {eventName}
+              {eventData.name}
             </Text>
-            <Text style={styles.price}>${eventPrice}</Text>
+            <Text style={styles.price}>${eventData.price}</Text>
           </View>
 
           {/* Details Section */}
@@ -261,7 +263,7 @@ const GuestEventView: React.FC = () => {
             <View style={styles.detailsContainer}>
               <View
                 style={styles.detailRow}
-                accessibilityLabel={`Date and time: ${eventDateTime}`}
+                accessibilityLabel={`Date and time: ${formattedDateTime}`}
               >
                 <Ionicons
                   name="calendar-outline"
@@ -269,14 +271,14 @@ const GuestEventView: React.FC = () => {
                   color={theme.colors.textPrimary}
                   style={styles.icon}
                 />
-                <Text style={styles.detailText}>{eventDateTime}</Text>
+                <Text style={styles.detailText}>{formattedDateTime}</Text>
               </View>
 
               <TouchableOpacity
                 onPress={handleOpenMaps}
                 style={styles.detailRow}
                 accessible={true}
-                accessibilityLabel={`Location: ${eventLocation}. Tap to open maps`}
+                accessibilityLabel={`Location: ${eventData.location}. Tap to open maps`}
                 accessibilityRole="button"
               >
                 <Ionicons
@@ -285,13 +287,13 @@ const GuestEventView: React.FC = () => {
                   color={theme.colors.textPrimary}
                   style={styles.icon}
                 />
-                <Text style={styles.locationText}>{eventLocation}</Text>
+                <Text style={styles.locationText}>{eventData.location}</Text>
               </TouchableOpacity>
 
               <View
                 style={styles.detailRow}
                 accessibilityLabel={`${
-                  isLoading
+                  attendingLoading
                     ? "Loading attendance count"
                     : `${attendingCount} people attending`
                 }`}
@@ -303,14 +305,16 @@ const GuestEventView: React.FC = () => {
                   style={styles.icon}
                 />
                 <Text style={styles.detailText}>
-                  {isLoading ? "Loading..." : `${attendingCount} attending`}
+                  {attendingLoading
+                    ? "Loading..."
+                    : `${attendingCount} attending`}
                 </Text>
               </View>
 
-              {eventDescription && (
+              {eventData.description && (
                 <View
                   style={[styles.detailRow, { borderBottomWidth: 0 }]}
-                  accessibilityLabel={`Description: ${eventDescription}`}
+                  accessibilityLabel={`Description: ${eventData.description}`}
                 >
                   <Ionicons
                     name="information-circle-outline"
@@ -318,7 +322,7 @@ const GuestEventView: React.FC = () => {
                     color={theme.colors.textPrimary}
                     style={styles.icon}
                   />
-                  <Text style={styles.detailText}>{eventDescription}</Text>
+                  <Text style={styles.detailText}>{eventData.description}</Text>
                 </View>
               )}
             </View>
@@ -362,6 +366,18 @@ const createStyles = (theme: Theme) => ({
   rootContainer: {
     flex: 1,
     backgroundColor: theme.colors.bgRoot,
+  },
+  loaderContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.bgRoot,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  loaderText: {
+    fontFamily,
+    color: theme.colors.textPrimary,
+    fontSize: 16,
+    marginTop: 12,
   },
   header: {
     position: "absolute" as const,

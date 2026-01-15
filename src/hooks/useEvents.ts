@@ -184,3 +184,62 @@ export function useEventAttendingCountWithHelpers(eventName: string) {
     hasError: !!error,
   };
 }
+
+/**
+ * Hook to fetch a single event by ID
+ * Leverages the cached events list for efficiency
+ * Falls back to direct Firestore fetch if not in cache
+ */
+export function useEvent(
+  eventId: string | undefined
+): UseQueryResult<EventData | null, Error> {
+  const { data: events } = useEvents();
+
+  return useQuery({
+    queryKey: queryKeys.events.detail(eventId || ""),
+    queryFn: async (): Promise<EventData | null> => {
+      if (!eventId) return null;
+
+      // First try to find in cached events list
+      if (events) {
+        const cachedEvent = events.find((e) => e.id === eventId);
+        if (cachedEvent) return cachedEvent;
+      }
+
+      // Fallback: fetch directly from Firestore
+      try {
+        const firestore = getFirestore();
+        const { doc, getDoc } = await import("firebase/firestore");
+        const eventDoc = await getDoc(doc(firestore, "events", eventId));
+
+        if (!eventDoc.exists()) return null;
+
+        const rawData = { id: eventDoc.id, ...eventDoc.data() };
+        return sanitizeEventData(rawData);
+      } catch (error) {
+        const errorMessage = handleEventFetchError(error, "useEvent.queryFn", {
+          eventId,
+        });
+        throw new Error(errorMessage);
+      }
+    },
+    enabled: !!eventId,
+    ...queryOptions.events,
+  });
+}
+
+/**
+ * Helper hook for single event with loading states
+ */
+export function useEventWithHelpers(eventId: string | undefined) {
+  const { data: event, isLoading, error, refetch } = useEvent(eventId);
+
+  return {
+    event,
+    isLoading,
+    error,
+    refetch,
+    hasEvent: !isLoading && !error && !!event,
+    hasError: !!error,
+  };
+}

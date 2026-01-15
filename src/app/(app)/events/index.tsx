@@ -11,7 +11,6 @@ import {
   Animated,
   Dimensions,
   FlatList,
-  Image,
   ImageStyle,
   Platform,
   StatusBar,
@@ -27,6 +26,7 @@ import {
   usePostHog,
   useScreenTracking,
 } from "../../../analytics/PostHogProvider";
+import { ProgressiveImage } from "../../../components/ui";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { useThemedStyles } from "../../../hooks/useThemedStyles";
 
@@ -172,16 +172,8 @@ export default function EventsScreen() {
     const eventId = event.id || event.name || `event-${Date.now()}`;
 
     try {
-      router.push({
-        pathname: `/(app)/events/${eventId}`,
-        params: {
-          id: eventId,
-          eventData: JSON.stringify({
-            ...event,
-            dateTime: formattedDateTime,
-          }),
-        },
-      });
+      // Match Shop pattern: pass only the ID, let detail page fetch fresh data
+      router.push(`/(app)/events/${eventId}`);
     } catch (error) {
       console.error("Navigation error:", error);
       Alert.alert(
@@ -221,16 +213,20 @@ export default function EventsScreen() {
 
       return (
         <View style={styles.eventSlide}>
-          <Image
+          <ProgressiveImage
             source={
               typeof item.imgURL === "string" && item.imgURL.trim() !== ""
                 ? { uri: item.imgURL }
                 : require("../../../assets/BlurHero_2.png")
             }
             style={styles.eventImage}
-            onLoad={() => handleImageLoad(eventId)}
-            onError={() => handleImageError(eventId)}
-            defaultSource={require("../../../assets/BlurHero_2.png")}
+            lowResSource={require("../../../assets/BlurHero_2.png")}
+            onHighResLoad={() => handleImageLoad(eventId)}
+            onLoadError={() => handleImageError(eventId)}
+            fallbackSource={require("../../../assets/BlurHero_2.png")}
+            contentFit="cover"
+            cacheType="EVENT"
+            cacheId={eventId}
           />
 
           {!isImageLoaded && (
@@ -544,6 +540,7 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       width: "100%",
       height: "100%",
       position: "absolute",
+      resizeMode: "cover",
     },
     loadingOverlay: {
       ...StyleSheet.absoluteFillObject,
