@@ -1,0 +1,28 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "HCH4289654.com.tyrelle.ragestateapp",
+        "paths": [
+          "/events/*",
+          "/event/*",
+          "/user/*",
+          "/users/*",
+          "/post/*",
+          "/posts/*",
+          "/transfer/*",
+          "/transfers/*",
+          "/claim-ticket",
+          "/claim-ticket/*",
+          "/shop/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "HCH4289654.com.tyrelle.ragestateapp"
+    ]
+  }
+}

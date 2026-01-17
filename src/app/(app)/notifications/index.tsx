@@ -1,9 +1,9 @@
+import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   RefreshControl,
   StyleSheet,
   Text,
@@ -70,7 +70,7 @@ export default function NotificationsScreen() {
         console.error("Error loading notifications:", error);
         setIsLoading(false);
         setRefreshing(false);
-      }
+      },
     );
 
     // Track feed viewed
@@ -124,7 +124,7 @@ export default function NotificationsScreen() {
         router.push(`/notifications/profile/${data.actorId}`);
       }
     },
-    [posthog, router]
+    [posthog, router],
   );
 
   // Handle mark all as read
@@ -148,7 +148,7 @@ export default function NotificationsScreen() {
       console.error("Error marking all as read:", error);
       Alert.alert(
         "Error",
-        "Failed to mark notifications as read. Please try again."
+        "Failed to mark notifications as read. Please try again.",
       );
     } finally {
       setMarkingAllRead(false);
@@ -198,7 +198,7 @@ export default function NotificationsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {renderHeader()}
 
-      <FlatList
+      <FlashList
         data={notifications}
         renderItem={renderNotification}
         keyExtractor={keyExtractor}
@@ -215,6 +215,7 @@ export default function NotificationsScreen() {
           />
         }
         showsVerticalScrollIndicator={false}
+        estimatedItemSize={80}
       />
     </View>
   );
@@ -257,4 +258,4 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
     emptyListContent: {
       flex: 1,
     },
-  } as const);
+  }) as const;

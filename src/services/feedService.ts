@@ -78,13 +78,13 @@ const DEFAULT_LIMIT = 20;
 export function subscribeToForYouFeed(
   onUpdate: (posts: Post[]) => void,
   onError: (error: Error) => void,
-  options: FeedOptions = {}
+  options: FeedOptions = {},
 ): Unsubscribe {
   const postsQuery = query(
     collection(db, POSTS_COLLECTION),
     where("isPublic", "==", true),
     orderBy("timestamp", "desc"),
-    limit(options.limitCount || DEFAULT_LIMIT)
+    limit(options.limitCount || DEFAULT_LIMIT),
   );
 
   return onSnapshot(
@@ -99,7 +99,7 @@ export function subscribeToForYouFeed(
     (error) => {
       console.error("Error subscribing to feed:", error);
       onError(error);
-    }
+    },
   );
 }
 
@@ -110,7 +110,7 @@ export function subscribeToForYouFeed(
 export function subscribeToFollowingFeed(
   onUpdate: (posts: Post[]) => void,
   onError: (error: Error) => void,
-  options: FeedOptions = {}
+  options: FeedOptions = {},
 ): Unsubscribe | null {
   const currentUser = auth.currentUser;
   if (!currentUser) {
@@ -138,7 +138,7 @@ export function subscribeToFollowingFeed(
         collection(db, POSTS_COLLECTION),
         where("authorId", "in", queryIds),
         orderBy("createdAt", "desc"),
-        limit(options.limitCount || DEFAULT_LIMIT)
+        limit(options.limitCount || DEFAULT_LIMIT),
       );
 
       unsubscribe = onSnapshot(
@@ -153,7 +153,7 @@ export function subscribeToFollowingFeed(
         (error) => {
           console.error("Error subscribing to Following feed:", error);
           onError(error);
-        }
+        },
       );
     })
     .catch((error) => {
@@ -188,17 +188,30 @@ export async function getPostById(postId: string): Promise<Post | null> {
 
 /**
  * Get posts by a specific user
+ *
+ * @param userId - The user ID to fetch posts for
+ * @param limitCount - Maximum number of posts to fetch
+ * @param publicOnly - If true, only fetch public posts (required for viewing other users' profiles)
  */
 export async function getUserPosts(
   userId: string,
-  limitCount: number = DEFAULT_LIMIT
+  limitCount: number = DEFAULT_LIMIT,
+  publicOnly: boolean = false,
 ): Promise<Post[]> {
-  const postsQuery = query(
-    collection(db, POSTS_COLLECTION),
+  // Build query constraints
+  const constraints = [
     where("userId", "==", userId),
     orderBy("timestamp", "desc"),
-    limit(limitCount)
-  );
+    limit(limitCount),
+  ];
+
+  // Add public filter if viewing another user's profile
+  // This is required by Firestore security rules which check isPublic per document
+  if (publicOnly) {
+    constraints.splice(1, 0, where("isPublic", "==", true));
+  }
+
+  const postsQuery = query(collection(db, POSTS_COLLECTION), ...constraints);
 
   const snapshot = await getDocs(postsQuery);
   return snapshot.docs.map((doc) => ({
@@ -231,7 +244,7 @@ async function uploadMediaFile(
   fileUri: string,
   postId: string,
   index: number,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
 ): Promise<string> {
   // Fetch the file as a blob
   const response = await fetch(fileUri);
@@ -265,7 +278,7 @@ async function uploadMediaFile(
         } catch (error) {
           reject(error);
         }
-      }
+      },
     );
   });
 }
@@ -276,7 +289,7 @@ async function uploadMediaFile(
  */
 export async function createPost(
   input: CreatePostInput,
-  onProgress?: (progress: UploadProgress) => void
+  onProgress?: (progress: UploadProgress) => void,
 ): Promise<string> {
   const currentUser = auth.currentUser;
   if (!currentUser) {
@@ -315,7 +328,7 @@ export async function createPost(
           currentFileProgress: fileProgress,
           overallProgress: ((i + fileProgress / 100) / totalFiles) * 100,
         });
-      }
+      },
     );
 
     mediaUrls.push(downloadUrl);

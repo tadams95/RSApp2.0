@@ -3,14 +3,15 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Keyboard,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { usePostHog } from "../../analytics/PostHogProvider";
-import { GlobalStyles } from "../../constants/styles";
+import { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 // ============================================
 // Types
@@ -71,6 +72,8 @@ export default function EmailTransferForm({
 
   const inputRef = useRef<TextInput>(null);
   const posthog = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Focus input on mount
   useEffect(() => {
@@ -172,7 +175,7 @@ export default function EmailTransferForm({
             <MaterialCommunityIcons
               name="arrow-left"
               size={24}
-              color={GlobalStyles.colors.text}
+              color={theme.colors.textPrimary}
             />
           </TouchableOpacity>
           <Text style={styles.title}>Transfer by Email</Text>
@@ -185,7 +188,7 @@ export default function EmailTransferForm({
         <MaterialCommunityIcons
           name="information-outline"
           size={18}
-          color={GlobalStyles.colors.primary}
+          color={theme.colors.accent}
         />
         <Text style={styles.infoText}>
           The recipient will receive an email with a link to claim the ticket.
@@ -201,9 +204,7 @@ export default function EmailTransferForm({
           <MaterialCommunityIcons
             name="email-outline"
             size={20}
-            color={
-              showError ? GlobalStyles.colors.error : GlobalStyles.colors.grey5
-            }
+            color={showError ? theme.colors.danger : theme.colors.textTertiary}
             style={styles.inputIcon}
           />
           <TextInput
@@ -213,7 +214,7 @@ export default function EmailTransferForm({
             onChangeText={handleEmailChange}
             onBlur={handleBlur}
             placeholder="email@example.com"
-            placeholderTextColor={GlobalStyles.colors.grey6}
+            placeholderTextColor={theme.colors.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
             autoComplete="email"
@@ -232,14 +233,14 @@ export default function EmailTransferForm({
               <MaterialCommunityIcons
                 name="close-circle"
                 size={20}
-                color={GlobalStyles.colors.grey5}
+                color={theme.colors.textTertiary}
               />
             </TouchableOpacity>
           )}
           {isLoading && (
             <ActivityIndicator
               size="small"
-              color={GlobalStyles.colors.primary}
+              color={theme.colors.accent}
               style={styles.loadingIndicator}
             />
           )}
@@ -251,7 +252,7 @@ export default function EmailTransferForm({
             <MaterialCommunityIcons
               name="alert-circle-outline"
               size={14}
-              color={GlobalStyles.colors.error}
+              color={theme.colors.danger}
             />
             <Text style={styles.errorText}>{error}</Text>
           </View>
@@ -263,7 +264,7 @@ export default function EmailTransferForm({
             <MaterialCommunityIcons
               name="check-circle-outline"
               size={14}
-              color="#22c55e"
+              color={theme.colors.success}
             />
             <Text style={styles.validText}>Valid email format</Text>
           </View>
@@ -311,33 +312,33 @@ export default function EmailTransferForm({
 // Styles
 // ============================================
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => ({
   container: {
-    width: "100%",
+    width: "100%" as const,
     backgroundColor: "transparent",
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: GlobalStyles.spacing.md,
-    marginBottom: GlobalStyles.spacing.md,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    paddingVertical: 16,
+    marginBottom: 16,
   },
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   title: {
     fontSize: 18,
-    fontWeight: "700",
-    color: GlobalStyles.colors.text,
+    fontWeight: "700" as const,
+    color: theme.colors.textPrimary,
   },
   infoContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: "rgba(255, 107, 53, 0.15)",
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+    backgroundColor: theme.colors.accentMuted,
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
@@ -346,7 +347,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: GlobalStyles.colors.primary,
+    color: theme.colors.accent,
     lineHeight: 18,
   },
   inputContainer: {
@@ -354,22 +355,22 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: "600",
-    color: GlobalStyles.colors.text,
+    fontWeight: "600" as const,
+    color: theme.colors.textPrimary,
     marginBottom: 8,
   },
   inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: GlobalStyles.colors.grey8,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: theme.colors.bgElev2,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: GlobalStyles.colors.grey6,
+    borderColor: theme.colors.borderSubtle,
     paddingHorizontal: 14,
     minHeight: 52,
   },
   inputWrapperError: {
-    borderColor: GlobalStyles.colors.error,
+    borderColor: theme.colors.danger,
   },
   inputIcon: {
     marginRight: 10,
@@ -377,7 +378,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: GlobalStyles.colors.text,
+    color: theme.colors.textPrimary,
     paddingVertical: 14,
   },
   clearButton: {
@@ -387,32 +388,32 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     marginTop: 6,
     gap: 4,
   },
   errorText: {
     fontSize: 12,
-    color: GlobalStyles.colors.error,
+    color: theme.colors.danger,
   },
   validContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     marginTop: 6,
     gap: 4,
   },
   validText: {
     fontSize: 12,
-    color: "#22c55e",
+    color: theme.colors.success,
   },
   submitButton: {
-    backgroundColor: GlobalStyles.colors.primary,
+    backgroundColor: theme.colors.accent,
     borderRadius: 12,
     paddingVertical: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     gap: 8,
     marginBottom: 12,
   },
@@ -421,19 +422,19 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
     color: "#fff",
   },
   cancelButton: {
-    backgroundColor: GlobalStyles.colors.grey8,
+    backgroundColor: theme.colors.bgElev2,
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   cancelButtonText: {
     fontSize: 16,
-    fontWeight: "500",
-    color: GlobalStyles.colors.text,
+    fontWeight: "500" as const,
+    color: theme.colors.textPrimary,
   },
 });

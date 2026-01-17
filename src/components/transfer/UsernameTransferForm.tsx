@@ -4,14 +4,15 @@ import {
   ActivityIndicator,
   FlatList,
   Keyboard,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { usePostHog } from "../../analytics/PostHogProvider";
-import { GlobalStyles } from "../../constants/styles";
+import { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 import {
   searchUsersByUsername,
   UserSearchResult,
@@ -53,9 +54,16 @@ const USERNAME_REGEX = /^@?[a-zA-Z0-9_]{0,20}$/;
 interface UserResultItemProps {
   user: UserSearchResult;
   onSelect: (user: UserSearchResult) => void;
+  theme: Theme;
+  styles: ReturnType<typeof createStyles>;
 }
 
-function UserResultItem({ user, onSelect }: UserResultItemProps) {
+function UserResultItem({
+  user,
+  onSelect,
+  theme,
+  styles,
+}: UserResultItemProps) {
   const getVerificationBadge = () => {
     if (user.verificationStatus === "verified") {
       return (
@@ -72,7 +80,7 @@ function UserResultItem({ user, onSelect }: UserResultItemProps) {
         <MaterialCommunityIcons
           name="star-circle"
           size={14}
-          color={GlobalStyles.colors.yellow}
+          color={theme.colors.warning}
           style={styles.badge}
         />
       );
@@ -114,7 +122,7 @@ function UserResultItem({ user, onSelect }: UserResultItemProps) {
       <MaterialCommunityIcons
         name="chevron-right"
         size={20}
-        color={GlobalStyles.colors.grey5}
+        color={theme.colors.textTertiary}
       />
     </TouchableOpacity>
   );
@@ -141,6 +149,8 @@ export default function UsernameTransferForm({
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<TextInput>(null);
   const posthog = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Cleanup debounce on unmount
   useEffect(() => {
@@ -196,7 +206,7 @@ export default function UsernameTransferForm({
       try {
         const searchResults = await searchUsersByUsername(
           cleanTerm,
-          MAX_RESULTS
+          MAX_RESULTS,
         );
         setResults(searchResults);
         setHasSearched(true);
@@ -217,7 +227,7 @@ export default function UsernameTransferForm({
         setIsSearching(false);
       }
     },
-    [eventId, ticketId, posthog]
+    [eventId, ticketId, posthog],
   );
 
   /**
@@ -286,7 +296,7 @@ export default function UsernameTransferForm({
           <MaterialCommunityIcons
             name="alert-circle-outline"
             size={48}
-            color={GlobalStyles.colors.error}
+            color={theme.colors.danger}
           />
           <Text style={styles.emptyStateText}>{error}</Text>
         </View>
@@ -299,7 +309,7 @@ export default function UsernameTransferForm({
           <MaterialCommunityIcons
             name="account-search-outline"
             size={48}
-            color={GlobalStyles.colors.grey5}
+            color={theme.colors.textTertiary}
           />
           <Text style={styles.emptyStateText}>
             No user found with username "{searchTerm}"
@@ -317,7 +327,7 @@ export default function UsernameTransferForm({
           <MaterialCommunityIcons
             name="at"
             size={48}
-            color={GlobalStyles.colors.grey6}
+            color={theme.colors.textTertiary}
           />
           <Text style={styles.emptyStateText}>Enter a username to search</Text>
           <Text style={styles.emptyStateHint}>
@@ -344,7 +354,7 @@ export default function UsernameTransferForm({
             <MaterialCommunityIcons
               name="arrow-left"
               size={24}
-              color={GlobalStyles.colors.text}
+              color={theme.colors.textPrimary}
             />
           </TouchableOpacity>
           <Text style={styles.title}>Find by Username</Text>
@@ -358,7 +368,7 @@ export default function UsernameTransferForm({
           <MaterialCommunityIcons
             name="at"
             size={20}
-            color={GlobalStyles.colors.grey5}
+            color={theme.colors.textTertiary}
             style={styles.inputIcon}
           />
           <TextInput
@@ -367,7 +377,7 @@ export default function UsernameTransferForm({
             value={searchTerm}
             onChangeText={handleSearchChange}
             placeholder="username"
-            placeholderTextColor={GlobalStyles.colors.grey6}
+            placeholderTextColor={theme.colors.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
             autoComplete="off"
@@ -384,14 +394,14 @@ export default function UsernameTransferForm({
               <MaterialCommunityIcons
                 name="close-circle"
                 size={20}
-                color={GlobalStyles.colors.grey5}
+                color={theme.colors.textTertiary}
               />
             </TouchableOpacity>
           )}
           {isSearching && (
             <ActivityIndicator
               size="small"
-              color={GlobalStyles.colors.primary}
+              color={theme.colors.accent}
               style={styles.searchingIndicator}
             />
           )}
@@ -405,7 +415,12 @@ export default function UsernameTransferForm({
             data={results}
             keyExtractor={(item) => item.userId}
             renderItem={({ item }) => (
-              <UserResultItem user={item} onSelect={handleUserSelect} />
+              <UserResultItem
+                user={item}
+                onSelect={handleUserSelect}
+                theme={theme}
+                styles={styles}
+              />
             )}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -423,120 +438,120 @@ export default function UsernameTransferForm({
 // Styles
 // ============================================
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => ({
   container: {
     flex: 1,
     backgroundColor: "transparent",
     minHeight: 250,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: GlobalStyles.spacing.md,
-    paddingVertical: GlobalStyles.spacing.md,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: GlobalStyles.colors.border,
+    borderBottomColor: theme.colors.borderSubtle,
   },
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   title: {
     fontSize: 18,
-    fontWeight: "700",
-    color: GlobalStyles.colors.text,
+    fontWeight: "700" as const,
+    color: theme.colors.textPrimary,
   },
   inputContainer: {
-    paddingHorizontal: GlobalStyles.spacing.lg,
-    paddingVertical: GlobalStyles.spacing.md,
-    paddingTop: GlobalStyles.spacing.lg,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingTop: 20,
   },
   inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: GlobalStyles.colors.grey8,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: theme.colors.bgElev2,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: GlobalStyles.colors.grey6,
-    paddingHorizontal: GlobalStyles.spacing.md,
+    borderColor: theme.colors.borderSubtle,
+    paddingHorizontal: 16,
     minHeight: 52,
   },
   inputIcon: {
-    marginRight: GlobalStyles.spacing.sm,
+    marginRight: 8,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: GlobalStyles.colors.text,
+    color: theme.colors.textPrimary,
     paddingVertical: 14,
     minHeight: 48,
   },
   clearButton: {
-    padding: GlobalStyles.spacing.xs,
+    padding: 4,
   },
   searchingIndicator: {
-    marginLeft: GlobalStyles.spacing.sm,
+    marginLeft: 8,
   },
   resultsContainer: {
     flex: 1,
   },
   resultsList: {
-    paddingBottom: GlobalStyles.spacing.xl,
+    paddingBottom: 32,
   },
   resultItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: GlobalStyles.spacing.md,
-    paddingHorizontal: GlobalStyles.spacing.lg,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: GlobalStyles.colors.grey8,
+    borderBottomColor: theme.colors.bgElev2,
   },
   resultAvatar: {
     width: 44,
     height: 44,
     borderRadius: 8,
-    marginRight: GlobalStyles.spacing.md,
+    marginRight: 16,
   },
   resultInfo: {
     flex: 1,
   },
   nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
   },
   resultName: {
     fontSize: 15,
-    fontWeight: "600",
-    color: GlobalStyles.colors.text,
+    fontWeight: "600" as const,
+    color: theme.colors.textPrimary,
   },
   badge: {
     marginLeft: 4,
   },
   resultUsername: {
     fontSize: 14,
-    color: GlobalStyles.colors.grey4,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   emptyState: {
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: GlobalStyles.spacing.xxl,
-    paddingTop: GlobalStyles.spacing.xl,
-    paddingBottom: GlobalStyles.spacing.xl,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    paddingHorizontal: 48,
+    paddingTop: 32,
+    paddingBottom: 32,
   },
   emptyStateText: {
     fontSize: 16,
-    color: GlobalStyles.colors.textSecondary,
-    textAlign: "center",
-    marginTop: GlobalStyles.spacing.md,
+    color: theme.colors.textSecondary,
+    textAlign: "center" as const,
+    marginTop: 16,
   },
   emptyStateHint: {
     fontSize: 14,
-    color: GlobalStyles.colors.grey5,
-    textAlign: "center",
-    marginTop: GlobalStyles.spacing.xs,
+    color: theme.colors.textTertiary,
+    textAlign: "center" as const,
+    marginTop: 4,
   },
 });

@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { formatDistanceToNowStrict } from "date-fns";
 import { Image } from "expo-image";
 import { Timestamp } from "firebase/firestore";
-import React from "react";
+import React, { memo } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
@@ -43,267 +43,274 @@ interface PostCardProps {
   onMore?: (postId: string) => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({
-  post,
-  isLiked = false,
-  isReposted = false,
-  onPress,
-  onProfilePress,
-  onMentionPress,
-  onLike,
-  onComment,
-  onRepost,
-  onShare,
-  onMore,
-}) => {
-  const { theme } = useTheme();
-  const styles = useThemedStyles(createStyles);
+export const PostCard: React.FC<PostCardProps> = memo(
+  ({
+    post,
+    isLiked = false,
+    isReposted = false,
+    onPress,
+    onProfilePress,
+    onMentionPress,
+    onLike,
+    onComment,
+    onRepost,
+    onShare,
+    onMore,
+  }) => {
+    const { theme } = useTheme();
+    const styles = useThemedStyles(createStyles);
 
-  const {
-    id,
-    userId,
-    userDisplayName,
-    usernameLower,
-    userProfilePicture,
-    userVerified,
-    content,
-    mediaUrls,
-    mediaTypes,
-    optimizedMediaUrls,
-    isProcessing,
-    timestamp,
-    likeCount,
-    commentCount,
-    repostCount,
-    repostOf,
-  } = post;
+    const {
+      id,
+      userId,
+      userDisplayName,
+      usernameLower,
+      userProfilePicture,
+      userVerified,
+      content,
+      mediaUrls,
+      mediaTypes,
+      optimizedMediaUrls,
+      isProcessing,
+      timestamp,
+      likeCount,
+      commentCount,
+      repostCount,
+      repostOf,
+    } = post;
 
-  // Check if this is a repost
-  const isRepostPost = !!repostOf;
-  // Check if this is a quote repost (has originalContent in repostOf)
-  const isQuoteRepostPost = isQuoteRepost(post);
+    // Check if this is a repost
+    const isRepostPost = !!repostOf;
+    // Check if this is a quote repost (has originalContent in repostOf)
+    const isQuoteRepostPost = isQuoteRepost(post);
 
-  // For regular reposts, show original author's info
-  // For quote reposts, show quoter's info (the person who quoted)
-  const displayName =
-    isRepostPost && !isQuoteRepostPost
-      ? repostOf.authorName || "User"
-      : userDisplayName;
-  const displayUsername =
-    isRepostPost && !isQuoteRepostPost
-      ? repostOf.authorUsername
-      : usernameLower;
-  const displayPhoto =
-    isRepostPost && !isQuoteRepostPost
-      ? repostOf.authorPhoto
-      : userProfilePicture;
-  const displayUserId =
-    isRepostPost && !isQuoteRepostPost ? repostOf.authorId : userId;
+    // For regular reposts, show original author's info
+    // For quote reposts, show quoter's info (the person who quoted)
+    const displayName =
+      isRepostPost && !isQuoteRepostPost
+        ? repostOf.authorName || "User"
+        : userDisplayName;
+    const displayUsername =
+      isRepostPost && !isQuoteRepostPost
+        ? repostOf.authorUsername
+        : usernameLower;
+    const displayPhoto =
+      isRepostPost && !isQuoteRepostPost
+        ? repostOf.authorPhoto
+        : userProfilePicture;
+    const displayUserId =
+      isRepostPost && !isQuoteRepostPost ? repostOf.authorId : userId;
 
-  // Format timestamp
-  const getTimeAgo = () => {
-    if (!timestamp) return "";
+    // Format timestamp
+    const getTimeAgo = () => {
+      if (!timestamp) return "";
 
-    // Handle both Firestore Timestamp and regular Date objects
-    const date =
-      timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp);
+      // Handle both Firestore Timestamp and regular Date objects
+      const date =
+        timestamp instanceof Timestamp
+          ? timestamp.toDate()
+          : new Date(timestamp);
 
-    return formatDistanceToNowStrict(date, { addSuffix: false })
-      .replace(" seconds", "s")
-      .replace(" second", "s")
-      .replace(" minutes", "m")
-      .replace(" minute", "m")
-      .replace(" hours", "h")
-      .replace(" hour", "h")
-      .replace(" days", "d")
-      .replace(" day", "d")
-      .replace(" months", "mo")
-      .replace(" month", "mo")
-      .replace(" years", "y")
-      .replace(" year", "y");
-  };
+      return formatDistanceToNowStrict(date, { addSuffix: false })
+        .replace(" seconds", "s")
+        .replace(" second", "s")
+        .replace(" minutes", "m")
+        .replace(" minute", "m")
+        .replace(" hours", "h")
+        .replace(" hour", "h")
+        .replace(" days", "d")
+        .replace(" day", "d")
+        .replace(" months", "mo")
+        .replace(" month", "mo")
+        .replace(" years", "y")
+        .replace(" year", "y");
+    };
 
-  const handleProfilePress = () => {
-    onProfilePress?.(displayUserId);
-  };
+    const handleProfilePress = () => {
+      onProfilePress?.(displayUserId);
+    };
 
-  // Navigate to reposter's profile
-  const handleReposterPress = () => {
-    onProfilePress?.(userId);
-  };
+    // Navigate to reposter's profile
+    const handleReposterPress = () => {
+      onProfilePress?.(userId);
+    };
 
-  return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={onPress}
-      activeOpacity={0.7}
-      disabled={!onPress}
-    >
-      {/* Repost indicator header - only for regular reposts, not quote reposts */}
-      {isRepostPost && !isQuoteRepostPost && (
-        <TouchableOpacity
-          style={styles.repostHeader}
-          onPress={handleReposterPress}
-          hitSlop={{ top: 5, bottom: 5, left: 10, right: 10 }}
-        >
-          <MaterialCommunityIcons
-            name="repeat"
-            size={14}
-            color={theme.colors.textTertiary}
-            style={styles.repostIcon}
-          />
-          <Text style={styles.repostText}>
-            {usernameLower ? `@${usernameLower}` : userDisplayName || "User"}{" "}
-            reposted
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      <View style={styles.postContent}>
-        <View style={styles.leftColumn}>
-          <TouchableOpacity onPress={handleProfilePress}>
-            {displayPhoto ? (
-              <ImageWithFallback
-                source={{ uri: displayPhoto }}
-                style={styles.avatar}
-                resizeMode="cover"
-                maxRetries={1}
-                renderFallback={() => (
-                  <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarInitial}>
-                      {displayName?.charAt(0).toUpperCase() || "?"}
-                    </Text>
-                  </View>
-                )}
-              />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitial}>
-                  {displayName?.charAt(0).toUpperCase() || "?"}
-                </Text>
-              </View>
-            )}
+    return (
+      <TouchableOpacity
+        style={styles.container}
+        onPress={onPress}
+        activeOpacity={0.7}
+        disabled={!onPress}
+      >
+        {/* Repost indicator header - only for regular reposts, not quote reposts */}
+        {isRepostPost && !isQuoteRepostPost && (
+          <TouchableOpacity
+            style={styles.repostHeader}
+            onPress={handleReposterPress}
+            hitSlop={{ top: 5, bottom: 5, left: 10, right: 10 }}
+          >
+            <MaterialCommunityIcons
+              name="repeat"
+              size={14}
+              color={theme.colors.textTertiary}
+              style={styles.repostIcon}
+            />
+            <Text style={styles.repostText}>
+              {usernameLower ? `@${usernameLower}` : userDisplayName || "User"}{" "}
+              reposted
+            </Text>
           </TouchableOpacity>
-        </View>
+        )}
 
-        <View style={styles.rightColumn}>
-          {/* Header */}
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              style={styles.userInfo}
-              onPress={handleProfilePress}
-              hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}
-            >
-              <View style={styles.nameRow}>
-                <Text style={styles.displayName} numberOfLines={1}>
-                  {displayName}
-                </Text>
-                {!isRepostPost && userVerified && <VerifiedBadge />}
-              </View>
-              {displayUsername && (
-                <Text style={styles.username} numberOfLines={1}>
-                  @{displayUsername}
-                </Text>
+        <View style={styles.postContent}>
+          <View style={styles.leftColumn}>
+            <TouchableOpacity onPress={handleProfilePress}>
+              {displayPhoto ? (
+                <ImageWithFallback
+                  source={{ uri: displayPhoto }}
+                  style={styles.avatar}
+                  resizeMode="cover"
+                  maxRetries={1}
+                  renderFallback={() => (
+                    <View style={styles.avatarPlaceholder}>
+                      <Text style={styles.avatarInitial}>
+                        {displayName?.charAt(0).toUpperCase() || "?"}
+                      </Text>
+                    </View>
+                  )}
+                />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarInitial}>
+                    {displayName?.charAt(0).toUpperCase() || "?"}
+                  </Text>
+                </View>
               )}
             </TouchableOpacity>
-
-            <View style={styles.metaInfo}>
-              <Text style={styles.dot}>·</Text>
-              <Text style={styles.timestamp}>{getTimeAgo()}</Text>
-              <TouchableOpacity
-                style={styles.moreButton}
-                onPress={() => onMore?.(id)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <MaterialCommunityIcons
-                  name="dots-horizontal"
-                  size={20}
-                  color={theme.colors.textTertiary}
-                />
-              </TouchableOpacity>
-            </View>
           </View>
 
-          {/* Content */}
-          {content ? (
-            <LinkedText
-              text={content}
-              style={styles.content}
-              onMentionPress={onMentionPress}
-            />
-          ) : null}
-
-          {/* Embedded Post Preview (for quote reposts) - Bordered card style */}
-          {isQuoteRepostPost && repostOf && (
-            <View style={styles.embeddedPreview}>
-              {/* Author line: name @username */}
-              <Text style={styles.embeddedAuthorLine} numberOfLines={1}>
-                <Text style={styles.embeddedAuthorName}>
-                  {repostOf.authorName || "User"}
-                </Text>
-                {repostOf.authorUsername && (
-                  <Text style={styles.embeddedAuthorUsername}>
-                    {" "}
-                    @{repostOf.authorUsername}
+          <View style={styles.rightColumn}>
+            {/* Header */}
+            <View style={styles.headerRow}>
+              <TouchableOpacity
+                style={styles.userInfo}
+                onPress={handleProfilePress}
+                hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}
+              >
+                <View style={styles.nameRow}>
+                  <Text style={styles.displayName} numberOfLines={1}>
+                    {displayName}
+                  </Text>
+                  {!isRepostPost && userVerified && <VerifiedBadge />}
+                </View>
+                {displayUsername && (
+                  <Text style={styles.username} numberOfLines={1}>
+                    @{displayUsername}
                   </Text>
                 )}
-              </Text>
+              </TouchableOpacity>
 
-              {/* Original Post Content */}
-              {repostOf.originalContent ? (
-                <Text style={styles.embeddedContent} numberOfLines={3}>
-                  {repostOf.originalContent}
-                </Text>
-              ) : null}
-
-              {/* Media thumbnail */}
-              {repostOf.originalMediaUrls &&
-                repostOf.originalMediaUrls.length > 0 && (
-                  <View style={styles.embeddedMediaContainer}>
-                    <Image
-                      source={{ uri: repostOf.originalMediaUrls[0] }}
-                      style={styles.embeddedMedia}
-                      contentFit="cover"
-                    />
-                    {repostOf.originalMediaUrls.length > 1 && (
-                      <View style={styles.embeddedMediaBadge}>
-                        <Text style={styles.embeddedMediaBadgeText}>
-                          +{repostOf.originalMediaUrls.length - 1}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                )}
+              <View style={styles.metaInfo}>
+                <Text style={styles.dot}>·</Text>
+                <Text style={styles.timestamp}>{getTimeAgo()}</Text>
+                <TouchableOpacity
+                  style={styles.moreButton}
+                  onPress={() => onMore?.(id)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <MaterialCommunityIcons
+                    name="dots-horizontal"
+                    size={20}
+                    color={theme.colors.textTertiary}
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
-          )}
 
-          {/* Media (for regular posts and regular reposts, not quote reposts) */}
-          {!isQuoteRepostPost && mediaUrls && mediaUrls.length > 0 && (
-            <MediaGrid
-              mediaUrls={mediaUrls}
-              mediaTypes={mediaTypes || []}
-              optimizedMediaUrls={optimizedMediaUrls}
-              isProcessing={isProcessing}
+            {/* Content */}
+            {content ? (
+              <LinkedText
+                text={content}
+                style={styles.content}
+                onMentionPress={onMentionPress}
+              />
+            ) : null}
+
+            {/* Embedded Post Preview (for quote reposts) - Bordered card style */}
+            {isQuoteRepostPost && repostOf && (
+              <View style={styles.embeddedPreview}>
+                {/* Author line: name @username */}
+                <Text style={styles.embeddedAuthorLine} numberOfLines={1}>
+                  <Text style={styles.embeddedAuthorName}>
+                    {repostOf.authorName || "User"}
+                  </Text>
+                  {repostOf.authorUsername && (
+                    <Text style={styles.embeddedAuthorUsername}>
+                      {" "}
+                      @{repostOf.authorUsername}
+                    </Text>
+                  )}
+                </Text>
+
+                {/* Original Post Content */}
+                {repostOf.originalContent ? (
+                  <Text style={styles.embeddedContent} numberOfLines={3}>
+                    {repostOf.originalContent}
+                  </Text>
+                ) : null}
+
+                {/* Media thumbnail */}
+                {repostOf.originalMediaUrls &&
+                  repostOf.originalMediaUrls.length > 0 && (
+                    <View style={styles.embeddedMediaContainer}>
+                      <Image
+                        source={{ uri: repostOf.originalMediaUrls[0] }}
+                        style={styles.embeddedMedia}
+                        contentFit="cover"
+                      />
+                      {repostOf.originalMediaUrls.length > 1 && (
+                        <View style={styles.embeddedMediaBadge}>
+                          <Text style={styles.embeddedMediaBadgeText}>
+                            +{repostOf.originalMediaUrls.length - 1}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+              </View>
+            )}
+
+            {/* Media (for regular posts and regular reposts, not quote reposts) */}
+            {!isQuoteRepostPost && mediaUrls && mediaUrls.length > 0 && (
+              <MediaGrid
+                mediaUrls={mediaUrls}
+                mediaTypes={mediaTypes || []}
+                optimizedMediaUrls={optimizedMediaUrls}
+                isProcessing={isProcessing}
+              />
+            )}
+
+            {/* Actions */}
+            <PostActions
+              likeCount={likeCount || 0}
+              commentCount={commentCount || 0}
+              repostCount={repostCount || 0}
+              isLiked={isLiked}
+              isReposted={isReposted}
+              onLikePress={() => onLike?.(id)}
+              onCommentPress={() => onComment?.(id)}
+              onRepostPress={() => onRepost?.(id)}
+              onSharePress={() => onShare?.(id)}
             />
-          )}
-
-          {/* Actions */}
-          <PostActions
-            likeCount={likeCount || 0}
-            commentCount={commentCount || 0}
-            repostCount={repostCount || 0}
-            isLiked={isLiked}
-            isReposted={isReposted}
-            onLikePress={() => onLike?.(id)}
-            onCommentPress={() => onComment?.(id)}
-            onRepostPress={() => onRepost?.(id)}
-            onSharePress={() => onShare?.(id)}
-          />
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
-};
+      </TouchableOpacity>
+    );
+  },
+);
+
+// Display name for debugging
+PostCard.displayName = "PostCard";
 
 import { StyleSheet } from "react-native";
 

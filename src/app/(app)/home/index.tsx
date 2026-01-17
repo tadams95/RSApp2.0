@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
@@ -7,7 +8,6 @@ import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
-  FlatList,
   Platform,
   RefreshControl,
   StyleSheet,
@@ -135,7 +135,7 @@ export default function HomeScreen() {
         console.error("Failed to toggle like:", err);
       }
     },
-    [likedPosts, likeCounts, posts]
+    [likedPosts, likeCounts, posts],
   );
 
   // Handle repost/unrepost with optimistic updates
@@ -194,7 +194,7 @@ export default function HomeScreen() {
         console.error("Failed to toggle repost:", err);
       }
     },
-    [repostedPosts, repostCounts, posts, posthog]
+    [repostedPosts, repostCounts, posts, posthog],
   );
 
   // Show action sheet for repost options (Repost vs Quote Repost)
@@ -221,7 +221,7 @@ export default function HomeScreen() {
             } else if (buttonIndex === 2) {
               setQuoteRepostTarget(post);
             }
-          }
+          },
         );
       } else {
         // Android fallback using Alert
@@ -239,7 +239,7 @@ export default function HomeScreen() {
         ]);
       }
     },
-    [repostedPosts, handleRepost, posthog]
+    [repostedPosts, handleRepost, posthog],
   );
 
   // Load more posts when reaching end
@@ -275,7 +275,7 @@ export default function HomeScreen() {
         const db = getFirestore();
         // Lookup userId from usernames collection
         const usernameDoc = await getDoc(
-          doc(db, "usernames", username.toLowerCase())
+          doc(db, "usernames", username.toLowerCase()),
         );
 
         if (usernameDoc.exists()) {
@@ -296,7 +296,7 @@ export default function HomeScreen() {
         Alert.alert("Error", "Could not find user profile.");
       }
     },
-    [router, posthog]
+    [router, posthog],
   );
 
   const renderEmptyState = () => (
@@ -366,17 +366,20 @@ export default function HomeScreen() {
           <ActivityIndicator size="large" color={theme.colors.accent} />
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={posts}
           keyExtractor={(item) => item.id}
           renderItem={renderPost}
           ListHeaderComponent={renderHeader}
           ListEmptyComponent={renderEmptyState}
           ListFooterComponent={renderFooter}
-          contentContainerStyle={posts.length === 0 && styles.emptyList}
+          contentContainerStyle={
+            posts.length === 0 ? styles.emptyList : undefined
+          }
           showsVerticalScrollIndicator={false}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.5}
+          estimatedItemSize={350}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

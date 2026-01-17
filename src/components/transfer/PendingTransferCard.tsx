@@ -6,6 +6,8 @@
  * - Recipient info (username or email)
  * - Time remaining until expiration
  * - Cancel button
+ *
+ * Supports both compact (inline) and full card views.
  */
 
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -18,7 +20,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
+import { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 // ============================================
 // Types
@@ -107,6 +111,9 @@ const PendingTransferCard: React.FC<PendingTransferCardProps> = ({
   resending = false,
   compact = false,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   const recipientDisplay =
     transfer.recipientUsername ||
     transfer.recipientEmail ||
@@ -127,9 +134,7 @@ const PendingTransferCard: React.FC<PendingTransferCardProps> = ({
           <MaterialCommunityIcons
             name="clock-outline"
             size={16}
-            color={
-              expired ? GlobalStyles.colors.error : GlobalStyles.colors.yellow
-            }
+            color={expired ? theme.colors.danger : theme.colors.warning}
           />
           <View style={styles.compactInfo}>
             <Text style={styles.compactEventName} numberOfLines={1}>
@@ -159,15 +164,12 @@ const PendingTransferCard: React.FC<PendingTransferCardProps> = ({
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               {resending ? (
-                <ActivityIndicator
-                  size="small"
-                  color={GlobalStyles.colors.primary}
-                />
+                <ActivityIndicator size="small" color={theme.colors.accent} />
               ) : (
                 <MaterialCommunityIcons
-                  name="email-send"
+                  name="email-outline"
                   size={18}
-                  color={GlobalStyles.colors.primary}
+                  color={theme.colors.accent}
                 />
               )}
             </TouchableOpacity>
@@ -179,15 +181,12 @@ const PendingTransferCard: React.FC<PendingTransferCardProps> = ({
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               {cancelling ? (
-                <ActivityIndicator
-                  size="small"
-                  color={GlobalStyles.colors.error}
-                />
+                <ActivityIndicator size="small" color={theme.colors.danger} />
               ) : (
                 <MaterialCommunityIcons
                   name="close-circle"
                   size={20}
-                  color={GlobalStyles.colors.error}
+                  color={theme.colors.danger}
                 />
               )}
             </TouchableOpacity>
@@ -205,7 +204,7 @@ const PendingTransferCard: React.FC<PendingTransferCardProps> = ({
         <MaterialCommunityIcons
           name="send-clock"
           size={20}
-          color={GlobalStyles.colors.primary}
+          color={theme.colors.accent}
         />
         <Text style={styles.headerText}>Pending Transfer</Text>
       </View>
@@ -220,7 +219,7 @@ const PendingTransferCard: React.FC<PendingTransferCardProps> = ({
         <MaterialCommunityIcons
           name="account-arrow-right"
           size={16}
-          color={GlobalStyles.colors.grey5}
+          color={theme.colors.textTertiary}
         />
         <Text style={styles.infoLabel}>To:</Text>
         <Text style={styles.infoValue} numberOfLines={1}>
@@ -240,9 +239,7 @@ const PendingTransferCard: React.FC<PendingTransferCardProps> = ({
         <MaterialCommunityIcons
           name={expired ? "clock-alert-outline" : "timer-sand"}
           size={14}
-          color={
-            expired ? GlobalStyles.colors.error : GlobalStyles.colors.yellow
-          }
+          color={expired ? theme.colors.danger : theme.colors.warning}
         />
         <Text
           style={[
@@ -265,16 +262,13 @@ const PendingTransferCard: React.FC<PendingTransferCardProps> = ({
               disabled={resending}
             >
               {resending ? (
-                <ActivityIndicator
-                  size="small"
-                  color={GlobalStyles.colors.primary}
-                />
+                <ActivityIndicator size="small" color={theme.colors.accent} />
               ) : (
                 <>
                   <MaterialCommunityIcons
-                    name="email-send-outline"
+                    name="email-edit-outline"
                     size={16}
-                    color={GlobalStyles.colors.primary}
+                    color={theme.colors.accent}
                   />
                   <Text style={styles.resendButtonText}>Resend Email</Text>
                 </>
@@ -289,16 +283,13 @@ const PendingTransferCard: React.FC<PendingTransferCardProps> = ({
             disabled={cancelling}
           >
             {cancelling ? (
-              <ActivityIndicator
-                size="small"
-                color={GlobalStyles.colors.error}
-              />
+              <ActivityIndicator size="small" color={theme.colors.danger} />
             ) : (
               <>
                 <MaterialCommunityIcons
                   name="close-circle-outline"
                   size={16}
-                  color={GlobalStyles.colors.error}
+                  color={theme.colors.danger}
                 />
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </>
@@ -314,162 +305,163 @@ const PendingTransferCard: React.FC<PendingTransferCardProps> = ({
 // Styles
 // ============================================
 
-const styles = StyleSheet.create({
-  // Full card styles
-  card: {
-    backgroundColor: GlobalStyles.colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.border,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 10,
-  },
-  headerText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: GlobalStyles.colors.primary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  eventName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: GlobalStyles.colors.text,
-    marginBottom: 10,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 10,
-  },
-  infoLabel: {
-    fontSize: 13,
-    color: GlobalStyles.colors.textSecondary,
-  },
-  infoValue: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "500",
-    color: GlobalStyles.colors.text,
-  },
-  timeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  pendingBadge: {
-    backgroundColor: "rgba(233, 185, 73, 0.15)",
-  },
-  expiredBadge: {
-    backgroundColor: "rgba(239, 68, 68, 0.15)",
-  },
-  timeText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  pendingText: {
-    color: GlobalStyles.colors.yellow,
-  },
-  expiredText: {
-    color: GlobalStyles.colors.error,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  resendButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.primary,
-  },
-  resendButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: GlobalStyles.colors.primary,
-  },
-  cancelButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.error,
-  },
-  cancelButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: GlobalStyles.colors.error,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    // Full card styles
+    card: {
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: 12,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 10,
+    },
+    headerText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: theme.colors.accent,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    eventName: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: 10,
+    },
+    infoRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 10,
+    },
+    infoLabel: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+    },
+    infoValue: {
+      flex: 1,
+      fontSize: 13,
+      fontWeight: "500",
+      color: theme.colors.textPrimary,
+    },
+    timeBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      gap: 5,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 10,
+      marginBottom: 10,
+    },
+    pendingBadge: {
+      backgroundColor: theme.colors.warningMuted,
+    },
+    expiredBadge: {
+      backgroundColor: theme.colors.dangerMuted,
+    },
+    timeText: {
+      fontSize: 12,
+      fontWeight: "600",
+    },
+    pendingText: {
+      color: theme.colors.warning,
+    },
+    expiredText: {
+      color: theme.colors.danger,
+    },
+    buttonRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    resendButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.accent,
+    },
+    resendButtonText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: theme.colors.accent,
+    },
+    cancelButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.danger,
+    },
+    cancelButtonText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: theme.colors.danger,
+    },
+    buttonDisabled: {
+      opacity: 0.5,
+    },
 
-  // Compact card styles
-  compactCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "rgba(255, 107, 53, 0.08)",
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 107, 53, 0.2)",
-    marginBottom: 8,
-  },
-  compactLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    flex: 1,
-  },
-  compactInfo: {
-    flex: 1,
-  },
-  compactEventName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: GlobalStyles.colors.text,
-    marginBottom: 2,
-  },
-  compactRecipient: {
-    fontSize: 12,
-    color: GlobalStyles.colors.textSecondary,
-  },
-  compactRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  compactTimeLeft: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: GlobalStyles.colors.yellow,
-  },
-  compactTimeExpired: {
-    color: GlobalStyles.colors.error,
-  },
-});
+    // Compact card styles
+    compactCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: theme.colors.accentMuted,
+      borderRadius: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+      marginBottom: 8,
+    },
+    compactLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      flex: 1,
+    },
+    compactInfo: {
+      flex: 1,
+    },
+    compactEventName: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+      marginBottom: 2,
+    },
+    compactRecipient: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+    },
+    compactRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    compactTimeLeft: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: theme.colors.warning,
+    },
+    compactTimeExpired: {
+      color: theme.colors.danger,
+    },
+  });
 
 export default PendingTransferCard;

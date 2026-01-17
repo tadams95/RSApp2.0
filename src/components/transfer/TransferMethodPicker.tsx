@@ -2,14 +2,15 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import {
   Platform,
-  StyleSheet,
   Text,
   TouchableOpacity,
   Vibration,
   View,
 } from "react-native";
 import { usePostHog } from "../../analytics/PostHogProvider";
-import { GlobalStyles } from "../../constants/styles";
+import { Theme } from "../../constants/themes";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 // ============================================
 // Types
@@ -38,6 +39,8 @@ interface MethodButtonProps {
   sublabel: string;
   onPress: () => void;
   disabled?: boolean;
+  theme: Theme;
+  styles: ReturnType<typeof createStyles>;
 }
 
 // ============================================
@@ -50,6 +53,8 @@ function MethodButton({
   sublabel,
   onPress,
   disabled,
+  theme,
+  styles,
 }: MethodButtonProps) {
   const handlePress = () => {
     // Light haptic feedback
@@ -76,9 +81,7 @@ function MethodButton({
         <MaterialCommunityIcons
           name={icon}
           size={28}
-          color={
-            disabled ? GlobalStyles.colors.grey5 : GlobalStyles.colors.primary
-          }
+          color={disabled ? theme.colors.textTertiary : theme.colors.accent}
         />
       </View>
       <View style={styles.labelContainer}>
@@ -92,7 +95,9 @@ function MethodButton({
       <MaterialCommunityIcons
         name="chevron-right"
         size={24}
-        color={disabled ? GlobalStyles.colors.grey6 : GlobalStyles.colors.grey4}
+        color={
+          disabled ? theme.colors.textTertiary : theme.colors.textSecondary
+        }
       />
     </TouchableOpacity>
   );
@@ -111,6 +116,8 @@ export default function TransferMethodPicker({
   disabled = false,
 }: TransferMethodPickerProps) {
   const posthog = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const handleMethodSelect = (method: TransferMethod, callback: () => void) => {
     // Track analytics
@@ -138,6 +145,8 @@ export default function TransferMethodPicker({
           sublabel="Scan recipient's profile QR"
           onPress={() => handleMethodSelect("qr", onSelectQR)}
           disabled={disabled}
+          theme={theme}
+          styles={styles}
         />
 
         <MethodButton
@@ -146,6 +155,8 @@ export default function TransferMethodPicker({
           sublabel="Search by username"
           onPress={() => handleMethodSelect("username", onSelectUsername)}
           disabled={disabled}
+          theme={theme}
+          styles={styles}
         />
 
         <MethodButton
@@ -154,6 +165,8 @@ export default function TransferMethodPicker({
           sublabel="Send to any email"
           onPress={() => handleMethodSelect("email", onSelectEmail)}
           disabled={disabled}
+          theme={theme}
+          styles={styles}
         />
       </View>
 
@@ -168,35 +181,35 @@ export default function TransferMethodPicker({
 // Styles
 // ============================================
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => ({
   container: {
-    paddingHorizontal: GlobalStyles.spacing.sm,
-    paddingVertical: GlobalStyles.spacing.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   title: {
     fontSize: 18,
-    fontWeight: "700",
-    color: GlobalStyles.colors.text,
-    textAlign: "center",
-    marginBottom: GlobalStyles.spacing.xs,
+    fontWeight: "700" as const,
+    color: theme.colors.textPrimary,
+    textAlign: "center" as const,
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
-    color: GlobalStyles.colors.textSecondary,
-    textAlign: "center",
-    marginBottom: GlobalStyles.spacing.lg,
+    color: theme.colors.textSecondary,
+    textAlign: "center" as const,
+    marginBottom: 24,
   },
   methodsContainer: {
-    gap: GlobalStyles.spacing.sm,
+    gap: 12,
   },
   methodButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: GlobalStyles.colors.surface,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: theme.colors.bgElev1,
     borderRadius: 12,
-    padding: GlobalStyles.spacing.md,
+    padding: 16,
     borderWidth: 1,
-    borderColor: GlobalStyles.colors.border,
+    borderColor: theme.colors.borderSubtle,
   },
   methodButtonDisabled: {
     opacity: 0.5,
@@ -205,32 +218,32 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 60, 0, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: GlobalStyles.spacing.md,
+    backgroundColor: theme.colors.accentMuted,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    marginRight: 16,
   },
   labelContainer: {
     flex: 1,
   },
   methodLabel: {
     fontSize: 16,
-    fontWeight: "600",
-    color: GlobalStyles.colors.text,
+    fontWeight: "600" as const,
+    color: theme.colors.textPrimary,
     marginBottom: 2,
   },
   methodSublabel: {
     fontSize: 13,
-    color: GlobalStyles.colors.textSecondary,
+    color: theme.colors.textSecondary,
   },
   textDisabled: {
-    color: GlobalStyles.colors.grey5,
+    color: theme.colors.textTertiary,
   },
   footerNote: {
     fontSize: 11,
-    color: GlobalStyles.colors.grey5,
-    textAlign: "center",
-    marginTop: GlobalStyles.spacing.md,
-    paddingHorizontal: GlobalStyles.spacing.md,
+    color: theme.colors.textTertiary,
+    textAlign: "center" as const,
+    marginTop: 16,
+    paddingHorizontal: 16,
   },
 });

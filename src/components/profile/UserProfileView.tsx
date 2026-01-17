@@ -47,28 +47,38 @@ const DEFAULT_STATS = {
 /**
  * Compute user stats by querying actual collections
  * This ensures accurate counts even if stored stats are out of sync
+ *
+ * @param userId - The user ID to compute stats for
+ * @param isOwnProfile - If true, count all posts; if false, only count public posts
  */
-async function computeUserStats(userId: string): Promise<typeof DEFAULT_STATS> {
+async function computeUserStats(
+  userId: string,
+  isOwnProfile: boolean,
+): Promise<typeof DEFAULT_STATS> {
   const db = getFirestore();
 
   try {
     // Query posts count - posts where userId matches
-    const postsQuery = query(
-      collection(db, "posts"),
-      where("userId", "==", userId)
-    );
+    // For other users, only count public posts (required by Firestore security rules)
+    const postsQuery = isOwnProfile
+      ? query(collection(db, "posts"), where("userId", "==", userId))
+      : query(
+          collection(db, "posts"),
+          where("userId", "==", userId),
+          where("isPublic", "==", true),
+        );
 
     // Query followers count - follows where followingId (the person being followed) matches this user
     // Note: followService uses "followingId" for the target user being followed
     const followersQuery = query(
       collection(db, "follows"),
-      where("followingId", "==", userId)
+      where("followingId", "==", userId),
     );
 
     // Query following count - follows where followerId (the person following) matches this user
     const followingQuery = query(
       collection(db, "follows"),
-      where("followerId", "==", userId)
+      where("followerId", "==", userId),
     );
 
     // Execute all count queries in parallel
@@ -109,7 +119,8 @@ async function fetchUserProfile(userId: string): Promise<UserData | null> {
   const isOwnProfile = currentUserId === userId;
 
   // Compute actual stats from collections (more accurate than stored stats)
-  const computedStats = await computeUserStats(userId);
+  // Pass isOwnProfile so we only count public posts for other users
+  const computedStats = await computeUserStats(userId, isOwnProfile);
 
   if (isOwnProfile) {
     // Own profile: read from customers collection (full access)
@@ -189,6 +200,9 @@ async function fetchUserProfile(userId: string): Promise<UserData | null> {
     if (Object.keys(profileData).length > 0) {
       return {
         ...profileData,
+        // Normalize field names: profiles may use photoURL, customers uses profilePicture
+        profilePicture:
+          (profileData as any).profilePicture || (profileData as any).photoURL,
         userId,
         stats: computedStats,
       } as UserData;
@@ -196,7 +210,7 @@ async function fetchUserProfile(userId: string): Promise<UserData | null> {
   } catch (error) {
     console.log(
       "Could not fetch profile from customers, trying profiles:",
-      error
+      error,
     );
 
     // Try the public profiles collection as fallback
@@ -206,8 +220,10 @@ async function fetchUserProfile(userId: string): Promise<UserData | null> {
 
       if (profileSnapshot.exists()) {
         const profileData = profileSnapshot.data();
+        // Normalize field names: profiles may use photoURL, customers uses profilePicture
         return {
           ...profileData,
+          profilePicture: profileData.profilePicture || profileData.photoURL,
           userId,
           stats: computedStats,
         } as UserData;
@@ -215,7 +231,7 @@ async function fetchUserProfile(userId: string): Promise<UserData | null> {
     } catch (profileError) {
       console.log(
         "Could not fetch from profiles collection either:",
-        profileError
+        profileError,
       );
     }
   }
@@ -254,13 +270,14 @@ export default function UserProfileView({
   });
 
   // Fetch user posts
+  // For other users' profiles, only fetch public posts (required by Firestore rules)
   const {
     data: posts = [],
     isLoading: postsLoading,
     refetch: refetchPosts,
   } = useQuery({
-    queryKey: ["userPosts", userId],
-    queryFn: () => getUserPosts(userId, 50),
+    queryKey: ["userPosts", userId, isOwnProfile],
+    queryFn: () => getUserPosts(userId, 50, !isOwnProfile),
     enabled: !!userId,
     staleTime: 0,
   });

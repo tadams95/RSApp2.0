@@ -4,20 +4,42 @@
 > **Dependencies**: Phases 1-3 complete  
 > **Outcome**: App Store/Play Store ready with security, performance, and polish
 
+### Progress Summary
+
+| Section                | Status         | Notes                                  |
+| ---------------------- | -------------- | -------------------------------------- |
+| 4.1 Firebase App Check | ⏸️ Deferred    | Add post-launch if API abuse occurs    |
+| 4.2 Deep Linking       | ✅ Complete    | Custom scheme working on iOS + Android |
+| 4.3 Light/Dark Mode    | ✅ Complete    | 75/75 files themed + QA tested         |
+| 4.4 Performance        | ✅ Complete    | FlashList + memo + expo-image caching  |
+| 4.5 Error Tracking     | ⏳ Not Started | Sentry setup                           |
+| 4.6 App Store Prep     | ⏳ Not Started | Assets, listings                       |
+
+### Key Changes from Original Plan
+
+- ⏸️ **Firebase App Check**: Deferred to post-launch (add only if API abuse occurs)
+- ✅ **4.2 Deep Linking** — Complete (custom scheme working)
+- ✅ **4.3 Theme Migration** — 75/75 files migrated + QA tested
+- ✅ **4.4 Performance** — FlashList on key lists, React.memo on PostCard, expo-image caching
+- 🎯 **Remaining Work**:
+  1. **4.5 Error Tracking** (~1-2 days) — Sentry setup ← **NEXT**
+  2. **4.6 App Store Prep** (~2-3 days) — Assets, listings
+
 ---
 
 ## Overview
 
 Final phase to ensure the app is production-ready with proper security (App Check), deep linking across all routes, **comprehensive theming aligned with the web app's `social-ui-design-spec.md`**, and performance optimization.
 
-### Design System Alignment
+### Design System Alignment ✅ COMPLETE
 
-This phase includes migrating ~75 files from hardcoded dark-mode styling to a token-based theming system that:
+All 75 files have been migrated from hardcoded dark-mode styling to a token-based theming system that:
 
-- Matches the web app's CSS variables exactly
-- Supports both Light and Dark modes
-- Follows the typography, spacing, and shadow specifications
-- Ensures WCAG AA contrast compliance
+- ✅ Matches the web app's CSS variables exactly
+- ✅ Supports both Light and Dark modes
+- ✅ Follows the typography, spacing, and shadow specifications
+- ✅ Ensures WCAG AA contrast compliance
+- ✅ QA tested in both light and dark modes
 
 ---
 
@@ -35,133 +57,46 @@ This phase includes migrating ~75 files from hardcoded dark-mode styling to a to
 - ✅ Appearance settings screen created (`src/app/(app)/account/appearance.tsx`)
 - ✅ App Check service scaffolded (`src/services/appCheckService.ts`)
 - ✅ Deep linking hook created (`src/hooks/useDeepLinking.ts`)
+- ✅ Deep linking tested (custom scheme working on iOS + Android)
+- ✅ Well-known files hosted on Vercel
+- ✅ **Theme migration 100% complete (75/75 files)**
 
 **What's Missing:**
 
-- Firebase App Check package installation & Firebase Console setup
-- Universal/App Links hosting (apple-app-site-association, assetlinks.json)
-- Theme migration for ~75 component files
-- Performance optimization
+- **Firebase App Check** (DEFERRED to post-launch - add only if API abuse occurs)
+- Universal Links (iOS) / App Links (Android) — requires production build
+- Performance optimization ← **CURRENT FOCUS**
 - Crash reporting
 - App Store assets
 
 ---
 
-## 4.1 Firebase App Check (~2-3 days)
+## 4.1 Firebase App Check (DEFERRED to Post-Launch) ⏸️
 
-### Purpose
+> **Decision**: Skip for MVP launch. Add only if experiencing API abuse/scraping. Firestore Security Rules + Authentication already provide adequate protection.
 
-App Check ensures only your genuine app can access Firebase services, protecting against:
+### Why Defer?
 
-- API abuse
-- Fake clients
-- Replay attacks
+- ❌ Emulators don't support attestation (DeviceCheck/Play Integrity only work on real devices)
+- ❌ Debug tokens are finicky and require proper env setup
+- ❌ Adds complexity that delays launch
+- ✅ Firestore Security Rules already gate data access
+- ✅ Authentication already gates most operations
+- ✅ No API abuse yet (small user base)
 
-### Installation
+### When to Add App Check
 
-```bash
-npx expo install @react-native-firebase/app-check expo-build-properties
-```
+1. **Post-launch monitoring**: Watch for unusual API patterns
+2. **Scale threshold**: If daily active users exceed 10k+
+3. **Abuse detected**: If you see scraping or unauthorized access
+4. **Financial sensitivity**: If adding payment features
 
-### iOS Setup (DeviceCheck)
+### Quick Re-enable Guide (When Ready)
 
-```json
-// app.json additions
-{
-  "expo": {
-    "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
-        }
-      ]
-    ]
-  }
-}
-```
-
-### Android Setup (Play Integrity)
-
-```json
-// app.json additions
-{
-  "expo": {
-    "android": {
-      "playIntegrity": {
-        "cloudProjectNumber": "YOUR_PROJECT_NUMBER"
-      }
-    }
-  }
-}
-```
-
-### App Check Initialization
-
-```typescript
-// src/services/appCheckService.ts
-import appCheck from "@react-native-firebase/app-check";
-
-export async function initializeAppCheck(): Promise<void> {
-  const provider = appCheck().newReactNativeFirebaseAppCheckProvider();
-
-  provider.configure({
-    android: {
-      provider: __DEV__ ? "debug" : "playIntegrity",
-      debugToken: __DEV__ ? "YOUR_DEBUG_TOKEN" : undefined,
-    },
-    apple: {
-      provider: __DEV__ ? "debug" : "deviceCheck",
-      debugToken: __DEV__ ? "YOUR_DEBUG_TOKEN" : undefined,
-    },
-  });
-
-  await appCheck().initializeAppCheck({
-    provider,
-    isTokenAutoRefreshEnabled: true,
-  });
-}
-```
-
-### App Integration
-
-```typescript
-// src/app/_layout.tsx
-import { initializeAppCheck } from "../services/appCheckService";
-
-export default function RootLayout() {
-  useEffect(() => {
-    initializeAppCheck().catch(console.error);
-  }, []);
-
-  // ...
-}
-```
-
-### Firebase Console Setup
-
-1. Go to Firebase Console > App Check
-2. Register iOS app with DeviceCheck
-3. Register Android app with Play Integrity
-4. Enable enforcement on:
-   - Cloud Firestore
-   - Realtime Database
-   - Cloud Storage
-   - Cloud Functions
-
-### Implementation Checklist
-
-- [x] Create `appCheckService.ts` with initialization logic ✅
-- [x] Install `@react-native-firebase/app-check` package ✅
-- [x] Configure iOS DeviceCheck in app.json ✅ (via expo-build-properties with static frameworks)
-- [x] Configure Android Play Integrity in app.json ✅ (cloudProjectNumber: 930832370585)
-- [x] Add debug tokens for development (env variable) ✅ (EXPO_PUBLIC_APP_CHECK_DEBUG_TOKEN in .env.example)
-- [x] Call `initializeAppCheck()` in `_layout.tsx` ✅
-- [ ] Enable enforcement in Firebase Console
-- [ ] Test with real devices
-- [ ] Verify Cloud Functions accept tokens
+1. Install: `npx expo install @react-native-firebase/app-check expo-build-properties`
+2. Test on real devices (not emulators) with debug tokens
+3. Enable enforcement in Firebase Console
+4. Monitor metrics for 1 week before full rollout
 
 ---
 
@@ -339,11 +274,12 @@ Host at `https://ragestate.com/.well-known/assetlinks.json`:
 - [x] Configure app.json with schemes and domains ✅
 - [x] Create `useDeepLinking` hook ✅ (`src/hooks/useDeepLinking.ts`)
 - [x] Implement route mapping (events, users, posts, transfers, shop) ✅
-- [ ] Host apple-app-site-association on ragestate.com
-- [ ] Host assetlinks.json on ragestate.com
-- [ ] Test custom scheme links
-- [ ] Test Universal Links (iOS)
-- [ ] Test App Links (Android)
+- [x] Generate apple-app-site-association ✅ (`docs/well-known/apple-app-site-association`)
+- [x] Generate assetlinks.json ✅ (`docs/well-known/assetlinks.json`)
+- [x] Host files on ragestate.com/.well-known/ ✅ (Vercel)
+- [x] Test custom scheme links ✅ (iOS + Android working)
+- [ ] Test Universal Links (iOS) — requires production build
+- [ ] Test App Links (Android) — requires production build
 - [ ] Add deferred deep linking for non-installed users
 
 ---
@@ -603,11 +539,11 @@ import { StyleSheet } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 
 type StyleFactory<T extends StyleSheet.NamedStyles<T>> = (
-  theme: typeof lightTheme
+  theme: typeof lightTheme,
 ) => T;
 
 export function useThemedStyles<T extends StyleSheet.NamedStyles<T>>(
-  styleFactory: StyleFactory<T>
+  styleFactory: StyleFactory<T>,
 ): T {
   const { theme } = useTheme();
 
@@ -686,11 +622,18 @@ export default function AppearanceSettings() {
 - [x] Create theme definitions (light/dark) ✅ (`src/constants/themes.ts`)
 - [x] Create ThemeContext and ThemeProvider ✅ (`src/contexts/ThemeContext.tsx`)
 - [x] Create `useThemedStyles` hook ✅ (`src/hooks/useThemedStyles.ts`)
-- [ ] Migrate existing components to themed styles (~75 files)
+- [x] Migrate existing components to themed styles ✅ **(75/75 files complete)**
+  - [x] Phase A: Foundation (6/6) ✅
+  - [x] Phase B: Critical Screens - Layouts, Auth, Feed (16/16) ✅
+  - [x] Phase C: Profile & Social - Profile, Notifications (14/14) ✅
+  - [x] Phase D: Shop & Cart (10/10) ✅
+  - [x] Phase D: Events (5/5) ✅
+  - [x] Phase D: Transfer components (5/5) ✅
+  - [x] Phase E: Supporting Components (24/24) ✅
 - [x] Add appearance settings screen ✅ (`src/app/(app)/account/appearance.tsx`)
 - [x] Update StatusBar based on theme ✅ (in `_layout.tsx`)
-- [ ] Update navigation bar colors (tab bars, headers)
-- [ ] Test all screens in both modes
+- [x] Update navigation bar colors (tab bars, headers) ✅
+- [x] Test all screens in both modes (Phase F: QA) ✅
 
 ---
 
@@ -766,15 +709,15 @@ export default function AppearanceSettings() {
 | `src/components/profile/PlatformBadge.tsx`        | Badge colors               | Theme badges                  |
 | `src/app/(app)/profile/[userId].tsx`              | Profile screen             | Full theme migration          |
 
-### PRIORITY 5: Events Components
+### PRIORITY 5: Events Components ✅ COMPLETE
 
-| File                                        | Current Issues      | Changes Required     |
-| ------------------------------------------- | ------------------- | -------------------- |
-| `src/app/(app)/events/index.tsx`            | Event list styling  | Theme event cards    |
-| `src/app/(app)/events/[id].tsx`             | Event detail page   | Full theme migration |
-| `src/app/(app)/events/my-events.tsx`        | My events list      | Theme list items     |
-| `src/app/(app)/events/paginated-events.tsx` | Paginated view      | Theme pagination     |
-| `src/components/events/EventNotFound.tsx`   | Error state styling | Theme error states   |
+| File                                        | Status | Changes Required     |
+| ------------------------------------------- | ------ | -------------------- |
+| `src/app/(app)/events/index.tsx`            | ✅     | Theme event cards    |
+| `src/app/(app)/events/[id].tsx`             | ✅     | Full theme migration |
+| `src/app/(app)/events/my-events.tsx`        | ✅     | Theme list items     |
+| `src/app/(app)/events/paginated-events.tsx` | ✅     | Theme pagination     |
+| `src/components/events/EventNotFound.tsx`   | ✅     | Theme error states   |
 
 ### PRIORITY 6: Notifications
 
@@ -793,17 +736,17 @@ export default function AppearanceSettings() {
 - `mention`: Keep `#9b59b6` (purple)
 - `post_reposted`: Keep `#1abc9c` (teal)
 
-### PRIORITY 7: Shop Components
+### PRIORITY 7: Shop Components ✅ COMPLETE
 
-| File                                    | Current Issues   | Changes Required    |
-| --------------------------------------- | ---------------- | ------------------- |
-| `src/app/(app)/shop/index.tsx`          | Shop grid        | Theme product cards |
-| `src/app/(app)/shop/[handle].tsx`       | Collection page  | Theme collection    |
-| `src/app/(app)/shop/ProductDetail.tsx`  | Product detail   | Theme product view  |
-| `src/app/(app)/shop/ProductWrapper.tsx` | Product wrapper  | Theme wrapper       |
-| `src/app/(app)/shop/paginated-shop.tsx` | Paginated shop   | Theme pagination    |
-| `src/app/(app)/cart/`                   | Cart screens     | Theme cart UI       |
-| `src/components/shopify/*.tsx`          | Error boundaries | Theme error states  |
+| File                                    | Status | Changes Required    |
+| --------------------------------------- | ------ | ------------------- |
+| `src/app/(app)/shop/index.tsx`          | ✅     | Theme product cards |
+| `src/app/(app)/shop/[handle].tsx`       | ✅     | Theme collection    |
+| `src/app/(app)/shop/ProductDetail.tsx`  | ✅     | Theme product view  |
+| `src/app/(app)/shop/ProductWrapper.tsx` | ✅     | Theme wrapper       |
+| `src/app/(app)/shop/paginated-shop.tsx` | ✅     | Theme pagination    |
+| `src/app/(app)/cart/`                   | ✅     | Theme cart UI       |
+| `src/components/shopify/*.tsx`          | ✅     | Theme error states  |
 
 **Commerce Card Spec (§4.10):**
 
@@ -813,17 +756,17 @@ export default function AppearanceSettings() {
 - Background: `theme.colors.bgElev1`
 - Border: `theme.colors.borderSubtle`
 
-### PRIORITY 8: Transfer Components
+### PRIORITY 8: Transfer Components ✅ COMPLETE
 
-| File                                               | Current Issues      | Changes Required |
-| -------------------------------------------------- | ------------------- | ---------------- |
-| `src/app/(app)/transfer/claim.tsx`                 | Transfer claim page | Theme form       |
-| `src/app/(app)/transfer/pending.tsx`               | Pending transfers   | Theme list       |
-| `src/components/transfer/EmailTransferForm.tsx`    | Form styling        | Theme inputs     |
-| `src/components/transfer/UsernameTransferForm.tsx` | Form styling        | Theme inputs     |
-| `src/components/transfer/PendingTransferCard.tsx`  | Card styling        | Theme card       |
-| `src/components/transfer/RecipientPreview.tsx`     | Preview styling     | Theme preview    |
-| `src/components/transfer/TransferMethodPicker.tsx` | Picker styling      | Theme picker     |
+| File                                               | Status | Changes Required |
+| -------------------------------------------------- | ------ | ---------------- |
+| `src/app/(app)/transfer/claim.tsx`                 | ✅     | Theme form       |
+| `src/app/(app)/transfer/pending.tsx`               | ✅     | Theme list       |
+| `src/components/transfer/EmailTransferForm.tsx`    | ✅     | Theme inputs     |
+| `src/components/transfer/UsernameTransferForm.tsx` | ✅     | Theme inputs     |
+| `src/components/transfer/PendingTransferCard.tsx`  | ✅     | Theme card       |
+| `src/components/transfer/RecipientPreview.tsx`     | ✅     | Theme preview    |
+| `src/components/transfer/TransferMethodPicker.tsx` | ✅     | Theme picker     |
 
 ### PRIORITY 9: Account & Settings
 
@@ -910,37 +853,40 @@ export default function AppearanceSettings() {
 5. ✅ Add appearance settings in `src/app/(app)/account/appearance.tsx`
 6. ✅ Add appearance link in SettingsModal
 
-### Phase B: Critical Screens (Days 2-3) — NEXT
+### Phase B: Critical Screens (Days 2-3) ✅ COMPLETE
 
-1. Tab bar and navigation (`_layout.tsx` files)
-2. Auth screens (login, signup, complete-profile)
-3. Home feed and PostCard components
+1. ✅ Tab bar and navigation (`_layout.tsx` files)
+2. ✅ Auth screens (login, signup, complete-profile)
+3. ✅ Home feed and PostCard components
 
-### Phase C: Profile & Social (Day 3-4)
+### Phase C: Profile & Social (Day 3-4) ✅ COMPLETE
 
-1. Profile components
-2. Notification components
-3. Comment components
+1. ✅ Profile components
+2. ✅ Notification components
+3. ✅ Comment components
 
-### Phase D: Commerce & Transfer (Day 4)
+### Phase D: Commerce & Transfer (Day 4) ✅ COMPLETE
 
-1. Shop screens and components
-2. Transfer components
-3. Cart screens
+1. ✅ Shop screens and components
+2. ✅ Transfer components
+3. ✅ Cart screens
+4. ✅ Events screens
 
-### Phase E: Supporting Components (Day 5)
+### Phase E: Supporting Components (Day 5) ✅ COMPLETE
 
-1. Modal components
-2. UI components
-3. Error/status components
-4. Debug components (optional)
+1. ✅ Modal components
+2. ✅ UI components
+3. ✅ Error/status components
+4. ✅ Debug components
 
-### Phase F: QA & Polish (Day 5)
+### Phase F: QA & Polish ✅ COMPLETE
 
-1. Test all screens in both themes
-2. Fix any contrast issues
-3. Ensure StatusBar adapts
-4. Verify shadows look good in both modes
+1. ✅ Test all screens in both themes
+2. ✅ Fix any contrast issues
+3. ✅ Ensure StatusBar adapts
+4. ✅ Verify shadows look good in both modes
+
+> **Note**: Future issues can be addressed via EAS Update
 
 ---
 
@@ -1005,13 +951,17 @@ npx expo export --platform android --analyze
 
 ### Common Optimizations
 
-- [ ] Replace FlatList with FlashList for large lists
-- [ ] Use expo-image instead of React Native Image
-- [ ] Implement list virtualization
-- [ ] Add skeleton loaders for perceived performance
-- [ ] Lazy load screens with React.lazy
-- [ ] Optimize re-renders with memo/useMemo
-- [ ] Profile with React DevTools Profiler
+- [x] Replace FlatList with FlashList for large lists ✅
+  - Home Feed (`src/app/(app)/home/index.tsx`)
+  - Notifications (`src/app/(app)/notifications/index.tsx`)
+  - Shop screens (already using FlashList)
+- [x] Use expo-image instead of React Native Image ✅ (already implemented)
+- [x] Implement list virtualization ✅ (FlashList handles this)
+- [x] Add skeleton loaders for perceived performance ✅ (shop screens)
+- [x] Optimize re-renders with memo/useMemo ✅
+  - PostCard wrapped with React.memo
+- [ ] Lazy load screens with React.lazy (optional - Expo Router handles routing)
+- [ ] Profile with React DevTools Profiler (recommended for debugging)
 
 ---
 

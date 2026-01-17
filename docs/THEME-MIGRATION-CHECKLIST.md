@@ -125,11 +125,11 @@ const styles = useThemedStyles((theme) => ({
 
 | Status | File                                        | Tokens to Apply                                                  |
 | ------ | ------------------------------------------- | ---------------------------------------------------------------- |
-| [ ]    | `src/app/(app)/events/index.tsx`            | `bgRoot` container, event card theming                           |
-| [ ]    | `src/app/(app)/events/[id].tsx`             | `bgRoot` screen, `bgElev1` detail sections, `accent` CTA buttons |
-| [ ]    | `src/app/(app)/events/my-events.tsx`        | `bgRoot` list, `bgElev1` list items                              |
-| [ ]    | `src/app/(app)/events/paginated-events.tsx` | `bgRoot` container, loading indicator `accent`                   |
-| [ ]    | `src/components/events/EventNotFound.tsx`   | `textSecondary` message, `danger` icon                           |
+| [x]    | `src/app/(app)/events/index.tsx`            | `bgRoot` container, event card theming                           |
+| [x]    | `src/app/(app)/events/[id].tsx`             | `bgRoot` screen, `bgElev1` detail sections, `accent` CTA buttons |
+| [x]    | `src/app/(app)/events/my-events.tsx`        | `bgRoot` list, `bgElev1` list items                              |
+| [x]    | `src/app/(app)/events/paginated-events.tsx` | `bgRoot` container, loading indicator `accent`                   |
+| [x]    | `src/components/events/EventNotFound.tsx`   | `textSecondary` message, `danger` icon                           |
 
 ### Priority 7: Shop Components
 
@@ -143,18 +143,18 @@ const styles = useThemedStyles((theme) => ({
 | [x]    | `src/app/(app)/cart/` (all files)       | `bgRoot` screen, `bgElev1` cart items, `accent` checkout                       |
 | [x]    | `src/components/shopify/*.tsx`          | Error boundaries with `danger` styling (kept light theme for error visibility) |
 
-### Priority 8: Transfer Components
+### Priority 8: Transfer Components ✅ COMPLETE
 
 | Status | File                                               | Tokens to Apply                                               |
 | ------ | -------------------------------------------------- | ------------------------------------------------------------- |
 | [x]    | `src/app/(app)/transfer/_layout.tsx`               | `bgRoot` header, `textPrimary` header text                    |
 | [x]    | `src/app/(app)/transfer/claim.tsx`                 | `bgRoot` screen, `bgElev1` claim card, `success` confirmation |
 | [x]    | `src/app/(app)/transfer/pending.tsx`               | `bgRoot` list, `warning` pending status                       |
-| [ ]    | `src/components/transfer/EmailTransferForm.tsx`    | `bgElev1` form, `bgElev2` inputs, `borderSubtle` borders      |
-| [ ]    | `src/components/transfer/UsernameTransferForm.tsx` | Same as EmailTransferForm                                     |
-| [ ]    | `src/components/transfer/PendingTransferCard.tsx`  | `bgElev1` card, `warning` pending badge                       |
-| [ ]    | `src/components/transfer/RecipientPreview.tsx`     | `bgElev2` preview box, `textSecondary` labels                 |
-| [ ]    | `src/components/transfer/TransferMethodPicker.tsx` | `bgElev1` picker, `accent` selected option                    |
+| [x]    | `src/components/transfer/EmailTransferForm.tsx`    | `bgElev1` form, `bgElev2` inputs, `borderSubtle` borders      |
+| [x]    | `src/components/transfer/UsernameTransferForm.tsx` | Same as EmailTransferForm                                     |
+| [x]    | `src/components/transfer/PendingTransferCard.tsx`  | `bgElev1` card, `warning` pending badge                       |
+| [x]    | `src/components/transfer/RecipientPreview.tsx`     | `bgElev2` preview box, `textSecondary` labels                 |
+| [x]    | `src/components/transfer/TransferMethodPicker.tsx` | `bgElev1` picker, `accent` selected option                    |
 
 ---
 

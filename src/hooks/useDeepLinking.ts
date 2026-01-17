@@ -28,7 +28,7 @@ const ROUTE_MAPPING: Record<
   string,
   (
     params: RegExpMatchArray,
-    queryParams: Record<string, string>
+    queryParams: Record<string, string>,
   ) => {
     pathname: string;
     params?: Record<string, string>;
@@ -40,8 +40,8 @@ const ROUTE_MAPPING: Record<
     params: { id: match[1] },
   }),
 
-  // User profile (by username or userId)
-  "^/users?/([^/]+)$": (match) => ({
+  // User profile (by username or userId) - supports /user/, /users/, /profile/, /profiles/
+  "^/(?:users?|profiles?)/([^/]+)$": (match) => ({
     pathname: "/(app)/profile/[userId]",
     params: { userId: match[1] },
   }),
@@ -133,10 +133,20 @@ interface DeepLinkResult {
 export function parseDeepLink(url: string): DeepLinkResult {
   try {
     const parsed = Linking.parse(url);
-    const path = parsed.path || "";
 
-    // Normalize the path (remove leading/trailing slashes)
-    const normalizedPath = "/" + path.replace(/^\/+|\/+$/g, "");
+    // For custom scheme links (ragestate://profile/tyrelle), hostname contains the first segment
+    // and path contains the rest. We need to combine them.
+    // For universal links (https://ragestate.com/profile/tyrelle), path contains everything.
+    let fullPath = parsed.path || "";
+
+    // If we have a hostname that's not a domain (e.g., "profile" from ragestate://profile/tyrelle),
+    // prepend it to the path
+    if (parsed.hostname && !parsed.hostname.includes(".")) {
+      fullPath = parsed.hostname + (fullPath ? "/" + fullPath : "");
+    }
+
+    // Normalize the path (remove leading/trailing slashes, then add leading slash)
+    const normalizedPath = "/" + fullPath.replace(/^\/+|\/+$/g, "");
 
     // Convert query params to a simple Record
     const queryParams: Record<string, string> = {};
@@ -237,7 +247,7 @@ export function useDeepLinking(options: UseDeepLinkingOptions = {}): void {
         }
       }
     },
-    [enabled, router, onDeepLinkHandled, onDeepLinkUnhandled]
+    [enabled, router, onDeepLinkHandled, onDeepLinkUnhandled],
   );
 
   useEffect(() => {
@@ -280,7 +290,7 @@ export function useDeepLinking(options: UseDeepLinkingOptions = {}): void {
  */
 export function createDeepLink(
   path: string,
-  params?: Record<string, string>
+  params?: Record<string, string>,
 ): string {
   const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
   let url = Linking.createURL(normalizedPath);
@@ -289,7 +299,7 @@ export function createDeepLink(
     const queryString = Object.entries(params)
       .map(
         ([key, value]) =>
-          `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+          `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
       )
       .join("&");
     url += `?${queryString}`;
