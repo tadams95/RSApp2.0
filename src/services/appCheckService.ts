@@ -73,7 +73,7 @@ export async function initializeAppCheck(): Promise<void> {
     console.warn(
       "⚠️ Firebase App Check native module not available. " +
         "This is expected in Expo Go or if the native build doesn't include it. " +
-        "App Check will be skipped."
+        "App Check will be skipped.",
     );
     appCheckState.isAvailable = false;
     appCheckState.initialized = true; // Mark as initialized to prevent retries
@@ -94,7 +94,7 @@ export async function initializeAppCheck(): Promise<void> {
         debugToken: __DEV__ ? DEBUG_TOKEN : undefined,
       },
       apple: {
-        // Use DeviceCheck in production, debug provider in development  
+        // Use DeviceCheck in production, debug provider in development
         provider: __DEV__ ? "debug" : "deviceCheck",
         debugToken: __DEV__ ? DEBUG_TOKEN : undefined,
       },
@@ -111,20 +111,31 @@ export async function initializeAppCheck(): Promise<void> {
 
     if (__DEV__) {
       console.log("✅ Firebase App Check initialized (debug mode)");
-      console.log("💡 Check Xcode console for debug token to register in Firebase Console");
-      console.log("💡 Firebase Console > App Check > Apps > Manage debug tokens");
+      console.log(
+        "💡 Check Xcode console for debug token to register in Firebase Console",
+      );
+      console.log(
+        "💡 Firebase Console > App Check > Apps > Manage debug tokens",
+      );
     }
   } catch (error) {
     appCheckState.error = error as Error;
     appCheckState.initialized = true; // Prevent infinite retry loops
-    
+
     // App Check failure should not block the app - just log it
-    console.warn("⚠️ Firebase App Check initialization failed (non-blocking):", error);
-    
+    console.warn(
+      "⚠️ Firebase App Check initialization failed (non-blocking):",
+      error,
+    );
+
     // In development, this is often expected if debug tokens aren't registered
     if (__DEV__) {
-      console.log("💡 This is expected if you haven't registered your debug token yet.");
-      console.log("💡 The app will continue to work - App Check is optional for development.");
+      console.log(
+        "💡 This is expected if you haven't registered your debug token yet.",
+      );
+      console.log(
+        "💡 The app will continue to work - App Check is optional for development.",
+      );
     }
   }
 }
@@ -195,7 +206,7 @@ export async function refreshAppCheckToken(): Promise<string | null> {
  * @returns Unsubscribe function
  */
 export function onAppCheckTokenChanged(
-  callback: (token: string | null) => void
+  callback: (token: string | null) => void,
 ): () => void {
   const appCheck = getAppCheckModule();
 
@@ -206,7 +217,7 @@ export function onAppCheckTokenChanged(
   const unsubscribe = appCheck().onTokenChanged(
     (tokenResult: { token: string } | null) => {
       callback(tokenResult?.token || null);
-    }
+    },
   );
 
   return unsubscribe;
