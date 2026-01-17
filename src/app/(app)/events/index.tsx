@@ -572,7 +572,7 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       backgroundColor: "rgba(0,0,0,0.75)",
       paddingVertical: 8,
       paddingHorizontal: 14,
-      borderRadius: 20,
+      borderRadius: 8,
       borderWidth: 1,
       borderColor: "rgba(255,255,255,0.4)",
       zIndex: 100,

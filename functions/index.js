@@ -5,6 +5,7 @@ module.exports = {
   ...require("./notifications"),
   ...require("./transcode"),
   ...require("./printifyWebhook"),
+  ...require("./events"),
   // Rate limit cleanup (scheduled daily)
   scheduledRateLimitCleanup: require("./rateLimit").scheduledRateLimitCleanup,
   // Analytics aggregation (scheduled daily at 2 AM UTC)

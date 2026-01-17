@@ -28,7 +28,7 @@ export function useEvents(): UseQueryResult<EventData[], Error> {
         const eventCollectionRef = collection(firestore, "events");
         const q = query(
           eventCollectionRef,
-          where("dateTime", ">=", currentDate)
+          where("dateTime", ">=", currentDate),
         );
         const eventSnapshot = await getDocs(q);
 
@@ -46,7 +46,7 @@ export function useEvents(): UseQueryResult<EventData[], Error> {
               );
             } catch (error) {
               console.warn(
-                "Date sorting error, using current time as fallback"
+                "Date sorting error, using current time as fallback",
               );
               return 0; // Default to equality if dates can't be compared
             }
@@ -58,7 +58,7 @@ export function useEvents(): UseQueryResult<EventData[], Error> {
         const errorMessage = handleEventFetchError(
           error,
           "useEvents.queryFn",
-          {}
+          {},
         );
         throw new Error(errorMessage);
       }
@@ -92,7 +92,7 @@ export function useAllEvents(): UseQueryResult<EventData[], Error> {
               );
             } catch (error) {
               console.warn(
-                "Date sorting error, using current time as fallback"
+                "Date sorting error, using current time as fallback",
               );
               return 0;
             }
@@ -103,7 +103,7 @@ export function useAllEvents(): UseQueryResult<EventData[], Error> {
         const errorMessage = handleEventFetchError(
           error,
           "useAllEvents.queryFn",
-          {}
+          {},
         );
         throw new Error(errorMessage);
       }
@@ -114,37 +114,27 @@ export function useAllEvents(): UseQueryResult<EventData[], Error> {
 
 /**
  * Hook to fetch attending count for a specific event
- * Uses eventId (document ID like 'harvest-rage') to query the ragers subcollection
+ * Reads from the event document's attendingCount field (updated by Cloud Function)
+ * This avoids permission issues with querying the ragers subcollection directly
  */
 export function useEventAttendingCount(
-  eventId: string
+  eventId: string,
 ): UseQueryResult<number, Error> {
-  return useQuery({
-    queryKey: [...queryKeys.events.detail(eventId), "attendingCount"],
-    queryFn: async (): Promise<number> => {
-      try {
-        const firestore = getFirestore();
-        // Path: events/{eventId}/ragers
-        const ragersCollectionRef = collection(
-          firestore,
-          "events",
-          eventId,
-          "ragers"
-        );
-        const querySnapshot = await getDocs(ragersCollectionRef);
-        return querySnapshot.size;
-      } catch (error) {
-        const errorMessage = handleEventFetchError(
-          error,
-          "useEventAttendingCount.queryFn",
-          { eventId }
-        );
-        throw new Error(errorMessage);
-      }
-    },
-    enabled: !!eventId, // Only run query if eventId is provided
-    ...queryOptions.events,
-  });
+  // Leverage the useEvent hook which already fetches and caches event data
+  const { data: event, isLoading, error } = useEvent(eventId);
+
+  return {
+    data: event?.attendingCount ?? 0,
+    isLoading,
+    error,
+    // Provide minimal query result compatibility for consumers
+    isError: !!error,
+    isSuccess: !isLoading && !error,
+    isFetching: isLoading,
+    isPending: isLoading,
+    refetch: async () => ({ data: event?.attendingCount ?? 0 }),
+    status: isLoading ? "pending" : error ? "error" : "success",
+  } as UseQueryResult<number, Error>;
 }
 
 /**
@@ -193,7 +183,7 @@ export function useEventAttendingCountWithHelpers(eventId: string) {
  * Falls back to direct Firestore fetch if not in cache
  */
 export function useEvent(
-  eventId: string | undefined
+  eventId: string | undefined,
 ): UseQueryResult<EventData | null, Error> {
   const { data: events } = useEvents();
 
