@@ -769,6 +769,37 @@ export default SettingsSection;
 - [ ] Download `GoogleService-Info.plist` from Firebase Console
 - [x] Upload APNs Key to Firebase (Project Settings > Cloud Messaging) ✅
 
+### 3.3.1 Android Verification Scope 🤖
+
+To ensure robust Android Notification delivery, the following scope must be verified:
+
+#### 1. Build Configuration 🏗️
+
+- [x] **Manifest Conflict Resolution**: Ensure `AndroidManifest.xml` includes `tools:replace="android:resource"` in `<meta-data>` tags to resolve conflicts between Expo and Firebase.
+- [x] **Google Services Plugin**: Verify `com.google.gms:google-services` is applied in `android/app/build.gradle`.
+- [x] **Firebase Config**: Ensure `google-services.json` is present in `android/app/`.
+
+#### 2. Runtime Configuration ⚙️
+
+- [x] **Notification Channels**: Android 8.0+ (Oreo) **requires** notification channels.
+  - _Action_: Ensure `Notifications.setNotificationChannelAsync` is called on app launch.
+  - _Config_: Set Importance to `MAX` to ensure heads-up display.
+- [x] **Service Initialization**: Ensure `pushNotificationService.ts` lazily loads Firebase Messaging to avoid crash on non-native environments (Expo Go), though primarily relevant for dev builds.
+
+#### 3. Simulator/Device Environment 📱
+
+- [x] **Google Play Services**: Using an Android Emulator with "Google Play" icon is mandatory. A standard AOSP emulator will **fail** to register FCM tokens.
+- [x] **Play Store Login**: Must login to Google Play Store on the emulator to activate background services.
+- [x] **Verification**: Run `npx expo run:android` and check terminal logs for `FCM token registered successfully`.
+
+#### 4. Test Scenarios (Manual) 🧪
+
+| State          | Method        | Expected Outcome                                                        |
+| -------------- | ------------- | ----------------------------------------------------------------------- |
+| **Foreground** | App Open      | In-app alert/banner shows immediately.                                  |
+| **Background** | App Minimized | System tray notification appears. Tapping opens app.                    |
+| **Quit**       | App Killed    | System tray notification appears. Tapping cold-starts app to deep link. |
+
 ### Installation
 
 ```bash
@@ -1080,17 +1111,17 @@ export function initializeGoogleSignIn(
 - [x] Toggle states persist
 - [x] Quiet hours configurable
 
-### 3.3 FCM Push (Apple Account Required for iOS) 🟡 CODE COMPLETE - iOS VERIFIED ✅
+### 3.3 FCM Push ✅ COMPLETE - BOTH PLATFORMS VERIFIED
 
 - [x] FCM tokens registered and stored
-- [ ] Push notifications received in foreground (Android) ⏳ Needs dev build
-- [ ] Push notifications received in background (Android) ⏳ Needs dev build
-- [x] Push notifications work on iOS (enrollment complete) ✅
+- [x] Push notifications received in foreground (Android) ✅
+- [x] Push notifications received in background (Android) ✅
+- [x] Push notifications work on iOS ✅
 
-### 3.4 Google Sign-In (Apple Account Required for iOS) 🟡 CODE COMPLETE - iOS VERIFIED ✅
+### 3.4 Google Sign-In ✅ COMPLETE - BOTH PLATFORMS VERIFIED
 
-- [ ] Google Sign-In works on Android ⏳ Needs dev build
-- [x] Google Sign-In works on iOS (verified) ✅
+- [x] Google Sign-In works on Android ✅
+- [x] Google Sign-In works on iOS ✅
 - [x] New users redirected to profile setup
 
 ---
@@ -1164,8 +1195,8 @@ src/
 - [x] 3.4.1-3.4.4 Install & configure
 - [x] 3.4.5 Create `googleAuthService.ts`
 - [x] 3.4.6-3.4.8 UI integration
-- [ ] 3.4.9 Test Android (Pending)
-- [x] 3.4.10 Test iOS (Apple account) ✅
+- [x] 3.4.9 Test Android ✅
+- [x] 3.4.10 Test iOS ✅
 
 ---
 

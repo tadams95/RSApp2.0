@@ -706,7 +706,13 @@ exports.onUserNotificationCreatedSendPush = onDocumentCreated(
             typeof v === "string" ? [[k, v]] : [],
           ),
         ),
-        android: { priority: "high" },
+        android: {
+          priority: "high",
+          notification: {
+            channelId: "default",
+            sound: "default",
+          },
+        },
         apns: { payload: { aps: { sound: "default" } } },
         webpush: { fcmOptions: { link: notif.link || "/" } },
       };
@@ -1005,7 +1011,13 @@ exports.testSendPush = onCall(async (request) => {
       type: "test",
       timestamp: String(Date.now()),
     },
-    android: { priority: "high" },
+    android: {
+      priority: "high",
+      notification: {
+        channelId: "default",
+        sound: "default",
+      },
+    },
     apns: { payload: { aps: { sound: "default" } } },
   };
 

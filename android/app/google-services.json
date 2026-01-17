@@ -15,7 +15,15 @@
       },
       "oauth_client": [
         {
-          "client_id": "930832370585-6j2jpma2khl692j5331llh1tai9dmell.apps.googleusercontent.com",
+          "client_id": "930832370585-7visugrc6a53knlb6gahdcoeccfciuhd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tyrelle.ragestate",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "930832370585-otq4m0qsvpoci3dsvfjre1eldkaihhso.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -28,8 +36,15 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "930832370585-6j2jpma2khl692j5331llh1tai9dmell.apps.googleusercontent.com",
+              "client_id": "930832370585-c2lg4pj8jhkld6hv61v9c73vau0b7iq1.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "930832370585-tvmm4moku77su7v4rp5adp3ql520gi73.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.tyrelle.ragestateapp"
+              }
             }
           ]
         }
@@ -44,7 +59,15 @@
       },
       "oauth_client": [
         {
-          "client_id": "930832370585-6j2jpma2khl692j5331llh1tai9dmell.apps.googleusercontent.com",
+          "client_id": "930832370585-9j2oet22mhbqlofcjpbequrfj8694ruo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tyrelle.ragestateapp",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "930832370585-otq4m0qsvpoci3dsvfjre1eldkaihhso.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -57,8 +80,15 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "930832370585-6j2jpma2khl692j5331llh1tai9dmell.apps.googleusercontent.com",
+              "client_id": "930832370585-c2lg4pj8jhkld6hv61v9c73vau0b7iq1.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "930832370585-tvmm4moku77su7v4rp5adp3ql520gi73.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.tyrelle.ragestateapp"
+              }
             }
           ]
         }

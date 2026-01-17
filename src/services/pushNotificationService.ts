@@ -14,13 +14,39 @@ let FirebaseMessagingTypes:
 // Configure expo-notifications handler for foreground display
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
   }),
 });
+
+/**
+ * Configure default notification channel for Android
+ * Required for notifications to appear on Android 8.0+ (API 26+)
+ */
+async function configureAndroidChannel() {
+  if (Platform.OS === "android") {
+    try {
+      const channel = await Notifications.setNotificationChannelAsync(
+        "default",
+        {
+          name: "Default",
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: "#FF231F7C",
+          sound: "default",
+        },
+      );
+      console.log("✅ Android notification channel created:", channel);
+    } catch (error) {
+      console.error("❌ Failed to create Android notification channel:", error);
+    }
+  }
+}
+
+// Initialize channel configuration on import
+configureAndroidChannel();
 
 /**
  * Check if Firebase messaging is available and load it lazily
@@ -90,14 +116,31 @@ export async function registerForPushNotifications(
   }
 
   try {
-    // Request permission (iOS prompts user, Android auto-grants)
+    // 0. Ensure Android channel exists (vital for Android 8+)
+    await configureAndroidChannel();
+
+    // 1. Request permission for SYSTEM display (Android 13+ requires this specifically)
+    if (Platform.OS === "android") {
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== "granted") {
+        console.warn("Failed to get local push permission!");
+      }
+    }
+
+    // 2. Request permission for FCM (Remote)
     const authStatus = await messaging().requestPermission();
     const enabled =
       authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
       authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
     if (!enabled) {
-      console.log("Push notification permission denied");
+      console.log("Push notification permission denied (FCM)");
       return null;
     }
 
@@ -227,21 +270,31 @@ export function setupForegroundHandler(): () => void {
   }
 
   try {
+    console.log("🔔 Setting up FCM foreground handler...");
     const unsubscribe = messaging().onMessage(async (remoteMessage: any) => {
-      console.log("Foreground FCM message received:", remoteMessage);
+      console.log(
+        "📬 Foreground FCM message received:",
+        JSON.stringify(remoteMessage, null, 2),
+      );
 
       // Show local notification using expo-notifications
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: remoteMessage.notification?.title || "RageState",
-          body: remoteMessage.notification?.body || "",
-          data: remoteMessage.data || {},
-          sound: "default",
-        },
-        trigger: null, // Show immediately
-      });
+      try {
+        const notifId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: remoteMessage.notification?.title || "RageState",
+            body: remoteMessage.notification?.body || "",
+            data: remoteMessage.data || {},
+            sound: "default",
+          },
+          trigger: null, // Show immediately
+        });
+        console.log("✅ Local notification scheduled with ID:", notifId);
+      } catch (notifError) {
+        console.error("❌ Failed to schedule local notification:", notifError);
+      }
     });
 
+    console.log("✅ FCM foreground handler setup complete");
     return unsubscribe;
   } catch (error) {
     console.warn("Failed to setup foreground handler:", error);
