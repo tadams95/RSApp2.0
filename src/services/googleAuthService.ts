@@ -11,8 +11,10 @@ import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase/firebase";
 
 // Client IDs from Firebase/Google Cloud Console
+// WEB_CLIENT_ID: Get from Firebase Console > Authentication > Sign-in method > Google > Web SDK configuration
+// IOS_CLIENT_ID: From GoogleService-Info.plist (CLIENT_ID field)
 const WEB_CLIENT_ID =
-  "930832370585-6j2jpma2khl692j5331llh1tai9dmell.apps.googleusercontent.com";
+  "930832370585-otq4m0qsvpoci3dsvfjre1eldkaihhso.apps.googleusercontent.com";
 const IOS_CLIENT_ID =
   "930832370585-tvmm4moku77su7v4rp5adp3ql520gi73.apps.googleusercontent.com";
 

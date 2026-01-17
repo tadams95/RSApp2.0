@@ -76,6 +76,7 @@ export async function initializeAppCheck(): Promise<void> {
         "App Check will be skipped."
     );
     appCheckState.isAvailable = false;
+    appCheckState.initialized = true; // Mark as initialized to prevent retries
     return;
   }
 
@@ -93,7 +94,7 @@ export async function initializeAppCheck(): Promise<void> {
         debugToken: __DEV__ ? DEBUG_TOKEN : undefined,
       },
       apple: {
-        // Use DeviceCheck in production, debug provider in development
+        // Use DeviceCheck in production, debug provider in development  
         provider: __DEV__ ? "debug" : "deviceCheck",
         debugToken: __DEV__ ? DEBUG_TOKEN : undefined,
       },
@@ -110,33 +111,20 @@ export async function initializeAppCheck(): Promise<void> {
 
     if (__DEV__) {
       console.log("✅ Firebase App Check initialized (debug mode)");
-
-      // Try to get and log the debug token for registration in Firebase Console
-      try {
-        const tokenResult = await appCheck().getToken(true);
-        if (tokenResult?.token) {
-          console.log("📋 App Check token retrieved successfully");
-          // The debug token is logged by the native SDK - check Xcode/Android Studio logs
-          console.log(
-            "💡 If using debug provider, find the debug token in native logs (Xcode/Android Studio)"
-          );
-          console.log(
-            "💡 Add the debug token to Firebase Console > App Check > Apps > Manage debug tokens"
-          );
-        }
-      } catch (tokenError) {
-        console.warn("Could not get App Check token:", tokenError);
-      }
+      console.log("💡 Check Xcode console for debug token to register in Firebase Console");
+      console.log("💡 Firebase Console > App Check > Apps > Manage debug tokens");
     }
   } catch (error) {
     appCheckState.error = error as Error;
-    console.error("❌ Failed to initialize Firebase App Check:", error);
-
-    // In production, we might want to handle this differently
-    // For now, log the error but don't crash the app
-    if (!__DEV__) {
-      // Consider sending this to your error reporting service
-      // captureException(error);
+    appCheckState.initialized = true; // Prevent infinite retry loops
+    
+    // App Check failure should not block the app - just log it
+    console.warn("⚠️ Firebase App Check initialization failed (non-blocking):", error);
+    
+    // In development, this is often expected if debug tokens aren't registered
+    if (__DEV__) {
+      console.log("💡 This is expected if you haven't registered your debug token yet.");
+      console.log("💡 The app will continue to work - App Check is optional for development.");
     }
   }
 }
