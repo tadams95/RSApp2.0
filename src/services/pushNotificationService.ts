@@ -1,6 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { Platform } from "react-native";
+import { Platform, NativeModules } from "react-native";
 import { db } from "../firebase/firebase";
 
 // Lazy-loaded Firebase messaging to avoid crashes in Expo Go
@@ -34,13 +34,29 @@ function getFirebaseMessaging():
   }
 
   try {
-    // Dynamically require Firebase messaging - this will throw in Expo Go
+    // EXTRA SAFETY: Check if native module exists before requiring
+    // This prevents "Invariant Violation: new NativeEventEmitter()" crashes
+    const nativeModuleExists = 
+      NativeModules.RNFBMessagingModule || 
+      NativeModules.RNFirebaseMessaging;
+
+    if (!nativeModuleExists) {
+      console.log("RNFirebaseMessaging native module not found - skipping (are you in Expo Go?)");
+      return null;
+    }
+
+    // Dynamically require Firebase messaging
     const firebaseMessaging =
       require("@react-native-firebase/messaging").default;
+    
     // Test if native module is available by calling it
-    firebaseMessaging();
-    messagingModule = firebaseMessaging;
-    return messagingModule;
+    // (This double-check handles cases where NativeModule exists but init fails)
+    if (firebaseMessaging) {
+        firebaseMessaging();
+        messagingModule = firebaseMessaging;
+        return messagingModule;
+    }
+    return null;
   } catch (error) {
     console.log(
       "Firebase messaging not available (running in Expo Go?):",

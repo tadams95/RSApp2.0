@@ -959,36 +959,59 @@ exports.testSendPush = onCall(async (request) => {
     );
   }
 
-  // Fetch active device tokens
+  // Fetch ALL devices (remove filter for debugging)
   const devicesSnap = await db
     .collection("users")
     .doc(uid)
     .collection("devices")
-    .where("enabled", "==", true)
     .get();
 
   if (devicesSnap.empty) {
+    logger.warn(`No devices found for user ${uid}`);
     return {
       success: false,
       devicesFound: 0,
-      error: "No enabled devices found",
+      queriedUid: uid,
+      timestamp: new Date().toISOString(),
+      error: `No device documents found for user ID: ${uid}. Check if your device registered successfully.`,
     };
   }
 
   const fcmTokens = [];
+  let enabledCount = 0;
+  let disabledCount = 0;
+  let invalidProviderCount = 0;
+
   devicesSnap.forEach((d) => {
     const data = d.data();
-    if (data.provider === "fcm" && data.token) {
-      fcmTokens.push(data.token);
+    
+    // Debug logging
+    logger.info(`Checking device ${d.id}`, { data });
+
+    if (data.enabled === true) {
+      enabledCount++;
+      if (data.provider === "fcm" && data.token) {
+        fcmTokens.push(data.token);
+      } else {
+        invalidProviderCount++;
+      }
+    } else {
+      disabledCount++;
     }
   });
 
   if (!fcmTokens.length) {
+    logger.warn(`No valid FCM tokens found for user ${uid}. Enabled: ${enabledCount}, Disabled: ${disabledCount}`);
     return {
       success: false,
       devicesFound: devicesSnap.size,
       fcmTokens: 0,
-      error: "No FCM tokens found",
+      enabledCount, 
+      disabledCount,
+      invalidProviderCount,
+      queriedUid: uid,
+      timestamp: new Date().toISOString(),
+      error: `Found ${devicesSnap.size} devices (${enabledCount} enabled), but 0 valid FCM tokens.`,
     };
   }
 

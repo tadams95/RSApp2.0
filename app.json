@@ -125,6 +125,7 @@
           "photosPermission": "The app accesses your photos so you can choose your profile picture."
         }
       ],
+      "@react-native-firebase/app",
       [
         "@stripe/stripe-react-native",
         {
