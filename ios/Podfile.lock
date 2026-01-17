@@ -2186,18 +2186,78 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - RNFBApp (23.8.2):
+  - RNFBApp (23.8.3):
     - Firebase/CoreOnly (= 12.8.0)
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
     - React-Core
-  - RNFBAppCheck (23.8.2):
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - RNFBAppCheck (23.8.3):
     - Firebase/AppCheck (= 12.8.0)
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
     - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
     - RNFBApp
-  - RNFBMessaging (23.8.2):
+    - Yoga
+  - RNFBMessaging (23.8.3):
     - Firebase/Messaging (= 12.8.0)
     - FirebaseCoreExtension
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
     - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
     - RNFBApp
+    - Yoga
   - RNGestureHandler (2.28.0):
     - hermes-engine
     - RCTRequired
@@ -3119,9 +3179,9 @@ SPEC CHECKSUMS:
   ReactCommon: 08810150b1206cc44aecf5f6ae19af32f29151a8
   ReactNativeDependencies: 71ce9c28beb282aa720ea7b46980fff9669f428a
   RNCAsyncStorage: c8407cc394627a3a4cf56b457d594bfa822b6ab8
-  RNFBApp: f56dd8a0e54571e4760a8d621f88d12f22c70c01
-  RNFBAppCheck: f7a180bb34cfe57da3afc7caf12dc03a23f0d1a6
-  RNFBMessaging: 6436d2b93d59523db22c920056a148ca266aaa08
+  RNFBApp: c3bea09cf9162c2cad12062648b4e64b1fee7fa1
+  RNFBAppCheck: 021a0d594e26945814a6d0103e3c5e5b89027bdb
+  RNFBMessaging: a91b676c6ffe58d9a417d971efa2b6811748ac95
   RNGestureHandler: c3831b3b1b5014c6afab7fff7e4171394a3419ab
   RNGoogleSignin: 03baad13fc2085cd1bb81a690b63462df4558dc0
   RNReanimated: 8315d083516a6690fcdb479b56fca8fabf65a73d
