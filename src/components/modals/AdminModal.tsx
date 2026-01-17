@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Dimensions,
   ImageStyle,
@@ -29,6 +30,7 @@ import {
   getDocs,
   QueryDocumentSnapshot,
 } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { db } from "../../firebase/firebase";
 
 // Import EventAdminView from modals directory
@@ -65,6 +67,88 @@ const AdminModal: React.FC<AdminModalProps> = ({
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(
     null
   );
+  const [isBackfilling, setIsBackfilling] = useState<boolean>(false);
+  const [isMigrating, setIsMigrating] = useState<boolean>(false);
+
+  // Admin action: Backfill attending counts for all events
+  const handleBackfillAttendingCounts = async (): Promise<void> => {
+    Alert.alert(
+      "Backfill Attending Counts",
+      "This will update the attendingCount field for all events. Continue?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Run Backfill",
+          onPress: async () => {
+            setIsBackfilling(true);
+            try {
+              const functions = getFunctions();
+              const backfillFn = httpsCallable<
+                void,
+                { success: number; failed: number; events: Array<{ id: string; attendingCount: number }> }
+              >(functions, "backfillAttendingCounts");
+              
+              const result = await backfillFn();
+              const data = result.data;
+              
+              Alert.alert(
+                "Backfill Complete",
+                `Successfully updated ${data.success} events.\n${data.failed > 0 ? `Failed: ${data.failed}` : ""}`
+              );
+            } catch (error: any) {
+              console.error("Backfill error:", error);
+              Alert.alert(
+                "Backfill Failed",
+                error.message || "An error occurred during backfill."
+              );
+            } finally {
+              setIsBackfilling(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Admin action: Migrate Google users (add missing fields, sync collections)
+  const handleMigrateGoogleUsers = async (): Promise<void> => {
+    Alert.alert(
+      "Migrate Google Users",
+      "This will add missing fields to Google users and sync /users, /customers, and /profiles collections. Continue?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Run Migration",
+          onPress: async () => {
+            setIsMigrating(true);
+            try {
+              const functions = getFunctions();
+              const migrateFn = httpsCallable<
+                void,
+                { usersProcessed: number; customersCreated: number; profilesCreated: number; errors: string[] }
+              >(functions, "migrateGoogleUsers");
+              
+              const result = await migrateFn();
+              const data = result.data;
+              
+              Alert.alert(
+                "Migration Complete",
+                `Processed: ${data.usersProcessed} users\nCustomers created: ${data.customersCreated}\nProfiles created: ${data.profilesCreated}${data.errors.length > 0 ? `\n\nErrors: ${data.errors.length}` : ""}`
+              );
+            } catch (error: any) {
+              console.error("Migration error:", error);
+              Alert.alert(
+                "Migration Failed",
+                error.message || "An error occurred during migration."
+              );
+            } finally {
+              setIsMigrating(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   // Fetch events and check camera permission on component mount
   useEffect(() => {
@@ -264,6 +348,35 @@ const AdminModal: React.FC<AdminModalProps> = ({
               toggleModal={toggleEventAdminViewVisibility}
               // Note: EventAdminView only accepts visible, event, and toggleModal props
             />
+
+            {/* Admin Data Migration Actions */}
+            <View style={styles.adminActionsContainer}>
+              <Text style={styles.adminActionsTitle}>DATA MIGRATION</Text>
+              
+              <Pressable 
+                style={[styles.adminActionButton, isBackfilling && styles.adminActionButtonDisabled]} 
+                onPress={handleBackfillAttendingCounts}
+                disabled={isBackfilling}
+              >
+                {isBackfilling ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.adminActionButtonText}>BACKFILL ATTENDING COUNTS</Text>
+                )}
+              </Pressable>
+
+              <Pressable 
+                style={[styles.adminActionButton, isMigrating && styles.adminActionButtonDisabled]} 
+                onPress={handleMigrateGoogleUsers}
+                disabled={isMigrating}
+              >
+                {isMigrating ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.adminActionButtonText}>MIGRATE GOOGLE USERS</Text>
+                )}
+              </Pressable>
+            </View>
           </View>
           <Pressable style={styles.actionButton} onPress={toggleModal}>
             <Text style={styles.buttonText}>CLOSE</Text>
@@ -299,6 +412,11 @@ interface Styles {
   headline: TextStyle;
   noEventsText: TextStyle;
   footerText: TextStyle;
+  adminActionsContainer: ViewStyle;
+  adminActionsTitle: TextStyle;
+  adminActionButton: ViewStyle;
+  adminActionButtonDisabled: ViewStyle;
+  adminActionButtonText: TextStyle;
 }
 
 const createStyles = (theme: Theme): Styles =>
@@ -402,6 +520,41 @@ const createStyles = (theme: Theme): Styles =>
       color: theme.colors.textSecondary,
       fontWeight: "500",
       marginTop: 20,
+    },
+    adminActionsContainer: {
+      width: "100%",
+      marginTop: 30,
+      padding: 16,
+      borderRadius: 8,
+      backgroundColor: theme.colors.bgElev1,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    adminActionsTitle: {
+      fontFamily,
+      fontSize: 16,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      textAlign: "center",
+      marginBottom: 16,
+    },
+    adminActionButton: {
+      backgroundColor: theme.colors.accent,
+      padding: 14,
+      borderRadius: 8,
+      marginVertical: 6,
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 48,
+    },
+    adminActionButtonDisabled: {
+      opacity: 0.6,
+    },
+    adminActionButtonText: {
+      fontFamily,
+      color: "#fff",
+      fontWeight: "600",
+      fontSize: 14,
     },
   });
 
