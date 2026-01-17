@@ -46,6 +46,24 @@ This directory contains GitHub Copilot Skills that provide specialized knowledge
    - Feature flags
    - Privacy considerations
 
+### 🚀 Deployment & Maintenance (Monthly Use)
+
+6. **[Expo Deployment](./expo-deployment.md)**
+
+   - iOS App Store and TestFlight submission
+   - Android Play Store deployment and staged rollouts
+   - EAS Build configuration and profiles
+   - Version management (semantic versioning)
+   - CI/CD workflows and automated deployment
+   - Pre-deployment and rollback checklists
+
+7. **[Expo SDK Upgrade](./expo-sdk-upgrade.md)**
+   - Safe Expo SDK version upgrade procedures
+   - Breaking changes and package migrations
+   - Dependency conflict resolution (--legacy-peer-deps)
+   - Cache clearing and troubleshooting
+   - Testing and rollback procedures
+
 ## How to Use Skills
 
 ### In Copilot Chat
@@ -97,13 +115,15 @@ To add a new skill:
 
 ## Skill Priority Matrix
 
-| Skill                  | Impact  | Frequency | Best For        |
-| ---------------------- | ------- | --------- | --------------- |
-| React Native Component | 🔥 High | Daily     | UI development  |
-| Theming & Styling      | 🔥 High | Daily     | Styling, colors |
-| Firebase/Firestore     | 🔥 High | Daily     | Data operations |
-| Error Handling         | Medium  | Weekly    | Error UX        |
-| Analytics & PostHog    | Medium  | Weekly    | Event tracking  |
+| Skill                  | Impact  | Frequency | Best For           |
+| ---------------------- | ------- | --------- | ------------------ |
+| React Native Component | 🔥 High | Daily     | UI development     |
+| Theming & Styling      | 🔥 High | Daily     | Styling, colors    |
+| Firebase/Firestore     | 🔥 High | Daily     | Data operations    |
+| Error Handling         | Medium  | Weekly    | Error UX           |
+| Analytics & PostHog    | Medium  | Weekly    | Event tracking     |
+| Expo Deployment        | Medium  | Monthly   | App Store releases |
+| Expo SDK Upgrade       | Medium  | Quarterly | SDK maintenance    |
 
 ## Upcoming Skills
 

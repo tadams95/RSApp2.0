@@ -152,12 +152,6 @@
           "iosUrlScheme": "com.googleusercontent.apps.930832370585-tvmm4moku77su7v4rp5adp3ql520gi73"
         }
       ],
-      [
-        "@react-native-google-signin/google-signin",
-        {
-          "iosUrlScheme": "com.googleusercontent.apps.930832370585-tvmm4moku77su7v4rp5adp3ql520gi73"
-        }
-      ],
       "expo-router",
       "expo-localization",
       [
