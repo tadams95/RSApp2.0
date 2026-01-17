@@ -110,7 +110,7 @@ export default function EventsScreen() {
   const handleScroll = useCallback((event: any) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const currentScrollDepth = Math.round(
-      (contentOffset.y / (contentSize.height - layoutMeasurement.height)) * 100
+      (contentOffset.y / (contentSize.height - layoutMeasurement.height)) * 100,
     );
 
     setScrollDepth(currentScrollDepth);
@@ -131,8 +131,8 @@ export default function EventsScreen() {
             maxScrollDepth > 75
               ? "high"
               : maxScrollDepth > 25
-              ? "medium"
-              : "low",
+                ? "medium"
+                : "low",
         });
       }
     };
@@ -147,7 +147,7 @@ export default function EventsScreen() {
       event_price: event.price,
       user_type: "authenticated",
       list_position: events.findIndex(
-        (e) => e.id === event.id || e.name === event.name
+        (e) => e.id === event.id || e.name === event.name,
       ),
       total_events_in_list: events.length,
       scroll_depth_percentage: scrollDepth,
@@ -161,7 +161,7 @@ export default function EventsScreen() {
       if (event.dateTime && event.dateTime instanceof Timestamp) {
         formattedDateTime = format(
           event.dateTime.toDate(),
-          "MMM dd, yyyy hh:mm a"
+          "MMM dd, yyyy hh:mm a",
         );
       }
     } catch (error) {
@@ -178,7 +178,7 @@ export default function EventsScreen() {
       console.error("Navigation error:", error);
       Alert.alert(
         "Navigation Error",
-        "Could not open event details. Please try again."
+        "Could not open event details. Please try again.",
       );
     }
   }, []);
@@ -330,7 +330,7 @@ export default function EventsScreen() {
         </View>
       );
     },
-    [handleEventPress, loadedImages]
+    [handleEventPress, loadedImages],
   );
 
   // Show loading state
@@ -442,7 +442,7 @@ export default function EventsScreen() {
           {
             useNativeDriver: true,
             listener: handleScroll,
-          }
+          },
         )}
         onScrollEndDrag={handleScroll}
       />
@@ -569,19 +569,19 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       position: "absolute",
       top: Platform.OS === "ios" ? 55 : 35,
       right: 15,
-      backgroundColor: "rgba(0,0,0,0.6)",
-      paddingVertical: 6,
-      paddingHorizontal: 12,
+      backgroundColor: "rgba(0,0,0,0.75)",
+      paddingVertical: 8,
+      paddingHorizontal: 14,
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.3)",
+      borderColor: "rgba(255,255,255,0.4)",
       zIndex: 100,
     },
     priceText: {
       fontFamily,
       fontWeight: "700",
-      color: theme.colors.textPrimary,
-      fontSize: 16,
+      color: "#FFFFFF",
+      fontSize: 17,
     },
     eventContent: {
       position: "absolute",
@@ -607,7 +607,7 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       fontFamily,
       fontWeight: "700",
       fontSize: 22,
-      color: theme.colors.textPrimary,
+      color: "#FFFFFF",
       marginBottom: 14,
       letterSpacing: 0.3,
     },
@@ -637,9 +637,8 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
     detailText: {
       fontFamily,
       fontSize: 15,
-      color: theme.colors.textPrimary,
+      color: "#FFFFFF", // Explicit white for card overlay text - theme.colors.textPrimary can be unreliable in overlays
       flexShrink: 1,
-      opacity: 0.95,
     },
     successText: {
       color: theme.colors.success,
@@ -731,4 +730,4 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       textAlign: "center",
       fontSize: 14,
     },
-  } as const);
+  }) as const;
