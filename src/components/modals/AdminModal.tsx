@@ -65,7 +65,7 @@ const AdminModal: React.FC<AdminModalProps> = ({
   const [eventAdminViewVisible, setEventAdminViewVisible] =
     useState<boolean>(false);
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(
-    null
+    null,
   );
   const [isBackfilling, setIsBackfilling] = useState<boolean>(false);
   const [isMigrating, setIsMigrating] = useState<boolean>(false);
@@ -85,28 +85,32 @@ const AdminModal: React.FC<AdminModalProps> = ({
               const functions = getFunctions();
               const backfillFn = httpsCallable<
                 void,
-                { success: number; failed: number; events: Array<{ id: string; attendingCount: number }> }
+                {
+                  success: number;
+                  failed: number;
+                  events: Array<{ id: string; attendingCount: number }>;
+                }
               >(functions, "backfillAttendingCounts");
-              
+
               const result = await backfillFn();
               const data = result.data;
-              
+
               Alert.alert(
                 "Backfill Complete",
-                `Successfully updated ${data.success} events.\n${data.failed > 0 ? `Failed: ${data.failed}` : ""}`
+                `Successfully updated ${data.success} events.\n${data.failed > 0 ? `Failed: ${data.failed}` : ""}`,
               );
             } catch (error: any) {
               console.error("Backfill error:", error);
               Alert.alert(
                 "Backfill Failed",
-                error.message || "An error occurred during backfill."
+                error.message || "An error occurred during backfill.",
               );
             } finally {
               setIsBackfilling(false);
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -125,28 +129,33 @@ const AdminModal: React.FC<AdminModalProps> = ({
               const functions = getFunctions();
               const migrateFn = httpsCallable<
                 void,
-                { usersProcessed: number; customersCreated: number; profilesCreated: number; errors: string[] }
+                {
+                  usersProcessed: number;
+                  customersCreated: number;
+                  profilesCreated: number;
+                  errors: string[];
+                }
               >(functions, "migrateGoogleUsers");
-              
+
               const result = await migrateFn();
               const data = result.data;
-              
+
               Alert.alert(
                 "Migration Complete",
-                `Processed: ${data.usersProcessed} users\nCustomers created: ${data.customersCreated}\nProfiles created: ${data.profilesCreated}${data.errors.length > 0 ? `\n\nErrors: ${data.errors.length}` : ""}`
+                `Processed: ${data.usersProcessed} users\nCustomers created: ${data.customersCreated}\nProfiles created: ${data.profilesCreated}${data.errors.length > 0 ? `\n\nErrors: ${data.errors.length}` : ""}`,
               );
             } catch (error: any) {
               console.error("Migration error:", error);
               Alert.alert(
                 "Migration Failed",
-                error.message || "An error occurred during migration."
+                error.message || "An error occurred during migration.",
               );
             } finally {
               setIsMigrating(false);
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -164,7 +173,7 @@ const AdminModal: React.FC<AdminModalProps> = ({
         const eventData = eventSnapshot.docs
           .map(
             (doc: QueryDocumentSnapshot<DocumentData>) =>
-              doc.data() as EventData
+              doc.data() as EventData,
           )
           .filter((event: EventData) => {
             const eventDateTime = event.dateTime.toDate();
@@ -182,7 +191,7 @@ const AdminModal: React.FC<AdminModalProps> = ({
               } catch (error) {
                 console.error(
                   `Error validating image for event ${event.id}:`,
-                  error
+                  error,
                 );
               }
             }
@@ -275,12 +284,12 @@ const AdminModal: React.FC<AdminModalProps> = ({
                         Linking.openSettings();
                       },
                     },
-                  ]
+                  ],
                 );
               }
             },
           },
-        ]
+        ],
       );
     }
   };
@@ -329,7 +338,7 @@ const AdminModal: React.FC<AdminModalProps> = ({
                         // Enhanced error logging for admin event images
                         console.warn(
                           `AdminModal: Failed to load image for event "${event.name}":`,
-                          error
+                          error,
                         );
                       }}
                     />
@@ -352,28 +361,38 @@ const AdminModal: React.FC<AdminModalProps> = ({
             {/* Admin Data Migration Actions */}
             <View style={styles.adminActionsContainer}>
               <Text style={styles.adminActionsTitle}>DATA MIGRATION</Text>
-              
-              <Pressable 
-                style={[styles.adminActionButton, isBackfilling && styles.adminActionButtonDisabled]} 
+
+              <Pressable
+                style={[
+                  styles.adminActionButton,
+                  isBackfilling && styles.adminActionButtonDisabled,
+                ]}
                 onPress={handleBackfillAttendingCounts}
                 disabled={isBackfilling}
               >
                 {isBackfilling ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.adminActionButtonText}>BACKFILL ATTENDING COUNTS</Text>
+                  <Text style={styles.adminActionButtonText}>
+                    BACKFILL ATTENDING COUNTS
+                  </Text>
                 )}
               </Pressable>
 
-              <Pressable 
-                style={[styles.adminActionButton, isMigrating && styles.adminActionButtonDisabled]} 
+              <Pressable
+                style={[
+                  styles.adminActionButton,
+                  isMigrating && styles.adminActionButtonDisabled,
+                ]}
                 onPress={handleMigrateGoogleUsers}
                 disabled={isMigrating}
               >
                 {isMigrating ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.adminActionButtonText}>MIGRATE GOOGLE USERS</Text>
+                  <Text style={styles.adminActionButtonText}>
+                    MIGRATE GOOGLE USERS
+                  </Text>
                 )}
               </Pressable>
             </View>

@@ -19,34 +19,34 @@ const { admin, db } = require("./admin");
  */
 async function checkIsAdmin(auth) {
   const uid = auth.uid;
-  
+
   // 1. Check custom auth claim (fastest)
   if (auth.token?.admin === true) {
     logger.info(`Admin check: ${uid} has admin custom claim`);
     return true;
   }
-  
+
   // 2. Check /adminUsers collection
   const adminUserDoc = await db.doc(`adminUsers/${uid}`).get();
   if (adminUserDoc.exists) {
     logger.info(`Admin check: ${uid} found in /adminUsers`);
     return true;
   }
-  
+
   // 3. Check /users collection
   const userDoc = await db.doc(`users/${uid}`).get();
   if (userDoc.exists && userDoc.data()?.isAdmin === true) {
     logger.info(`Admin check: ${uid} has isAdmin=true in /users`);
     return true;
   }
-  
+
   // 4. Check /customers collection
   const customerDoc = await db.doc(`customers/${uid}`).get();
   if (customerDoc.exists && customerDoc.data()?.isAdmin === true) {
     logger.info(`Admin check: ${uid} has isAdmin=true in /customers`);
     return true;
   }
-  
+
   logger.warn(`Admin check failed for ${uid}`);
   return false;
 }
