@@ -14,6 +14,7 @@ import {
 import { usePostHog } from "../../../analytics/PostHogProvider";
 import { SettingsSection, SettingsToggle } from "../../../components/ui";
 import { useTheme } from "../../../contexts/ThemeContext";
+import { useAuth } from "../../../hooks/AuthContext";
 import { useNotificationSettings } from "../../../hooks/useNotificationSettings";
 import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { NotificationSettings } from "../../../services/notificationSettingsService";
@@ -30,6 +31,7 @@ export default function NotificationSettingsScreen() {
   const { settings, isLoading, error, updateSetting, refetch } =
     useNotificationSettings();
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const { user } = useAuth();
 
   // Handle test push notification
   const handleTestPush = async () => {
@@ -38,7 +40,7 @@ export default function NotificationSettingsScreen() {
       const functions = getFunctions();
       const testSendPush = httpsCallable<
         { title?: string; body?: string },
-        { success: boolean; devicesFound: number; fcmTokens?: number; error?: string; fcmResult?: { successCount: number; failureCount: number }; errors?: string[] }
+        { success: boolean; devicesFound: number; error?: string }
       >(functions, "testSendPush");
 
       const result = await testSendPush({
@@ -47,207 +49,25 @@ export default function NotificationSettingsScreen() {
       });
 
       const data = result.data;
-      console.log("Test push result:", JSON.stringify(data, null, 2));
 
       if (data.success) {
-        let message = `Push notification sent!\n\nDevices: ${data.devicesFound}\nFCM Tokens: ${data.fcmTokens}\nDelivered: ${data.fcmResult?.successCount || 0}`;
-        if (data.fcmResult?.failureCount && data.fcmResult.failureCount > 0) {
-          message += `\nFailed: ${data.fcmResult.failureCount}`;
-          if (data.errors && data.errors.length > 0) {
-            message += `\nErrors: ${data.errors.join(", ")}`;
-          }
-        }
-        Alert.alert("Success!", message);
+        Alert.alert(
+          "Success",
+          "Test notification sent! Check your notifications tray.",
+        );
         posthog.capture("test_push_notification_success", {
           devices_found: data.devicesFound,
-          fcm_tokens: data.fcmTokens,
         });
       } else {
         Alert.alert(
           "Test Failed",
-          data.error 
-            ? `${data.error}\n\nUser ID: ${data.queriedUid || "unknown"}`
-            : `Server returned failure with no error message.\nResponse: ${JSON.stringify(data)}`
+          data.error ||
+            "No devices found. Make sure push notifications are enabled.",
         );
-        posthog.capture("test_push_notification_failed", {
-          error: data.error,
-          devices_found: data.devicesFound,
-        });
       }
     } catch (err: any) {
       console.error("Test push failed:", err);
-      Alert.alert(
-        "Error",
-        err.message || "Failed to send test notification. Please try again."
-      );
-      posthog.capture("test_push_notification_error", {
-        error: err.message,
-      });
-    } finally {
-      setIsSendingTest(false);
-    }
-  };
-
-  // Clear all device registrations and re-register
-  const handleClearDevices = async () => {
-    setIsSendingTest(true);
-    try {
-      const { auth } = await import("../../../firebase/firebase");
-      const { collection, getDocs, deleteDoc, doc, setDoc, serverTimestamp } = await import("firebase/firestore");
-      const { db } = await import("../../../firebase/firebase");
-      const { Platform } = await import("react-native");
-
-      const userId = auth.currentUser?.uid;
-      if (!userId) {
-        Alert.alert("Error", "Not logged in");
-        setIsSendingTest(false);
-        return;
-      }
-
-      // Delete all existing devices
-      const devicesRef = collection(db, "users", userId, "devices");
-      const snapshot = await getDocs(devicesRef);
-      
-      let deleted = 0;
-      for (const docSnap of snapshot.docs) {
-        await deleteDoc(docSnap.ref);
-        deleted++;
-      }
-
-      Alert.alert("Cleared", `Removed ${deleted} old device registrations.\n\nNow tap "Register This Device" to set up push notifications.`);
-
-    } catch (err: any) {
-      console.error("Clear devices failed:", err);
-      Alert.alert("Error", err.message || "Failed to clear devices");
-    } finally {
-      setIsSendingTest(false);
-    }
-  };
-
-  // Register this device for push notifications
-  const handleRegisterDevice = async () => {
-    setIsSendingTest(true);
-    try {
-      const { auth } = await import("../../../firebase/firebase");
-      const { doc, setDoc, serverTimestamp } = await import("firebase/firestore");
-      const { db } = await import("../../../firebase/firebase");
-      const { Platform, Linking } = await import("react-native");
-
-      const userId = auth.currentUser?.uid;
-      if (!userId) {
-        Alert.alert("Error", "Not logged in");
-        setIsSendingTest(false);
-        return;
-      }
-
-      // Step 1: Check if Firebase messaging is available
-      let messaging: any;
-      try {
-        const messagingModule = require("@react-native-firebase/messaging");
-        messaging = messagingModule.default;
-        
-        // Check if native module exists before calling
-        if (!messaging || typeof messaging !== "function") {
-          throw new Error("Messaging module not available");
-        }
-        
-        // Check if the app instance can be created (this is where it fails in Expo Go)
-        const app = messaging();
-        if (!app || !app.requestPermission) {
-          throw new Error("Native module not linked");
-        }
-      } catch (e: any) {
-        console.log("Firebase messaging check failed:", e.message);
-        Alert.alert(
-          "Development Build Required",
-          "Push notifications require a development build.\n\nYou appear to be running in Expo Go, which doesn't support native Firebase modules.\n\nRun: npx expo run:ios\nor: npx expo run:android"
-        );
-        setIsSendingTest(false);
-        return;
-      }
-
-      // Step 2: Request permission - THIS will trigger iOS permission dialog
-      console.log("Requesting notification permission...");
-      const authStatus = await messaging().requestPermission();
-      console.log("Permission result:", authStatus);
-      
-      const AuthorizationStatus = messaging.AuthorizationStatus;
-      
-      if (authStatus === AuthorizationStatus.DENIED) {
-        Alert.alert(
-          "Permission Denied",
-          "Notification permission was denied.\n\nTo enable notifications:\n1. Open Settings app\n2. Find RAGESTATE\n3. Tap Notifications\n4. Enable Allow Notifications",
-          [
-            { text: "Cancel", style: "cancel" },
-            { text: "Open Settings", onPress: () => Linking.openSettings() }
-          ]
-        );
-        setIsSendingTest(false);
-        return;
-      }
-
-      const enabled = 
-        authStatus === AuthorizationStatus.AUTHORIZED ||
-        authStatus === AuthorizationStatus.PROVISIONAL;
-
-      if (!enabled) {
-        Alert.alert(
-          "Permission Issue",
-          `Unexpected permission status: ${authStatus}\n\nPlease try again or check your device settings.`
-        );
-        setIsSendingTest(false);
-        return;
-      }
-
-      // Step 3: Get FCM token
-      console.log("Getting FCM token...");
-      const fcmToken = await messaging().getToken();
-      console.log("FCM Token:", fcmToken ? `${fcmToken.substring(0, 20)}...` : "null");
-
-      if (!fcmToken) {
-        Alert.alert(
-          "Token Error",
-          "Failed to get FCM token.\n\nThis could be:\n• Network issue\n• APNs not configured\n\nPlease check your internet connection and try again."
-        );
-        setIsSendingTest(false);
-        return;
-      }
-
-      // Step 4: Store token in Firestore
-      console.log("Storing token in Firestore...");
-      const tokenHash = fcmToken.substring(0, 20);
-      
-      await setDoc(
-        doc(db, "users", userId, "devices", tokenHash),
-        {
-          token: fcmToken,
-          provider: "fcm",
-          platform: Platform.OS,
-          enabled: true,
-          lastUpdated: serverTimestamp(),
-          deviceInfo: {
-            os: Platform.OS,
-            version: Platform.Version,
-          },
-        },
-        { merge: true }
-      );
-
-      Alert.alert(
-        "✅ Device Registered!",
-        "Push notifications are now enabled.\n\nTap 'Send Test Notification' to verify it works!"
-      );
-
-      posthog.capture("device_registered_for_push", {
-        platform: Platform.OS,
-      });
-
-    } catch (err: any) {
-      console.error("Registration error:", err);
-      Alert.alert(
-        "Registration Failed",
-        `Error: ${err.message}\n\nCode: ${err.code || "unknown"}`
-      );
+      Alert.alert("Error", "Failed to send test notification.");
     } finally {
       setIsSendingTest(false);
     }
@@ -258,11 +78,26 @@ export default function NotificationSettingsScreen() {
     posthog.capture("notification_settings_viewed");
   }, [posthog]);
 
-  // Handle setting toggle with analytics
+  // Handle setting toggle with analytics & automatic registration
   const handleToggle = async (
     key: keyof NotificationSettings,
-    value: boolean
+    value: boolean,
   ) => {
+    // specific logic for pushEnabled master toggle
+    if (key === "pushEnabled" && value === true) {
+      // If turning ON, try to register device immediately
+      try {
+        const { registerForPushNotifications } =
+          await import("../../../services/pushNotificationService");
+        if (user?.uid) {
+          await registerForPushNotifications(user.uid);
+        }
+      } catch (err) {
+        console.warn("Failed to register for push on toggle:", err);
+        // Continue anyway to update setting state
+      }
+    }
+
     await updateSetting(key, value);
 
     posthog.capture("notification_setting_changed", {
@@ -488,36 +323,17 @@ export default function NotificationSettingsScreen() {
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <Ionicons name="notifications" size={20} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.testButtonText}>Send Test Notification</Text>
+                <Ionicons
+                  name="notifications"
+                  size={20}
+                  color="#fff"
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.testButtonText}>
+                  Send Test Notification
+                </Text>
               </>
             )}
-          </Pressable>
-
-          {/* Register Device Button */}
-          <Pressable
-            style={[
-              styles.registerButton,
-              isSendingTest && styles.testButtonDisabled,
-            ]}
-            onPress={handleRegisterDevice}
-            disabled={isSendingTest}
-          >
-            <Ionicons name="phone-portrait-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={styles.testButtonText}>Register This Device</Text>
-          </Pressable>
-
-          {/* Clear Devices Button */}
-          <Pressable
-            style={[
-              styles.clearButton,
-              isSendingTest && styles.testButtonDisabled,
-            ]}
-            onPress={handleClearDevices}
-            disabled={isSendingTest}
-          >
-            <Ionicons name="trash-outline" size={20} color={theme.colors.danger} style={{ marginRight: 8 }} />
-            <Text style={[styles.clearButtonText, { color: theme.colors.danger }]}>Clear Old Devices</Text>
           </Pressable>
         </SettingsSection>
 
@@ -659,4 +475,4 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       fontWeight: "600",
       fontFamily,
     },
-  } as const);
+  }) as const;

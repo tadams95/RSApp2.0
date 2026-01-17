@@ -14,7 +14,7 @@ This phase focuses on enhancing the user experience through proper push notifica
 
 ## ⚠️ Apple Developer Account Status
 
-**Enrollment Status**: 🟡 Processing (24-48 hours typical)
+**Enrollment Status**: ✅ Verified & Active
 
 ### Optimized Work Order
 
@@ -33,6 +33,7 @@ This phase focuses on enhancing the user experience through proper push notifica
 
 **What Works (Backend Already Built!):**
 
+- ✅ FCM push notifications (iOS) verified working
 - ✅ Cloud Functions create notifications for:
   - `post_liked` - When someone likes a post
   - `comment_added` - New comments on posts
@@ -54,7 +55,7 @@ This phase focuses on enhancing the user experience through proper push notifica
 
 - ❌ In-app notification feed UI ← **Start here**
 - ❌ Notification preferences screen
-- ❌ FCM integration for background push
+- ✅ FCM integration for background push (iOS Complete)
 - ❌ Google Sign-In native integration
 - ❌ Tab bar badge count
 
@@ -138,7 +139,7 @@ export function useNotificationBadge() {
     const unsubscribe = onSnapshot(
       query(
         collection(db, "users", user.uid, "notifications"),
-        where("read", "==", false)
+        where("read", "==", false),
       ),
       (snapshot) => {
         const count = snapshot.size;
@@ -149,7 +150,7 @@ export function useNotificationBadge() {
       },
       (error) => {
         console.error("Error listening to notifications:", error);
-      }
+      },
     );
 
     return unsubscribe;
@@ -195,12 +196,12 @@ export interface Notification {
  */
 export async function getNotifications(
   userId: string,
-  limitCount = 50
+  limitCount = 50,
 ): Promise<Notification[]> {
   const q = query(
     collection(db, "users", userId, "notifications"),
     orderBy("createdAt", "desc"),
-    limit(limitCount)
+    limit(limitCount),
   );
 
   const snapshot = await getDocs(q);
@@ -215,7 +216,7 @@ export async function getNotifications(
  */
 export async function markNotificationRead(
   userId: string,
-  notificationId: string
+  notificationId: string,
 ): Promise<void> {
   const notifRef = doc(db, "users", userId, "notifications", notificationId);
   await updateDoc(notifRef, {
@@ -243,12 +244,12 @@ export async function markAllNotificationsRead(): Promise<{
 export function subscribeToNotifications(
   userId: string,
   callback: (notifications: Notification[]) => void,
-  limitCount = 50
+  limitCount = 50,
 ): () => void {
   const q = query(
     collection(db, "users", userId, "notifications"),
     orderBy("createdAt", "desc"),
-    limit(limitCount)
+    limit(limitCount),
   );
 
   return onSnapshot(q, (snapshot) => {
@@ -587,7 +588,7 @@ const DEFAULT_SETTINGS: NotificationSettings = {
  * Get notification settings for a user
  */
 export async function getNotificationSettings(
-  userId: string
+  userId: string,
 ): Promise<NotificationSettings> {
   const docRef = doc(db, "users", userId, "settings", "notifications");
   const snapshot = await getDoc(docRef);
@@ -610,7 +611,7 @@ export async function getNotificationSettings(
  */
 export async function updateNotificationSettings(
   userId: string,
-  updates: Partial<NotificationSettings>
+  updates: Partial<NotificationSettings>,
 ): Promise<void> {
   // Ensure transferNotifications can't be disabled
   if (updates.transferNotifications === false) {
@@ -624,7 +625,7 @@ export async function updateNotificationSettings(
       ...updates,
       updatedAt: serverTimestamp(),
     },
-    { merge: true }
+    { merge: true },
   );
 }
 ```
@@ -764,9 +765,9 @@ export default SettingsSection;
 
 ### Prerequisites
 
-- [ ] Apple Developer enrollment complete ⏳
+- [x] Apple Developer enrollment complete ✅
 - [ ] Download `GoogleService-Info.plist` from Firebase Console
-- [ ] Upload APNs Key to Firebase (Project Settings > Cloud Messaging)
+- [x] Upload APNs Key to Firebase (Project Settings > Cloud Messaging) ✅
 
 ### Installation
 
@@ -808,7 +809,7 @@ npx expo install expo-notifications @react-native-firebase/app @react-native-fir
 - [x] **3.3.7** Store FCM tokens in Firestore (devices collection)
 - [x] **3.3.8** Cloud Functions already send via FCM (admin.messaging)
 - [ ] **3.3.9** Test on Android physical device
-- [ ] **3.3.10** Test on iOS physical device (requires Apple account)
+- [x] **3.3.10** Test on iOS physical device (requires Apple account) ✅
 
 ### File: `src/services/pushNotificationService.ts`
 
@@ -832,7 +833,7 @@ Notifications.setNotificationHandler({
  * Request notification permissions and get FCM token
  */
 export async function registerForPushNotifications(
-  userId: string
+  userId: string,
 ): Promise<string | null> {
   // Request permission
   const authStatus = await messaging().requestPermission();
@@ -856,7 +857,7 @@ export async function registerForPushNotifications(
       platform: Platform.OS,
       lastUpdated: serverTimestamp(),
     },
-    { merge: true }
+    { merge: true },
   );
 
   // Listen for token refresh
@@ -867,7 +868,7 @@ export async function registerForPushNotifications(
         token: newToken,
         lastUpdated: serverTimestamp(),
       },
-      { merge: true }
+      { merge: true },
     );
   });
 
@@ -973,7 +974,7 @@ npx expo install @react-native-google-signin/google-signin
 - [x] **3.4.7** Add Google button to signup screen
 - [x] **3.4.8** Handle new user profile setup flow
 - [ ] **3.4.9** Test on Android device
-- [ ] **3.4.10** Test on iOS device (requires Apple account)
+- [x] **3.4.10** Test on iOS device (verified) ✅
 
 ### File: `src/services/googleAuthService.ts`
 
@@ -1031,7 +1032,7 @@ export async function signOutGoogle(): Promise<void> {
 
 export function initializeGoogleSignIn(
   webClientId: string,
-  iosClientId?: string
+  iosClientId?: string,
 ): void {
   GoogleSignin.configure({
     webClientId,
@@ -1079,17 +1080,17 @@ export function initializeGoogleSignIn(
 - [x] Toggle states persist
 - [x] Quiet hours configurable
 
-### 3.3 FCM Push (Apple Account Required for iOS) 🟡 CODE COMPLETE - DEVICE TESTING PENDING
+### 3.3 FCM Push (Apple Account Required for iOS) 🟡 CODE COMPLETE - iOS VERIFIED ✅
 
 - [x] FCM tokens registered and stored
 - [ ] Push notifications received in foreground (Android) ⏳ Needs dev build
 - [ ] Push notifications received in background (Android) ⏳ Needs dev build
-- [ ] Push notifications work on iOS (after enrollment) ⏳ Needs Apple account
+- [x] Push notifications work on iOS (enrollment complete) ✅
 
-### 3.4 Google Sign-In (Apple Account Required for iOS) 🟡 CODE COMPLETE - DEVICE TESTING PENDING
+### 3.4 Google Sign-In (Apple Account Required for iOS) 🟡 CODE COMPLETE - iOS VERIFIED ✅
 
 - [ ] Google Sign-In works on Android ⏳ Needs dev build
-- [ ] Google Sign-In works on iOS (after enrollment) ⏳ Needs Apple account
+- [x] Google Sign-In works on iOS (verified) ✅
 - [x] New users redirected to profile setup
 
 ---
@@ -1149,22 +1150,22 @@ src/
 
 ### 3.3 FCM Push Notifications
 
-- [ ] 3.3.1 Install Firebase packages
-- [ ] 3.3.2 Add `GoogleService-Info.plist` (Apple account)
-- [ ] 3.3.3 Update app.json
-- [ ] 3.3.4 Create `pushNotificationService.ts`
-- [ ] 3.3.5-3.3.6 Setup handlers
-- [ ] 3.3.7-3.3.8 Token storage & Cloud Functions
-- [ ] 3.3.9 Test Android
-- [ ] 3.3.10 Test iOS (Apple account)
+- [x] 3.3.1 Install Firebase packages
+- [x] 3.3.2 Add `GoogleService-Info.plist` (Apple account)
+- [x] 3.3.3 Update app.json
+- [x] 3.3.4 Create `pushNotificationService.ts`
+- [x] 3.3.5-3.3.6 Setup handlers
+- [x] 3.3.7-3.3.8 Token storage & Cloud Functions
+- [ ] 3.3.9 Test Android (Pending)
+- [x] 3.3.10 Test iOS (Apple account) ✅
 
 ### 3.4 Google Sign-In
 
-- [ ] 3.4.1-3.4.4 Install & configure
-- [ ] 3.4.5 Create `googleAuthService.ts`
-- [ ] 3.4.6-3.4.8 UI integration
-- [ ] 3.4.9 Test Android
-- [ ] 3.4.10 Test iOS (Apple account)
+- [x] 3.4.1-3.4.4 Install & configure
+- [x] 3.4.5 Create `googleAuthService.ts`
+- [x] 3.4.6-3.4.8 UI integration
+- [ ] 3.4.9 Test Android (Pending)
+- [x] 3.4.10 Test iOS (Apple account) ✅
 
 ---
 

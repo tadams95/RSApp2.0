@@ -1,6 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { Platform, NativeModules } from "react-native";
+import { NativeModules, Platform } from "react-native";
 import { db } from "../firebase/firebase";
 
 // Lazy-loaded Firebase messaging to avoid crashes in Expo Go
@@ -36,31 +36,32 @@ function getFirebaseMessaging():
   try {
     // EXTRA SAFETY: Check if native module exists before requiring
     // This prevents "Invariant Violation: new NativeEventEmitter()" crashes
-    const nativeModuleExists = 
-      NativeModules.RNFBMessagingModule || 
-      NativeModules.RNFirebaseMessaging;
+    const nativeModuleExists =
+      NativeModules.RNFBMessagingModule || NativeModules.RNFirebaseMessaging;
 
     if (!nativeModuleExists) {
-      console.log("RNFirebaseMessaging native module not found - skipping (are you in Expo Go?)");
+      console.log(
+        "RNFirebaseMessaging native module not found - skipping (are you in Expo Go?)",
+      );
       return null;
     }
 
     // Dynamically require Firebase messaging
     const firebaseMessaging =
       require("@react-native-firebase/messaging").default;
-    
+
     // Test if native module is available by calling it
     // (This double-check handles cases where NativeModule exists but init fails)
     if (firebaseMessaging) {
-        firebaseMessaging();
-        messagingModule = firebaseMessaging;
-        return messagingModule;
+      firebaseMessaging();
+      messagingModule = firebaseMessaging;
+      return messagingModule;
     }
     return null;
   } catch (error) {
     console.log(
       "Firebase messaging not available (running in Expo Go?):",
-      error
+      error,
     );
     return null;
   }
@@ -78,7 +79,7 @@ function isFirebaseMessagingAvailable(): boolean {
  * Stores token in Firestore for Cloud Functions to send push notifications
  */
 export async function registerForPushNotifications(
-  userId: string
+  userId: string,
 ): Promise<string | null> {
   const messaging = getFirebaseMessaging();
 
@@ -124,7 +125,7 @@ export async function registerForPushNotifications(
           version: Platform.Version,
         },
       },
-      { merge: true }
+      { merge: true },
     );
 
     console.log("FCM token registered successfully");
@@ -157,7 +158,7 @@ export function setupTokenRefreshListener(userId: string): () => void {
           enabled: true,
           lastUpdated: serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
       console.log("FCM token refreshed and stored");
     } catch (error) {
@@ -175,7 +176,7 @@ export async function subscribeToTopic(topic: string): Promise<void> {
   const messaging = getFirebaseMessaging();
   if (!messaging) {
     console.log(
-      "Firebase messaging not available - skipping topic subscription"
+      "Firebase messaging not available - skipping topic subscription",
     );
     return;
   }
@@ -196,7 +197,7 @@ export async function unsubscribeFromTopic(topic: string): Promise<void> {
   const messaging = getFirebaseMessaging();
   if (!messaging) {
     console.log(
-      "Firebase messaging not available - skipping topic unsubscription"
+      "Firebase messaging not available - skipping topic unsubscription",
     );
     return;
   }
@@ -220,7 +221,7 @@ export function setupForegroundHandler(): () => void {
   // Skip if Firebase messaging is not available (e.g., running in Expo Go)
   if (!messaging) {
     console.log(
-      "Firebase messaging not available - skipping foreground handler"
+      "Firebase messaging not available - skipping foreground handler",
     );
     return () => {}; // Return no-op unsubscribe
   }
@@ -269,7 +270,7 @@ export async function getInitialNotification(): Promise<any | null> {
  * Handle notification tap when app is in background
  */
 export function setupNotificationOpenedHandler(
-  onNotificationOpened: (remoteMessage: any) => void
+  onNotificationOpened: (remoteMessage: any) => void,
 ): () => void {
   const messaging = getFirebaseMessaging();
   if (!messaging) {
@@ -295,7 +296,7 @@ export function setupBackgroundHandler(): void {
   // Skip if Firebase messaging is not available (e.g., running in Expo Go)
   if (!messaging) {
     console.log(
-      "Firebase messaging not available - skipping background handler setup"
+      "Firebase messaging not available - skipping background handler setup",
     );
     return;
   }
@@ -310,7 +311,7 @@ export function setupBackgroundHandler(): void {
       // You can update badges, sync data, etc.
       if (remoteMessage.data?.badgeCount) {
         await Notifications.setBadgeCountAsync(
-          parseInt(remoteMessage.data.badgeCount as string, 10) || 0
+          parseInt(remoteMessage.data.badgeCount as string, 10) || 0,
         );
       }
     });
@@ -342,7 +343,7 @@ export async function hasNotificationPermission(): Promise<boolean> {
  * Delete FCM token (for logout/account deletion)
  */
 export async function unregisterPushNotifications(
-  userId: string
+  userId: string,
 ): Promise<void> {
   const messaging = getFirebaseMessaging();
   if (!messaging) {
@@ -358,7 +359,7 @@ export async function unregisterPushNotifications(
         lastUpdated: serverTimestamp(),
         deleted: true,
       },
-      { merge: true }
+      { merge: true },
     );
     console.log("FCM token deleted");
   } catch (error) {

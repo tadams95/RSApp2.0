@@ -60,7 +60,7 @@ function aggregateActivity(baseNotification, recentLikeCommentDocs) {
     return { title: baseNotification?.title, body: baseNotification?.body };
   }
   const relevant = recentLikeCommentDocs.filter(
-    (d) => d && ["post_liked", "comment_added"].includes(d.type)
+    (d) => d && ["post_liked", "comment_added"].includes(d.type),
   );
   if (relevant.length <= 1) {
     return { title: baseNotification.title, body: baseNotification.body };
@@ -213,7 +213,7 @@ exports.onPostLikeCreateNotify = onDocumentCreated(
       logger.error("onPostLikeCreateNotify failed", { err });
     }
     return null;
-  }
+  },
 );
 
 // --- postComments onCreate -> post owner gets comment_added ---
@@ -251,8 +251,8 @@ exports.onPostCommentCreateNotify = onDocumentCreated(
           // Resolve usernames -> userIds via usernames collection (usernameLower doc id pattern assumed)
           const lookups = await Promise.all(
             usernames.map((uname) =>
-              db.collection("usernames").doc(uname).get()
-            )
+              db.collection("usernames").doc(uname).get(),
+            ),
           );
           await Promise.all(
             lookups.map(async (snap) => {
@@ -279,7 +279,7 @@ exports.onPostCommentCreateNotify = onDocumentCreated(
                 link: `/post/${postId}`,
                 deepLink: `ragestate://post/${postId}`,
               });
-            })
+            }),
           );
         }
       }
@@ -287,7 +287,7 @@ exports.onPostCommentCreateNotify = onDocumentCreated(
       logger.error("onPostCommentCreateNotify failed", { err });
     }
     return null;
-  }
+  },
 );
 
 // --- posts onCreate -> notify mentioned users in post content ---
@@ -310,7 +310,7 @@ exports.onPostCreateNotifyMentions = onDocumentCreated(
 
       // Resolve usernames -> userIds
       const lookups = await Promise.all(
-        usernames.map((uname) => db.collection("usernames").doc(uname).get())
+        usernames.map((uname) => db.collection("usernames").doc(uname).get()),
       );
       await Promise.all(
         lookups.map(async (snap) => {
@@ -329,13 +329,13 @@ exports.onPostCreateNotifyMentions = onDocumentCreated(
             link: `/post/${postId}`,
             deepLink: `ragestate://post/${postId}`,
           });
-        })
+        }),
       );
     } catch (err) {
       logger.error("onPostCreateNotifyMentions failed", { err });
     }
     return null;
-  }
+  },
 );
 
 // --- follows onCreate -> target user gets new_follower ---
@@ -362,7 +362,7 @@ exports.onFollowCreateNotify = onDocumentCreated(
       logger.error("onFollowCreateNotify failed", { err });
     }
     return null;
-  }
+  },
 );
 
 // --- postReposts onCreate -> original post owner gets post_reposted ---
@@ -389,7 +389,7 @@ exports.onRepostCreateNotify = onDocumentCreated(
       logger.error("onRepostCreateNotify failed", { err });
     }
     return null;
-  }
+  },
 );
 
 // NOTE: push sending will be a separate trigger or queue; this phase only creates docs and increments counters.
@@ -420,7 +420,7 @@ exports.batchMarkNotificationsRead = onCall(async (request) => {
   const HARD_CAP = 300;
   const limit = Math.min(
     typeof max === "number" && max > 0 ? max : 100,
-    HARD_CAP
+    HARD_CAP,
   );
 
   let targets = [];
@@ -448,8 +448,8 @@ exports.batchMarkNotificationsRead = onCall(async (request) => {
             .doc(uid)
             .collection("notifications")
             .doc(id)
-            .get()
-        )
+            .get(),
+        ),
       );
       targets = reads.filter((d) => d.exists && d.data().read === false);
     }
@@ -664,7 +664,7 @@ exports.onUserNotificationCreatedSendPush = onDocumentCreated(
         } catch (aggErr) {
           logger.debug(
             "Aggregation window query failed, using single notification",
-            { aggErr }
+            { aggErr },
           );
         }
       }
@@ -703,8 +703,8 @@ exports.onUserNotificationCreatedSendPush = onDocumentCreated(
         },
         data: Object.fromEntries(
           Object.entries(notif.data || {}).flatMap(([k, v]) =>
-            typeof v === "string" ? [[k, v]] : []
-          )
+            typeof v === "string" ? [[k, v]] : [],
+          ),
         ),
         android: { priority: "high" },
         apns: { payload: { aps: { sound: "default" } } },
@@ -745,7 +745,7 @@ exports.onUserNotificationCreatedSendPush = onDocumentCreated(
                 logger.warn("Failed to disable invalid token", { token, e });
               }
             }
-          })
+          }),
         );
       }
 
@@ -754,8 +754,8 @@ exports.onUserNotificationCreatedSendPush = onDocumentCreated(
           failure === 0 && success > 0
             ? "sent"
             : success > 0
-            ? "partial"
-            : "failed",
+              ? "partial"
+              : "failed",
         pushSentAt: nowTs(),
         pushMeta: { success, failure },
       });
@@ -779,7 +779,7 @@ exports.onUserNotificationCreatedSendPush = onDocumentCreated(
       } catch (_) {}
     }
     return null;
-  }
+  },
 );
 
 // --- Scheduled: pruneStaleDevices ---
@@ -829,7 +829,7 @@ exports.pruneStaleDevices = onSchedule(
               enabled: false,
               disabledAt: admin.firestore.FieldValue.serverTimestamp(),
               disableReason: "stale",
-            })
+            }),
           );
         }
       });
@@ -839,7 +839,7 @@ exports.pruneStaleDevices = onSchedule(
       logger.error("pruneStaleDevices failed", { err, processed, disabled });
     }
     return null;
-  }
+  },
 );
 
 // --- Prefs Sanitization: on write to users/{uid}/settings/notificationPrefs ---
@@ -924,15 +924,14 @@ exports.onNotificationPrefsWrittenSanitize = onDocumentWritten(
       });
     }
     return null;
-  }
+  },
 );
 // --- Callable: testSendPush (Admin/Dev only) ---
 // Sends a test push notification to a specific user's devices
 // Input: { uid?: string, title?: string, body?: string }
 // If uid omitted, uses caller's uid.
-// Returns: { success, devicesFound, fcmResult }
+// Returns: { success: boolean, devicesFound: number, error?: string }
 // Rate limited: 5 calls per minute per user
-// Updated: 2025-12-28 - Force redeploy after VAPID key configuration
 exports.testSendPush = onCall(async (request) => {
   const ctx = request.auth;
   if (!ctx || !ctx.uid) {
@@ -955,63 +954,44 @@ exports.testSendPush = onCall(async (request) => {
   if (uid !== callerUid && !isAdmin) {
     throw new HttpsError(
       "permission-denied",
-      "Cannot send push to other users"
+      "Cannot send push to other users",
     );
   }
 
-  // Fetch ALL devices (remove filter for debugging)
+  // Fetch only enabled devices
   const devicesSnap = await db
     .collection("users")
     .doc(uid)
     .collection("devices")
+    .where("enabled", "==", true)
     .get();
 
   if (devicesSnap.empty) {
-    logger.warn(`No devices found for user ${uid}`);
+    logger.info(`No enabled devices found for user ${uid}`);
     return {
       success: false,
       devicesFound: 0,
-      queriedUid: uid,
-      timestamp: new Date().toISOString(),
-      error: `No device documents found for user ID: ${uid}. Check if your device registered successfully.`,
+      error: "No enabled devices found for this user.",
     };
   }
 
+  // Collect valid FCM tokens
   const fcmTokens = [];
-  let enabledCount = 0;
-  let disabledCount = 0;
-  let invalidProviderCount = 0;
-
   devicesSnap.forEach((d) => {
     const data = d.data();
-    
-    // Debug logging
-    logger.info(`Checking device ${d.id}`, { data });
-
-    if (data.enabled === true) {
-      enabledCount++;
-      if (data.provider === "fcm" && data.token) {
-        fcmTokens.push(data.token);
-      } else {
-        invalidProviderCount++;
-      }
-    } else {
-      disabledCount++;
+    if (data.provider === "fcm" && data.token) {
+      fcmTokens.push(data.token);
     }
   });
 
   if (!fcmTokens.length) {
-    logger.warn(`No valid FCM tokens found for user ${uid}. Enabled: ${enabledCount}, Disabled: ${disabledCount}`);
+    logger.warn(
+      `Found ${devicesSnap.size} enabled devices but 0 valid tokens for ${uid}`,
+    );
     return {
       success: false,
       devicesFound: devicesSnap.size,
-      fcmTokens: 0,
-      enabledCount, 
-      disabledCount,
-      invalidProviderCount,
-      queriedUid: uid,
-      timestamp: new Date().toISOString(),
-      error: `Found ${devicesSnap.size} devices (${enabledCount} enabled), but 0 valid FCM tokens.`,
+      error: "No valid FCM tokens found.",
     };
   }
 
@@ -1027,31 +1007,22 @@ exports.testSendPush = onCall(async (request) => {
     },
     android: { priority: "high" },
     apns: { payload: { aps: { sound: "default" } } },
-    webpush: { fcmOptions: { link: "/account" } },
   };
 
   try {
     const res = await admin.messaging().sendEachForMulticast(message);
-    logger.info("testSendPush result", {
+    logger.info("testSendPush completed", {
       uid,
-      callerUid,
-      success: res.successCount,
-      failure: res.failureCount,
+      successCount: res.successCount,
+      failureCount: res.failureCount,
     });
+
     return {
       success: res.successCount > 0,
-      devicesFound: devicesSnap.size,
-      fcmTokens: fcmTokens.length,
-      fcmResult: {
-        successCount: res.successCount,
-        failureCount: res.failureCount,
-      },
-      errors: res.responses
-        .filter((r) => !r.success)
-        .map((r) => r.error?.code || "unknown"),
+      devicesFound: fcmTokens.length,
     };
   } catch (err) {
     logger.error("testSendPush failed", { uid, err });
-    return { success: false, error: err.message || "FCM send failed" };
+    return { success: false, error: "Failed to send notification." };
   }
 });
