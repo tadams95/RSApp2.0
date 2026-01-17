@@ -118,6 +118,7 @@
       "bundler": "metro"
     },
     "plugins": [
+      "./plugins/withModularHeaders",
       [
         "expo-image-picker",
         {
@@ -153,16 +154,7 @@
         }
       ],
       "expo-router",
-      "expo-localization",
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
-        }
-      ],
-      "./plugins/withFirebaseFix.js"
+      "expo-localization"
     ],
     "extra": {
       "eas": {
