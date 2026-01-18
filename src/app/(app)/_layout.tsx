@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
+import { useSelector } from "react-redux";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import { useTheme } from "../../contexts/ThemeContext";
 import { auth } from "../../firebase/firebase";
@@ -11,6 +12,7 @@ import {
   registerForPushNotifications,
   setupTokenRefreshListener,
 } from "../../services/pushNotificationService";
+import { selectUnreadChatCount } from "../../store/redux/userSlice";
 
 // Named export for app component registration
 export function app() {
@@ -20,6 +22,7 @@ export function app() {
 export default function AppLayout() {
   const { authenticated, isLoading } = useAuth();
   const unreadCount = useNotificationBadge();
+  const unreadChatCount = useSelector(selectUnreadChatCount);
   const { theme } = useTheme();
 
   // Register for push notifications when user is authenticated
@@ -123,6 +126,13 @@ export default function AppLayout() {
         {/* Transfer routes - hidden from tab bar, accessed via deep links */}
         <Tabs.Screen
           name="transfer"
+          options={{
+            href: null,
+          }}
+        />
+        {/* Messages routes - hidden from tab bar, accessed via navigation */}
+        <Tabs.Screen
+          name="messages"
           options={{
             href: null,
           }}

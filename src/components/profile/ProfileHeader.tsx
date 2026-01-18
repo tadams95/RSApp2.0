@@ -1,4 +1,4 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -16,6 +16,7 @@ interface ProfileHeaderProps {
   onFollowersPress?: () => void;
   onFollowingPress?: () => void;
   onFollowChange?: (isFollowing: boolean) => void;
+  onMessagePress?: () => void;
 }
 
 export default function ProfileHeader({
@@ -25,6 +26,7 @@ export default function ProfileHeader({
   onFollowersPress,
   onFollowingPress,
   onFollowChange,
+  onMessagePress,
 }: ProfileHeaderProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -142,7 +144,7 @@ export default function ProfileHeader({
         </TouchableOpacity>
       </View>
 
-      {/* Action Row - Edit Profile OR Follow Button */}
+      {/* Action Row - Edit Profile OR Follow + Message Buttons */}
       <View style={styles.actionRow}>
         {isOwnProfile ? (
           <TouchableOpacity
@@ -160,11 +162,26 @@ export default function ProfileHeader({
           </TouchableOpacity>
         ) : (
           profile?.userId && (
-            <View style={styles.followButtonContainer}>
-              <FollowButton
-                targetUserId={profile.userId}
-                onFollowChange={onFollowChange}
-              />
+            <View style={styles.actionButtonsRow}>
+              <View style={styles.followButtonContainer}>
+                <FollowButton
+                  targetUserId={profile.userId}
+                  onFollowChange={onFollowChange}
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.messageButton}
+                onPress={onMessagePress}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="chatbubble-outline"
+                  size={16}
+                  color={theme.colors.textPrimary}
+                  style={styles.messageIcon}
+                />
+                <Text style={styles.messageButtonText}>Message</Text>
+              </TouchableOpacity>
             </View>
           )
         )}
@@ -278,6 +295,10 @@ const createStyles = (theme: import("../../constants/themes").Theme) => ({
   actionRow: {
     marginTop: 12,
   },
+  actionButtonsRow: {
+    flexDirection: "row" as const,
+    gap: 10,
+  },
   editButton: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
@@ -297,7 +318,26 @@ const createStyles = (theme: import("../../constants/themes").Theme) => ({
     fontWeight: "600" as const,
   },
   followButtonContainer: {
-    width: "100%" as const,
+    flex: 1,
+  },
+  messageButton: {
+    flex: 1,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.borderStrong,
+    backgroundColor: "transparent",
+  },
+  messageIcon: {
+    marginRight: 6,
+  },
+  messageButtonText: {
+    color: theme.colors.textPrimary,
+    fontSize: 14,
+    fontWeight: "600" as const,
   },
   // Social Links Styles
   socialLinksContainer: {

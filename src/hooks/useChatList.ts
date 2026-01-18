@@ -68,3 +68,32 @@ export function useChatList(): UseChatListResult {
 
   return { chats, isLoading, error, totalUnread, refetch };
 }
+
+/**
+ * Helper function to filter and get recent DM contacts from chat list
+ * @param chats - Array of chat summaries
+ * @param limit - Maximum number of contacts to return (default 5)
+ * @returns Array of DM chat summaries with valid peer info
+ */
+export function getRecentDmContacts(
+  chats: ChatSummary[],
+  limit: number = 5,
+): ChatSummary[] {
+  return chats
+    .filter((chat) => chat.type === "dm" && chat.peerId && chat.peerName)
+    .slice(0, limit);
+}
+
+/**
+ * Helper function to get existing DM peer IDs from chat list
+ * Useful for excluding users who already have DMs in suggested lists
+ * @param chats - Array of chat summaries
+ * @returns Set of peer user IDs
+ */
+export function getExistingDmPeerIds(chats: ChatSummary[]): Set<string> {
+  return new Set(
+    chats
+      .filter((chat) => chat.type === "dm" && chat.peerId)
+      .map((chat) => chat.peerId as string),
+  );
+}

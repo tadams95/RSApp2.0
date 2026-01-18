@@ -254,6 +254,11 @@ export default function EventDetailScreen() {
     router.push("/(app)/events/");
   };
 
+  const handleEventChat = () => {
+    if (!eventData?.chatId) return;
+    router.push(`/messages/${eventData.chatId}`);
+  };
+
   const handleImageLoadSuccess = () => {
     // Track successful hero image load
     posthog.capture("event_hero_image_loaded", {
@@ -403,6 +408,23 @@ export default function EventDetailScreen() {
                   {`${attendingCount} attending`}
                 </Text>
               </View>
+
+              {/* Event Chat Button */}
+              {eventData.chatId && (
+                <TouchableOpacity
+                  onPress={handleEventChat}
+                  style={styles.detailRow}
+                >
+                  <View style={styles.iconContainer}>
+                    <Ionicons
+                      name="chatbubbles-outline"
+                      size={18}
+                      color={theme.colors.accent || theme.colors.textPrimary}
+                    />
+                  </View>
+                  <Text style={styles.locationText}>Join Event Chat</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 

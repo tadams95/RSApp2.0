@@ -12,7 +12,6 @@ import {
   onSnapshot,
   serverTimestamp,
   Timestamp,
-  writeBatch,
   QueryDocumentSnapshot,
   DocumentData,
   type Unsubscribe,
@@ -76,6 +75,8 @@ export async function getUserDisplayInfo(userId: string): Promise<UserInfo> {
 
 /**
  * Get or create a DM chat using deterministic ID (no query needed)
+ * Note: Chat summaries are created by Cloud Function (onDmChatCreated)
+ * to avoid permission issues with writing to other user's subcollections
  */
 export async function getOrCreateDmChat(
   currentUserId: string,
@@ -89,16 +90,8 @@ export async function getOrCreateDmChat(
     return chatId;
   }
 
-  // Get user info for both parties
-  const [currentUserInfo, peerInfo] = await Promise.all([
-    getUserDisplayInfo(currentUserId),
-    getUserDisplayInfo(peerId),
-  ]);
-
-  const batch = writeBatch(db);
-
-  // Create chat document
-  batch.set(chatRef, {
+  // Create chat document only - Cloud Function creates summaries for both users
+  await setDoc(chatRef, {
     type: "dm",
     members: [currentUserId, peerId].sort(),
     memberCount: 2,
@@ -108,33 +101,6 @@ export async function getOrCreateDmChat(
     lastMessage: null,
   });
 
-  // Create chat summary for current user
-  batch.set(doc(db, `users/${currentUserId}/${CHAT_SUMMARIES}/${chatId}`), {
-    chatId,
-    type: "dm",
-    peerId,
-    peerName: peerInfo.displayName,
-    peerPhoto: peerInfo.photoURL,
-    lastMessage: null,
-    unreadCount: 0,
-    muted: false,
-    updatedAt: serverTimestamp(),
-  });
-
-  // Create chat summary for peer
-  batch.set(doc(db, `users/${peerId}/${CHAT_SUMMARIES}/${chatId}`), {
-    chatId,
-    type: "dm",
-    peerId: currentUserId,
-    peerName: currentUserInfo.displayName,
-    peerPhoto: currentUserInfo.photoURL,
-    lastMessage: null,
-    unreadCount: 0,
-    muted: false,
-    updatedAt: serverTimestamp(),
-  });
-
-  await batch.commit();
   return chatId;
 }
 

@@ -169,6 +169,71 @@ exports.onChatMessageCreated = onDocumentCreated(
 );
 
 // ============================================
+// DM CHAT: Create summaries on chat creation
+// ============================================
+
+exports.onDmChatCreated = onDocumentCreated("chats/{chatId}", async (event) => {
+  const { chatId } = event.params;
+  const chat = event.data?.data();
+
+  // Only process DM chats
+  if (!chat || chat.type !== "dm") {
+    return null;
+  }
+
+  const { members } = chat;
+
+  if (!members || members.length !== 2) {
+    logger.error("Invalid DM chat members", { chatId, members });
+    return null;
+  }
+
+  try {
+    // Get user info for both parties
+    const [user1Info, user2Info] = await Promise.all([
+      getUserDisplayInfo(members[0]),
+      getUserDisplayInfo(members[1]),
+    ]);
+
+    const batch = db.batch();
+
+    // Create chat summary for user 1 (showing user 2 as peer)
+    batch.set(db.doc(`users/${members[0]}/chatSummaries/${chatId}`), {
+      chatId,
+      type: "dm",
+      peerId: members[1],
+      peerName: user2Info.displayName,
+      peerPhoto: user2Info.photoURL,
+      lastMessage: null,
+      unreadCount: 0,
+      muted: false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Create chat summary for user 2 (showing user 1 as peer)
+    batch.set(db.doc(`users/${members[1]}/chatSummaries/${chatId}`), {
+      chatId,
+      type: "dm",
+      peerId: members[0],
+      peerName: user1Info.displayName,
+      peerPhoto: user1Info.photoURL,
+      lastMessage: null,
+      unreadCount: 0,
+      muted: false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
+
+    logger.info("DM chat summaries created", { chatId, members });
+  } catch (err) {
+    logger.error("onDmChatCreated failed", { err: err.message, chatId });
+  }
+
+  return null;
+});
+
+// ============================================
 // EVENT CHAT: Create on event creation
 // ============================================
 

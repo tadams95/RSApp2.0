@@ -20,10 +20,13 @@ import {
   Text,
   View,
 } from "react-native";
-import { useScreenTracking } from "../../analytics/PostHogProvider";
+import { useSelector } from "react-redux";
+import { usePostHog, useScreenTracking } from "../../analytics/PostHogProvider";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
+import { getOrCreateDmChat } from "../../services/chatService";
 import { getUserPosts, Post } from "../../services/feedService";
+import { selectLocalId } from "../../store/redux/userSlice";
 import { UserData } from "../../utils/auth";
 import { PostCard } from "../feed";
 import { EditProfile } from "../modals";
@@ -246,8 +249,11 @@ export default function UserProfileView({
   const router = useRouter();
   const segments = useSegments();
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const { track } = usePostHog();
+  const currentUserId = useSelector(selectLocalId);
 
   // Track screen view
   useScreenTracking("User Profile", {
@@ -307,8 +313,31 @@ export default function UserProfileView({
   const handleProfilePress = (targetUserId: string) => {
     if (targetUserId !== userId) {
       // Navigate within current tab's stack for proper back button
-      const currentTab = segments[1] || "home";
+      const currentTab = (segments as string[])[1] || "home";
       router.push(`/${currentTab}/profile/${targetUserId}`);
+    }
+  };
+
+  const handleMessagePress = async () => {
+    if (!currentUserId || isCreatingChat || isOwnProfile) return;
+
+    setIsCreatingChat(true);
+
+    try {
+      const chatId = await getOrCreateDmChat(currentUserId, userId);
+
+      // Track analytics
+      track("dm_started", {
+        peer_id: userId,
+        is_new_chat: true,
+        source: "profile",
+      });
+
+      router.push(`/messages/${chatId}`);
+    } catch (error) {
+      console.error("Failed to create DM:", error);
+    } finally {
+      setIsCreatingChat(false);
     }
   };
 
@@ -349,7 +378,11 @@ export default function UserProfileView({
   if (isPrivateProfile) {
     return (
       <View style={styles.container}>
-        <ProfileHeader profile={profile} isOwnProfile={false} />
+        <ProfileHeader
+          profile={profile}
+          isOwnProfile={false}
+          onMessagePress={handleMessagePress}
+        />
         <View style={styles.privateContainer}>
           <Text style={styles.privateText}>This profile is private</Text>
         </View>
@@ -365,6 +398,7 @@ export default function UserProfileView({
         profile={profile}
         isOwnProfile={isOwnProfile}
         onEditPress={isOwnProfile ? handleEditPress : undefined}
+        onMessagePress={!isOwnProfile ? handleMessagePress : undefined}
         onFollowersPress={() => {
           // TODO: Navigate to followers list
         }}
