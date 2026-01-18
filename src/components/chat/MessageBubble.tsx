@@ -1,5 +1,16 @@
-import React from "react";
-import { Image, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Image as ExpoImage } from "expo-image";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Modal,
+  Pressable,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 import type { Message } from "../../types/chat";
 import type { Theme } from "../../constants/themes";
@@ -25,7 +36,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   isOwn,
   showSender = false,
 }) => {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
+
+  const hasMedia = !!message.mediaUrl;
+  const hasText = !!message.text;
 
   return (
     <View style={[styles.container, isOwn ? styles.containerOwn : styles.containerOther]}>
@@ -37,15 +53,72 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           <Text style={styles.senderName}>{message.senderName}</Text>
         </View>
       )}
-      <View style={[styles.bubble, isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
-        <Text style={[styles.text, isOwn ? styles.textOwn : styles.textOther]}>
-          {message.text}
-        </Text>
+      <View style={[styles.bubble, isOwn ? styles.bubbleOwn : styles.bubbleOther, hasMedia && styles.bubbleWithMedia]}>
+        {/* Media Content */}
+        {hasMedia && (
+          <TouchableOpacity
+            onPress={() => setImageViewerVisible(true)}
+            activeOpacity={0.9}
+          >
+            <ExpoImage
+              source={{ uri: message.mediaUrl }}
+              style={styles.messageImage}
+              contentFit="cover"
+            />
+          </TouchableOpacity>
+        )}
+        {/* Text Content */}
+        {hasText && (
+          <Text style={[styles.text, isOwn ? styles.textOwn : styles.textOther, hasMedia && styles.textWithMedia]}>
+            {message.text}
+          </Text>
+        )}
       </View>
-      <Text style={[styles.time, isOwn ? styles.timeOwn : styles.timeOther]}>
-        {formatMessageTime(message.createdAt)}
-        {message.status === "sending" && " ..."}
-      </Text>
+      <View style={[styles.timeRow, isOwn ? styles.timeRowOwn : styles.timeRowOther]}>
+        <Text style={[styles.time, isOwn ? styles.timeOwn : styles.timeOther]}>
+          {formatMessageTime(message.createdAt)}
+        </Text>
+        {isOwn && (
+          <View style={styles.statusContainer}>
+            {message.status === "sending" ? (
+              <ActivityIndicator size={10} color={theme.colors.textTertiary} />
+            ) : (
+              <Ionicons
+                name="checkmark"
+                size={12}
+                color={theme.colors.textTertiary}
+              />
+            )}
+          </View>
+        )}
+      </View>
+
+      {/* Full-screen Image Viewer */}
+      {hasMedia && (
+        <Modal
+          visible={imageViewerVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setImageViewerVisible(false)}
+        >
+          <Pressable
+            style={styles.imageViewerContainer}
+            onPress={() => setImageViewerVisible(false)}
+          >
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setImageViewerVisible(false)}
+            >
+              <Ionicons name="close" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
+            <ExpoImage
+              source={{ uri: message.mediaUrl }}
+              style={styles.fullImage}
+              contentFit="contain"
+            />
+          </Pressable>
+        </Modal>
+      )}
     </View>
   );
 };
@@ -81,6 +154,7 @@ const createStyles = (theme: Theme) => ({
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    overflow: "hidden" as const,
   },
   bubbleOwn: {
     backgroundColor: theme.colors.accent,
@@ -90,25 +164,67 @@ const createStyles = (theme: Theme) => ({
     backgroundColor: theme.colors.bgElev1,
     borderBottomLeftRadius: 4,
   },
+  bubbleWithMedia: {
+    padding: 4,
+  },
+  messageImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 12,
+  },
+  textWithMedia: {
+    marginTop: 8,
+    marginHorizontal: 10,
+    marginBottom: 6,
+  },
   text: {
     fontSize: 15,
     lineHeight: 20,
   },
   textOwn: {
-    color: "#FFFFFF",
+    color: theme.colors.textInverse,
   },
   textOther: {
     color: theme.colors.textPrimary,
   },
+  imageViewerContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  closeButton: {
+    position: "absolute" as const,
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+  fullImage: {
+    width: "100%" as const,
+    height: "80%" as const,
+  },
+  timeRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    marginTop: 4,
+  },
+  timeRowOwn: {
+    justifyContent: "flex-end" as const,
+  },
+  timeRowOther: {
+    justifyContent: "flex-start" as const,
+  },
   time: {
     fontSize: 11,
-    marginTop: 4,
   },
   timeOwn: {
     color: theme.colors.textTertiary,
-    textAlign: "right" as const,
   },
   timeOther: {
     color: theme.colors.textTertiary,
+  },
+  statusContainer: {
+    marginLeft: 4,
   },
 });

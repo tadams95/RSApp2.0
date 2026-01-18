@@ -62,6 +62,6 @@ const createStyles = (theme: Theme) => ({
   buttonText: {
     fontSize: 16,
     fontWeight: "600" as const,
-    color: "#FFFFFF",
+    color: theme.colors.textInverse,
   },
 });

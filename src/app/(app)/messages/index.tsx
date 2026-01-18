@@ -28,10 +28,6 @@ export default function MessagesScreen() {
     router.push("/messages/new");
   };
 
-  const handleBack = () => {
-    router.back();
-  };
-
   const renderItem = ({ item }: { item: ChatSummary }) => (
     <ChatListItem chat={item} onPress={() => handleChatPress(item)} />
   );
@@ -42,13 +38,6 @@ export default function MessagesScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color={theme.colors.textPrimary}
-          />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>Messages</Text>
         <TouchableOpacity onPress={handleNewChat} style={styles.newChatButton}>
           <Ionicons
@@ -97,12 +86,9 @@ const createStyles = (theme: Theme) => ({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.borderSubtle,
   },
-  backButton: {
-    padding: 4,
-  },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "600" as const,
+    fontSize: 20,
+    fontWeight: "700" as const,
     color: theme.colors.textPrimary,
   },
   newChatButton: {

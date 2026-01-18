@@ -428,6 +428,31 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               </Pressable>
             )}
 
+            {/* Notifications (Activity Feed) Link */}
+            <Pressable
+              style={styles.navigationButton}
+              onPress={() => {
+                handleClose();
+                router.push("/(app)/notifications");
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="View notifications"
+            >
+              <View style={styles.navigationButtonContent}>
+                <Ionicons
+                  name="notifications"
+                  size={20}
+                  color={theme.colors.textPrimary}
+                />
+                <Text style={styles.navigationButtonText}>Notifications</Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.textTertiary}
+              />
+            </Pressable>
+
             {/* Notification Settings Link */}
             <Pressable
               style={styles.navigationButton}

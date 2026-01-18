@@ -83,7 +83,7 @@ exports.onChatMessageCreated = onDocumentCreated(
       return null;
     }
 
-    const { senderId, senderName, text, createdAt } = message;
+    const { senderId, senderName, text, createdAt, mediaUrl, mediaType } = message;
 
     try {
       // Get chat document
@@ -97,13 +97,25 @@ exports.onChatMessageCreated = onDocumentCreated(
       const chat = chatDoc.data();
       const recipients = chat.members.filter((id) => id !== senderId);
 
+      // Determine message preview text
+      const hasMedia = !!mediaUrl;
+      const hasText = !!text;
+      let previewText;
+      if (hasMedia && hasText) {
+        previewText = `📷 ${text}`;
+      } else if (hasMedia) {
+        previewText = "📷 Sent an image";
+      } else {
+        previewText = text || "";
+      }
+
       // Prepare lastMessage update
       const lastMessage = {
-        text: text || "[Media]",
+        text: previewText,
         senderId,
         senderName,
         createdAt,
-        type: message.mediaType || "text",
+        type: mediaType || "text",
       };
 
       // Use transaction for consistent updates
@@ -142,6 +154,11 @@ exports.onChatMessageCreated = onDocumentCreated(
       );
 
       // Send push notifications in parallel
+      // Use previewText for notification body
+      const notificationBody = hasMedia && !hasText
+        ? "Sent you an image"
+        : (text || "Sent you a message");
+
       await Promise.all(
         recipientInfos
           .filter((r) => r.expoPushToken)
@@ -149,7 +166,7 @@ exports.onChatMessageCreated = onDocumentCreated(
             sendExpoPush(
               recipient.expoPushToken,
               senderName || "New message",
-              text || "Sent you a message",
+              notificationBody,
               { type: "chat_message", chatId, senderId },
             ),
           ),

@@ -1,5 +1,7 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 import type { ChatSummary } from "../../types/chat";
 import type { Theme } from "../../constants/themes";
@@ -27,6 +29,7 @@ function formatRelativeTime(date: Date): string {
 }
 
 export const ChatListItem: React.FC<ChatListItemProps> = ({ chat, onPress }) => {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   const displayName = chat.type === "event" ? chat.eventName : chat.peerName;
@@ -37,12 +40,20 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({ chat, onPress }) => 
     <TouchableOpacity style={styles.container} onPress={onPress}>
       {/* Avatar */}
       <View style={styles.avatarContainer}>
-        {photoURL ? (
+        {chat.type === "event" ? (
+          <View style={[styles.avatar, styles.eventAvatarContainer]}>
+            <MaterialCommunityIcons
+              name="calendar-star"
+              size={24}
+              color={theme.colors.textSecondary}
+            />
+          </View>
+        ) : photoURL ? (
           <Image source={{ uri: photoURL }} style={styles.avatar} />
         ) : (
           <View style={[styles.avatar, styles.avatarPlaceholder]}>
             <Text style={styles.avatarText}>
-              {chat.type === "event" ? "E" : displayName?.[0]?.toUpperCase() || "?"}
+              {displayName?.[0]?.toUpperCase() || "?"}
             </Text>
           </View>
         )}
@@ -92,6 +103,8 @@ const createStyles = (theme: Theme) => ({
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: theme.colors.bgRoot,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.borderSubtle,
   },
   avatarContainer: {
     marginRight: 12,
@@ -103,6 +116,11 @@ const createStyles = (theme: Theme) => ({
   },
   avatarPlaceholder: {
     backgroundColor: theme.colors.bgElev2,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  eventAvatarContainer: {
+    backgroundColor: theme.colors.bgElev1,
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },
@@ -150,6 +168,6 @@ const createStyles = (theme: Theme) => ({
   badgeText: {
     fontSize: 12,
     fontWeight: "600" as const,
-    color: "#FFFFFF",
+    color: theme.colors.textInverse,
   },
 });

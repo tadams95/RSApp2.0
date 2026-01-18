@@ -10,6 +10,7 @@ import {
   sendMessage as sendMessageService,
   fetchOlderMessages,
   markChatAsRead,
+  uploadChatMedia,
 } from "../services/chatService";
 import type { Message } from "../types/chat";
 
@@ -22,7 +23,7 @@ interface UseChatResult {
   hasMore: boolean;
   error: Error | null;
   isSending: boolean;
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (text: string, mediaUri?: string) => Promise<void>;
   loadMore: () => Promise<void>;
 }
 
@@ -106,10 +107,10 @@ export function useChat(chatId: string): UseChatResult {
     }
   }, [chatId, hasMore, isLoadingMore]);
 
-  // Send message with optimistic update
+  // Send message with optimistic update (supports text and/or media)
   const sendMessage = useCallback(
-    async (text: string) => {
-      if (!userId || !chatId || !text.trim()) return;
+    async (text: string, mediaUri?: string) => {
+      if (!userId || !chatId || (!text.trim() && !mediaUri)) return;
 
       setIsSending(true);
 
@@ -119,7 +120,9 @@ export function useChat(chatId: string): UseChatResult {
         senderId: userId,
         senderName: userInfo.displayName,
         senderPhoto: null,
-        text: text.trim(),
+        text: text.trim() || null,
+        mediaUrl: mediaUri, // Show local URI while uploading
+        mediaType: mediaUri ? "image" : undefined,
         createdAt: new Date(),
         status: "sending",
       };
@@ -127,12 +130,21 @@ export function useChat(chatId: string): UseChatResult {
       setMessages((prev) => [...prev, optimisticMessage]);
 
       try {
+        // Upload media if provided
+        let uploadedMediaUrl: string | undefined;
+        if (mediaUri) {
+          uploadedMediaUrl = await uploadChatMedia(chatId, mediaUri);
+        }
+
+        // Send message with uploaded media URL
         await sendMessageService(
           chatId,
           userId,
           userInfo.displayName,
           null,
-          text.trim(),
+          text.trim() || null,
+          uploadedMediaUrl,
+          uploadedMediaUrl ? "image" : undefined,
         );
         // Real-time listener will update with the actual message
       } catch (err) {

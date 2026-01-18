@@ -16,7 +16,12 @@ import {
   DocumentData,
   type Unsubscribe,
 } from "firebase/firestore";
-import { db } from "../firebase/firebase";
+import {
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from "firebase/storage";
+import { db, storage } from "../firebase/firebase";
 import type { Message, ChatSummary, UserInfo } from "../types/chat";
 
 const CHATS_COLLECTION = "chats";
@@ -105,11 +110,57 @@ export async function getOrCreateDmChat(
 }
 
 // ============================================
+// MEDIA UPLOAD
+// ============================================
+
+/**
+ * Upload chat media (image) to Firebase Storage
+ * Follows feedService.ts pattern for media upload
+ */
+export async function uploadChatMedia(
+  chatId: string,
+  uri: string,
+  onProgress?: (progress: number) => void,
+): Promise<string> {
+  const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+  const storagePath = `chat-media/${chatId}/${filename}`;
+  const storageRef = ref(storage, storagePath);
+
+  // Fetch the image and convert to blob
+  const response = await fetch(uri);
+  const blob = await response.blob();
+
+  return new Promise((resolve, reject) => {
+    const uploadTask = uploadBytesResumable(storageRef, blob);
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        onProgress?.(progress);
+      },
+      (error) => {
+        console.error("Upload error:", error);
+        reject(error);
+      },
+      async () => {
+        try {
+          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadUrl);
+        } catch (error) {
+          reject(error);
+        }
+      },
+    );
+  });
+}
+
+// ============================================
 // MESSAGE OPERATIONS
 // ============================================
 
 /**
- * Send a text message
+ * Send a message (text and/or media)
  * Cloud Function handles updating lastMessage, unreadCount, and push notifications
  */
 export async function sendMessage(
@@ -117,7 +168,9 @@ export async function sendMessage(
   senderId: string,
   senderName: string,
   senderPhoto: string | null,
-  text: string,
+  text: string | null,
+  mediaUrl?: string,
+  mediaType?: "image" | "video",
 ): Promise<string> {
   const messagesRef = collection(
     db,
@@ -126,14 +179,19 @@ export async function sendMessage(
     MESSAGES_COLLECTION,
   );
 
-  const messageData = {
+  const messageData: Record<string, unknown> = {
     senderId,
     senderName,
     senderPhoto,
-    text,
+    text: text || null,
     createdAt: serverTimestamp(),
     readBy: [senderId],
   };
+
+  if (mediaUrl) {
+    messageData.mediaUrl = mediaUrl;
+    messageData.mediaType = mediaType || "image";
+  }
 
   const messageRef = await addDoc(messagesRef, messageData);
   return messageRef.id;

@@ -87,12 +87,12 @@ export default function AppLayout() {
           }}
         />
         <Tabs.Screen
-          name="notifications"
+          name="messages"
           options={{
             tabBarIcon: ({ color }) => (
               <View>
-                <MaterialCommunityIcons name="bell" color={color} size={24} />
-                {unreadCount > 0 && (
+                <MaterialCommunityIcons name="chat" color={color} size={24} />
+                {unreadChatCount > 0 && (
                   <View style={styles.badge}>
                     <View style={styles.badgeDot} />
                   </View>
@@ -130,9 +130,9 @@ export default function AppLayout() {
             href: null,
           }}
         />
-        {/* Messages routes - hidden from tab bar, accessed via navigation */}
+        {/* Notifications - hidden from tab bar, accessed via Account screen */}
         <Tabs.Screen
-          name="messages"
+          name="notifications"
           options={{
             href: null,
           }}

@@ -2092,7 +2092,7 @@ interface ProfileHeaderProps {
 
 ### V2 Enhancements (Post-MVP)
 
-- [ ] Media messages (images/videos via Firebase Storage)
+- [x] Media messages (images/videos via Firebase Storage)
 - [ ] Typing indicators (presence subcollection)
 - [ ] Read receipts (track `readBy` array)
 - [ ] Message reactions

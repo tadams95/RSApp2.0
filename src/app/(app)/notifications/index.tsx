@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -157,10 +158,21 @@ export default function NotificationsScreen() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  const handleBack = () => {
+    router.back();
+  };
+
   const renderHeader = () => (
     <View style={styles.header}>
+      <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+        <Ionicons
+          name="arrow-back"
+          size={24}
+          color={theme.colors.textPrimary}
+        />
+      </TouchableOpacity>
       <Text style={styles.headerTitle}>Notifications</Text>
-      {unreadCount > 0 && (
+      {unreadCount > 0 ? (
         <TouchableOpacity
           onPress={handleMarkAllRead}
           disabled={markingAllRead}
@@ -173,6 +185,8 @@ export default function NotificationsScreen() {
             <Text style={styles.markAllText}>Mark all read</Text>
           )}
         </TouchableOpacity>
+      ) : (
+        <View style={styles.headerSpacer} />
       )}
     </View>
   );
@@ -236,10 +250,18 @@ const createStyles = (theme: import("../../../constants/themes").Theme) =>
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.borderSubtle,
     },
+    backButton: {
+      padding: 4,
+      marginRight: 8,
+    },
     headerTitle: {
-      fontSize: 24,
+      flex: 1,
+      fontSize: 20,
       fontWeight: "700",
       color: theme.colors.textPrimary,
+    },
+    headerSpacer: {
+      width: 80,
     },
     markAllButton: {
       paddingVertical: 6,

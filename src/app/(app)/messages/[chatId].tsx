@@ -205,8 +205,8 @@ const createStyles = (theme: Theme) => ({
     marginRight: 10,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "600" as const,
+    fontSize: 20,
+    fontWeight: "700" as const,
     color: theme.colors.textPrimary,
   },
   headerChevron: {
