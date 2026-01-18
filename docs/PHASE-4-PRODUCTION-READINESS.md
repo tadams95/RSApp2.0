@@ -12,7 +12,7 @@
 | 4.2 Deep Linking       | ✅ Complete    | Custom scheme working on iOS + Android |
 | 4.3 Light/Dark Mode    | ✅ Complete    | 75/75 files themed + QA tested         |
 | 4.4 Performance        | ✅ Complete    | FlashList + memo + expo-image caching  |
-| 4.5 Error Tracking     | ⏳ Not Started | Sentry setup                           |
+| 4.5 Error Tracking     | ✅ Complete    | Firebase Crashlytics (FREE)            |
 | 4.6 App Store Prep     | ⏳ Not Started | Assets, listings                       |
 
 ### Key Changes from Original Plan
@@ -21,9 +21,9 @@
 - ✅ **4.2 Deep Linking** — Complete (custom scheme working)
 - ✅ **4.3 Theme Migration** — 75/75 files migrated + QA tested
 - ✅ **4.4 Performance** — FlashList on key lists, React.memo on PostCard, expo-image caching
+- ✅ **4.5 Error Tracking** — Firebase Crashlytics integrated (FREE, unlimited crashes)
 - 🎯 **Remaining Work**:
-  1. **4.5 Error Tracking** (~1-2 days) — Sentry setup ← **NEXT**
-  2. **4.6 App Store Prep** (~2-3 days) — Assets, listings
+  1. **4.6 App Store Prep** (~2-3 days) — Assets, listings ← **NEXT**
 
 ---
 
