@@ -83,7 +83,7 @@ export default function RootLayout() {
         // Initialize image cache configuration
         initializeImageCache();
 
-        // Initialize error reporting (Sentry)
+        // Initialize error reporting (Firebase Crashlytics)
         initializeErrorReporting();
 
         // Initialize Firebase App Check for security

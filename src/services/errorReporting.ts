@@ -15,13 +15,12 @@ function getCrashlytics() {
   if (crashlyticsInstance === null) {
     try {
       // Dynamic import to avoid crash if native module isn't available
-      const crashlytics =
-        require("@react-native-firebase/crashlytics").default;
+      const crashlytics = require("@react-native-firebase/crashlytics").default;
       crashlyticsInstance = crashlytics();
     } catch (error) {
       if (__DEV__) {
         console.warn(
-          "[Crashlytics] Native module not available. Run a development build to enable crash reporting."
+          "[Crashlytics] Native module not available. Run a development build to enable crash reporting.",
         );
       }
       return null;
@@ -39,10 +38,15 @@ export function initializeErrorReporting(): void {
   if (!crashlytics) return;
 
   // Enable/disable collection based on environment
-  crashlytics.setCrashlyticsCollectionEnabled(!__DEV__);
+  // In production, we always want to collect errors
+  // In dev, we usually disable it to avoid noise, but can enable it for testing
+  const enableCollection = !__DEV__;
+  crashlytics.setCrashlyticsCollectionEnabled(enableCollection);
 
   if (__DEV__) {
-    console.log("[Crashlytics] Initialized (collection disabled in dev)");
+    console.log(
+      `[Crashlytics] Initialized (collection ${enableCollection ? "ENABLED" : "DISABLED"})`,
+    );
   }
 }
 

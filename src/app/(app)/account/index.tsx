@@ -233,7 +233,7 @@ export default function AccountScreen() {
     // Create a reference to the profile picture in Firebase Storage
     const profilePictureRef = storageRef(
       storage,
-      `profilePictures/${localId}/profile_${Date.now()}.jpeg`
+      `profilePictures/${localId}/profile_${Date.now()}.jpeg`,
     );
 
     try {
@@ -244,7 +244,7 @@ export default function AccountScreen() {
       setUploadProgress(10);
       const compressed = await compressImage(
         imageUri,
-        COMPRESSION_PRESETS.PROFILE
+        COMPRESSION_PRESETS.PROFILE,
       );
       setCompressionResult(compressed);
 
@@ -252,7 +252,7 @@ export default function AccountScreen() {
         console.log(
           `Profile picture compressed: ${(
             compressed.compressionRatio * 100
-          ).toFixed(1)}% size reduction`
+          ).toFixed(1)}% size reduction`,
         );
       }
 
@@ -269,7 +269,7 @@ export default function AccountScreen() {
           `Compressed image still exceeds 5MB limit (${(
             blob.size /
             (1024 * 1024)
-          ).toFixed(1)}MB)`
+          ).toFixed(1)}MB)`,
         );
       }
 
@@ -493,7 +493,7 @@ export default function AccountScreen() {
               <Text style={styles.uploadSubtext}>
                 {compressionResult.compressionRatio
                   ? `${(compressionResult.compressionRatio * 100).toFixed(
-                      0
+                      0,
                     )}% smaller`
                   : "Optimized for faster upload"}
               </Text>
@@ -611,7 +611,7 @@ export default function AccountScreen() {
                           [
                             { text: "Cancel", style: "cancel" },
                             { text: "Retry", onPress: reloadImage },
-                          ]
+                          ],
                         );
                       }
                     }}
@@ -940,4 +940,4 @@ const createStyles = (theme: Theme) =>
     activeButtonText: {
       color: theme.colors.accent,
     },
-  } as const);
+  }) as const;
