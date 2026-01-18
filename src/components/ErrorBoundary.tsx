@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { Button, Card, Surface, Text } from "react-native-paper";
 import type { Theme } from "../constants/themes";
 import { ThemeContext } from "../contexts/ThemeContext";
+import { captureException } from "../services/errorReporting";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -39,7 +40,13 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log the error to console and call the onError callback if provided
+    // Send to Sentry for production error tracking
+    captureException(error, {
+      componentStack: errorInfo.componentStack,
+      errorBoundary: "GlobalErrorBoundary",
+    });
+
+    // Log the error to console for development
     console.error("Error caught by boundary:", error, errorInfo);
 
     if (this.props.onError) {

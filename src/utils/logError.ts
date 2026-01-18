@@ -1,14 +1,16 @@
+import { captureException } from "../services/errorReporting";
 import { extractDatabaseErrorCode } from "./databaseErrorHandler";
 import { extractFirebaseErrorCode } from "./firebaseErrorHandler";
 
 /**
  * Enhanced error logging function for Firebase-related errors
  * Formats and logs errors with additional context to help debugging
+ * Now sends errors to Sentry for production monitoring
  */
 export function logError(
   error: any,
   context: string,
-  additionalInfo?: Record<string, any>
+  additionalInfo?: Record<string, any>,
 ): void {
   // Get error code if available
   const firebaseCode = extractFirebaseErrorCode(error);
@@ -22,21 +24,31 @@ export function logError(
     errorCode,
     message: error?.message || "No error message available",
     componentStack: error?.componentStack,
-    stack: error?.stack,
     ...additionalInfo,
   };
 
-  // Log in development - in production this could be sent to a logging service
-  console.error("Firebase Error:", errorDetails);
+  // Always log to console in development
+  if (__DEV__) {
+    console.error("Error:", errorDetails);
 
-  // For certain critical errors, we might want additional logging
-  if (
-    errorCode === "permission-denied" ||
-    errorCode === "unavailable" ||
-    errorCode === "not-found"
-  ) {
-    console.error("CRITICAL ERROR:", JSON.stringify(errorDetails, null, 2));
+    // Additional logging for critical errors in dev
+    if (
+      errorCode === "permission-denied" ||
+      errorCode === "unavailable" ||
+      errorCode === "not-found"
+    ) {
+      console.error("CRITICAL ERROR:", JSON.stringify(errorDetails, null, 2));
+    }
   }
+
+  // Send to Sentry for production error tracking
+  captureException(
+    error instanceof Error ? error : new Error(error?.message || String(error)),
+    {
+      ...errorDetails,
+      originalError: error,
+    },
+  );
 }
 
 export default logError;

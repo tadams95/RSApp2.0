@@ -20,6 +20,7 @@
     "@react-native-community/netinfo": "^11.4.1",
     "@react-native-firebase/app": "^23.8.3",
     "@react-native-firebase/app-check": "^23.8.3",
+    "@react-native-firebase/crashlytics": "^23.8.3",
     "@react-native-firebase/messaging": "^23.8.3",
     "@react-native-google-signin/google-signin": "^16.1.1",
     "@reduxjs/toolkit": "^2.11.2",

@@ -23,6 +23,7 @@ import { AuthProvider } from "../hooks/AuthContext";
 import { MusicPlayerProvider } from "../hooks/MusicPlayerContext";
 import { SoundCloudPlayerProvider } from "../hooks/SoundCloudPlayerContext";
 import { initializeAppCheck } from "../services/appCheckService";
+import { initializeErrorReporting } from "../services/errorReporting";
 import {
   setupBackgroundHandler,
   setupForegroundHandler,
@@ -82,6 +83,9 @@ export default function RootLayout() {
         // Initialize image cache configuration
         initializeImageCache();
 
+        // Initialize error reporting (Sentry)
+        initializeErrorReporting();
+
         // Initialize Firebase App Check for security
         await initializeAppCheck();
 
@@ -91,7 +95,7 @@ export default function RootLayout() {
         if (__DEV__) {
           const status = imagePreloader.getPreloadStatus();
           console.log(
-            `Image preloading complete: ${status.loaded}/${status.total} images cached`
+            `Image preloading complete: ${status.loaded}/${status.total} images cached`,
           );
         }
       } catch (error) {
@@ -113,7 +117,7 @@ export default function RootLayout() {
 
     const subscription = AppState.addEventListener(
       "change",
-      handleAppStateChange
+      handleAppStateChange,
     );
     return () => subscription.remove();
   }, []);
@@ -141,7 +145,7 @@ export default function RootLayout() {
           if (nextAppState === "active") {
             checkForUpdates();
           }
-        }
+        },
       );
 
       return () => subscription.remove();
@@ -169,7 +173,7 @@ export default function RootLayout() {
                 }
               },
             },
-          ]
+          ],
         );
       }
     } catch (error) {
