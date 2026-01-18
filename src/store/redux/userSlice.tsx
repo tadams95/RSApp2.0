@@ -7,6 +7,7 @@ interface UserState {
   userName: string | null;
   stripeCustomerId: string | null;
   expoPushToken: string | null;
+  unreadChatCount: number;
 }
 
 const initialState: UserState = {
@@ -15,6 +16,7 @@ const initialState: UserState = {
   userName: null,
   stripeCustomerId: null,
   expoPushToken: null,
+  unreadChatCount: 0,
 };
 
 export const userSlice = createSlice({
@@ -36,6 +38,9 @@ export const userSlice = createSlice({
     setExpoPushToken: (state, action: PayloadAction<string | null>) => {
       state.expoPushToken = action.payload;
     },
+    setUnreadChatCount: (state, action: PayloadAction<number>) => {
+      state.unreadChatCount = action.payload;
+    },
   },
 });
 
@@ -45,6 +50,7 @@ export const {
   setUserName,
   setStripeCustomerId,
   setExpoPushToken,
+  setUnreadChatCount,
 } = userSlice.actions;
 
 // Typed selectors
@@ -58,6 +64,8 @@ export const selectStripeCustomerId = (state: RootState): string | null =>
   state.user.stripeCustomerId;
 export const selectExpoPushToken = (state: RootState): string | null =>
   state.user.expoPushToken;
+export const selectUnreadChatCount = (state: RootState): number =>
+  state.user.unreadChatCount;
 
 // Memoized selectors for performance optimization
 export const selectIsAuthenticated = createSelector(

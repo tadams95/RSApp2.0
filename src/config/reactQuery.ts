@@ -81,6 +81,17 @@ export const queryKeys = {
     orders: () => [...queryKeys.user.all, "orders"] as const,
     notifications: () => [...queryKeys.user.all, "notifications"] as const,
   },
+
+  // Chat (real-time subscriptions, cache for offline access)
+  chat: {
+    all: ["chat"] as const,
+    lists: () => [...queryKeys.chat.all, "list"] as const,
+    messages: (chatId: string) =>
+      [...queryKeys.chat.all, "messages", chatId] as const,
+    detail: (chatId: string) =>
+      [...queryKeys.chat.all, "detail", chatId] as const,
+    unreadCount: () => [...queryKeys.chat.all, "unreadCount"] as const,
+  },
 } as const;
 
 /**
@@ -110,5 +121,11 @@ export const queryOptions = {
     staleTime: 1000 * 30, // 30 seconds
     gcTime: 1000 * 60 * 2, // 2 minutes
     refetchInterval: 1000 * 60, // Refetch every minute
+  },
+
+  // Chat uses real-time subscriptions, cache for offline access
+  chat: {
+    staleTime: 1000 * 60, // 1 minute (real-time handles updates)
+    gcTime: 1000 * 60 * 10, // 10 minutes (keep for offline)
   },
 } as const;
