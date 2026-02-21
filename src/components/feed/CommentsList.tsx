@@ -1,11 +1,11 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { FlashList } from "@shopify/flash-list";
 import { formatDistanceToNowStrict } from "date-fns";
 import { Timestamp } from "firebase/firestore";
 import React, { useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Text,
   TouchableOpacity,
   View,
@@ -40,7 +40,7 @@ const CommentItem: React.FC<{
   comment: Comment;
   onDelete?: (commentId: string) => void;
   onProfilePress?: (userId: string) => void;
-}> = ({ comment, onDelete, onProfilePress }) => {
+}> = React.memo(({ comment, onDelete, onProfilePress }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const currentUserId = auth.currentUser?.uid;
@@ -138,7 +138,7 @@ const CommentItem: React.FC<{
       )}
     </View>
   );
-};
+});
 
 export const CommentsList: React.FC<CommentsListProps> = ({
   comments,
@@ -185,19 +185,21 @@ export const CommentsList: React.FC<CommentsListProps> = ({
   }
 
   return (
-    <FlatList
+    <FlashList
       data={comments}
       renderItem={renderComment}
       keyExtractor={keyExtractor}
       contentContainerStyle={styles.listContent}
       scrollEnabled={false} // Disable scroll since parent ScrollView handles it
+      estimatedItemSize={72}
     />
   );
 };
 
 const createStyles = (theme: import("../../constants/themes").Theme) => ({
   listContent: {
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   loadingContainer: {
     padding: 24,

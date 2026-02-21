@@ -1,6 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { doc, getFirestore, updateDoc } from "firebase/firestore";
-import { notificationService } from "./notificationService";
+import { NotificationData, notificationService } from "./notificationService";
 
 const db = getFirestore();
 
@@ -15,10 +15,10 @@ export interface PushNotificationData {
     | "account_security";
   title: string;
   body: string;
-  data?: Record<string, any>;
+  data?: NotificationData;
 }
 
-export interface OrderStatusNotificationData {
+interface OrderStatusNotificationData {
   orderId: string;
   orderTotal: number;
   orderItems: Array<{
@@ -27,12 +27,19 @@ export interface OrderStatusNotificationData {
     quantity: number;
     price: number;
   }>;
-  shippingAddress?: any;
+  shippingAddress?: {
+    address1?: string;
+    address2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+  };
   paymentMethod?: string;
   customerEmail?: string;
 }
 
-export interface EventNotificationData {
+interface EventNotificationData {
   eventId: string;
   eventName: string;
   eventDate?: Date;
@@ -42,7 +49,7 @@ export interface EventNotificationData {
   transferFromUser?: string;
 }
 
-export interface CommerceNotificationData {
+interface CommerceNotificationData {
   productId: string;
   productTitle: string;
   productPrice?: number;
@@ -54,7 +61,7 @@ export interface CommerceNotificationData {
   stockThreshold?: number;
 }
 
-export interface AccountSecurityNotificationData {
+interface AccountSecurityNotificationData {
   userId: string;
   deviceInfo?: {
     deviceName?: string;
@@ -84,7 +91,7 @@ class NotificationManager {
         expoPushToken: token,
         lastTokenUpdate: new Date().toISOString(),
       });
-      console.log("Push token registered for user:", userId);
+      if (__DEV__) console.log("Push token registered for user:", userId);
     } catch (error) {
       console.error("Error registering push token:", error);
       throw error;
@@ -101,7 +108,7 @@ class NotificationManager {
         expoPushToken: null,
         lastTokenUpdate: new Date().toISOString(),
       });
-      console.log("Push token removed for user:", userId);
+      if (__DEV__) console.log("Push token removed for user:", userId);
     } catch (error) {
       console.error("Error removing push token:", error);
       throw error;
@@ -127,7 +134,7 @@ class NotificationManager {
         } as Notifications.TimeIntervalTriggerInput,
       });
 
-      console.log("Cart abandonment reminder scheduled:", notificationId);
+      if (__DEV__) console.log("Cart abandonment reminder scheduled:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error scheduling cart abandonment reminder:", error);
@@ -151,7 +158,7 @@ class NotificationManager {
 
       // Only schedule if reminder time is in the future
       if (reminderTime <= new Date()) {
-        console.log("Event reminder time is in the past, skipping");
+        if (__DEV__) console.log("Event reminder time is in the past, skipping");
         return null;
       }
 
@@ -168,7 +175,7 @@ class NotificationManager {
         } as Notifications.DateTriggerInput,
       });
 
-      console.log("Event reminder scheduled:", notificationId);
+      if (__DEV__) console.log("Event reminder scheduled:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error scheduling event reminder:", error);
@@ -194,7 +201,7 @@ class NotificationManager {
         },
       });
 
-      console.log("Order confirmation sent:", notificationId);
+      if (__DEV__) console.log("Order confirmation sent:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error sending order confirmation:", error);
@@ -221,7 +228,7 @@ class NotificationManager {
         },
       });
 
-      console.log("Order processing notification sent:", notificationId);
+      if (__DEV__) console.log("Order processing notification sent:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error sending order processing notification:", error);
@@ -259,7 +266,7 @@ class NotificationManager {
         },
       });
 
-      console.log("Shipping notification sent:", notificationId);
+      if (__DEV__) console.log("Shipping notification sent:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error sending shipping notification:", error);
@@ -287,7 +294,7 @@ class NotificationManager {
         },
       });
 
-      console.log("Payment failure notification sent:", notificationId);
+      if (__DEV__) console.log("Payment failure notification sent:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error sending payment failure notification:", error);
@@ -321,10 +328,12 @@ class NotificationManager {
         } as Notifications.TimeIntervalTriggerInput,
       });
 
-      console.log(
-        "Cart abandonment reminder with retry scheduled:",
-        notificationId
-      );
+      if (__DEV__) {
+        console.log(
+          "Cart abandonment reminder with retry scheduled:",
+          notificationId
+        );
+      }
       return notificationId;
     } catch (error) {
       console.error(
@@ -359,7 +368,7 @@ class NotificationManager {
         },
       });
 
-      console.log("Delivery confirmation sent:", notificationId);
+      if (__DEV__) console.log("Delivery confirmation sent:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error sending delivery confirmation:", error);
@@ -382,7 +391,7 @@ class NotificationManager {
         }
       }
 
-      console.log("Cart notifications cancelled");
+      if (__DEV__) console.log("Cart notifications cancelled");
     } catch (error) {
       console.error("Error cancelling cart notifications:", error);
     }
@@ -439,7 +448,7 @@ class NotificationManager {
       // Cancel all scheduled notifications
       await notificationService.cancelAllNotifications();
 
-      console.log("Notifications cleaned up for user:", userId);
+      if (__DEV__) console.log("Notifications cleaned up for user:", userId);
     } catch (error) {
       console.error("Error cleaning up notifications for user:", error);
     }
@@ -485,7 +494,7 @@ class NotificationManager {
         },
       });
 
-      console.log("Event ticket purchase confirmation sent:", notificationId);
+      if (__DEV__) console.log("Event ticket purchase confirmation sent:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error sending event ticket purchase confirmation:", error);
@@ -502,7 +511,7 @@ class NotificationManager {
     const results: { reminder24h?: string; reminder1h?: string } = {};
 
     if (!eventData.eventDate) {
-      console.log("No event date provided, skipping reminder scheduling");
+      if (__DEV__) console.log("No event date provided, skipping reminder scheduling");
       return results;
     }
 
@@ -532,7 +541,7 @@ class NotificationManager {
 
         if (notificationId24h) {
           results.reminder24h = notificationId24h;
-          console.log("24-hour event reminder scheduled:", notificationId24h);
+          if (__DEV__) console.log("24-hour event reminder scheduled:", notificationId24h);
         }
       }
 
@@ -559,7 +568,7 @@ class NotificationManager {
 
         if (notificationId1h) {
           results.reminder1h = notificationId1h;
-          console.log("1-hour event reminder scheduled:", notificationId1h);
+          if (__DEV__) console.log("1-hour event reminder scheduled:", notificationId1h);
         }
       }
 
@@ -610,12 +619,14 @@ class NotificationManager {
         },
       });
 
-      console.log(
-        `Ticket transfer confirmation sent (${
-          isRecipient ? "recipient" : "sender"
-        }):`,
-        notificationId
-      );
+      if (__DEV__) {
+        console.log(
+          `Ticket transfer confirmation sent (${
+            isRecipient ? "recipient" : "sender"
+          }):`,
+          notificationId
+        );
+      }
       return notificationId;
     } catch (error) {
       console.error("Error sending ticket transfer confirmation:", error);
@@ -655,10 +666,12 @@ class NotificationManager {
         },
       });
 
-      console.log(
-        `Event check-in notification sent (${isValid ? "success" : "failed"}):`,
-        notificationId
-      );
+      if (__DEV__) {
+        console.log(
+          `Event check-in notification sent (${isValid ? "success" : "failed"}):`,
+          notificationId
+        );
+      }
       return notificationId;
     } catch (error) {
       console.error("Error sending event check-in notification:", error);
@@ -681,7 +694,7 @@ class NotificationManager {
         }
       }
 
-      console.log(`Event notifications cancelled for event: ${eventId}`);
+      if (__DEV__) console.log(`Event notifications cancelled for event: ${eventId}`);
     } catch (error) {
       console.error("Error cancelling event notifications:", error);
     }
@@ -717,10 +730,12 @@ class NotificationManager {
         },
       });
 
-      console.log(
-        `Event update notification sent (${updateType}):`,
-        notificationId
-      );
+      if (__DEV__) {
+        console.log(
+          `Event update notification sent (${updateType}):`,
+          notificationId
+        );
+      }
       return notificationId;
     } catch (error) {
       console.error("Error sending event update notification:", error);
@@ -762,7 +777,7 @@ class NotificationManager {
         },
       });
 
-      console.log("Low stock alert sent:", notificationId);
+      if (__DEV__) console.log("Low stock alert sent:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error sending low stock alert:", error);
@@ -817,10 +832,12 @@ class NotificationManager {
         } as Notifications.TimeIntervalTriggerInput,
       });
 
-      console.log(
-        "Enhanced cart abandonment reminder scheduled:",
-        notificationId
-      );
+      if (__DEV__) {
+        console.log(
+          "Enhanced cart abandonment reminder scheduled:",
+          notificationId
+        );
+      }
       return notificationId;
     } catch (error) {
       console.error(
@@ -867,7 +884,7 @@ class NotificationManager {
         },
       });
 
-      console.log("New product launch notification sent:", notificationId);
+      if (__DEV__) console.log("New product launch notification sent:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error sending new product launch notification:", error);
@@ -898,7 +915,7 @@ class NotificationManager {
         },
       });
 
-      console.log("Back in stock notification sent:", notificationId);
+      if (__DEV__) console.log("Back in stock notification sent:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error sending back in stock notification:", error);
@@ -938,7 +955,7 @@ class NotificationManager {
         } as Notifications.TimeIntervalTriggerInput,
       });
 
-      console.log("Cart recovery with incentive scheduled:", notificationId);
+      if (__DEV__) console.log("Cart recovery with incentive scheduled:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error scheduling cart recovery with incentive:", error);
@@ -962,14 +979,16 @@ class NotificationManager {
           notificationType === "cart_abandonment"
         ) {
           await notificationService.cancelNotification(notification.identifier);
-          console.log(
-            "Cancelled cart/commerce notification:",
-            notification.identifier
-          );
+          if (__DEV__) {
+            console.log(
+              "Cancelled cart/commerce notification:",
+              notification.identifier
+            );
+          }
         }
       }
 
-      console.log("Cart and commerce notifications cancelled");
+      if (__DEV__) console.log("Cart and commerce notifications cancelled");
     } catch (error) {
       console.error("Error cancelling cart and commerce notifications:", error);
     }
@@ -1005,7 +1024,7 @@ class NotificationManager {
         },
       });
 
-      console.log("Final cart abandonment notification sent:", notificationId);
+      if (__DEV__) console.log("Final cart abandonment notification sent:", notificationId);
       return notificationId;
     } catch (error) {
       console.error(
@@ -1072,16 +1091,18 @@ class NotificationManager {
         },
       });
 
-      console.log(
-        `Login alert sent (${
-          isSuspiciousActivity
-            ? "suspicious"
-            : isNewDevice
-            ? "new device"
-            : "normal"
-        }):`,
-        notificationId
-      );
+      if (__DEV__) {
+        console.log(
+          `Login alert sent (${
+            isSuspiciousActivity
+              ? "suspicious"
+              : isNewDevice
+              ? "new device"
+              : "normal"
+          }):`,
+          notificationId
+        );
+      }
       return notificationId;
     } catch (error) {
       console.error("Error sending login alert:", error);
@@ -1121,7 +1142,7 @@ class NotificationManager {
         },
       });
 
-      console.log("Password reset confirmation sent:", notificationId);
+      if (__DEV__) console.log("Password reset confirmation sent:", notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error sending password reset confirmation:", error);
@@ -1177,10 +1198,12 @@ class NotificationManager {
         },
       });
 
-      console.log(
-        `Profile update confirmation sent (${updateType}):`,
-        notificationId
-      );
+      if (__DEV__) {
+        console.log(
+          `Profile update confirmation sent (${updateType}):`,
+          notificationId
+        );
+      }
       return notificationId;
     } catch (error) {
       console.error("Error sending profile update confirmation:", error);
@@ -1247,7 +1270,7 @@ class NotificationManager {
         },
       });
 
-      console.log(`Security alert sent (${alertType}):`, notificationId);
+      if (__DEV__) console.log(`Security alert sent (${alertType}):`, notificationId);
       return notificationId;
     } catch (error) {
       console.error("Error sending security alert:", error);
@@ -1306,12 +1329,14 @@ class NotificationManager {
         },
       });
 
-      console.log(
-        `Account verification notification sent (${verificationType}, ${
-          isSuccessful ? "success" : "failed"
-        }):`,
-        notificationId
-      );
+      if (__DEV__) {
+        console.log(
+          `Account verification notification sent (${verificationType}, ${
+            isSuccessful ? "success" : "failed"
+          }):`,
+          notificationId
+        );
+      }
       return notificationId;
     } catch (error) {
       console.error("Error sending account verification notification:", error);
@@ -1359,10 +1384,12 @@ class NotificationManager {
         },
       });
 
-      console.log(
-        `Data export notification sent (${exportType}):`,
-        notificationId
-      );
+      if (__DEV__) {
+        console.log(
+          `Data export notification sent (${exportType}):`,
+          notificationId
+        );
+      }
       return notificationId;
     } catch (error) {
       console.error("Error sending data export notification:", error);
@@ -1382,14 +1409,16 @@ class NotificationManager {
       for (const notification of scheduledNotifications) {
         if (notification.content.data?.type === "account_security") {
           await notificationService.cancelNotification(notification.identifier);
-          console.log(
-            "Cancelled account security notification:",
-            notification.identifier
-          );
+          if (__DEV__) {
+            console.log(
+              "Cancelled account security notification:",
+              notification.identifier
+            );
+          }
         }
       }
 
-      console.log("Account security notifications cancelled");
+      if (__DEV__) console.log("Account security notifications cancelled");
     } catch (error) {
       console.error("Error cancelling account security notifications:", error);
     }

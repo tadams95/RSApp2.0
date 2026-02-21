@@ -393,37 +393,6 @@ function extractProductId(gid) {
 // FUTURE WEBHOOK HANDLERS (STUBS)
 // ============================================================================
 
-/**
- * Handle Shopify order fulfillment webhook.
- *
- * Updates merchandiseOrders status when orders are fulfilled in Shopify.
- *
- * @param {Object} payload - Shopify webhook payload
- */
-async function handleFulfillmentWebhook(payload) {
-  logger.info('[Shopify] Fulfillment webhook received', {
-    orderId: payload?.id,
-    fulfillmentStatus: payload?.fulfillment_status,
-  });
-  // TODO: Update merchandiseOrders/{id}.fulfillmentStatus when Shopify fulfills
-  // This requires looking up the order by shopifyOrderId
-}
-
-/**
- * Handle Shopify inventory update webhook.
- *
- * Can be used to sync Shopify inventory changes back to Firestore.
- *
- * @param {Object} payload - Shopify webhook payload
- */
-async function handleInventoryWebhook(payload) {
-  logger.info('[Shopify] Inventory webhook received', {
-    inventoryItemId: payload?.inventory_item_id,
-    available: payload?.available,
-  });
-  // TODO: Sync inventory levels to Firestore for display if needed
-}
-
 // ============================================================================
 // EXPORTS
 // ============================================================================
@@ -445,7 +414,4 @@ module.exports = {
   extractProductId,
   formatShippingAddress,
 
-  // Webhook handlers
-  handleFulfillmentWebhook,
-  handleInventoryWebhook,
 };

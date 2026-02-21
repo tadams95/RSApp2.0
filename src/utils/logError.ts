@@ -5,12 +5,12 @@ import { extractFirebaseErrorCode } from "./firebaseErrorHandler";
 /**
  * Enhanced error logging function for Firebase-related errors
  * Formats and logs errors with additional context to help debugging
- * Now sends errors to Sentry for production monitoring
+ * Sends errors to Firebase Crashlytics for production monitoring
  */
 export function logError(
-  error: any,
+  error: unknown,
   context: string,
-  additionalInfo?: Record<string, any>,
+  additionalInfo?: Record<string, unknown>,
 ): void {
   // Get error code if available
   const firebaseCode = extractFirebaseErrorCode(error);
@@ -18,12 +18,13 @@ export function logError(
   const errorCode = firebaseCode || databaseCode || "unknown";
 
   // Build structured error object
+  const err = error as { message?: string; componentStack?: string };
   const errorDetails = {
     timestamp: new Date().toISOString(),
     context,
     errorCode,
-    message: error?.message || "No error message available",
-    componentStack: error?.componentStack,
+    message: err?.message || "No error message available",
+    componentStack: err?.componentStack,
     ...additionalInfo,
   };
 
@@ -41,12 +42,12 @@ export function logError(
     }
   }
 
-  // Send to Sentry for production error tracking
+  // Send to Crashlytics for production error tracking
   captureException(
-    error instanceof Error ? error : new Error(error?.message || String(error)),
+    error instanceof Error ? error : new Error(err?.message || String(error)),
     {
       ...errorDetails,
-      originalError: error,
+      originalError: error instanceof Error ? error.message : JSON.stringify(error),
     },
   );
 }

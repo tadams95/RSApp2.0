@@ -280,6 +280,7 @@ export default function HomeScreen() {
 
         if (usernameDoc.exists()) {
           const data = usernameDoc.data();
+          if (!data) return;
           const userId = data.uid || data.userId || data.oderId;
 
           if (userId) {
@@ -350,9 +351,8 @@ export default function HomeScreen() {
         onRepost={() => handleRepostOptions(item)}
         onShare={(postId) => {
           posthog.capture("share_initiated", { post_id: postId });
-          console.log("Share pressed:", postId);
         }}
-        onMore={(postId) => console.log("More options pressed:", postId)}
+        onMore={() => {}}
       />
     );
   };

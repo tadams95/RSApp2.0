@@ -52,7 +52,16 @@ service cloud.firestore {
     // Allow users to access their own data and write to specific collections
     match /users/{userId} {
       allow read: if isCurrentUser(userId) || isAdmin();
-      allow write: if isCurrentUser(userId) || isAdmin();
+
+      // Admins can write anything
+      allow write: if isAdmin();
+
+      // Users can write their own doc, but cannot modify server-managed counters
+      allow create: if isCurrentUser(userId);
+      allow update: if isCurrentUser(userId)
+        && (!request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['unreadNotifications', 'unreadChatCount']));
+      allow delete: if isCurrentUser(userId);
     }
     
     // Admin users collection - more restrictive access
@@ -331,12 +340,23 @@ service cloud.firestore {
 
     // Chat: chats metadata
     match /chats/{chatId} {
-      allow read, update, delete: if isAuthenticated() && request.auth.uid in resource.data.members;
-      // Create requires at least 2 members and must include the creator
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.members;
+
+      // Create: DM chats created by client
       allow create: if isAuthenticated()
         && request.resource.data.members is list
         && request.resource.data.members.size() >= 2
         && request.auth.uid in request.resource.data.members;
+
+      // Update: members can update, but structural fields are immutable from client
+      // All metadata updates (lastMessage, updatedAt, etc.) go through Cloud Functions
+      allow update: if isAuthenticated()
+        && request.auth.uid in resource.data.members
+        && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['members', 'type', 'eventId', 'memberCount']);
+
+      // Delete: admin only (handled by Cloud Functions via Admin SDK)
+      allow delete: if false;
     }
 
     // Chat: messages subcollection
@@ -390,13 +410,6 @@ service cloud.firestore {
     match /users/{userId}/settings/notifications {
       allow read, create, update: if isAuthenticated() && request.auth.uid == userId;
       allow delete: if false; // keep explicit; users can toggle fields instead
-    }
-
-    // Safeguard: Prevent clients from arbitrarily modifying unreadNotifications counter field directly
-    // They can still write other user doc fields they own via earlier rule; enforce that if updating unreadNotifications, it must remain unchanged.
-    match /users/{userId} {
-      allow update: if isCurrentUser(userId) || isAdmin()
-        && (!request.resource.data.keys().hasAny(['unreadNotifications']) || request.resource.data.unreadNotifications == resource.data.unreadNotifications);
     }
 
     // Ticket Transfers: sender/recipient can read, backend-only writes

@@ -73,7 +73,6 @@ export const cacheProfileData = async (profile: ProfileData): Promise<void> => {
   try {
     const offlineProfile = convertToOfflineProfile(profile);
     await offlineStorage.cacheProfileData(offlineProfile);
-    // console.log("Profile data cached successfully");
   } catch (error) {
     console.error("Failed to cache profile data:", error);
   }
@@ -102,7 +101,6 @@ export const getCachedProfileData = async (): Promise<ProfileData | null> => {
 export const clearCachedProfileData = async (): Promise<void> => {
   try {
     await offlineStorage.clearCachedProfile();
-    // console.log("Cached profile data cleared");
   } catch (error) {
     console.error("Failed to clear cached profile data:", error);
   }
@@ -130,10 +128,6 @@ export const syncProfileData = async (
     if (onlineTimestamp > cachedTimestamp) {
       // Online data is newer, update cache
       await cacheProfileData(onlineProfile);
-      // console.log("Profile cache updated with online data");
-    } else {
-      // Cached data might have offline changes that need to be synced
-      // console.log("Cached profile data is newer - may need manual sync");
     }
   } catch (error) {
     console.error("Failed to sync profile data:", error);

@@ -70,7 +70,6 @@ export const saveCartToOfflineStorage = async (): Promise<void> => {
     const offlineItems = cartItems.map(convertToOfflineCartItem);
     await offlineStorage.saveOfflineCart(offlineItems);
 
-    // console.log("Cart saved to offline storage successfully");
   } catch (error) {
     console.error("Failed to save cart to offline storage:", error);
   }
@@ -90,7 +89,6 @@ export const loadCartFromOfflineStorage = async (): Promise<boolean> => {
     const reduxItems = offlineItems.map(convertToReduxCartItem);
     store.dispatch(updateCartItems(reduxItems));
 
-    // console.log("Cart loaded from offline storage successfully");
     return true;
   } catch (error) {
     console.error("Failed to load cart from offline storage:", error);
@@ -115,8 +113,6 @@ export const syncOfflineCartChanges = async (): Promise<void> => {
       return;
     }
 
-    // console.log(`Syncing ${cartOperations.length} offline cart operations`);
-
     // Process operations in chronological order
     const sortedOperations = cartOperations.sort(
       (a: OfflineOperation, b: OfflineOperation) => a.timestamp - b.timestamp
@@ -125,7 +121,6 @@ export const syncOfflineCartChanges = async (): Promise<void> => {
     for (const operation of sortedOperations) {
       try {
         await processOfflineCartOperation(operation);
-        // console.log(`Successfully processed operation ${operation.id}`);
       } catch (error) {
         console.error(`Failed to sync operation ${operation.id}:`, error);
 
@@ -134,7 +129,6 @@ export const syncOfflineCartChanges = async (): Promise<void> => {
       }
     }
 
-    // console.log("Offline cart sync completed");
   } catch (error) {
     console.error("Failed to sync offline cart changes:", error);
   }
@@ -150,19 +144,15 @@ const processOfflineCartOperation = async (
     case "cart_add":
       // For cart operations, we just update the local Redux state
       // since cart is ephemeral until checkout
-      // console.log("Processing offline cart add operation");
       break;
 
     case "cart_remove":
-      // console.log("Processing offline cart remove operation");
       break;
 
     case "cart_update":
-      // console.log("Processing offline cart update operation");
       break;
 
     default:
-    // console.log(`Unknown cart operation type: ${operation.type}`);
   }
 };
 
@@ -179,7 +169,6 @@ export const queueOfflineCartOperation = async (
       data,
       maxRetries: 3,
     });
-    // console.log(`Queued offline cart operation: ${type}`);
   } catch (error) {
     console.error("Failed to queue offline cart operation:", error);
   }

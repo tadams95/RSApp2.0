@@ -13,10 +13,12 @@ Notifications.setNotificationHandler({
   }),
 });
 
+export type NotificationData = Record<string, unknown>;
+
 export interface NotificationRequest {
   title: string;
   body: string;
-  data?: Record<string, any>;
+  data?: NotificationData;
   sound?: boolean;
   badge?: number;
 }

@@ -6,6 +6,7 @@ const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
 const { sendEmail } = require('./sesEmail');
 const { Resend } = require('resend');
+const { BASE_DOMAIN, LOGO_URL, EMAIL_FROM, EMAIL_REPLY_TO } = require('./emailConfig');
 
 // AWS Secrets for SES
 const AWS_ACCESS_KEY_ID = defineSecret('AWS_ACCESS_KEY_ID');
@@ -129,13 +130,13 @@ exports.sendPurchaseEmail = onDocumentWritten(
       .map((i) => `• ${toTitle(i)} × ${toQty(i)}`)
       .join(
         '\n',
-      )}\n${fmtTotal ? `Total: ${fmtTotal}\n` : ''}View tickets: https://ragestate.com/account`;
+      )}\n${fmtTotal ? `Total: ${fmtTotal}\n` : ''}View tickets: ${BASE_DOMAIN}/account`;
     const htmlContent = `
       <div style="background:#f6f6f6;padding:24px 0">
         <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #eee;font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
           <div style="display:none;max-height:0;overflow:hidden">Your tickets are ready — order ${orderNumber}</div>
           <div style="padding:16px 24px;background:#000;color:#fff;text-align:center">
-            <img src="https://firebasestorage.googleapis.com/v0/b/ragestate-app.appspot.com/o/RSLogo2.png?alt=media&token=d13ebc08-9d8d-4367-99ec-ace3627132d2" alt="RAGESTATE" width="120" style="display:inline-block;border:0;outline:none;text-decoration:none;height:auto" />
+            <img src="${LOGO_URL}" alt="RAGESTATE" width="120" style="display:inline-block;border:0;outline:none;text-decoration:none;height:auto" />
           </div>
           <div style="height:3px;background:#E12D39"></div>
           <div style="padding:24px">
@@ -145,7 +146,7 @@ exports.sendPurchaseEmail = onDocumentWritten(
             ${fmtTotal ? `<p style="margin:0 0 16px;color:#111;font-size:14px;line-height:20px"><b>Total: ${fmtTotal}</b></p>` : ''}
             <p style="margin:0 0 16px;color:#111;font-size:14px;line-height:20px">Your tickets are now in your account.</p>
             <div style="margin:0 0 8px">
-              <a href="https://ragestate.com/account" style="display:inline-block;background:#E12D39;color:#fff;text-decoration:none;padding:10px 14px;border-radius:6px;font-size:14px">View my tickets</a>
+              <a href="${BASE_DOMAIN}/account" style="display:inline-block;background:#E12D39;color:#fff;text-decoration:none;padding:10px 14px;border-radius:6px;font-size:14px">View my tickets</a>
             </div>
             <p style="margin:12px 0 0;color:#6b7280;font-size:12px;line-height:18px">If you didn't make this purchase, please reply to this email.</p>
           </div>
@@ -170,8 +171,8 @@ exports.sendPurchaseEmail = onDocumentWritten(
 
         const result = await sendEmail({
           to: recipient,
-          from: 'RAGESTATE <support@ragestate.com>',
-          replyTo: 'support@ragestate.com',
+          from: EMAIL_FROM,
+          replyTo: EMAIL_REPLY_TO,
           subject,
           text: textContent,
           html: htmlContent,
@@ -188,8 +189,8 @@ exports.sendPurchaseEmail = onDocumentWritten(
         // Fallback to Resend
         const resend = new Resend(RESEND_API_KEY.value());
         const result = await resend.emails.send({
-          from: 'RAGESTATE <support@ragestate.com>',
-          reply_to: 'support@ragestate.com',
+          from: EMAIL_FROM,
+          reply_to: EMAIL_REPLY_TO,
           to: recipient,
           subject,
           text: textContent,

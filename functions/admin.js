@@ -5,7 +5,7 @@ const admin = require('firebase-admin');
 if (!admin.apps.length) {
   admin.initializeApp({
     projectId: process.env.GCLOUD_PROJECT || 'ragestate-app',
-    storageBucket: 'ragestate-app.appspot.com',
+    storageBucket: `${process.env.GCLOUD_PROJECT || 'ragestate-app'}.appspot.com`,
   });
 }
 

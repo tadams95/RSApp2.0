@@ -22,8 +22,6 @@ import {
   getSignupErrorMessage,
   getSignupFieldError,
 } from "../../utils/firebaseErrorHandler";
-
-// import { usePushNotifications } from "../../../../notifications/PushNotifications";
 import { useDispatch } from "react-redux";
 // Updated import path for userSlice
 import { usePostHog, useScreenTracking } from "../../analytics/PostHogProvider";
@@ -58,7 +56,6 @@ export default function SignupScreen() {
   useScreenTracking("Signup Screen", {
     screen_category: "auth",
   });
-  // const { registerForPushNotifications } = usePushNotifications(); // TODO: Re-enable when notifications are set up
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -74,8 +71,7 @@ export default function SignupScreen() {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  const API_URL =
-    "https://us-central1-ragestate-app.cloudfunctions.net/stripePayment"; // TODO: Move to a config file
+  const API_URL = process.env.EXPO_PUBLIC_STRIPE_API_URL || "";
 
   useEffect(() => {
     validateForm();
@@ -299,9 +295,6 @@ export default function SignupScreen() {
         }));
         throw new Error("Please correct password issues before continuing");
       }
-
-      // const expoPushToken = await registerForPushNotifications(); // TODO: Re-enable
-      // const expoPushToken = null; // Placeholder
 
       const createdUser = await createUser(
         email,

@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useState } from "react";
-import { TransactionConflictInfo } from "../components/TransactionConflictHandler";
+import { TransactionConflictInfo } from "../../app/(app)/cart/components/TransactionConflictHandler";
 
 interface UseTransactionConflictOptions {
   onResolve?: () => void;

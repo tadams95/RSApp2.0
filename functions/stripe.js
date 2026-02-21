@@ -23,6 +23,7 @@ const {
   getWebhooks: getPrintifyWebhooks,
 } = require("./printify");
 const { runDailyAggregation } = require("./analytics");
+const { BASE_DOMAIN, LOGO_URL, EMAIL_FROM, EMAIL_REPLY_TO, ORDERS_FROM } = require("./emailConfig");
 
 // Secret Manager: define secrets. Also support process.env for local dev.
 const STRIPE_SECRET = defineSecret("STRIPE_SECRET");
@@ -46,6 +47,21 @@ function getStripe() {
     stripeClient._apiKey = key;
   }
   return stripeClient;
+}
+
+// Shared PROXY_KEY auth helper — fail-closed (blocks if key is not configured)
+function requireProxyKey(req, res) {
+  const expected = PROXY_KEY.value() || process.env.PROXY_KEY;
+  if (!expected) {
+    res.status(500).json({ error: "Server misconfiguration" });
+    return false;
+  }
+  const provided = req.get("x-proxy-key");
+  if (provided !== expected) {
+    res.status(403).json({ error: "Forbidden" });
+    return false;
+  }
+  return true;
 }
 
 // Metrics helper: increment per-event counters without failing the main path
@@ -169,14 +185,7 @@ app.get("/health", (_req, res) => {
 // Test endpoint to verify Shopify Admin API connection
 app.get("/test-shopify", async (req, res) => {
   try {
-    // Check proxy key for security
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const shopifyConfigured = isShopifyConfigured();
 
@@ -252,14 +261,7 @@ app.get("/test-shopify", async (req, res) => {
 // Test endpoint to create a DRAFT order in Shopify (safe - doesn't affect inventory)
 app.post("/test-shopify-draft-order", async (req, res) => {
   try {
-    // Check proxy key for security
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const shopName = process.env.SHOPIFY_SHOP_NAME;
     const accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
@@ -369,14 +371,7 @@ app.post("/create-payment-intent", async (req, res) => {
   try {
     const stripe = getStripe();
     if (!stripe) return res.status(503).json({ error: "Stripe disabled" });
-    // Enforce that requests come via our Next.js proxy when configured
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
     const {
       amount,
       currency = "usd",
@@ -474,14 +469,7 @@ app.post("/create-customer", async (req, res) => {
     const stripe = getStripe();
     if (!stripe) return res.status(503).json({ error: "Stripe disabled" });
 
-    // Enforce that requests come via our Next.js proxy when configured
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const { uid, email, name } = req.body || {};
     if (!email || typeof email !== "string") {
@@ -837,6 +825,7 @@ async function incrementPromoCodeUsage(promoId, promoCollection, orderNumber) {
  * Returns: { valid, discountAmount, displayCode, message }
  */
 app.post("/validate-promo-code", async (req, res) => {
+  if (!requireProxyKey(req, res)) return;
   try {
     const { code, cartTotal } = req.body;
     const cartTotalCents = parseInt(cartTotal, 10) || 0;
@@ -883,13 +872,7 @@ app.post("/finalize-order", async (req, res) => {
     const stripe = getStripe();
     if (!stripe) return res.status(503).json({ error: "Stripe disabled" });
 
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const {
       paymentIntentId,
@@ -1645,13 +1628,7 @@ app.post("/finalize-order", async (req, res) => {
 // Test utility: create a completed fulfillment to trigger email
 app.post("/test-send-purchase-email", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const { email, piId, items } = req.body || {};
     if (!email || typeof email !== "string") {
@@ -1707,13 +1684,7 @@ app.post("/test-send-purchase-email", async (req, res) => {
  */
 app.get("/transfer-preview", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const token = req.query.t;
     if (!token) {
@@ -1775,13 +1746,7 @@ app.get("/transfer-preview", async (req, res) => {
  */
 app.post("/transfer-ticket", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const {
       ragerId,
@@ -2000,7 +1965,7 @@ app.post("/transfer-ticket", async (req, res) => {
       process.env.AWS_SECRET_ACCESS_KEY = AWS_SECRET_ACCESS_KEY.value();
       process.env.AWS_SES_REGION = AWS_SES_REGION.value() || "us-east-1";
 
-      const claimUrl = `https://ragestate.com/claim-ticket?t=${result.claimToken}`;
+      const claimUrl = `${BASE_DOMAIN}/claim-ticket?t=${result.claimToken}`;
       const eventDateStr = result.eventDate?.toDate
         ? result.eventDate.toDate().toLocaleDateString("en-US", {
             weekday: "long",
@@ -2012,8 +1977,8 @@ app.post("/transfer-ticket", async (req, res) => {
 
       await sendEmail({
         to: result.recipientEmail,
-        from: "RAGESTATE <support@ragestate.com>",
-        replyTo: "support@ragestate.com",
+        from: EMAIL_FROM,
+        replyTo: EMAIL_REPLY_TO,
         subject: `🎫 ${senderName || "Someone"} sent you a ticket!`,
         text: `${senderName || "A RAGESTATE user"} sent you a ticket for ${
           result.eventName
@@ -2024,7 +1989,7 @@ app.post("/transfer-ticket", async (req, res) => {
           <div style="background:#f6f6f6;padding:24px 0">
             <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #eee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
               <div style="padding:16px 24px;background:#000;color:#fff;text-align:center">
-                <img src="https://firebasestorage.googleapis.com/v0/b/ragestate-app.appspot.com/o/RSLogo2.png?alt=media&token=d13ebc08-9d8d-4367-99ec-ace3627132d2" alt="RAGESTATE" width="120" style="display:inline-block;border:0;outline:none;text-decoration:none;height:auto" />
+                <img src="${LOGO_URL}" alt="RAGESTATE" width="120" style="display:inline-block;border:0;outline:none;text-decoration:none;height:auto" />
               </div>
               <div style="height:3px;background:#E12D39"></div>
               <div style="padding:24px">
@@ -2145,13 +2110,7 @@ app.post("/transfer-ticket", async (req, res) => {
  */
 app.post("/cancel-transfer", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const { transferId, senderUserId, isAdmin } = req.body || {};
 
@@ -2283,13 +2242,7 @@ app.post("/cancel-transfer", async (req, res) => {
  */
 app.post("/resend-transfer-email", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const { transferId, senderUserId } = req.body || {};
 
@@ -2384,7 +2337,7 @@ app.post("/resend-transfer-email", async (req, res) => {
     process.env.AWS_SECRET_ACCESS_KEY = AWS_SECRET_ACCESS_KEY.value();
     process.env.AWS_SES_REGION = AWS_SES_REGION.value() || "us-east-1";
 
-    const claimUrl = `https://ragestate.com/claim-ticket?t=${newClaimToken}`;
+    const claimUrl = `${BASE_DOMAIN}/claim-ticket?t=${newClaimToken}`;
     const senderName = transferData.fromName || "Someone";
     const eventDateStr = transferData.eventDate?.toDate
       ? transferData.eventDate.toDate().toLocaleDateString("en-US", {
@@ -2397,8 +2350,8 @@ app.post("/resend-transfer-email", async (req, res) => {
 
     await sendEmail({
       to: transferData.toEmail,
-      from: "RAGESTATE <support@ragestate.com>",
-      replyTo: "support@ragestate.com",
+      from: EMAIL_FROM,
+      replyTo: EMAIL_REPLY_TO,
       subject: `🎫 Reminder: ${senderName} sent you a ticket!`,
       text: `${senderName} sent you a ticket for ${transferData.eventName}${
         eventDateStr ? ` on ${eventDateStr}` : ""
@@ -2409,7 +2362,7 @@ app.post("/resend-transfer-email", async (req, res) => {
         <div style="background:#f6f6f6;padding:24px 0">
           <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #eee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
             <div style="padding:16px 24px;background:#000;color:#fff;text-align:center">
-              <img src="https://firebasestorage.googleapis.com/v0/b/ragestate-app.appspot.com/o/RSLogo2.png?alt=media&token=d13ebc08-9d8d-4367-99ec-ace3627132d2" alt="RAGESTATE" width="120" style="display:inline-block;border:0;outline:none;text-decoration:none;height:auto" />
+              <img src="${LOGO_URL}" alt="RAGESTATE" width="120" style="display:inline-block;border:0;outline:none;text-decoration:none;height:auto" />
             </div>
             <div style="height:3px;background:#E12D39"></div>
             <div style="padding:24px">
@@ -2465,13 +2418,7 @@ app.post("/resend-transfer-email", async (req, res) => {
  */
 app.post("/claim-ticket", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const { claimToken, claimerUserId, claimerEmail, claimerName } =
       req.body || {};
@@ -2628,19 +2575,19 @@ app.post("/claim-ticket", async (req, res) => {
 
         await sendEmail({
           to: transferData.fromEmail,
-          from: "RAGESTATE <support@ragestate.com>",
-          replyTo: "support@ragestate.com",
+          from: EMAIL_FROM,
+          replyTo: EMAIL_REPLY_TO,
           subject: `✅ Your ticket transfer was claimed`,
           text: `${
             claimerName || claimerEmail || "The recipient"
           } has claimed the ticket you sent for ${
             result.eventName
-          }.\n\nView your tickets: https://ragestate.com/account`,
+          }.\n\nView your tickets: ${BASE_DOMAIN}/account`,
           html: `
             <div style="background:#f6f6f6;padding:24px 0">
               <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #eee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
                 <div style="padding:16px 24px;background:#000;color:#fff;text-align:center">
-                  <img src="https://firebasestorage.googleapis.com/v0/b/ragestate-app.appspot.com/o/RSLogo2.png?alt=media&token=d13ebc08-9d8d-4367-99ec-ace3627132d2" alt="RAGESTATE" width="120" style="display:inline-block;border:0;outline:none;text-decoration:none;height:auto" />
+                  <img src="${LOGO_URL}" alt="RAGESTATE" width="120" style="display:inline-block;border:0;outline:none;text-decoration:none;height:auto" />
                 </div>
                 <div style="height:3px;background:#E12D39"></div>
                 <div style="padding:24px">
@@ -2653,7 +2600,7 @@ app.post("/claim-ticket", async (req, res) => {
           }</b>.
                   </p>
                   <div style="margin:16px 0">
-                    <a href="https://ragestate.com/account" style="display:inline-block;background:#E12D39;color:#fff;text-decoration:none;padding:10px 14px;border-radius:6px;font-size:14px">View My Tickets</a>
+                    <a href="${BASE_DOMAIN}/account" style="display:inline-block;background:#E12D39;color:#fff;text-decoration:none;padding:10px 14px;border-radius:6px;font-size:14px">View My Tickets</a>
                   </div>
                 </div>
               </div>
@@ -2727,13 +2674,7 @@ app.post("/claim-ticket", async (req, res) => {
 // Admin utility: manually create a ticket + purchase for a user and event
 app.post("/manual-create-ticket", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const {
       uid,
@@ -2953,13 +2894,7 @@ app.post("/manual-create-ticket", async (req, res) => {
 // Scan ticket: atomically consume one use for a rager identified by ticketToken
 app.post("/scan-ticket", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const {
       token,
@@ -3201,13 +3136,7 @@ app.post("/scan-ticket", async (req, res) => {
 // Preview tickets for a user at an event (no mutation)
 app.post("/scan-ticket/preview", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const { userId, eventId } = req.body || {};
     if (!userId || !eventId) {
@@ -3277,13 +3206,7 @@ app.post("/scan-ticket/preview", async (req, res) => {
 // Admin: backfill ticketToken/usedCount for an event's ragers and ensure token mapping
 app.post("/backfill-ticket-tokens", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const { eventId, dryRun } = req.body || {};
     if (!eventId || typeof eventId !== "string") {
@@ -3395,13 +3318,7 @@ app.post("/backfill-ticket-tokens", async (req, res) => {
 // Call once after deploy to set up webhook listeners
 app.post("/register-printify-webhooks", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     if (!isPrintifyConfigured()) {
       return res.status(503).json({ error: "Printify not configured" });
@@ -3464,13 +3381,7 @@ app.post("/register-printify-webhooks", async (req, res) => {
 // Admin: list registered Printify webhooks
 app.get("/printify-webhooks", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     if (!isPrintifyConfigured()) {
       return res.status(503).json({ error: "Printify not configured" });
@@ -3489,13 +3400,7 @@ app.get("/printify-webhooks", async (req, res) => {
 // Admin: reconcile eventUsers summaries for a specific event from ragers
 app.post("/reconcile-event-users", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const { eventId, dryRun } = req.body || {};
     if (!eventId || typeof eventId !== "string") {
@@ -3671,14 +3576,7 @@ function generateOrderNumber() {
 // ─────────────────────────────────────────────────────────────────────────────
 app.post("/send-campaign", async (req, res) => {
   try {
-    // Verify proxy key (admin-only endpoint)
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const { subject, text, html, recipients } = req.body || {};
 
@@ -3719,8 +3617,8 @@ app.post("/send-campaign", async (req, res) => {
     // Send via SES bulk email
     const results = await sendBulkEmail({
       recipients: validRecipients,
-      from: "RAGESTATE <orders@ragestate.com>",
-      replyTo: "support@ragestate.com",
+      from: ORDERS_FROM,
+      replyTo: EMAIL_REPLY_TO,
       subject,
       text,
       html,
@@ -3754,13 +3652,7 @@ app.post("/send-campaign", async (req, res) => {
 // Admin: manually trigger daily analytics aggregation
 app.post("/run-daily-aggregation", async (req, res) => {
   try {
-    const expectedProxyKey = PROXY_KEY.value() || process.env.PROXY_KEY;
-    if (expectedProxyKey) {
-      const provided = req.get("x-proxy-key");
-      if (!provided || provided !== expectedProxyKey) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    if (!requireProxyKey(req, res)) return;
 
     const { date } = req.body || {};
 

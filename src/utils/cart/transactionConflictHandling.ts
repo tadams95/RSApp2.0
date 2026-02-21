@@ -5,8 +5,8 @@
  */
 
 // Components
-export { default as CheckoutTransactionHandler } from "./components/CheckoutTransactionHandler";
-export { default as TransactionConflictHandler } from "./components/TransactionConflictHandler";
+export { default as CheckoutTransactionHandler } from "../../app/(app)/cart/components/CheckoutTransactionHandler";
+export { default as TransactionConflictHandler } from "../../app/(app)/cart/components/TransactionConflictHandler";
 
 // Hooks
 export { useTransactionConflict } from "../../hooks/cart/useTransactionConflict";
@@ -25,7 +25,5 @@ export {
   detectConcurrentModification,
   hasFieldChanged,
 } from "./transactionConflictDetection";
-export { processOrderWithConflictHandling } from "./transactionConflictExample";
-
 // Types
 export type { TransactionConflictInfo } from "../../app/(app)/cart/components/TransactionConflictHandler";

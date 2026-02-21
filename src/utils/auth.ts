@@ -227,7 +227,7 @@ export async function loginUser(
           false, // isNewDevice - could be enhanced with device tracking
           false // isSuspiciousActivity
         );
-        console.log("Login notification sent");
+        if (__DEV__) console.log("Login notification sent");
       } catch (notificationError) {
         console.error("Failed to send login notification:", notificationError);
         // Don't block login flow if notification fails

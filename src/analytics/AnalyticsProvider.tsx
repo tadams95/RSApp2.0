@@ -4,7 +4,7 @@ import { logEvent, setUserId, setUserProperties } from "firebase/analytics";
 import React, { createContext, ReactNode, useContext } from "react";
 import { analytics } from "../firebase/firebase";
 
-type EventParams = Record<string, any>;
+type EventParams = Record<string, string | number | boolean | null>;
 
 interface AnalyticsContextType {
   logEvent: (name: string, params?: EventParams) => Promise<void>;
@@ -13,7 +13,7 @@ interface AnalyticsContextType {
     transactionId: string;
     value: number;
     currency: string;
-    items: any[];
+    items: EventParams[];
   }) => Promise<void>;
   logAddToCart: (params: {
     itemId: string;
@@ -49,7 +49,7 @@ export const AnalyticsProvider = ({ children }: AnalyticsProviderProps) => {
       if (analytics) {
         await logEvent(analytics, name as any, params);
       } else {
-        console.log("Analytics not available, event would be:", name, params);
+        if (__DEV__) console.log("Analytics not available, event would be:", name, params);
       }
     } catch (error) {
       console.error("Analytics error:", error);
@@ -64,10 +64,7 @@ export const AnalyticsProvider = ({ children }: AnalyticsProviderProps) => {
           screen_class: screenClass || screenName,
         });
       } else {
-        console.log(
-          "Analytics not available, screen view would be:",
-          screenName
-        );
+        if (__DEV__) console.log("Analytics not available, screen view would be:", screenName);
       }
     } catch (error) {
       console.error("Screen view log error:", error);
@@ -78,7 +75,7 @@ export const AnalyticsProvider = ({ children }: AnalyticsProviderProps) => {
     transactionId: string;
     value: number;
     currency: string;
-    items: any[];
+    items: EventParams[];
   }) => {
     try {
       if (analytics) {
@@ -89,7 +86,7 @@ export const AnalyticsProvider = ({ children }: AnalyticsProviderProps) => {
           items: params.items,
         });
       } else {
-        console.log("Analytics not available, purchase would be:", params);
+        if (__DEV__) console.log("Analytics not available, purchase would be:", params);
       }
     } catch (error) {
       console.error("Purchase log error:", error);
@@ -115,7 +112,7 @@ export const AnalyticsProvider = ({ children }: AnalyticsProviderProps) => {
           currency: params.currency || "USD",
         });
       } else {
-        console.log("Analytics not available, add to cart would be:", params);
+        if (__DEV__) console.log("Analytics not available, add to cart would be:", params);
       }
     } catch (error) {
       console.error("Add to cart log error:", error);
@@ -127,11 +124,7 @@ export const AnalyticsProvider = ({ children }: AnalyticsProviderProps) => {
       if (analytics) {
         await setUserProperties(analytics, { [name]: value });
       } else {
-        console.log(
-          "Analytics not available, user property would be:",
-          name,
-          value
-        );
+        if (__DEV__) console.log("Analytics not available, user property would be:", name, value);
       }
     } catch (error) {
       console.error("Set user property error:", error);
@@ -143,7 +136,7 @@ export const AnalyticsProvider = ({ children }: AnalyticsProviderProps) => {
       if (analytics) {
         await setUserId(analytics, id);
       } else {
-        console.log("Analytics not available, user ID would be:", id);
+        if (__DEV__) console.log("Analytics not available, user ID would be:", id);
       }
     } catch (error) {
       console.error("Set user ID error:", error);

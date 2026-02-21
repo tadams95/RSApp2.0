@@ -150,8 +150,6 @@ export class OfflineStorage {
    * Handle reconnection - sync offline data
    */
   private async handleReconnection() {
-    // console.log("Network reconnected - starting offline sync");
-
     try {
       // Run all registered sync callbacks
       await Promise.all(
@@ -168,7 +166,6 @@ export class OfflineStorage {
       // Update last sync timestamp
       await this.updateLastSyncTime();
 
-      // console.log("Offline sync completed successfully");
     } catch (error) {
       console.error("Error during offline sync:", error);
     }
@@ -212,7 +209,6 @@ export class OfflineStorage {
         STORAGE_KEYS.CART_OFFLINE,
         JSON.stringify(cartData)
       );
-      // console.log(`Saved ${items.length} cart items offline`);
     } catch (error) {
       console.error("Failed to save offline cart:", error);
       throw error;
@@ -327,7 +323,6 @@ export class OfflineStorage {
         STORAGE_KEYS.PROFILE_CACHE,
         JSON.stringify(cachedProfile)
       );
-      // console.log("Profile data cached for offline access");
     } catch (error) {
       console.error("Failed to cache profile data:", error);
       throw error;
@@ -401,7 +396,6 @@ export class OfflineStorage {
         STORAGE_KEYS.PRODUCTS_CACHE,
         JSON.stringify(limitedProducts)
       );
-      // console.log(`Cached product: ${product.title}`);
     } catch (error) {
       console.error("Failed to cache product:", error);
       throw error;
@@ -509,7 +503,6 @@ export class OfflineStorage {
         STORAGE_KEYS.OFFLINE_QUEUE,
         JSON.stringify(queue)
       );
-      // console.log(`Added operation to offline queue: ${newOperation.type}`);
     } catch (error) {
       console.error("Failed to add operation to offline queue:", error);
       throw error;
@@ -534,7 +527,6 @@ export class OfflineStorage {
    */
   async processOfflineQueue(): Promise<void> {
     if (!this.isOnline()) {
-      // console.log("Cannot process offline queue - device is offline");
       return;
     }
 
@@ -542,15 +534,12 @@ export class OfflineStorage {
       const queue = await this.getOfflineQueue();
       if (queue.length === 0) return;
 
-      // console.log(`Processing ${queue.length} offline operations`);
-
       const processedOperations: string[] = [];
 
       for (const operation of queue) {
         try {
           await this.processOfflineOperation(operation);
           processedOperations.push(operation.id);
-          // console.log(`Processed offline operation: ${operation.type}`);
         } catch (error) {
           console.error(`Failed to process operation ${operation.id}:`, error);
 
@@ -561,9 +550,6 @@ export class OfflineStorage {
 
           // Remove operation if max retries exceeded
           if (operation.retryCount >= operation.maxRetries) {
-            // console.log(
-            //   `Max retries exceeded for operation ${operation.id}, removing from queue`
-            // );
             processedOperations.push(operation.id);
           }
         }
@@ -590,10 +576,6 @@ export class OfflineStorage {
   private async processOfflineOperation(
     operation: OfflineOperation
   ): Promise<void> {
-    // This method should be overridden by specific implementations
-    // or use a callback system to handle different operation types
-    // console.log(`Processing operation: ${operation.type}`, operation.data);
-
     // Placeholder - specific handlers should be implemented
     switch (operation.type) {
       case "cart_add":
@@ -679,7 +661,6 @@ export class OfflineStorage {
         this.clearOfflineQueue(),
         AsyncStorage.removeItem(STORAGE_KEYS.LAST_SYNC),
       ]);
-      // console.log("All offline data cleared");
     } catch (error) {
       console.error("Failed to clear all offline data:", error);
     }

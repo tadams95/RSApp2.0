@@ -92,7 +92,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       // Default error UI - use ThemeContext.Consumer for class component
       return (
         <ThemeContext.Consumer>
-          {({ theme }) => {
+          {(value) => {
+            if (!value) return null;
+            const { theme } = value;
             const styles = createStyles(theme);
             return (
               <Surface style={styles.container}>

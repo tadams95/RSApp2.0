@@ -30,6 +30,7 @@ export interface ThemeColors {
   textPrimary: string;
   textSecondary: string;
   textTertiary: string;
+  textInverse: string;
 
   // Brand (from --accent*)
   accent: string;
@@ -206,6 +207,7 @@ export const darkTheme: Theme = {
     textPrimary: "#f5f6f7",
     textSecondary: "#a1a5ab",
     textTertiary: "#5d6269",
+    textInverse: "#FFFFFF",
 
     // Brand (from --accent*) - RAGESTATE red
     accent: "#ff1f42",
@@ -298,6 +300,7 @@ export const lightTheme: Theme = {
     textPrimary: "#111113",
     textSecondary: "#555555",
     textTertiary: "#888888",
+    textInverse: "#000000",
 
     // Brand (preserved - RAGESTATE red)
     accent: "#ff1f42",

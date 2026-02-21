@@ -39,28 +39,29 @@ import { initializeOfflineCartSync } from "../utils/offlineCartSync";
 // Setup FCM background handler - MUST be called at module level (outside components)
 setupBackgroundHandler();
 
-// Suppress PostHog's getCurrentRoute error logs (harmless navigation tracking incompatibility with Expo Router)
-LogBox.ignoreLogs([
-  "getCurrentRoute is not a function",
-  "Warning: getCurrentRoute is not a function",
-  "getCurrentRoute error",
-  "navigation.getCurrentRoute is not a function",
-  "TypeError: navigation.getCurrentRoute is not a function",
-]);
+if (__DEV__) {
+  // Suppress PostHog's getCurrentRoute error logs (harmless navigation tracking incompatibility with Expo Router)
+  LogBox.ignoreLogs([
+    "getCurrentRoute is not a function",
+    "Warning: getCurrentRoute is not a function",
+    "getCurrentRoute error",
+    "navigation.getCurrentRoute is not a function",
+    "TypeError: navigation.getCurrentRoute is not a function",
+  ]);
 
-// Override console.error to suppress PostHog getCurrentRoute errors
-const originalConsoleError = console.error;
-console.error = (...args) => {
-  const message = args.join(" ");
-  if (
-    message.includes("getCurrentRoute") ||
-    message.includes("navigation.getCurrentRoute is not a function")
-  ) {
-    // Suppress PostHog getCurrentRoute errors - these are harmless
-    return;
-  }
-  originalConsoleError(...args);
-};
+  // Override console.error to suppress PostHog getCurrentRoute errors
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    const message = args.join(" ");
+    if (
+      message.includes("getCurrentRoute") ||
+      message.includes("navigation.getCurrentRoute is not a function")
+    ) {
+      return;
+    }
+    originalConsoleError(...args);
+  };
+}
 
 // Prevent auto-hide of splash screen
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -169,7 +170,7 @@ export default function RootLayout() {
                   await Updates.fetchUpdateAsync();
                   await Updates.reloadAsync();
                 } catch (error) {
-                  console.log("Error fetching or reloading update:", error);
+                  if (__DEV__) console.log("Error fetching or reloading update:", error);
                 }
               },
             },
@@ -177,7 +178,7 @@ export default function RootLayout() {
         );
       }
     } catch (error) {
-      console.log("Error checking for updates:", error);
+      if (__DEV__) console.log("Error checking for updates:", error);
     }
   }
 
@@ -197,7 +198,7 @@ export default function RootLayout() {
     const handleDeepLink = (event: { url: string }) => {
       try {
         const parsed = Linking.parse(event.url);
-        console.log("Deep link received:", parsed);
+        if (__DEV__) console.log("Deep link received:", parsed);
 
         // Handle transfer claim URLs
         // ragestate://transfer/{transferId}?token={claimToken}

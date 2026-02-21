@@ -11,7 +11,4 @@ module.exports = {
   scheduledRateLimitCleanup: require("./rateLimit").scheduledRateLimitCleanup,
   // Analytics aggregation (scheduled daily at 2 AM UTC)
   aggregateDailyMetrics: require("./analytics").aggregateDailyMetrics,
-  // One-time backfill for comments (run once, then remove)
-  backfillCommentsUserData:
-    require("./backfillComments").backfillCommentsUserData,
 };

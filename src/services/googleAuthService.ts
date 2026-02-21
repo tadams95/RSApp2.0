@@ -256,7 +256,7 @@ export async function signOutGoogle(): Promise<void> {
     await GoogleSignin.signOut();
   } catch (error) {
     // Silently fail - user might not have signed in with Google
-    console.log("Google sign out error (non-critical):", error);
+    if (__DEV__) console.log("Google sign out error (non-critical):", error);
   }
 }
 

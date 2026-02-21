@@ -50,12 +50,14 @@ export function initializeErrorReporting(): void {
   }
 }
 
+type ErrorContext = Record<string, string | number | boolean | null | undefined>;
+
 /**
  * Capture an exception and send to Crashlytics
  */
 export function captureException(
   error: Error,
-  context?: Record<string, any>,
+  context?: ErrorContext,
 ): void {
   // Always log to console in dev
   if (__DEV__) {
@@ -118,7 +120,7 @@ export function setUser(userId: string | null, email?: string): void {
 export function addBreadcrumb(
   message: string,
   category?: string,
-  data?: Record<string, any>,
+  data?: ErrorContext,
 ): void {
   const crashlytics = getCrashlytics();
   if (!crashlytics) return;

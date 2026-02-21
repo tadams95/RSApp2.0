@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-// TODO: Update this path when auth utilities are moved to src
 import { usePostHog, useScreenTracking } from "../../analytics/PostHogProvider";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import PasswordResetErrorNotice from "../../components/PasswordResetErrorNotice";
@@ -252,11 +251,11 @@ const createStyles = (theme: import("../../constants/themes").Theme) => ({
     fontFamily,
   },
   inputError: {
-    borderColor: theme.colors.error,
+    borderColor: theme.colors.danger,
     borderWidth: 1,
   },
   errorText: {
-    color: theme.colors.error,
+    color: theme.colors.danger,
     fontSize: 12,
     marginTop: 4,
     fontFamily,

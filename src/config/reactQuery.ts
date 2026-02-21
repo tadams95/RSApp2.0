@@ -44,6 +44,8 @@ export const queryClient = new QueryClient({
   },
 });
 
+type QueryFilters = Record<string, string | number | boolean | null | undefined>;
+
 /**
  * Query keys factory for consistent key management
  * This helps with invalidation and ensures consistent caching
@@ -53,7 +55,7 @@ export const queryKeys = {
   products: {
     all: ["products"] as const,
     lists: () => [...queryKeys.products.all, "list"] as const,
-    list: (filters: Record<string, any>) =>
+    list: (filters: QueryFilters) =>
       [...queryKeys.products.lists(), { filters }] as const,
     details: () => [...queryKeys.products.all, "detail"] as const,
     detail: (handle: string) =>
@@ -67,7 +69,7 @@ export const queryKeys = {
   events: {
     all: ["events"] as const,
     lists: () => [...queryKeys.events.all, "list"] as const,
-    list: (filters: Record<string, any>) =>
+    list: (filters: QueryFilters) =>
       [...queryKeys.events.lists(), { filters }] as const,
     details: () => [...queryKeys.events.all, "detail"] as const,
     detail: (id: string) => [...queryKeys.events.details(), id] as const,

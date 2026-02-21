@@ -29,6 +29,9 @@ try {
   logger.warn("fluent-ffmpeg or ffmpeg-static not available", err);
 }
 
+// Storage bucket name derived from project ID
+const STORAGE_BUCKET = `${process.env.GCLOUD_PROJECT || "ragestate-app"}.appspot.com`;
+
 // GCS bucket reference
 const bucket = admin.storage().bucket();
 
@@ -191,7 +194,7 @@ async function transcodeVideo(inputPath, outputPath) {
  */
 exports.onVideoUpload = onObjectFinalized(
   {
-    bucket: "ragestate-app.appspot.com",
+    bucket: STORAGE_BUCKET,
     region: "us-central1",
     memory: "2GiB", // Video processing needs more memory
     timeoutSeconds: 540, // 9 minutes max (Cloud Functions limit)
@@ -229,7 +232,7 @@ exports.onVideoUpload = onObjectFinalized(
     // For flat format (posts/{filename}), query Firestore to find the post
     if (!postId) {
       // Construct the Storage URL to search for
-      const bucketName = "ragestate-app.appspot.com";
+      const bucketName = STORAGE_BUCKET;
       const possibleUrls = [
         `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(
           filePath
@@ -330,7 +333,7 @@ exports.onVideoUpload = onObjectFinalized(
       await bucket.file(optimizedPath).makePublic();
 
       // Get the public URL
-      const optimizedUrl = `https://storage.googleapis.com/ragestate-app.appspot.com/${optimizedPath}`;
+      const optimizedUrl = `https://storage.googleapis.com/${STORAGE_BUCKET}/${optimizedPath}`;
 
       // Update Firestore with optimized URL and clear processing flag
       await updatePostProcessingStatus(postId, false, optimizedUrl);

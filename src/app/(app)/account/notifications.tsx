@@ -14,8 +14,8 @@ import {
 import { usePostHog } from "../../../analytics/PostHogProvider";
 import { SettingsSection, SettingsToggle } from "../../../components/ui";
 import { useTheme } from "../../../contexts/ThemeContext";
-import { useAuth } from "../../../hooks/AuthContext";
 import { useNotificationSettings } from "../../../hooks/useNotificationSettings";
+import { auth } from "../../../firebase/firebase";
 import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { NotificationSettings } from "../../../services/notificationSettingsService";
 
@@ -31,7 +31,6 @@ export default function NotificationSettingsScreen() {
   const { settings, isLoading, error, updateSetting, refetch } =
     useNotificationSettings();
   const [isSendingTest, setIsSendingTest] = useState(false);
-  const { user } = useAuth();
 
   // Handle test push notification
   const handleTestPush = async () => {
@@ -89,8 +88,9 @@ export default function NotificationSettingsScreen() {
       try {
         const { registerForPushNotifications } =
           await import("../../../services/pushNotificationService");
-        if (user?.uid) {
-          await registerForPushNotifications(user.uid);
+        const currentUser = auth.currentUser;
+        if (currentUser?.uid) {
+          await registerForPushNotifications(currentUser.uid);
         }
       } catch (err) {
         console.warn("Failed to register for push on toggle:", err);

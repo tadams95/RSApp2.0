@@ -83,7 +83,7 @@ const getPostHogConfig = (): PostHogConfig => {
 
   // Using your actual PostHog API key
   const config: PostHogConfig = {
-    apiKey: "phc_n3ZNMlJsdU3Hmu8kGALUrIDobcNEcgMxfzhUhXLtsMB",
+    apiKey: process.env.EXPO_PUBLIC_POSTHOG_API_KEY || "",
     host: "https://us.i.posthog.com",
     enableDebug: isDevelopment,
     captureAppLifecycleEvents: true,
@@ -104,11 +104,11 @@ const OFFLINE_EVENTS_KEY = "posthog_offline_events";
 
 // Utility function to filter out undefined values for PostHog compatibility
 const sanitizeProperties = (
-  properties?: Record<string, any>
-): Record<string, any> | undefined => {
+  properties?: Record<string, string | number | boolean | null | undefined>
+): AnalyticsProperties | undefined => {
   if (!properties) return undefined;
 
-  const sanitized: Record<string, any> = {};
+  const sanitized: AnalyticsProperties = {};
   for (const [key, value] of Object.entries(properties)) {
     if (value !== undefined) {
       sanitized[key] = value;
@@ -237,7 +237,7 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
       await processOfflineEvents();
 
       isInitialized.current = true;
-      console.log("PostHog enhancements initialized successfully");
+      if (__DEV__) console.log("PostHog enhancements initialized successfully");
     } catch (error) {
       console.error("PostHog enhancement initialization failed:", error);
     }
@@ -341,7 +341,7 @@ const EnhancedPostHogInnerProvider: React.FC<{ children: ReactNode }> = ({
         // Clear processed events
         offlineEventsRef.current = [];
         await AsyncStorage.removeItem(OFFLINE_EVENTS_KEY);
-        console.log("Processed offline events successfully");
+        if (__DEV__) console.log("Processed offline events successfully");
       }
     } catch (error) {
       console.error("Failed to process offline events:", error);

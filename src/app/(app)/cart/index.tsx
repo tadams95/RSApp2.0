@@ -100,7 +100,7 @@ import {
 } from "../../../utils/cart/orderIdempotency";
 import CartReconciliationHandler from "./components/CartReconciliationHandler";
 import CartRecoveryModal from "./components/CartRecoveryModal";
-import CartRecoveryTester from "./components/CartRecoveryTester";
+
 import PaymentErrorHandler from "./components/PaymentErrorHandler";
 
 // Define interfaces for TypeScript
@@ -1930,8 +1930,6 @@ export default function CartScreen() {
           />
         )}
 
-        {/* Development Testing Tool - only visible in development */}
-        {process.env.NODE_ENV !== "production" && <CartRecoveryTester />}
       </View>
     </StripeProvider>
   );
