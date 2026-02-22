@@ -24,13 +24,15 @@ exports.onRagerCreated = onDocumentCreated(
       return null;
     }
 
+    const ticketQuantity = ragerData.ticketQuantity || 1;
+
     try {
       // Write to both customers (private) and profiles (public) so that
       // eventsAttended is readable when viewing other users' profiles
       const batch = db.batch();
       const statsUpdate = {
         stats: {
-          eventsAttended: admin.firestore.FieldValue.increment(1),
+          eventsAttended: admin.firestore.FieldValue.increment(ticketQuantity),
         },
       };
       batch.set(db.collection("customers").doc(userId), statsUpdate, {

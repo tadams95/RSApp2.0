@@ -20,8 +20,34 @@ const {
   applicationDefault,
 } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
 
-// Try to use application default credentials, fall back to project-only init
+// Set up credentials before initializing the Admin SDK.
+// If GOOGLE_APPLICATION_CREDENTIALS is not set, try the Firebase CLI's stored refresh token.
+if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  try {
+    const configPath = path.join(
+      os.homedir(),
+      ".config/configstore/firebase-tools.json",
+    );
+    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    if (config.tokens && config.tokens.refresh_token) {
+      const adcJson = JSON.stringify({
+        type: "authorized_user",
+        client_id: "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com",
+        client_secret: "j9iVZfS8kkCEFUPaAeJV0sAi",
+        refresh_token: config.tokens.refresh_token,
+      });
+      const tmpFile = path.join(os.tmpdir(), "firebase-adc-tmp.json");
+      fs.writeFileSync(tmpFile, adcJson, { mode: 0o600 });
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = tmpFile;
+      console.log("Using Firebase CLI refresh token for auth");
+    }
+  } catch (_) {}
+}
+
 let app;
 try {
   app = initializeApp({
@@ -29,10 +55,7 @@ try {
     projectId: "ragestate-app",
   });
 } catch (e) {
-  // Fall back to just project ID (works with emulators or when running via firebase CLI)
-  app = initializeApp({
-    projectId: "ragestate-app",
-  });
+  app = initializeApp({ projectId: "ragestate-app" });
 }
 
 const db = getFirestore(app);
@@ -49,12 +72,12 @@ async function backfillAttendingCounts() {
 
     for (const eventDoc of eventsSnapshot.docs) {
       try {
-        // Count ragers in subcollection
-        const ragersSnapshot = await eventDoc.ref
-          .collection("ragers")
-          .count()
-          .get();
-        const attendingCount = ragersSnapshot.data().count;
+        // Read all rager docs and sum ticketQuantity (fallback to 1 for legacy docs missing the field)
+        const ragersSnapshot = await eventDoc.ref.collection("ragers").get();
+        let attendingCount = 0;
+        ragersSnapshot.forEach((doc) => {
+          attendingCount += doc.data().ticketQuantity || 1;
+        });
 
         // Update the event document
         await eventDoc.ref.update({

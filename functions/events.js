@@ -70,9 +70,12 @@ exports.updateAttendingCount = onDocumentWritten(
     try {
       const eventRef = db.doc(`events/${eventId}`);
 
-      // Use the count() aggregation query for efficiency (doesn't read all docs)
-      const ragersSnapshot = await eventRef.collection("ragers").count().get();
-      const attendingCount = ragersSnapshot.data().count;
+      // Read all rager docs and sum ticketQuantity (fallback to 1 for legacy docs missing the field)
+      const ragersSnapshot = await eventRef.collection("ragers").get();
+      let attendingCount = 0;
+      ragersSnapshot.forEach((doc) => {
+        attendingCount += doc.data().ticketQuantity || 1;
+      });
 
       // Update the parent event document with the new count
       await eventRef.update({
@@ -122,11 +125,12 @@ exports.backfillAttendingCounts = onCall(async (request) => {
 
     for (const eventDoc of eventsSnapshot.docs) {
       try {
-        const ragersSnapshot = await eventDoc.ref
-          .collection("ragers")
-          .count()
-          .get();
-        const attendingCount = ragersSnapshot.data().count;
+        // Read all rager docs and sum ticketQuantity (fallback to 1 for legacy docs missing the field)
+        const ragersSnapshot = await eventDoc.ref.collection("ragers").get();
+        let attendingCount = 0;
+        ragersSnapshot.forEach((doc) => {
+          attendingCount += doc.data().ticketQuantity || 1;
+        });
 
         await eventDoc.ref.update({
           attendingCount: attendingCount,
