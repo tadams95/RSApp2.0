@@ -30,6 +30,7 @@ import {
   Notification,
   subscribeToNotifications,
 } from "../../../services/inAppNotificationService";
+import { routeFromNotificationData } from "../../../utils/deepLinkRouter";
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
@@ -112,17 +113,14 @@ export default function NotificationsScreen() {
         }
       }
 
-      // Navigate based on notification type
-      const { data, type } = notification;
-
-      if (data.postId) {
-        router.push(`/social/post/${data.postId}`);
-      } else if (data.transferId) {
-        router.push(`/transfer/claim/${data.transferId}`);
-      } else if (data.eventId) {
-        router.push(`/events/${data.eventId}`);
-      } else if (data.actorId) {
+      // Navigate based on notification data
+      // For follower notifications (actorId only, no postId), route within the
+      // notifications tab so the back button returns to the notifications list
+      const data = notification.data as Record<string, string>;
+      if (data.actorId && !data.postId) {
         router.push(`/notifications/profile/${data.actorId}`);
+      } else {
+        routeFromNotificationData(data);
       }
     },
     [posthog, router],

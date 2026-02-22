@@ -1,5 +1,12 @@
 import * as Notifications from "expo-notifications";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+  writeBatch,
+} from "firebase/firestore";
 import { NativeModules, Platform } from "react-native";
 import { db } from "../firebase/firebase";
 
@@ -404,17 +411,20 @@ export async function unregisterPushNotifications(
   }
   try {
     await messaging().deleteToken();
-    // Optionally delete token from Firestore
-    await setDoc(
-      doc(db, "users", userId, "tokens", "fcm"),
-      {
-        token: null,
-        lastUpdated: serverTimestamp(),
-        deleted: true,
-      },
-      { merge: true },
-    );
-    console.log("FCM token deleted");
+    // Disable all device docs for this user (matches Cloud Function read path)
+    const devicesRef = collection(db, "users", userId, "devices");
+    const devicesSnap = await getDocs(devicesRef);
+    if (!devicesSnap.empty) {
+      const batch = writeBatch(db);
+      devicesSnap.docs.forEach((d) => {
+        batch.update(d.ref, {
+          enabled: false,
+          disabledAt: serverTimestamp(),
+        });
+      });
+      await batch.commit();
+    }
+    console.log("FCM token deleted and devices disabled");
   } catch (error) {
     console.error("Error deleting FCM token:", error);
   }

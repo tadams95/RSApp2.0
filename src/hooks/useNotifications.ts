@@ -13,6 +13,10 @@ import {
   setExpoPushToken,
 } from "../store/redux/userSlice";
 import { updateUserData } from "../utils/auth";
+import {
+  NotificationRouteData,
+  routeFromNotificationData,
+} from "../utils/deepLinkRouter";
 import { useAuth } from "./AuthContext";
 
 export interface NotificationPermissionResult {
@@ -175,28 +179,11 @@ export const useNotifications = (): UseNotificationsReturn => {
 
   // Handle notification responses (when user taps notification)
   const handleNotificationResponse = (
-    response: Notifications.NotificationResponse
+    response: Notifications.NotificationResponse,
   ) => {
     const data = response.notification.request.content.data;
-
-    // Route based on notification type
-    if (data?.type) {
-      switch (data.type) {
-        case "cart_abandonment":
-          // Navigate to cart
-          console.log("Navigate to cart for abandoned items");
-          break;
-        case "event_reminder":
-          // Navigate to event details
-          console.log("Navigate to event:", data.eventId);
-          break;
-        case "order_status":
-          // Navigate to order details
-          console.log("Navigate to order:", data.orderId);
-          break;
-        default:
-          console.log("Unknown notification type:", data.type);
-      }
+    if (data) {
+      routeFromNotificationData(data as NotificationRouteData);
     }
   };
 

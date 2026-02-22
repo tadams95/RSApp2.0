@@ -92,11 +92,30 @@ async function computeUserStats(
         getCountFromServer(followingQuery),
       ]);
 
+    // Read eventsAttended separately — profiles is publicly readable, customers is owner-only.
+    // Try profiles first (works for any viewer), then fall back to customers for own profile
+    // (preserves legacy data from before the dual-write Cloud Function deploy).
+    let eventsAttended = 0;
+    try {
+      const profileDoc = await getDoc(doc(db, "profiles", userId));
+      eventsAttended = profileDoc.data()?.stats?.eventsAttended || 0;
+    } catch {
+      // Doc missing or read failed — fall through
+    }
+    if (eventsAttended === 0 && isOwnProfile) {
+      try {
+        const customerDoc = await getDoc(doc(db, "customers", userId));
+        eventsAttended = customerDoc.data()?.stats?.eventsAttended || 0;
+      } catch {
+        // Fallback failed — stay at 0
+      }
+    }
+
     const stats = {
       postsCount: postsSnapshot.data().count,
       followersCount: followersSnapshot.data().count,
       followingCount: followingSnapshot.data().count,
-      eventsAttended: 0, // TODO: Query events/ragers collection if needed
+      eventsAttended,
     };
 
     return stats;
@@ -307,7 +326,7 @@ export default function UserProfileView({
   };
 
   const handlePostPress = (postId: string) => {
-    router.push(`/social/post/${postId}`);
+    router.push(`/home/post/${postId}`);
   };
 
   const handleProfilePress = (targetUserId: string) => {
@@ -400,10 +419,24 @@ export default function UserProfileView({
         onEditPress={isOwnProfile ? handleEditPress : undefined}
         onMessagePress={!isOwnProfile ? handleMessagePress : undefined}
         onFollowersPress={() => {
-          // TODO: Navigate to followers list
+          router.push({
+            pathname: "/profile/follow-list",
+            params: { userId, type: "followers" },
+          });
+          track("followers_list_viewed", {
+            profile_user_id: userId,
+            is_own_profile: isOwnProfile,
+          });
         }}
         onFollowingPress={() => {
-          // TODO: Navigate to following list
+          router.push({
+            pathname: "/profile/follow-list",
+            params: { userId, type: "following" },
+          });
+          track("following_list_viewed", {
+            profile_user_id: userId,
+            is_own_profile: isOwnProfile,
+          });
         }}
       />
     </View>

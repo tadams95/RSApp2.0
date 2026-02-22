@@ -24,6 +24,13 @@ export default function ProfileLayout() {
           headerShadowVisible: false,
         }}
       />
+      <Stack.Screen
+        name="follow-list"
+        options={{
+          headerTitle: "",
+          headerShadowVisible: false,
+        }}
+      />
     </Stack>
   );
 }

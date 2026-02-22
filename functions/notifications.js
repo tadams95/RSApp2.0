@@ -344,7 +344,7 @@ exports.onFollowCreateNotify = onDocumentCreated(
   async (event) => {
     try {
       const f = event.data?.data() || {};
-      const { followerId: actorId, followedId: targetUid } = f;
+      const { followerId: actorId, followingId: targetUid } = f;
       if (!actorId || !targetUid) return null;
       const actorName = await getActorDisplayName(actorId);
       await createNotification({

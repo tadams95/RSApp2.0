@@ -84,6 +84,15 @@ export const queryKeys = {
     notifications: () => [...queryKeys.user.all, "notifications"] as const,
   },
 
+  // Follows
+  follows: {
+    all: ["follows"] as const,
+    followers: (userId: string) =>
+      [...queryKeys.follows.all, "followers", userId] as const,
+    following: (userId: string) =>
+      [...queryKeys.follows.all, "following", userId] as const,
+  },
+
   // Chat (real-time subscriptions, cache for offline access)
   chat: {
     all: ["chat"] as const,

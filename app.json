@@ -107,6 +107,16 @@
               "scheme": "https",
               "host": "www.ragestate.com",
               "pathPrefix": "/shop"
+            },
+            {
+              "scheme": "https",
+              "host": "ragestate.com",
+              "pathPrefix": "/messages"
+            },
+            {
+              "scheme": "https",
+              "host": "www.ragestate.com",
+              "pathPrefix": "/messages"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
