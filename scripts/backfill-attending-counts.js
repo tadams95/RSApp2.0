@@ -14,39 +14,8 @@
  *   - You must have admin access to the Firestore database
  */
 
-const {
-  initializeApp,
-  cert,
-  applicationDefault,
-} = require("firebase-admin/app");
+const { initializeApp, applicationDefault } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
-
-// Set up credentials before initializing the Admin SDK.
-// If GOOGLE_APPLICATION_CREDENTIALS is not set, try the Firebase CLI's stored refresh token.
-if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-  try {
-    const configPath = path.join(
-      os.homedir(),
-      ".config/configstore/firebase-tools.json",
-    );
-    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    if (config.tokens && config.tokens.refresh_token) {
-      const adcJson = JSON.stringify({
-        type: "authorized_user",
-        client_id: "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com",
-        client_secret: "j9iVZfS8kkCEFUPaAeJV0sAi",
-        refresh_token: config.tokens.refresh_token,
-      });
-      const tmpFile = path.join(os.tmpdir(), "firebase-adc-tmp.json");
-      fs.writeFileSync(tmpFile, adcJson, { mode: 0o600 });
-      process.env.GOOGLE_APPLICATION_CREDENTIALS = tmpFile;
-      console.log("Using Firebase CLI refresh token for auth");
-    }
-  } catch (_) {}
-}
 
 let app;
 try {
@@ -102,7 +71,13 @@ async function backfillAttendingCounts() {
 
     return results;
   } catch (error) {
-    console.error("Backfill failed:", error);
+    console.error("Backfill failed:", error.message);
+    if (error.code === 7 || error.message?.includes("credentials")) {
+      console.error(
+        "\nAuth fix: run `gcloud auth application-default login`\n" +
+          "or set GOOGLE_APPLICATION_CREDENTIALS to a service account key file.",
+      );
+    }
     throw error;
   }
 }
