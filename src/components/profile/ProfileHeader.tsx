@@ -4,6 +4,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { UserData } from "../../utils/auth";
+import { hasSocialLinks } from "../../utils/socialLinks";
 import { ImageWithFallback } from "../ui";
 import FollowButton from "./FollowButton";
 import ProfileSongCard from "./ProfileSongCard";
@@ -13,6 +14,8 @@ interface ProfileHeaderProps {
   profile: UserData | null;
   isOwnProfile: boolean;
   onEditPress?: () => void;
+  onEditSongPress?: () => void;
+  onEditSocialLinksPress?: () => void;
   onFollowersPress?: () => void;
   onFollowingPress?: () => void;
   onFollowChange?: (isFollowing: boolean) => void;
@@ -23,6 +26,8 @@ export default function ProfileHeader({
   profile,
   isOwnProfile,
   onEditPress,
+  onEditSongPress,
+  onEditSocialLinksPress,
   onFollowersPress,
   onFollowingPress,
   onFollowChange,
@@ -113,10 +118,41 @@ export default function ProfileHeader({
       </View>
 
       {/* Profile Song Section - Personal expression/vibe */}
-      {profile?.profileSongUrl && (
+      {profile?.profileSongUrl ? (
         <View style={styles.songSection}>
           <ProfileSongCard songUrl={profile.profileSongUrl} />
+          {isOwnProfile && onEditSongPress && (
+            <TouchableOpacity
+              style={styles.editSongButton}
+              onPress={onEditSongPress}
+              activeOpacity={0.7}
+              accessibilityLabel="Edit profile song"
+            >
+              <MaterialCommunityIcons
+                name="pencil-outline"
+                size={14}
+                color={theme.colors.textSecondary}
+              />
+            </TouchableOpacity>
+          )}
         </View>
+      ) : (
+        isOwnProfile &&
+        onEditSongPress && (
+          <TouchableOpacity
+            style={styles.addSongPrompt}
+            onPress={onEditSongPress}
+            activeOpacity={0.7}
+            accessibilityLabel="Add a profile song"
+          >
+            <MaterialCommunityIcons
+              name="music-note-plus"
+              size={18}
+              color={theme.colors.textTertiary}
+            />
+            <Text style={styles.addPromptText}>Add a profile song</Text>
+          </TouchableOpacity>
+        )
       )}
 
       {/* Stats Row - Full Width */}
@@ -188,14 +224,45 @@ export default function ProfileHeader({
       </View>
 
       {/* Social Links Row - Full Width, Centered */}
-      {profile?.socialLinks && (
+      {hasSocialLinks(profile?.socialLinks) ? (
         <View style={styles.socialLinksContainer}>
           <SocialLinksRow
-            socialLinks={profile.socialLinks}
-            userId={profile.userId}
+            socialLinks={profile?.socialLinks}
+            userId={profile?.userId}
             isOwnProfile={isOwnProfile}
           />
+          {isOwnProfile && onEditSocialLinksPress && (
+            <TouchableOpacity
+              style={styles.editSocialButton}
+              onPress={onEditSocialLinksPress}
+              activeOpacity={0.7}
+              accessibilityLabel="Edit social links"
+            >
+              <MaterialCommunityIcons
+                name="pencil-outline"
+                size={14}
+                color={theme.colors.textSecondary}
+              />
+            </TouchableOpacity>
+          )}
         </View>
+      ) : (
+        isOwnProfile &&
+        onEditSocialLinksPress && (
+          <TouchableOpacity
+            style={styles.addSocialPrompt}
+            onPress={onEditSocialLinksPress}
+            activeOpacity={0.7}
+            accessibilityLabel="Add social links"
+          >
+            <MaterialCommunityIcons
+              name="link-plus"
+              size={18}
+              color={theme.colors.textTertiary}
+            />
+            <Text style={styles.addPromptText}>Add social links</Text>
+          </TouchableOpacity>
+        )
       )}
     </View>
   );
@@ -341,11 +408,55 @@ const createStyles = (theme: import("../../constants/themes").Theme) => ({
   },
   // Social Links Styles
   socialLinksContainer: {
+    flexDirection: "row" as const,
     alignItems: "center" as const,
+    justifyContent: "center" as const,
     marginTop: 12,
+  },
+  editSocialButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  addSocialPrompt: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 10,
   },
   // Song Section
   songSection: {
     marginTop: 14,
+    position: "relative" as const,
+  },
+  editSongButton: {
+    position: "absolute" as const,
+    top: 6,
+    right: 6,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: theme.colors.bgElev1,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  addSongPrompt: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 6,
+    marginTop: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderStyle: "dashed" as const,
+    borderColor: theme.colors.borderSubtle,
+    borderRadius: 10,
+    backgroundColor: theme.colors.bgElev1,
+  },
+  addPromptText: {
+    fontSize: 13,
+    fontWeight: "500" as const,
+    color: theme.colors.textTertiary,
   },
 });

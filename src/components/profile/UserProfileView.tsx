@@ -30,6 +30,8 @@ import { selectLocalId } from "../../store/redux/userSlice";
 import { UserData } from "../../utils/auth";
 import { PostCard } from "../feed";
 import { EditProfile } from "../modals";
+import EditProfileSongModal from "../modals/EditProfileSongModal";
+import EditSocialLinksModal from "../modals/EditSocialLinksModal";
 import ProfileHeader from "./ProfileHeader";
 
 interface UserProfileViewProps {
@@ -268,6 +270,8 @@ export default function UserProfileView({
   const router = useRouter();
   const segments = useSegments();
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showEditSongModal, setShowEditSongModal] = useState(false);
+  const [showEditSocialLinksModal, setShowEditSocialLinksModal] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -323,6 +327,19 @@ export default function UserProfileView({
   const handleRefresh = () => {
     refetchProfile();
     refetchPosts();
+  };
+
+  const handleEditSongPress = () => setShowEditSongModal(true);
+  const handleEditSocialLinksPress = () => setShowEditSocialLinksModal(true);
+
+  const handleSongSaved = () => {
+    setShowEditSongModal(false);
+    refetchProfile();
+  };
+
+  const handleSocialLinksSaved = () => {
+    setShowEditSocialLinksModal(false);
+    refetchProfile();
   };
 
   const handlePostPress = (postId: string) => {
@@ -417,6 +434,8 @@ export default function UserProfileView({
         profile={profile}
         isOwnProfile={isOwnProfile}
         onEditPress={isOwnProfile ? handleEditPress : undefined}
+        onEditSongPress={isOwnProfile ? handleEditSongPress : undefined}
+        onEditSocialLinksPress={isOwnProfile ? handleEditSocialLinksPress : undefined}
         onMessagePress={!isOwnProfile ? handleMessagePress : undefined}
         onFollowersPress={() => {
           router.push({
@@ -511,6 +530,40 @@ export default function UserProfileView({
               }}
             />
           </View>
+        </Modal>
+      )}
+
+      {/* Inline Edit Song Modal (own profile only) */}
+      {isOwnProfile && (
+        <Modal
+          visible={showEditSongModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowEditSongModal(false)}
+        >
+          <EditProfileSongModal
+            visible={showEditSongModal}
+            initialSongUrl={profile.profileSongUrl || null}
+            onClose={() => setShowEditSongModal(false)}
+            onSaved={handleSongSaved}
+          />
+        </Modal>
+      )}
+
+      {/* Inline Edit Social Links Modal (own profile only) */}
+      {isOwnProfile && (
+        <Modal
+          visible={showEditSocialLinksModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowEditSocialLinksModal(false)}
+        >
+          <EditSocialLinksModal
+            visible={showEditSocialLinksModal}
+            initialSocialLinks={profile.socialLinks}
+            onClose={() => setShowEditSocialLinksModal(false)}
+            onSaved={handleSocialLinksSaved}
+          />
         </Modal>
       )}
     </View>
