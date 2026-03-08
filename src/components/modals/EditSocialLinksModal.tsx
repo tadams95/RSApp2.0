@@ -17,6 +17,7 @@ import type { Theme } from "../../constants/themes";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { selectLocalId } from "../../store/redux/userSlice";
+import { BrandColors } from "../../constants/brandColors";
 import {
   getValidationError,
   isValidSocialUrl,
@@ -53,12 +54,12 @@ const PLATFORM_FIELDS: PlatformField[] = [
   {
     key: "twitter",
     placeholder: "https://x.com/username",
-    renderIcon: () => <XLogo size={20} color="#000" />,
+    renderIcon: () => <XLogo size={20} color={BrandColors.x} />,
   },
   {
     key: "instagram",
     placeholder: "https://instagram.com/username",
-    iconBg: "#E4405F",
+    iconBg: BrandColors.instagram,
     iconName: "instagram",
     iconColor: "#fff",
   },
@@ -71,21 +72,21 @@ const PLATFORM_FIELDS: PlatformField[] = [
   {
     key: "soundcloud",
     placeholder: "https://soundcloud.com/username",
-    iconBg: "#FF5500",
+    iconBg: BrandColors.soundcloud,
     iconName: "soundcloud",
     iconColor: "#fff",
   },
   {
     key: "spotify",
     placeholder: "https://open.spotify.com/artist/...",
-    iconBg: "#1DB954",
+    iconBg: BrandColors.spotify,
     iconName: "spotify",
     iconColor: "#fff",
   },
   {
     key: "youtube",
     placeholder: "https://youtube.com/@username",
-    iconBg: "#FF0000",
+    iconBg: BrandColors.youtube,
     iconName: "youtube",
     iconColor: "#fff",
   },

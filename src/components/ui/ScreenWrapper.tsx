@@ -1,6 +1,5 @@
 import React from "react";
 import { View, ViewStyle } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
 import type { Theme } from "../../constants/themes";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
@@ -49,7 +48,7 @@ const createStyles = (theme: Theme) =>
       flex: 1,
     },
     withPadding: {
-      padding: GlobalStyles.spacing.screenPadding,
+      padding: theme.spacing.screenPadding,
     },
   } as const);
 

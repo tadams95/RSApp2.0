@@ -10,7 +10,6 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -22,7 +21,9 @@ import {
 } from "../../../analytics/PostHogProvider";
 import ErrorBoundary from "../../../components/ErrorBoundary";
 import AppCarousel from "../../../components/ui/AppCarousel";
-import { GlobalStyles } from "../../../constants/styles";
+import type { Theme } from "../../../constants/themes";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 import { getProductLoadingState, useProduct } from "../../../hooks/useProducts";
 import { addToCart, CartItem } from "../../../store/redux/cartSlice";
 
@@ -70,6 +71,8 @@ function ProductDetailScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { track } = usePostHog();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Use React Query for product fetching
   const productQuery = useProduct(handle);
@@ -327,7 +330,7 @@ function ProductDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={GlobalStyles.colors.red7} />
+        <ActivityIndicator size="large" color={theme.colors.accent} />
       </View>
     );
   }
@@ -574,234 +577,251 @@ function ProductDetailScreen() {
 const windowHeight = Dimensions.get("window").height;
 const windowWidth = Dimensions.get("window").width;
 
-const fontFamily = Platform.select({
-  ios: "Helvetica Neue",
-  android: "Roboto",
-  default: "system",
-});
-
-// Styles
-const styles = StyleSheet.create({
-  rootContainer: { flex: 1, backgroundColor: "black" },
-  header: {
-    position: "absolute",
-    top: Platform.OS === "ios" ? 50 : 20,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  imageNavContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
-  },
-  imageNavButton: {
-    backgroundColor: "rgba(0,0,0,0.4)",
-    padding: 8,
-    borderRadius: 20,
-  },
-  imageCounterContainer: {
-    position: "absolute",
-    bottom: 15,
-    alignSelf: "center",
-  },
-  imageCounterText: {
-    color: "white",
-    fontSize: 12,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-  },
-  scrollView: { flex: 1, backgroundColor: "black" },
-  scrollViewContent: { paddingBottom: 40 },
-  swiperContainer: {
-    height: windowWidth * 1.1,
-    position: "relative",
-    backgroundColor: "#111",
-  },
-  productImage: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#1a1a1a",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-    padding: 20,
-  },
-  errorText: {
-    color: "white",
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: GlobalStyles.colors.red7,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  retryButtonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  productInfoContainer: {
-    padding: 16,
-  },
-  titlePriceContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "white",
-    flex: 2,
-    marginRight: 10,
-  },
-  price: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: GlobalStyles.colors.red7 || "#00C5EA",
-    flex: 1,
-    textAlign: "right",
-  },
-  sectionContainer: {
-    marginBottom: 20,
-    borderTopWidth: 1,
-    borderTopColor: "#222",
-    paddingTop: 15,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 10,
-  },
-  descriptionContainer: { maxHeight: 100 },
-  description: { fontSize: 14, color: "#ccc", lineHeight: 20 },
-  optionContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#222",
-  },
-  optionLabel: { fontSize: 15, color: "white" },
-  optionSelector: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#1a1a1a",
-    borderRadius: 5,
-  },
-  optionText: { fontSize: 15, color: "white", marginRight: 8 },
-  actionButton: {
-    backgroundColor: GlobalStyles.colors.red7 || "#00C5EA",
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  actionButtonText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "black",
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.7)",
-  },
-  modalContent: {
-    backgroundColor: "#1a1a1a",
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-    padding: 20,
-    maxHeight: windowHeight * 0.5,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-    paddingBottom: 10,
-  },
-  modalTitle: { fontSize: 18, fontWeight: "bold", color: "white" },
-  modalScroll: { maxHeight: windowHeight * 0.3 },
-  modalItem: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  modalItemText: {
-    fontSize: 16,
-    color: "white",
-    textAlign: "center",
-  },
-  confirmationModalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.8)",
-  },
-  confirmationModalContent: {
-    backgroundColor: "#1e1e1e",
-    padding: 30,
-    borderRadius: 10,
-    alignItems: "center",
-    width: "80%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  confirmationModalText: {
-    fontSize: 16,
-    color: "white",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  confirmationButton: {
-    backgroundColor: GlobalStyles.colors.red7 || "#00C5EA",
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    borderRadius: 5,
-  },
-  confirmationButtonText: {
-    color: "black",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    rootContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    header: {
+      position: "absolute" as const,
+      top: Platform.OS === "ios" ? 50 : 20,
+      left: 0,
+      right: 0,
+      zIndex: 10,
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      alignItems: "center" as const,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    backButton: {
+      padding: theme.spacing.sm,
+      borderRadius: 20,
+      backgroundColor: "rgba(0,0,0,0.5)",
+    },
+    imageNavContainer: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      alignItems: "center" as const,
+      position: "absolute" as const,
+      bottom: 20,
+      left: 20,
+      right: 20,
+    },
+    imageNavButton: {
+      backgroundColor: "rgba(0,0,0,0.4)",
+      padding: theme.spacing.sm,
+      borderRadius: 20,
+    },
+    imageCounterContainer: {
+      position: "absolute" as const,
+      bottom: 15,
+      alignSelf: "center" as const,
+    },
+    imageCounterText: {
+      color: theme.colors.textPrimary,
+      fontSize: theme.typography.sizes.meta,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 15,
+    },
+    scrollView: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    scrollViewContent: {
+      paddingBottom: 40,
+    },
+    swiperContainer: {
+      height: windowWidth * 1.1,
+      position: "relative" as const,
+      backgroundColor: theme.colors.bgElev1,
+    },
+    productImage: {
+      width: "100%" as const,
+      height: "100%" as const,
+      backgroundColor: theme.colors.bgElev2,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center" as const,
+      alignItems: "center" as const,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: "center" as const,
+      alignItems: "center" as const,
+      backgroundColor: theme.colors.bgRoot,
+      padding: theme.spacing.xl,
+    },
+    errorText: {
+      color: theme.colors.textPrimary,
+      fontSize: theme.typography.sizes.body,
+      textAlign: "center" as const,
+      marginBottom: theme.spacing.lg,
+    },
+    retryButton: {
+      backgroundColor: theme.colors.accent,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: theme.radius.button,
+    },
+    retryButtonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      fontWeight: theme.typography.weights.bold,
+    },
+    productInfoContainer: {
+      padding: theme.spacing.lg,
+    },
+    titlePriceContainer: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      alignItems: "flex-start" as const,
+      marginBottom: 10,
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: theme.typography.weights.bold,
+      color: theme.colors.textPrimary,
+      flex: 2,
+      marginRight: 10,
+    },
+    price: {
+      fontSize: 18,
+      fontWeight: theme.typography.weights.semibold,
+      color: theme.colors.accent,
+      flex: 1,
+      textAlign: "right" as const,
+    },
+    sectionContainer: {
+      marginBottom: 20,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.borderSubtle,
+      paddingTop: 15,
+    },
+    sectionTitle: {
+      fontSize: theme.typography.sizes.body,
+      fontWeight: theme.typography.weights.bold,
+      color: theme.colors.textPrimary,
+      marginBottom: 10,
+    },
+    descriptionContainer: {
+      maxHeight: 100,
+    },
+    description: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+    },
+    optionContainer: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      alignItems: "center" as const,
+      marginBottom: 12,
+      paddingVertical: theme.spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderSubtle,
+    },
+    optionLabel: {
+      fontSize: theme.typography.sizes.body,
+      color: theme.colors.textPrimary,
+    },
+    optionSelector: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      backgroundColor: theme.colors.bgElev2,
+      borderRadius: theme.radius.button,
+    },
+    optionText: {
+      fontSize: theme.typography.sizes.body,
+      color: theme.colors.textPrimary,
+      marginRight: theme.spacing.sm,
+    },
+    actionButton: {
+      backgroundColor: theme.colors.accent,
+      paddingVertical: 15,
+      borderRadius: theme.radius.button,
+      alignItems: "center" as const,
+      marginTop: 10,
+    },
+    actionButtonText: {
+      fontSize: theme.typography.sizes.body,
+      fontWeight: theme.typography.weights.bold,
+      color: theme.colors.textInverse,
+    },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "flex-end" as const,
+      backgroundColor: theme.colors.overlay,
+    },
+    modalContent: {
+      backgroundColor: theme.colors.bgElev2,
+      borderTopLeftRadius: 15,
+      borderTopRightRadius: 15,
+      padding: theme.spacing.modalPadding,
+      maxHeight: windowHeight * 0.5,
+    },
+    modalHeader: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      alignItems: "center" as const,
+      marginBottom: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderStrong,
+      paddingBottom: 10,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: theme.typography.weights.bold,
+      color: theme.colors.textPrimary,
+    },
+    modalScroll: {
+      maxHeight: windowHeight * 0.3,
+    },
+    modalItem: {
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderStrong,
+    },
+    modalItemText: {
+      fontSize: theme.typography.sizes.body,
+      color: theme.colors.textPrimary,
+      textAlign: "center" as const,
+    },
+    confirmationModalOverlay: {
+      flex: 1,
+      justifyContent: "center" as const,
+      alignItems: "center" as const,
+      backgroundColor: theme.colors.overlay,
+    },
+    confirmationModalContent: {
+      backgroundColor: theme.colors.bgElev2,
+      padding: 30,
+      borderRadius: theme.radius.card,
+      alignItems: "center" as const,
+      width: "80%" as const,
+      ...theme.shadows.modal,
+    },
+    confirmationModalText: {
+      fontSize: theme.typography.sizes.body,
+      color: theme.colors.textPrimary,
+      textAlign: "center" as const,
+      marginBottom: theme.spacing.xl,
+    },
+    confirmationButton: {
+      backgroundColor: theme.colors.accent,
+      paddingVertical: 10,
+      paddingHorizontal: 30,
+      borderRadius: theme.radius.button,
+    },
+    confirmationButtonText: {
+      color: theme.colors.textInverse,
+      fontSize: theme.typography.sizes.body,
+      fontWeight: theme.typography.weights.bold,
+    },
+  } as const);

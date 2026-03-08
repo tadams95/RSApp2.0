@@ -10,12 +10,13 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   ActivityIndicator,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { GlobalStyles } from "../../../../constants/styles";
+import type { Theme } from "../../../../constants/themes";
+import { useTheme } from "../../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../../hooks/useThemedStyles";
 import CheckoutErrorBoundary from "./CheckoutErrorBoundary";
 
 interface CartReconciliationHandlerProps {
@@ -31,6 +32,9 @@ export default function CartReconciliationHandler({
   onDismiss,
   error,
 }: CartReconciliationHandlerProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   if (!isReconciling && !error) {
     return null;
   }
@@ -46,7 +50,7 @@ export default function CartReconciliationHandler({
       <View style={styles.container}>
         {isReconciling ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={GlobalStyles.colors.red4} />
+            <ActivityIndicator size="small" color={theme.colors.danger} />
             <Text style={styles.message}>Checking order status...</Text>
           </View>
         ) : error ? (
@@ -54,7 +58,7 @@ export default function CartReconciliationHandler({
             <Ionicons
               name="alert-circle"
               size={20}
-              color={GlobalStyles.colors.red5}
+              color={theme.colors.danger}
             />
             <Text style={styles.errorMessage}>
               {error || "An error occurred during order reconciliation"}
@@ -81,56 +85,57 @@ export default function CartReconciliationHandler({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#111111",
-    borderRadius: 8,
-    borderColor: GlobalStyles.colors.grey7,
-    borderWidth: 1,
-  },
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  errorContainer: {
-    alignItems: "flex-start",
-  },
-  message: {
-    marginLeft: 8,
-    color: "white",
-    fontSize: 14,
-  },
-  errorMessage: {
-    marginLeft: 8,
-    marginTop: 4,
-    color: GlobalStyles.colors.red4,
-    fontSize: 14,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    marginTop: 12,
-  },
-  button: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 4,
-    backgroundColor: GlobalStyles.colors.red4,
-    marginRight: 8,
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  dismissButton: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey3,
-  },
-  dismissButtonText: {
-    color: GlobalStyles.colors.grey7,
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      marginVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: theme.radius.button,
+      borderColor: theme.colors.borderStrong,
+      borderWidth: 1,
+    },
+    loadingContainer: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+    },
+    errorContainer: {
+      alignItems: "flex-start" as const,
+    },
+    message: {
+      marginLeft: theme.spacing.sm,
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+    },
+    errorMessage: {
+      marginLeft: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
+      color: theme.colors.danger,
+      fontSize: 14,
+    },
+    buttonContainer: {
+      flexDirection: "row" as const,
+      marginTop: theme.spacing.md,
+    },
+    button: {
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
+      borderRadius: theme.radius.button,
+      backgroundColor: theme.colors.danger,
+      marginRight: theme.spacing.sm,
+    },
+    buttonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      fontWeight: theme.typography.weights.medium,
+    },
+    dismissButton: {
+      backgroundColor: "transparent",
+      borderWidth: 1,
+      borderColor: theme.colors.textSecondary,
+    },
+    dismissButtonText: {
+      color: theme.colors.textTertiary,
+    },
+  } as const);

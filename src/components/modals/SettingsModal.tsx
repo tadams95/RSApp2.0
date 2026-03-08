@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import {
@@ -29,6 +28,7 @@ import { usePostHog } from "../../analytics/PostHogProvider";
 import type { Theme } from "../../constants/themes";
 import { useTheme } from "../../contexts/ThemeContext";
 import { auth } from "../../firebase/firebase";
+import { useAuth } from "../../hooks/AuthContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { AnalyticsPreferences } from "../../utils/analyticsPreferences";
 import { logError } from "../../utils/logError";
@@ -70,6 +70,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [loadingAnalytics, setLoadingAnalytics] = useState<boolean>(false);
 
   const postHog = usePostHog();
+  const { signOut } = useAuth();
 
   useEffect(() => {
     // Fetch current user data and check isAdmin status
@@ -194,39 +195,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         text: "Yes",
         onPress: async () => {
           try {
-            // Reset PostHog for privacy compliance
-            await postHog.reset();
-
-            setAuthenticated(false);
-            await AsyncStorage.removeItem("stayLoggedIn");
+            await signOut();
             if (typeof handleClose === "function") {
               handleClose();
             }
           } catch (error: any) {
-            // Enhanced error handling for logout
             logError(error, "UserLogout", {
               userId: auth.currentUser?.uid || "unknown",
               errorType: error?.code || "unknown",
               action: "logout",
             });
-
             console.error("Error during logout:", error);
-
-            // Still set authenticated to false and reset PostHog even if storage clear fails
-            await postHog.reset();
-            setAuthenticated(false);
-            if (typeof handleClose === "function") {
-              handleClose();
-            }
-
-            // Only show error if it might affect user experience
-            if (error?.message?.includes("AsyncStorage")) {
-              Alert.alert(
-                "Logout Warning",
-                "You've been logged out, but your login preferences may not have been cleared properly.",
-                [{ text: "OK", style: "default" }]
-              );
-            }
           }
         },
       },
@@ -353,7 +332,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   // Don't block account deletion on analytics cleanup failure
                 }
 
-                setAuthenticated(false);
+                // Use signOut() for consistency with logout path.
+                // currentUser.delete() above already invalidated the Firebase session,
+                // so signOut() just cleans up local state (PostHog reset, setAuthenticated).
+                await signOut();
                 if (typeof handleClose === "function") {
                   handleClose();
                 }
@@ -521,7 +503,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   false: theme.colors.bgElev2,
                   true: theme.colors.success,
                 }}
-                thumbColor={analyticsEnabled ? "#ffffff" : "#f4f3f4"}
+                thumbColor={theme.colors.textPrimary}
                 accessibilityLabel="Toggle analytics tracking"
                 accessibilityHint="When enabled, usage data is collected to improve the app"
               />

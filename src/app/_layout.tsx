@@ -21,7 +21,6 @@ import { queryClient } from "../config/reactQuery";
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext";
 import { AuthProvider } from "../hooks/AuthContext";
 import { MusicPlayerProvider } from "../hooks/MusicPlayerContext";
-import { SoundCloudPlayerProvider } from "../hooks/SoundCloudPlayerContext";
 import { initializeAppCheck } from "../services/appCheckService";
 import { initializeErrorReporting } from "../services/errorReporting";
 import {
@@ -267,9 +266,7 @@ export default function RootLayout() {
               <ThemeProvider>
                 <AuthProvider>
                   <MusicPlayerProvider>
-                    <SoundCloudPlayerProvider>
-                      <ThemedAppContainer />
-                    </SoundCloudPlayerProvider>
+                    <ThemedAppContainer />
                   </MusicPlayerProvider>
                 </AuthProvider>
               </ThemeProvider>

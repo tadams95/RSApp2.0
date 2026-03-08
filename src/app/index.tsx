@@ -5,18 +5,21 @@ import React, { useEffect } from "react";
 import {
   Dimensions,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useScreenTracking } from "../analytics/PostHogProvider";
-import { GlobalStyles } from "../constants/styles";
+import type { Theme } from "../constants/themes";
+import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../hooks/AuthContext";
+import { useThemedStyles } from "../hooks/useThemedStyles";
 
 export default function Index() {
   const { authenticated, isLoading } = useAuth();
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Track screen view for analytics
   useScreenTracking("Landing Screen", {
@@ -85,89 +88,90 @@ export default function Index() {
   );
 }
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  backgroundImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-  },
-  gradient: {
-    flex: 1,
-    justifyContent: "space-between",
-    paddingTop: 100,
-    paddingBottom: 40,
-  },
-  logoContainer: {
-    alignItems: "center",
-    padding: 20,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#fff",
-    letterSpacing: 3,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: GlobalStyles.colors.grey2,
-    textAlign: "center",
-    fontStyle: "italic",
-  },
-  buttonContainer: {
-    alignItems: "center",
-    padding: 20,
-    width: "100%",
-  },
-  button: {
-    width: width * 0.8,
-    maxWidth: 400,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    marginVertical: 10,
-  },
-  primaryButton: {
-    backgroundColor: GlobalStyles.colors.redVivid5,
-  },
-  secondaryButton: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey4,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    letterSpacing: 1,
-  },
-  secondaryButtonText: {
-    color: GlobalStyles.colors.grey1,
-  },
-  footer: {
-    alignItems: "center",
-    marginTop: 20,
-  },
-  footerText: {
-    color: GlobalStyles.colors.grey5,
-    fontSize: 14,
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    loadingContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bgRoot,
+    },
+    backgroundImage: {
+      position: "absolute" as const,
+      top: 0,
+      left: 0,
+      width: "100%" as const,
+      height: "100%" as const,
+    },
+    gradient: {
+      flex: 1,
+      justifyContent: "space-between" as const,
+      paddingTop: 100,
+      paddingBottom: 40,
+    },
+    logoContainer: {
+      alignItems: "center" as const,
+      padding: theme.spacing.xl,
+    },
+    logo: {
+      width: 120,
+      height: 120,
+      marginBottom: theme.spacing.lg,
+    },
+    title: {
+      fontSize: theme.typography.sizes.display,
+      fontWeight: theme.typography.weights.bold,
+      color: theme.colors.textPrimary,
+      letterSpacing: 3,
+      marginBottom: theme.spacing.sm,
+    },
+    subtitle: {
+      fontSize: 18,
+      color: theme.colors.textSecondary,
+      textAlign: "center" as const,
+      fontStyle: "italic" as const,
+    },
+    buttonContainer: {
+      alignItems: "center" as const,
+      padding: theme.spacing.xl,
+      width: "100%" as const,
+    },
+    button: {
+      width: width * 0.8,
+      maxWidth: 400,
+      height: 56,
+      borderRadius: 28,
+      justifyContent: "center" as const,
+      alignItems: "center" as const,
+      marginVertical: 10,
+    },
+    primaryButton: {
+      backgroundColor: theme.colors.accent,
+    },
+    secondaryButton: {
+      backgroundColor: "transparent",
+      borderWidth: 1,
+      borderColor: theme.colors.textTertiary,
+    },
+    buttonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 18,
+      fontWeight: theme.typography.weights.bold,
+      letterSpacing: 1,
+    },
+    secondaryButtonText: {
+      color: theme.colors.textSecondary,
+    },
+    footer: {
+      alignItems: "center" as const,
+      marginTop: theme.spacing.xl,
+    },
+    footerText: {
+      color: theme.colors.textTertiary,
+      fontSize: 14,
+    },
+  } as const);

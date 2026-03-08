@@ -50,26 +50,29 @@ export interface FirebaseErrorResponse {
  * @returns The Firebase error code or null if not found
  */
 export function extractFirebaseErrorCode(
-  error: any
+  error: unknown
 ): FirebaseAuthErrorCode | null {
-  if (!error) return null;
+  if (!error || typeof error !== "object") return null;
+
+  const err = error as Record<string, unknown>;
 
   // Direct code property (most common)
-  if (error.code && typeof error.code === "string") {
-    return error.code as FirebaseAuthErrorCode;
+  if (err.code && typeof err.code === "string") {
+    return err.code as FirebaseAuthErrorCode;
   }
 
   // Check for code in message
-  if (error.message && typeof error.message === "string") {
-    const codeMatch = error.message.match(/auth\/[\w-]+/);
+  if (err.message && typeof err.message === "string") {
+    const codeMatch = err.message.match(/auth\/[\w-]+/);
     if (codeMatch) {
       return codeMatch[0] as FirebaseAuthErrorCode;
     }
   }
 
   // Check for REST API error format
-  if (error.response?.data?.error?.message) {
-    const message = error.response.data.error.message;
+  const resp = err as FirebaseErrorResponse;
+  if (resp.response?.data?.error?.message) {
+    const message = resp.response.data.error.message;
 
     // Map common REST error messages to Firebase auth codes
     if (message === "EMAIL_EXISTS") return "auth/email-already-in-use";
@@ -88,13 +91,18 @@ export function extractFirebaseErrorCode(
  * Provides user-friendly error messages for common Firebase authentication errors
  * Specialized for signup error handling
  */
-export function getSignupErrorMessage(error: any): string {
+export function getSignupErrorMessage(error: unknown): string {
   const errorCode = extractFirebaseErrorCode(error);
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error !== null && "message" in error
+        ? String((error as Record<string, unknown>).message)
+        : undefined;
 
   if (!errorCode) {
-    // Default fallback if we can't identify a specific error code
     return (
-      error?.message ||
+      message ||
       "An unexpected error occurred during signup. Please try again."
     );
   }
@@ -129,9 +137,8 @@ export function getSignupErrorMessage(error: any): string {
       return "This credential is already associated with a different user account.";
 
     default:
-      // For any other Firebase auth errors
       return `Account creation failed: ${
-        error.message || "Unknown error"
+        message || "Unknown error"
       }. Please try again.`;
   }
 }
@@ -139,7 +146,7 @@ export function getSignupErrorMessage(error: any): string {
 /**
  * Get field-specific error message for form validation based on Firebase error
  */
-export function getSignupFieldError(error: any): {
+export function getSignupFieldError(error: unknown): {
   field: "email" | "password" | "general";
   message: string;
 } {
@@ -148,7 +155,10 @@ export function getSignupFieldError(error: any): {
   if (!errorCode) {
     return {
       field: "general",
-      message: error?.message || "An unexpected error occurred",
+      message:
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred",
     };
   }
 
@@ -170,7 +180,7 @@ export function getSignupFieldError(error: any): {
 /**
  * Categorize the severity of Firebase errors for UI treatment
  */
-export function getErrorSeverity(error: any): "high" | "medium" | "low" {
+export function getErrorSeverity(error: unknown): "high" | "medium" | "low" {
   const errorCode = extractFirebaseErrorCode(error);
 
   if (!errorCode) return "medium";
@@ -192,7 +202,7 @@ export function getErrorSeverity(error: any): "high" | "medium" | "low" {
 /**
  * Provides recovery actions for specific Firebase errors
  */
-export function getErrorRecoveryAction(error: any): {
+export function getErrorRecoveryAction(error: unknown): {
   actionText: string;
   action: "retry" | "login" | "password-reset" | "contact-support" | "none";
 } {

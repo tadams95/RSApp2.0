@@ -2,7 +2,7 @@ import { render } from "@testing-library/react-native";
 import React from "react";
 import { Text } from "react-native";
 import { ContentContainer } from "../../components/ui/ContentContainer";
-import { GlobalStyles } from "../../constants/styles";
+import { darkTheme } from "../../constants/themes";
 
 describe("ContentContainer", () => {
   const testContent = "Test content";
@@ -17,7 +17,7 @@ describe("ContentContainer", () => {
     expect(getByText(testContent)).toBeTruthy();
   });
 
-  it("should apply default padding from GlobalStyles", () => {
+  it("should apply default padding from theme", () => {
     const { getByTestId } = render(
       <ContentContainer testID="content-container">
         <Text>{testContent}</Text>
@@ -29,10 +29,10 @@ describe("ContentContainer", () => {
       (acc: any, style: any) => ({ ...acc, ...style }),
       {}
     );
-    expect(flattenedStyle.padding).toBe(GlobalStyles.spacing.contentPadding);
+    expect(flattenedStyle.padding).toBe(darkTheme.spacing.contentPadding);
   });
 
-  it("should apply custom padding from GlobalStyles spacing key", () => {
+  it("should apply custom padding from theme spacing key", () => {
     const { getByTestId } = render(
       <ContentContainer padding="screenPadding" testID="content-container">
         <Text>{testContent}</Text>
@@ -44,7 +44,7 @@ describe("ContentContainer", () => {
       (acc: any, style: any) => ({ ...acc, ...style }),
       {}
     );
-    expect(flattenedStyle.padding).toBe(GlobalStyles.spacing.screenPadding);
+    expect(flattenedStyle.padding).toBe(darkTheme.spacing.screenPadding);
   });
 
   it("should apply custom numeric padding", () => {

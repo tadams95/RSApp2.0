@@ -17,6 +17,7 @@ import {
   where,
 } from "firebase/firestore";
 import { auth } from "../firebase/firebase";
+import { resolveUserDisplay } from "../utils/resolveUserDisplay";
 import { UserSearchResult } from "./userSearchService";
 
 const db = getFirestore();
@@ -206,9 +207,8 @@ export async function getFollowingCount(userId: string): Promise<number> {
 
 /**
  * Resolve a list of user IDs to UserSearchResult profiles.
- * Reads from profiles (publicly readable) with an optional customers fallback.
- * Customers is owner-only, so the read is attempted separately to avoid
- * poisoning the profiles read via Promise.all.
+ * Uses the canonical resolveUserDisplay utility which reads from
+ * both /profiles and /customers collections with proper precedence.
  */
 async function resolveUserProfiles(
   userIds: string[],
@@ -218,47 +218,20 @@ async function resolveUserProfiles(
   const results = await Promise.all(
     userIds.map(async (userId) => {
       try {
-        // Profiles is publicly readable — always try this first
-        let profileData: Record<string, unknown> | null = null;
-        try {
-          const profileDoc = await getDoc(doc(db, "profiles", userId));
-          profileData = profileDoc.exists() ? profileDoc.data() : null;
-        } catch {
-          // profiles read failed — fall through
+        const resolved = await resolveUserDisplay(userId);
+
+        // If we only got defaults back, the user likely doesn't exist
+        if (resolved.displayName === "Anonymous" && !resolved.profilePicture) {
+          return null;
         }
-
-        // Customers is owner-only — will fail for other users, which is expected
-        let customerData: Record<string, unknown> | null = null;
-        try {
-          const customerDoc = await getDoc(doc(db, "customers", userId));
-          customerData = customerDoc.exists() ? customerDoc.data() : null;
-        } catch {
-          // permission-denied for non-owners — expected
-        }
-
-        if (!customerData && !profileData) return null;
-
-        const displayName =
-          profileData?.displayName ||
-          customerData?.displayName ||
-          customerData?.firstName ||
-          "User";
-        const username = profileData?.username || customerData?.username;
-        const profilePicture =
-          profileData?.photoURL || customerData?.profilePicture;
-        const verificationStatus =
-          profileData?.verificationStatus ||
-          customerData?.verificationStatus ||
-          "none";
-        const bio = profileData?.bio || customerData?.bio;
 
         return {
           userId,
-          displayName,
-          username,
-          profilePicture,
-          verificationStatus,
-          bio,
+          displayName: resolved.displayName,
+          username: resolved.username ?? undefined,
+          profilePicture: resolved.profilePicture ?? undefined,
+          verificationStatus: resolved.isVerified ? "verified" : "none",
+          bio: resolved.bio ?? undefined,
         } as UserSearchResult;
       } catch (error) {
         console.log("Error resolving profile for:", userId, error);

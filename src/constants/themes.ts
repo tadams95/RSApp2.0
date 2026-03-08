@@ -88,6 +88,7 @@ export interface ThemeSpacing {
   listGutter: number;
   screenPadding: number;
   modalPadding: number;
+  contentPadding: number;
 }
 
 export interface ThemeTypography {
@@ -149,6 +150,7 @@ const sharedSpacing: ThemeSpacing = {
   listGutter: 8,
   screenPadding: 15,
   modalPadding: 20,
+  contentPadding: 10,
 };
 
 const sharedTypography: ThemeTypography = {

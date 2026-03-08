@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -10,7 +9,6 @@ import {
   Pressable,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,13 +21,13 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../hooks/AuthContext";
 import { useLoginErrorHandler } from "../../hooks/useLoginErrorHandler";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
+import { BrandColors } from "../../constants/brandColors";
 import { loginUser } from "../../utils/auth";
 import { extractFirebaseErrorCode } from "../../utils/firebaseErrorHandler";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [stayLoggedIn, setStayLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { setAuthenticated } = useAuth();
   const router = useRouter();
@@ -60,7 +58,6 @@ export default function LoginScreen() {
     // Track login attempt
     await track("login_attempt", {
       method: "email_password",
-      stay_logged_in: stayLoggedIn,
     });
 
     try {
@@ -76,29 +73,12 @@ export default function LoginScreen() {
 
       await loginUser(email.trim(), password, dispatch);
 
-      // Save login preferences if "Stay logged in" is selected
-      if (stayLoggedIn) {
-        await Promise.all([
-          AsyncStorage.setItem("stayLoggedIn", JSON.stringify(stayLoggedIn)),
-          AsyncStorage.setItem("email", email.trim()),
-          AsyncStorage.setItem("password", password),
-        ]);
-      } else {
-        // Clear any previous storage if not staying logged in
-        await Promise.all([
-          AsyncStorage.removeItem("stayLoggedIn"),
-          AsyncStorage.removeItem("email"),
-          AsyncStorage.removeItem("password"),
-        ]);
-      }
-
       // Reset failed attempts counter on successful login
       resetFailedAttempts();
 
       // Track successful login
       await track("login_successful", {
         method: "email_password",
-        stay_logged_in: stayLoggedIn,
         email_domain: email.split("@")[1] || "unknown",
         failed_attempts_before_success: failedAttempts,
       });
@@ -116,7 +96,6 @@ export default function LoginScreen() {
         error_message: error.message || "Unknown error",
         email_domain: email.split("@")[1] || "unknown",
         failed_attempts: failedAttempts + 1,
-        stay_logged_in_attempted: stayLoggedIn,
       });
 
       handleLoginError(error);
@@ -250,21 +229,6 @@ export default function LoginScreen() {
               />
             </View>
 
-            <TouchableOpacity
-              onPress={() => setStayLoggedIn(!stayLoggedIn)}
-              style={styles.checkboxContainer}
-            >
-              <View
-                style={[
-                  styles.checkbox,
-                  stayLoggedIn && styles.checkboxChecked,
-                ]}
-              >
-                {stayLoggedIn && <Text style={styles.checkmark}>✓</Text>}
-              </View>
-              <Text style={styles.checkboxLabel}>Stay logged in</Text>
-            </TouchableOpacity>
-
             <Link href="/(auth)/forgot" style={styles.forgotPassword}>
               Forgot Password?
             </Link>
@@ -355,32 +319,6 @@ const createStyles = (theme: import("../../constants/themes").Theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.borderSubtle,
   },
-  checkboxContainer: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    marginBottom: 20,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: theme.colors.borderStrong,
-    marginRight: 10,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  checkboxChecked: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
-  },
-  checkmark: {
-    color: theme.colors.textPrimary,
-    fontSize: 14,
-  },
-  checkboxLabel: {
-    color: theme.colors.textSecondary,
-  },
   errorContainer: {
     marginBottom: 16,
     width: "100%" as const,
@@ -421,7 +359,7 @@ const createStyles = (theme: import("../../constants/themes").Theme) => ({
     fontSize: 14,
   },
   googleButton: {
-    backgroundColor: "#fff",
+    backgroundColor: BrandColors.google.buttonBg,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center" as const,
@@ -434,7 +372,7 @@ const createStyles = (theme: import("../../constants/themes").Theme) => ({
     marginRight: 12,
   },
   googleButtonText: {
-    color: "#333",
+    color: BrandColors.google.buttonText,
     fontSize: 16,
     fontWeight: "600" as const,
   },

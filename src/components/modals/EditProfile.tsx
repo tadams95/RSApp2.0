@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import { doc, getFirestore, setDoc } from "firebase/firestore";
 import { useSelector } from "react-redux";
 import { usePostHog } from "../../analytics/PostHogProvider";
+import { BrandColors } from "../../constants/brandColors";
 import type { Theme } from "../../constants/themes";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useMusicTrack } from "../../hooks/useMusicTrack";
@@ -653,7 +654,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
           <TextInput
             style={[styles.input, formErrors.firstName && styles.inputError]}
             placeholder="First Name Change"
-            placeholderTextColor="#666"
+            placeholderTextColor={theme.colors.textTertiary}
             value={firstName}
             onChangeText={(text) => {
               setFirstName(text);
@@ -671,7 +672,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
           <TextInput
             style={[styles.input, formErrors.lastName && styles.inputError]}
             placeholder="Last Name Change"
-            placeholderTextColor="#666"
+            placeholderTextColor={theme.colors.textTertiary}
             value={lastName}
             onChangeText={(text) => {
               setLastName(text);
@@ -688,7 +689,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
           <TextInput
             style={[styles.input, formErrors.email && styles.inputError]}
             placeholder="Email"
-            placeholderTextColor="#666"
+            placeholderTextColor={theme.colors.textTertiary}
             autoCapitalize="none"
             secureTextEntry={false}
             onChangeText={(text) => {
@@ -708,7 +709,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
           <TextInput
             style={[styles.input, formErrors.phoneNumber && styles.inputError]}
             placeholder="(555) 555-5555"
-            placeholderTextColor="#666"
+            placeholderTextColor={theme.colors.textTertiary}
             autoCapitalize="none"
             secureTextEntry={false}
             onChangeText={handlePhoneChange}
@@ -742,7 +743,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                   formErrors.profileSongUrl && styles.inputError,
                 ]}
                 placeholder="Paste any music link..."
-                placeholderTextColor="#666"
+                placeholderTextColor={theme.colors.textTertiary}
                 autoCapitalize="none"
                 autoCorrect={false}
                 value={profileSongUrl}
@@ -760,7 +761,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                   <MaterialCommunityIcons
                     name="close-circle"
                     size={24}
-                    color="#888"
+                    color={theme.colors.textTertiary}
                   />
                 </Pressable>
               )}
@@ -793,7 +794,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                 <MaterialCommunityIcons
                   name="alert-circle"
                   size={20}
-                  color="#FF6B6B"
+                  color={theme.colors.danger}
                 />
                 <Text style={styles.songErrorText}>
                   Unable to load track preview
@@ -832,7 +833,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                 {/* X (Twitter) Input */}
                 <View style={styles.socialLinkInputRow}>
                   <View style={styles.socialLinkIconContainer}>
-                    <XLogo size={20} color="#000" />
+                    <XLogo size={20} color={BrandColors.x} />
                   </View>
                   <TextInput
                     style={[
@@ -841,7 +842,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                       formErrors.twitterUrl && styles.inputError,
                     ]}
                     placeholder="https://x.com/username"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={theme.colors.textTertiary}
                     autoCapitalize="none"
                     autoCorrect={false}
                     value={twitterUrl}
@@ -862,7 +863,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                   <View
                     style={[
                       styles.socialLinkIconContainer,
-                      { backgroundColor: "#E4405F" },
+                      { backgroundColor: BrandColors.instagram },
                     ]}
                   >
                     <MaterialCommunityIcons
@@ -878,7 +879,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                       formErrors.instagramUrl && styles.inputError,
                     ]}
                     placeholder="https://instagram.com/username"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={theme.colors.textTertiary}
                     autoCapitalize="none"
                     autoCorrect={false}
                     value={instagramUrl}
@@ -902,7 +903,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                     <MaterialCommunityIcons
                       name="music-note"
                       size={20}
-                      color="#000"
+                      color={theme.colors.textPrimary}
                     />
                   </View>
                   <TextInput
@@ -912,7 +913,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                       formErrors.tiktokUrl && styles.inputError,
                     ]}
                     placeholder="https://tiktok.com/@username"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={theme.colors.textTertiary}
                     autoCapitalize="none"
                     autoCorrect={false}
                     value={tiktokUrl}
@@ -933,7 +934,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                   <View
                     style={[
                       styles.socialLinkIconContainer,
-                      { backgroundColor: "#FF5500" },
+                      { backgroundColor: BrandColors.soundcloud },
                     ]}
                   >
                     <MaterialCommunityIcons
@@ -949,7 +950,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                       formErrors.soundcloudUrl && styles.inputError,
                     ]}
                     placeholder="https://soundcloud.com/username"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={theme.colors.textTertiary}
                     autoCapitalize="none"
                     autoCorrect={false}
                     value={soundcloudUrl}
@@ -972,7 +973,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                   <View
                     style={[
                       styles.socialLinkIconContainer,
-                      { backgroundColor: "#1DB954" },
+                      { backgroundColor: BrandColors.spotify },
                     ]}
                   >
                     <MaterialCommunityIcons
@@ -988,7 +989,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                       formErrors.spotifyUrl && styles.inputError,
                     ]}
                     placeholder="https://open.spotify.com/artist/..."
-                    placeholderTextColor="#666"
+                    placeholderTextColor={theme.colors.textTertiary}
                     autoCapitalize="none"
                     autoCorrect={false}
                     value={spotifyUrl}
@@ -1009,7 +1010,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                   <View
                     style={[
                       styles.socialLinkIconContainer,
-                      { backgroundColor: "#FF0000" },
+                      { backgroundColor: BrandColors.youtube },
                     ]}
                   >
                     <MaterialCommunityIcons
@@ -1025,7 +1026,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
                       formErrors.youtubeUrl && styles.inputError,
                     ]}
                     placeholder="https://youtube.com/@username"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={theme.colors.textTertiary}
                     autoCapitalize="none"
                     autoCorrect={false}
                     value={youtubeUrl}

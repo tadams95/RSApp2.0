@@ -22,75 +22,14 @@ import { NotificationManager } from "../services/notificationManager";
 import { retryWithBackoff } from "./cart/networkErrorDetection";
 
 import { setLocalId, setUserEmail } from "../store/redux/userSlice";
+import type { UserData, ProfileMusic } from "../types/user";
+
+// Re-export types from canonical location for backward compatibility
+export type { UserData, ProfileMusic } from "../types/user";
 
 // Initialize Firestore and Realtime Database
 const db = getFirestore();
 const rtdb = getDatabase();
-
-// Profile music cache type for faster loads
-export interface ProfileMusic {
-  platform: "soundcloud" | "spotify" | "youtube";
-  url: string;
-  title?: string;
-  artist?: string;
-  artworkUrl?: string | null;
-  cachedAt?: string; // ISO date string
-}
-
-// Define types for user data
-export interface UserData {
-  email: string;
-  firstName: string;
-  lastName: string;
-  displayName: string;
-  phoneNumber: string;
-  expoPushToken: string;
-  qrCode: string;
-  userId: string;
-  createdAt: string;
-  lastLogin: string;
-  lastUpdated: string;
-  profilePicture: string;
-  stripeCustomerId: string;
-  isAdmin: boolean;
-  migratedFromRTDB: boolean;
-  migrationDate?: string;
-  // Social profile fields (Phase 1)
-  bio?: string; // max 160 chars
-  username?: string; // unique, lowercase
-  socialLinks?: {
-    soundcloud?: string;
-    instagram?: string;
-    twitter?: string;
-    tiktok?: string;
-    spotify?: string;
-    youtube?: string;
-  };
-  interests?: string[]; // music genres, event types
-  location?: {
-    city?: string;
-    state?: string;
-  };
-  isPublic?: boolean; // profile visibility, defaults to true
-  verificationStatus?: "none" | "verified" | "artist";
-  // Alternative verification field from /profiles collection
-  isVerified?: boolean;
-  // Alternative photo field from /profiles collection
-  photoURL?: string;
-  // Alternative name field
-  name?: string;
-  // Profile song (MySpace vibes 🎵)
-  profileSongUrl?: string;
-  // Cached profile music metadata for faster loads
-  profileMusic?: ProfileMusic;
-  stats?: {
-    eventsAttended: number;
-    postsCount: number;
-    followersCount: number;
-    followingCount: number;
-  };
-  [key: string]: any; // For any additional fields
-}
 
 interface CreateUserResult {
   user: User;
@@ -170,7 +109,7 @@ export async function createUser(
         user: userCredential.user,
         userData,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = handleAuthError(error);
       throw new Error(errorMessage);
     }
@@ -234,7 +173,7 @@ export async function loginUser(
       }
 
       return user;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = handleAuthError(error);
       throw new Error(errorMessage);
     }
@@ -248,7 +187,7 @@ export async function forgotPassword(email: string): Promise<AuthResult> {
       await sendPasswordResetEmail(firebaseAuth, email);
     });
     return { success: true, message: "Password reset email sent successfully" };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorMessage = handleAuthError(error);
     return { success: false, message: errorMessage };
   }
@@ -261,8 +200,9 @@ export async function logoutUser(dispatch: Dispatch): Promise<AuthResult> {
     dispatch(setLocalId(null));
     dispatch(setUserEmail(null));
     return { success: true };
-  } catch (error: any) {
-    return { success: false, message: error.message };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Logout failed";
+    return { success: false, message };
   }
 }
 
@@ -314,7 +254,7 @@ export async function getUserData(userId: string): Promise<UserData | null> {
       }
 
       return null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching user data:", error);
       throw new Error("Failed to retrieve user data");
     }
@@ -348,7 +288,7 @@ export async function updateUserData(
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating user data:", error);
     return { success: false, message: "Failed to update user data" };
   }
@@ -375,18 +315,21 @@ export async function updateUserStripeId(
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating Stripe customer ID:", error);
     throw new Error("Failed to update user with Stripe customer ID");
   }
 }
 
 // Helper function to standardize error handling
-function handleAuthError(error: any): string {
+function handleAuthError(error: unknown): string {
   console.error("Authentication error:", error);
 
-  if (error.code) {
-    switch (error.code) {
+  if (typeof error === "object" && error !== null && "code" in error) {
+    const code = (error as { code: string }).code;
+    const message =
+      error instanceof Error ? error.message : "Unknown error";
+    switch (code) {
       case "auth/email-already-in-use":
         return "This email is already in use. Please try logging in.";
       case "auth/invalid-email":
@@ -404,7 +347,7 @@ function handleAuthError(error: any): string {
       case "auth/too-many-requests":
         return "Too many failed attempts. Please try again later.";
       default:
-        return `Authentication error: ${error.message}`;
+        return `Authentication error: ${message}`;
     }
   }
 

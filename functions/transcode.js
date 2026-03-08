@@ -226,6 +226,19 @@ exports.onVideoUpload = onObjectFinalized(
       return null;
     }
 
+    // Skip files too large to transcode within the 540s timeout.
+    // At ~2 MB/s processing rate with 2 CPU cores, 500 MB is a safe upper bound.
+    const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
+    const fileSize = parseInt(object.size || "0", 10);
+    if (fileSize > MAX_FILE_SIZE) {
+      logger.warn("Video too large for Cloud Function transcoding", {
+        filePath,
+        fileSize,
+        maxSize: MAX_FILE_SIZE,
+      });
+      return null;
+    }
+
     // Try to extract postId from path (nested format)
     let postId = extractPostId(filePath);
 

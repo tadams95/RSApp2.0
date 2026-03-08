@@ -23,6 +23,7 @@ import {
 } from "firebase/storage";
 import { db, storage } from "../firebase/firebase";
 import type { Message, ChatSummary, UserInfo } from "../types/chat";
+import { resolveUserDisplay } from "../utils/resolveUserDisplay";
 
 const CHATS_COLLECTION = "chats";
 const MESSAGES_COLLECTION = "messages";
@@ -47,30 +48,16 @@ export function getDmChatId(userId1: string, userId2: string): string {
 
 /**
  * Get user display info from both customers and profiles collections
- * Follows the multi-collection pattern used in feedService
+ * Uses the canonical resolveUserDisplay utility
  */
 export async function getUserDisplayInfo(userId: string): Promise<UserInfo> {
-  const [customerDoc, profileDoc] = await Promise.all([
-    getDoc(doc(db, "customers", userId)),
-    getDoc(doc(db, "profiles", userId)),
-  ]);
-
-  const customer = customerDoc.data();
-  const profile = profileDoc.data();
+  const resolved = await resolveUserDisplay(userId);
 
   return {
     userId,
-    displayName:
-      profile?.displayName ||
-      customer?.displayName ||
-      `${customer?.firstName || ""} ${customer?.lastName || ""}`.trim() ||
-      "Anonymous",
-    photoURL:
-      profile?.photoURL ||
-      profile?.profilePicture ||
-      customer?.profilePicture ||
-      null,
-    username: profile?.usernameLower || customer?.username || null,
+    displayName: resolved.displayName,
+    photoURL: resolved.profilePicture,
+    username: resolved.usernameLower,
   };
 }
 

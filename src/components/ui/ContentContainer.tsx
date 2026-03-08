@@ -1,13 +1,12 @@
 import React from "react";
 import { View, ViewStyle } from "react-native";
-import { GlobalStyles } from "../../constants/styles";
-import type { Theme } from "../../constants/themes";
+import type { Theme, ThemeSpacing } from "../../constants/themes";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 interface ContentContainerProps {
   children: React.ReactNode;
-  padding?: keyof typeof GlobalStyles.spacing | number;
+  padding?: keyof ThemeSpacing | number;
   style?: ViewStyle;
   centered?: boolean;
   testID?: string;
@@ -27,7 +26,7 @@ export const ContentContainer: React.FC<ContentContainerProps> = ({
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const paddingValue =
-    typeof padding === "string" ? GlobalStyles.spacing[padding] : padding;
+    typeof padding === "string" ? theme.spacing[padding] : padding;
 
   return (
     <View

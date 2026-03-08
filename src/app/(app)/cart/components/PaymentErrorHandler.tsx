@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { GlobalStyles } from "../../../../constants/styles";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
+import type { Theme } from "../../../../constants/themes";
+import { useTheme } from "../../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../../hooks/useThemedStyles";
 import {
   clearCheckoutError,
   getLastCheckoutError,
@@ -18,6 +20,8 @@ const PaymentErrorHandler: React.FC<PaymentErrorProps> = ({
   onRetry,
   onCancel,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [errorInfo, setErrorInfo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showErrorDetails, setShowErrorDetails] = useState(false);
@@ -100,7 +104,7 @@ const PaymentErrorHandler: React.FC<PaymentErrorProps> = ({
             <Ionicons
               name="warning-outline"
               size={32}
-              color={GlobalStyles.colors.red3}
+              color={theme.colors.danger}
             />
           </View>
 
@@ -120,7 +124,7 @@ const PaymentErrorHandler: React.FC<PaymentErrorProps> = ({
             <Ionicons
               name={showErrorDetails ? "chevron-up" : "chevron-down"}
               size={16}
-              color={GlobalStyles.colors.grey4}
+              color={theme.colors.textSecondary}
             />
           </TouchableOpacity>
 
@@ -163,125 +167,119 @@ const PaymentErrorHandler: React.FC<PaymentErrorProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  card: {
-    backgroundColor: GlobalStyles.colors.grey9,
-    width: "85%",
-    borderRadius: 12,
-    padding: 20,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      position: "absolute" as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: theme.colors.overlay,
+      justifyContent: "center" as const,
+      alignItems: "center" as const,
+      zIndex: 1000,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 10,
-  },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "rgba(255, 59, 48, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  message: {
-    fontSize: 16,
-    color: GlobalStyles.colors.grey3,
-    marginBottom: 16,
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  detailsToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  detailsText: {
-    fontSize: 14,
-    color: GlobalStyles.colors.grey4,
-    marginRight: 4,
-  },
-  errorDetails: {
-    width: "100%",
-    backgroundColor: GlobalStyles.colors.grey9,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  errorCode: {
-    color: GlobalStyles.colors.grey3,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  errorDescription: {
-    color: GlobalStyles.colors.red3,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  errorTime: {
-    color: GlobalStyles.colors.grey4,
-    fontSize: 14,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  button: {
-    borderRadius: 8,
-    padding: 12,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    height: 48,
-  },
-  cancelButton: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey7,
-    marginRight: 8,
-  },
-  retryButton: {
-    backgroundColor: GlobalStyles.colors.red4,
-    marginLeft: 8,
-  },
-  cancelButtonText: {
-    color: GlobalStyles.colors.grey3,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  retryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-});
+    card: {
+      backgroundColor: theme.colors.bgElev1,
+      width: "85%" as const,
+      borderRadius: theme.radius.card,
+      padding: theme.spacing.xl,
+      alignItems: "center" as const,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+      ...theme.shadows.modal,
+    },
+    iconContainer: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: theme.colors.dangerMuted,
+      justifyContent: "center" as const,
+      alignItems: "center" as const,
+      marginBottom: theme.spacing.lg,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: theme.typography.weights.bold,
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.md,
+      textAlign: "center" as const,
+    },
+    message: {
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.lg,
+      textAlign: "center" as const,
+      lineHeight: 22,
+    },
+    detailsToggle: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      marginBottom: theme.spacing.lg,
+    },
+    detailsText: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      marginRight: theme.spacing.xs,
+    },
+    errorDetails: {
+      width: "100%" as const,
+      backgroundColor: theme.colors.bgElev2,
+      borderRadius: theme.radius.button,
+      padding: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+    },
+    errorCode: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+      marginBottom: theme.spacing.sm,
+    },
+    errorDescription: {
+      color: theme.colors.danger,
+      fontSize: 14,
+      marginBottom: theme.spacing.sm,
+    },
+    errorTime: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+    },
+    buttonContainer: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      width: "100%" as const,
+    },
+    button: {
+      borderRadius: theme.radius.button,
+      padding: theme.spacing.md,
+      flex: 1,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+      height: 48,
+    },
+    cancelButton: {
+      backgroundColor: "transparent",
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      marginRight: theme.spacing.sm,
+    },
+    retryButton: {
+      backgroundColor: theme.colors.danger,
+      marginLeft: theme.spacing.sm,
+    },
+    cancelButtonText: {
+      color: theme.colors.textSecondary,
+      fontSize: 16,
+      fontWeight: theme.typography.weights.medium,
+    },
+    retryButtonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontWeight: theme.typography.weights.medium,
+    },
+    disabledButton: {
+      opacity: 0.5,
+    },
+  } as const);
 
 export default PaymentErrorHandler;

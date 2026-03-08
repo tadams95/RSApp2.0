@@ -2,13 +2,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Keyboard,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { usePostHog } from "../../analytics/PostHogProvider";
 import { Theme } from "../../constants/themes";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -411,7 +411,7 @@ export default function UsernameTransferForm({
       {/* Results or Empty State */}
       <View style={styles.resultsContainer}>
         {results.length > 0 ? (
-          <FlatList
+          <FlashList
             data={results}
             keyExtractor={(item) => item.userId}
             renderItem={({ item }) => (
@@ -425,6 +425,7 @@ export default function UsernameTransferForm({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.resultsList}
+            estimatedItemSize={60}
           />
         ) : (
           renderEmptyState()

@@ -10,12 +10,13 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   ActivityIndicator,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { GlobalStyles } from "../../../../constants/styles";
+import type { Theme } from "../../../../constants/themes";
+import { useTheme } from "../../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../../hooks/useThemedStyles";
 import CheckoutErrorBoundary from "./CheckoutErrorBoundary";
 
 export interface TransactionConflictInfo {
@@ -38,6 +39,9 @@ export default function TransactionConflictHandler({
   onRetry,
   onCancel,
 }: TransactionConflictHandlerProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   if (!conflictInfo && !isResolving) {
     return null;
   }
@@ -53,7 +57,7 @@ export default function TransactionConflictHandler({
       <View style={styles.container}>
         {isResolving ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={GlobalStyles.colors.red4} />
+            <ActivityIndicator size="small" color={theme.colors.danger} />
             <Text style={styles.message}>Resolving conflict...</Text>
           </View>
         ) : conflictInfo ? (
@@ -62,7 +66,7 @@ export default function TransactionConflictHandler({
               <Ionicons
                 name="warning"
                 size={20}
-                color={GlobalStyles.colors.yellow}
+                color={theme.colors.warning}
               />
               <Text style={styles.title}>Transaction Conflict</Text>
             </View>
@@ -102,87 +106,88 @@ export default function TransactionConflictHandler({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: "#111111",
-    borderRadius: 8,
-    borderColor: GlobalStyles.colors.grey7,
-    borderWidth: 1,
-  },
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  conflictContainer: {
-    alignItems: "flex-start",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  title: {
-    marginLeft: 8,
-    color: GlobalStyles.colors.yellow,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  message: {
-    marginLeft: 8,
-    color: "white",
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  detail: {
-    marginLeft: 8,
-    color: GlobalStyles.colors.grey4,
-    fontSize: 13,
-    marginBottom: 12,
-  },
-  resolutionContainer: {
-    marginTop: 4,
-    marginLeft: 8,
-    marginBottom: 16,
-  },
-  resolutionTitle: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 4,
-  },
-  resolution: {
-    color: GlobalStyles.colors.grey3,
-    fontSize: 14,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    marginTop: 4,
-  },
-  button: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  retryButton: {
-    backgroundColor: GlobalStyles.colors.red4,
-  },
-  cancelButton: {
-    backgroundColor: "transparent",
-    borderColor: GlobalStyles.colors.grey6,
-    borderWidth: 1,
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  cancelButtonText: {
-    color: GlobalStyles.colors.grey3,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      marginVertical: 12,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.lg,
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: theme.radius.button,
+      borderColor: theme.colors.borderStrong,
+      borderWidth: 1,
+    },
+    loadingContainer: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+    },
+    conflictContainer: {
+      alignItems: "flex-start" as const,
+    },
+    header: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      marginBottom: theme.spacing.sm,
+    },
+    title: {
+      marginLeft: theme.spacing.sm,
+      color: theme.colors.warning,
+      fontSize: 16,
+      fontWeight: theme.typography.weights.semibold,
+    },
+    message: {
+      marginLeft: theme.spacing.sm,
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      marginBottom: theme.spacing.sm,
+    },
+    detail: {
+      marginLeft: theme.spacing.sm,
+      color: theme.colors.textSecondary,
+      fontSize: theme.typography.sizes.meta,
+      marginBottom: theme.spacing.md,
+    },
+    resolutionContainer: {
+      marginTop: theme.spacing.xs,
+      marginLeft: theme.spacing.sm,
+      marginBottom: theme.spacing.lg,
+    },
+    resolutionTitle: {
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      fontWeight: theme.typography.weights.medium,
+      marginBottom: theme.spacing.xs,
+    },
+    resolution: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+    },
+    buttonContainer: {
+      flexDirection: "row" as const,
+      marginTop: theme.spacing.xs,
+    },
+    button: {
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.xl,
+      borderRadius: 6,
+      marginRight: 10,
+    },
+    retryButton: {
+      backgroundColor: theme.colors.danger,
+    },
+    cancelButton: {
+      backgroundColor: "transparent",
+      borderColor: theme.colors.textTertiary,
+      borderWidth: 1,
+    },
+    buttonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      fontWeight: theme.typography.weights.medium,
+    },
+    cancelButtonText: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+      fontWeight: theme.typography.weights.medium,
+    },
+  } as const);

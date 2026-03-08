@@ -1,20 +1,10 @@
 import { Timestamp } from "firebase/firestore";
 import { extractDatabaseErrorCode } from "./databaseErrorHandler";
 import logError from "./logError";
+import type { EventData } from "../types/event";
 
-// Define types for event data
-export interface EventData {
-  id?: string;
-  name: string;
-  dateTime: Timestamp;
-  location: string;
-  price: number;
-  imgURL: string;
-  quantity: number;
-  description?: string;
-  attendingCount?: number;
-  [key: string]: any; // For any additional fields
-}
+// Re-export type from canonical location for backward compatibility
+export type { EventData } from "../types/event";
 
 // Default values for missing event properties
 export const DEFAULT_EVENT_VALUES = {

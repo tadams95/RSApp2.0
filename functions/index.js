@@ -5,6 +5,7 @@ module.exports = {
   ...require("./notifications"),
   ...require("./transcode"),
   ...require("./printifyWebhook"),
+  ...require("./stripeWebhook"),
   ...require("./events"),
   ...require("./chat"),
   ...require("./eventStats"),

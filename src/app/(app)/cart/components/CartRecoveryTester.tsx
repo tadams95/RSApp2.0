@@ -1,6 +1,7 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { GlobalStyles } from "../../../../constants/styles";
+import { Text, TouchableOpacity, View } from "react-native";
+import type { Theme } from "../../../../constants/themes";
+import { useThemedStyles } from "../../../../hooks/useThemedStyles";
 import { runCartRecoveryTests } from "../../../../utils/cart/testCartRecovery";
 
 /**
@@ -8,6 +9,8 @@ import { runCartRecoveryTests } from "../../../../utils/cart/testCartRecovery";
  * Only use during development and testing - remove before production
  */
 const CartRecoveryTester: React.FC = () => {
+  const styles = useThemedStyles(createStyles);
+
   // Only show this component in development mode
   if (process.env.NODE_ENV === "production") {
     return null;
@@ -26,33 +29,34 @@ const CartRecoveryTester: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 10,
-    backgroundColor: "#333",
-    borderRadius: 8,
-    margin: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.red4,
-    borderStyle: "dashed",
-  },
-  testButton: {
-    backgroundColor: GlobalStyles.colors.red4,
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 6,
-    marginBottom: 5,
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "600",
-  },
-  devNote: {
-    color: "#999",
-    fontSize: 10,
-    fontStyle: "italic",
-  },
-});
+const createStyles = (theme: Theme) =>
+  ({
+    container: {
+      padding: 10,
+      backgroundColor: theme.colors.borderStrong,
+      borderRadius: theme.radius.button,
+      margin: 10,
+      alignItems: "center" as const,
+      borderWidth: 1,
+      borderColor: theme.colors.danger,
+      borderStyle: "dashed" as const,
+    },
+    testButton: {
+      backgroundColor: theme.colors.danger,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: 15,
+      borderRadius: 6,
+      marginBottom: 5,
+    },
+    buttonText: {
+      color: theme.colors.textPrimary,
+      fontWeight: theme.typography.weights.semibold,
+    },
+    devNote: {
+      color: theme.colors.textSecondary,
+      fontSize: 10,
+      fontStyle: "italic" as const,
+    },
+  } as const);
 
 export default CartRecoveryTester;

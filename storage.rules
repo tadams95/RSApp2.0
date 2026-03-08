@@ -47,16 +47,16 @@ service firebase.storage {
       allow write: if false; // Only Cloud Function (Admin SDK) can write
     }
 
-    // Guest mixes (public submission form currently unauthenticated)
-    // Keep public reads; allow writes without auth but constrain type/size.
+    // Guest mixes (legacy, unused — writes disabled to prevent unauthenticated abuse)
+    // Reads kept in case existing files are still served
     match /guest-mixes/{filename} {
       allow read: if true;
-      allow write: if isAudio() && under(200 * 1024 * 1024);
+      allow write: if false;
     }
 
     match /guest-mix-cover-photo/{filename} {
       allow read: if true;
-      allow write: if isImage() && under(10 * 1024 * 1024);
+      allow write: if false;
     }
 
     // Event hero images: only admins (custom claim) may upload; public read

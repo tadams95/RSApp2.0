@@ -36,35 +36,89 @@ async function getUserDisplayInfo(userId) {
       profile.profilePicture ||
       customer.profilePicture ||
       null,
-    expoPushToken: customer.expoPushToken || null,
   };
 }
 
 // ============================================
-// HELPER: Send Expo push notification
+// HELPER: Send FCM push notification to a user
+// Reads device tokens from users/{uid}/devices,
+// same pattern as notifications.js
 // ============================================
 
-async function sendExpoPush(token, title, body, data) {
-  if (!token) return;
+async function sendFcmPushToUser(userId, title, body, data) {
+  if (!userId) return;
 
   try {
-    const response = await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        to: token,
-        title,
-        body,
-        data,
-        sound: "default",
-      }),
+    const devicesSnap = await db
+      .collection("users")
+      .doc(userId)
+      .collection("devices")
+      .where("enabled", "==", true)
+      .get();
+
+    if (devicesSnap.empty) return;
+
+    const fcmTokens = [];
+    const deviceRefs = [];
+    devicesSnap.forEach((d) => {
+      const deviceData = d.data();
+      if (deviceData.provider === "fcm" && deviceData.token) {
+        fcmTokens.push(deviceData.token);
+        deviceRefs.push(d.ref);
+      }
     });
 
-    if (!response.ok) {
-      logger.warn("Expo push failed", { status: response.status, token });
-    }
+    if (!fcmTokens.length) return;
+
+    // Ensure data values are all strings (FCM requirement)
+    const stringData = Object.fromEntries(
+      Object.entries(data || {}).flatMap(([k, v]) =>
+        typeof v === "string" ? [[k, v]] : [[k, String(v)]],
+      ),
+    );
+
+    const message = {
+      tokens: fcmTokens,
+      notification: { title, body },
+      data: stringData,
+      android: {
+        priority: "high",
+        notification: { channelId: "default", sound: "default" },
+      },
+      apns: { payload: { aps: { sound: "default" } } },
+    };
+
+    const res = await admin.messaging().sendEachForMulticast(message);
+
+    // Disable invalid tokens (same pattern as notifications.js)
+    res.responses.forEach((r, idx) => {
+      if (!r.success) {
+        const code = r.error?.code || "unknown";
+        if (
+          code.includes("registration-token-not-registered") ||
+          code.includes("invalid-argument") ||
+          code.includes("messaging/invalid-registration-token")
+        ) {
+          deviceRefs[idx]
+            .update({
+              enabled: false,
+              disabledAt: admin.firestore.FieldValue.serverTimestamp(),
+              disableReason: "invalid_token",
+            })
+            .catch((e) =>
+              logger.warn("Failed to disable invalid token", { error: e.message }),
+            );
+        }
+      }
+    });
+
+    logger.info("Chat FCM push sent", {
+      userId,
+      success: res.successCount,
+      failure: res.failureCount,
+    });
   } catch (err) {
-    logger.error("Push notification failed", { err: err.message, token });
+    logger.error("Chat FCM push failed", { err: err.message, userId });
   }
 }
 
@@ -145,31 +199,20 @@ exports.onChatMessageCreated = onDocumentCreated(
         }
       });
 
-      // Get recipient info in parallel (outside transaction)
-      const recipientInfos = await Promise.all(
-        recipients.map(async (recipientId) => {
-          const info = await getUserDisplayInfo(recipientId);
-          return { recipientId, ...info };
-        }),
-      );
-
-      // Send push notifications in parallel
-      // Use previewText for notification body
+      // Send FCM push notifications to recipients in parallel
       const notificationBody = hasMedia && !hasText
         ? "Sent you an image"
         : (text || "Sent you a message");
 
       await Promise.all(
-        recipientInfos
-          .filter((r) => r.expoPushToken)
-          .map((recipient) =>
-            sendExpoPush(
-              recipient.expoPushToken,
-              senderName || "New message",
-              notificationBody,
-              { type: "chat_message", chatId, senderId },
-            ),
+        recipients.map((recipientId) =>
+          sendFcmPushToUser(
+            recipientId,
+            senderName || "New message",
+            notificationBody,
+            { type: "chat_message", chatId, senderId },
           ),
+        ),
       );
 
       logger.info("Message processed", { chatId, messageId });

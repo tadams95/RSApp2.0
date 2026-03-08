@@ -438,6 +438,23 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Processed webhook events: Admin SDK only (idempotency tracking)
+    match /processedWebhookEvents/{eventId} {
+      allow read, write: if false;
+    }
+
+    // Unfulfilled payments: Admin SDK only (webhook safety-net monitoring)
+    match /unfulfilledPayments/{paymentId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Disputes: Admin SDK only (Stripe dispute tracking)
+    match /disputes/{disputeId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

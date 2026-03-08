@@ -312,6 +312,37 @@ async function handleWebhook(req, res) {
     orderId: payload.id,
   });
 
+  // Idempotency: skip already-processed webhooks (Printify retries on timeout).
+  //
+  // TRADE-OFF: The dedup record is written BEFORE the handler executes.
+  // If the handler fails after dedup write, retries will be skipped.
+  // This is intentional — it prevents duplicate side-effects (emails, double
+  // Firestore writes) which are harder to undo than a missed update.
+  // Handlers are designed to be individually idempotent (Firestore overwrites,
+  // optional email), so a single missed retry is low-risk.
+  const dedupKey = topic === 'order:updated'
+    ? `${payload.id}_${topic}_${payload.status || ''}`
+    : `${payload.id}_${topic}`;
+
+  const dedupRef = db.collection('processedWebhookEvents').doc(dedupKey);
+  const dedupDoc = await dedupRef.get();
+  if (dedupDoc.exists) {
+    logger.info('Duplicate webhook skipped', { dedupKey, topic });
+    return res.status(200).json({ success: true, skipped: true, dedupKey });
+  }
+
+  // Record this event before processing (with 30-day TTL for auto-cleanup).
+  // NOTE: TTL requires a Firestore TTL policy on the `expireAt` field:
+  //   gcloud firestore fields ttls update expireAt \
+  //     --collection-group=processedWebhookEvents --enable-ttl
+  const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  await dedupRef.set({
+    processedAt: FieldValue.serverTimestamp(),
+    expireAt: thirtyDaysFromNow,
+    topic,
+    orderId: payload.id,
+  });
+
   // Route to handler
   let result;
   try {

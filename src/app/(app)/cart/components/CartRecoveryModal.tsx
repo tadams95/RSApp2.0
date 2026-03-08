@@ -3,12 +3,13 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Modal,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { GlobalStyles } from "../../../../constants/styles";
+import type { Theme } from "../../../../constants/themes";
+import { useTheme } from "../../../../contexts/ThemeContext";
+import { useThemedStyles } from "../../../../hooks/useThemedStyles";
 
 // Type for cart items that's compatible with both the app's interfaces
 interface GenericCartItem {
@@ -44,6 +45,8 @@ const CartRecoveryModal: React.FC<CartRecoveryModalProps> = ({
   errorMessage = null,
   timestamp,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [expanded, setExpanded] = useState(false);
 
   // Format the timestamp as a readable date/time
@@ -77,7 +80,7 @@ const CartRecoveryModal: React.FC<CartRecoveryModalProps> = ({
           <Ionicons
             name="cart"
             size={40}
-            color={GlobalStyles.colors.red4}
+            color={theme.colors.danger}
             style={styles.icon}
           />
 
@@ -107,7 +110,7 @@ const CartRecoveryModal: React.FC<CartRecoveryModalProps> = ({
             <Ionicons
               name={expanded ? "chevron-up" : "chevron-down"}
               size={16}
-              color={GlobalStyles.colors.grey3}
+              color={theme.colors.textSecondary}
             />
           </TouchableOpacity>
 
@@ -164,149 +167,143 @@ const CartRecoveryModal: React.FC<CartRecoveryModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.7)",
-  },
-  modalView: {
-    width: "85%",
-    backgroundColor: GlobalStyles.colors.grey9,
-    borderRadius: 12,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
+const createStyles = (theme: Theme) =>
+  ({
+    centeredView: {
+      flex: 1,
+      justifyContent: "center" as const,
+      alignItems: "center" as const,
+      backgroundColor: theme.colors.overlay,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey8,
-  },
-  icon: {
-    alignSelf: "center",
-    marginBottom: 16,
-  },
-  title: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  description: {
-    color: GlobalStyles.colors.grey3,
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  errorContainer: {
-    backgroundColor: "rgba(255, 59, 48, 0.1)",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 59, 48, 0.3)",
-  },
-  errorMessage: {
-    color: GlobalStyles.colors.red3,
-    fontSize: 14,
-  },
-  detailsToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  detailsToggleText: {
-    color: GlobalStyles.colors.grey3,
-    fontSize: 14,
-    marginRight: 4,
-  },
-  itemsContainer: {
-    backgroundColor: GlobalStyles.colors.grey9,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-    maxHeight: 200,
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey8,
-  },
-  itemRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: GlobalStyles.colors.grey8,
-  },
-  itemName: {
-    color: GlobalStyles.colors.grey2,
-    flex: 3,
-    fontSize: 14,
-  },
-  itemQuantity: {
-    color: GlobalStyles.colors.grey3,
-    flex: 1,
-    textAlign: "center",
-    fontSize: 14,
-  },
-  itemPrice: {
-    color: GlobalStyles.colors.grey2,
-    flex: 1,
-    textAlign: "right",
-    fontSize: 14,
-  },
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  totalLabel: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  totalPrice: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  button: {
-    borderRadius: 8,
-    padding: 14,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonOutline: {
-    borderWidth: 1,
-    borderColor: GlobalStyles.colors.grey7,
-    marginRight: 10,
-  },
-  buttonFilled: {
-    backgroundColor: GlobalStyles.colors.red4,
-    marginLeft: 10,
-  },
-  buttonOutlineText: {
-    color: GlobalStyles.colors.grey3,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  buttonFilledText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
+    modalView: {
+      width: "85%" as const,
+      backgroundColor: theme.colors.bgElev1,
+      borderRadius: theme.radius.card,
+      padding: theme.spacing.xxl,
+      ...theme.shadows.modal,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+    },
+    icon: {
+      alignSelf: "center" as const,
+      marginBottom: theme.spacing.lg,
+    },
+    title: {
+      color: theme.colors.textPrimary,
+      fontSize: 22,
+      fontWeight: theme.typography.weights.bold,
+      textAlign: "center" as const,
+      marginBottom: theme.spacing.md,
+    },
+    description: {
+      color: theme.colors.textSecondary,
+      fontSize: 16,
+      textAlign: "center" as const,
+      marginBottom: theme.spacing.xl,
+      lineHeight: 22,
+    },
+    errorContainer: {
+      backgroundColor: theme.colors.dangerMuted,
+      padding: theme.spacing.md,
+      borderRadius: theme.radius.button,
+      marginBottom: theme.spacing.lg,
+      borderWidth: 1,
+      borderColor: "rgba(255, 59, 48, 0.3)",
+    },
+    errorMessage: {
+      color: theme.colors.danger,
+      fontSize: 14,
+    },
+    detailsToggle: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+      marginBottom: theme.spacing.lg,
+    },
+    detailsToggleText: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+      marginRight: theme.spacing.xs,
+    },
+    itemsContainer: {
+      backgroundColor: theme.colors.bgElev2,
+      borderRadius: theme.radius.button,
+      padding: theme.spacing.md,
+      marginBottom: theme.spacing.xl,
+      maxHeight: 200,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+    },
+    itemRow: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      marginBottom: theme.spacing.sm,
+      paddingBottom: theme.spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderSubtle,
+    },
+    itemName: {
+      color: theme.colors.textSecondary,
+      flex: 3,
+      fontSize: 14,
+    },
+    itemQuantity: {
+      color: theme.colors.textSecondary,
+      flex: 1,
+      textAlign: "center" as const,
+      fontSize: 14,
+    },
+    itemPrice: {
+      color: theme.colors.textSecondary,
+      flex: 1,
+      textAlign: "right" as const,
+      fontSize: 14,
+    },
+    totalRow: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      marginTop: theme.spacing.sm,
+    },
+    totalLabel: {
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontWeight: theme.typography.weights.bold,
+    },
+    totalPrice: {
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontWeight: theme.typography.weights.bold,
+    },
+    buttonContainer: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+    },
+    button: {
+      borderRadius: theme.radius.button,
+      padding: 14,
+      flex: 1,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+    },
+    buttonOutline: {
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      marginRight: 10,
+    },
+    buttonFilled: {
+      backgroundColor: theme.colors.danger,
+      marginLeft: 10,
+    },
+    buttonOutlineText: {
+      color: theme.colors.textSecondary,
+      fontSize: 16,
+      fontWeight: theme.typography.weights.semibold,
+    },
+    buttonFilledText: {
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      fontWeight: theme.typography.weights.semibold,
+    },
+  } as const);
 
 export default CartRecoveryModal;

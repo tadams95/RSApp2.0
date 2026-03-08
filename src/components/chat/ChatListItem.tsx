@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 import type { ChatSummary } from "../../types/chat";

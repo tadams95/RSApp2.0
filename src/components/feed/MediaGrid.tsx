@@ -3,7 +3,6 @@ import { ResizeMode, Video } from "expo-av";
 import React, { useCallback, useRef, useState } from "react";
 import {
   Dimensions,
-  Image,
   Modal,
   Pressable,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "expo-image";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { LazyImage } from "../ui";
@@ -406,7 +406,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
       <Image
         source={{ uri: currentUrl }}
         style={styles.fullScreenMedia}
-        resizeMode="contain"
+        contentFit="contain"
       />
     );
   };

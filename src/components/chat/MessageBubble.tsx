@@ -3,7 +3,6 @@ import { Image as ExpoImage } from "expo-image";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Modal,
   Pressable,
   Text,
@@ -48,7 +47,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       {showSender && !isOwn && (
         <View style={styles.senderRow}>
           {message.senderPhoto && (
-            <Image source={{ uri: message.senderPhoto }} style={styles.senderPhoto} />
+            <ExpoImage source={{ uri: message.senderPhoto }} style={styles.senderPhoto} />
           )}
           <Text style={styles.senderName}>{message.senderName}</Text>
         </View>

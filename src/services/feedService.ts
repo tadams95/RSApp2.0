@@ -9,7 +9,6 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  Timestamp,
   where,
   type Unsubscribe,
 } from "firebase/firestore";
@@ -20,49 +19,12 @@ import {
   UploadTaskSnapshot,
 } from "firebase/storage";
 import { auth, db, storage } from "../firebase/firebase";
-import { getUserData } from "../utils/auth";
 import { getFollowing } from "./followService";
+import { resolveUserDisplay } from "../utils/resolveUserDisplay";
+import type { Post, RepostOf, CreatePostInput, UploadProgress } from "../types/post";
 
-// Types - matches actual Firestore schema
-export interface RepostOf {
-  postId: string;
-  authorId: string;
-  authorName?: string;
-  authorPhoto?: string;
-  authorUsername?: string;
-  // Quote repost fields (for embedded preview)
-  originalContent?: string;
-  originalMediaUrls?: string[];
-}
-
-export interface Post {
-  id: string;
-  // Author fields (actual Firestore field names)
-  userId: string;
-  userDisplayName: string;
-  usernameLower?: string;
-  userProfilePicture?: string;
-  userVerified?: boolean; // Verified badge
-  // Content
-  content: string;
-  mediaUrls?: string[];
-  mediaTypes?: ("image" | "video")[];
-  // Optimized media (from transcoding cloud function)
-  optimizedMediaUrls?: string[];
-  isProcessing?: boolean;
-  // Visibility
-  isPublic: boolean;
-  // Engagement counts
-  likeCount: number;
-  commentCount: number;
-  repostCount?: number;
-  // Repost info (if this post is a repost of another)
-  repostOf?: RepostOf;
-  // Timestamps
-  timestamp: Timestamp;
-  updatedAt?: Timestamp;
-  edited?: boolean;
-}
+// Re-export types from canonical location for backward compatibility
+export type { Post, RepostOf, CreatePostInput, UploadProgress } from "../types/post";
 
 export interface FeedOptions {
   limitCount?: number;
@@ -224,18 +186,6 @@ export async function getUserPosts(
 // Post Creation
 // ============================================
 
-export interface CreatePostInput {
-  content: string;
-  mediaFiles: { uri: string; type: "image" | "video" }[];
-  isPublic: boolean;
-}
-
-export interface UploadProgress {
-  totalFiles: number;
-  completedFiles: number;
-  currentFileProgress: number; // 0-100
-  overallProgress: number; // 0-100
-}
 
 /**
  * Upload a single file to Firebase Storage with progress tracking
@@ -296,15 +246,8 @@ export async function createPost(
     throw new Error("Must be logged in to create a post");
   }
 
-  // Get user data from /customers collection
-  const userData = await getUserData(currentUser.uid);
-  if (!userData) {
-    throw new Error("User data not found");
-  }
-
-  // Also fetch from /profiles collection for social fields (displayName, verification, photo)
-  const profileDoc = await getDoc(doc(db, "profiles", currentUser.uid));
-  const profileData = profileDoc.exists() ? profileDoc.data() : null;
+  // Resolve user display info from profiles + customers collections
+  const resolved = await resolveUserDisplay(currentUser.uid);
 
   // Generate a temporary post ID for storage paths
   const tempPostId = `${currentUser.uid}_${Date.now()}`;
@@ -345,30 +288,13 @@ export async function createPost(
 
   // Create the post document in Firestore
   // Use conditional spreading to omit null fields (Firestore rules reject null for typed fields)
-  // Prefer /profiles data for social fields, fall back to /customers data
-  const profilePicture =
-    profileData?.photoURL ||
-    profileData?.profilePicture ||
-    userData.profilePicture;
-  const displayName =
-    profileData?.displayName ||
-    userData.displayName ||
-    userData.name ||
-    userData.email ||
-    "Anonymous";
-  const username = profileData?.usernameLower || userData.username;
-  const isVerified =
-    profileData?.isVerified === true ||
-    userData.verificationStatus === "verified" ||
-    userData.verificationStatus === "artist";
-
   const postData = {
     // Author info
     userId: currentUser.uid,
-    userDisplayName: displayName,
-    ...(username && { usernameLower: username.toLowerCase() }),
-    ...(profilePicture && { userProfilePicture: profilePicture }),
-    userVerified: isVerified,
+    userDisplayName: resolved.displayName,
+    ...(resolved.usernameLower && { usernameLower: resolved.usernameLower }),
+    ...(resolved.profilePicture && { userProfilePicture: resolved.profilePicture }),
+    userVerified: resolved.isVerified,
     // Content
     content: input.content.trim(),
     ...(mediaUrls.length > 0 && { mediaUrls }),

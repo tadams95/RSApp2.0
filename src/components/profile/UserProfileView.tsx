@@ -12,14 +12,8 @@ import {
   where,
 } from "firebase/firestore";
 import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Modal,
-  RefreshControl,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Modal, RefreshControl, Text, View } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { useSelector } from "react-redux";
 import { usePostHog, useScreenTracking } from "../../analytics/PostHogProvider";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -176,12 +170,19 @@ async function fetchUserProfile(userId: string): Promise<UserData | null> {
         console.log("Could not update stats field:", error);
       }
 
-      // Merge: customers data takes priority, but include profileSongUrl from profiles
+      // Merge: customers provides base data, profiles overrides display fields
       return {
-        ...profileData,
         ...data,
+        // Override display fields from profiles (profiles > customers)
+        displayName: (profileData as any).displayName || data.displayName,
+        profilePicture:
+          (profileData as any).photoURL ||
+          (profileData as any).profilePicture ||
+          data.profilePicture,
         profileSongUrl:
-          data.profileSongUrl || (profileData as any).profileSongUrl,
+          (profileData as any).profileSongUrl || data.profileSongUrl,
+        bio: (profileData as any).bio || data.bio,
+        socialLinks: (profileData as any).socialLinks || data.socialLinks,
         userId,
         stats: computedStats,
       } as UserData;
@@ -208,13 +209,19 @@ async function fetchUserProfile(userId: string): Promise<UserData | null> {
 
     if (docSnapshot.exists()) {
       const data = docSnapshot.data();
-      // Merge: customers data takes priority, but include socialLinks and profileSongUrl from profiles
+      // Merge: customers provides base data, profiles overrides display fields
       return {
-        ...profileData,
         ...data,
-        socialLinks: (profileData as any).socialLinks || data.socialLinks,
+        // Override display fields from profiles (profiles > customers)
+        displayName: (profileData as any).displayName || data.displayName,
+        profilePicture:
+          (profileData as any).photoURL ||
+          (profileData as any).profilePicture ||
+          data.profilePicture,
         profileSongUrl:
-          data.profileSongUrl || (profileData as any).profileSongUrl,
+          (profileData as any).profileSongUrl || data.profileSongUrl,
+        socialLinks: (profileData as any).socialLinks || data.socialLinks,
+        bio: (profileData as any).bio || data.bio,
         userId,
         stats: computedStats,
       } as UserData;
@@ -491,7 +498,7 @@ export default function UserProfileView({
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={posts}
         renderItem={renderPost}
         keyExtractor={(item) => item.id}
@@ -506,6 +513,7 @@ export default function UserProfileView({
         }
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        estimatedItemSize={300}
       />
 
       {/* Edit Profile Modal (own profile only) */}

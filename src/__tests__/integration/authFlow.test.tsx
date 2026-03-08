@@ -1,24 +1,23 @@
 /**
  * Auth Flow Integration Tests
  *
- * ✅ COMPLETE: All 13 tests passing
+ * ✅ COMPLETE: All 12 tests passing
  *
  * This comprehensive integration test suite covers all critical authentication
  * journeys in the Rage State app, providing robust test coverage for:
  *
  * 1. Login Flow (3 tests):
  *    - Complete login with navigation to authenticated areas
- *    - "Stay logged in" functionality with credential persistence
- *    - Authentication error handling and user feedback
+ *    - Firebase persistence session restoration
+ *    - Unauthenticated state when no persisted session exists
  *
  * 2. Logout Flow (2 tests):
  *    - External auth state changes (token expiry) → redirect to auth screens
  *    - Error handling during logout operations
  *
- * 3. Auth State Persistence (3 tests):
- *    - App restart with valid saved credentials
- *    - App restart without saved credentials
- *    - Malformed stored auth data handling
+ * 3. Auth State Persistence (2 tests):
+ *    - Firebase session restoration via onAuthStateChanged
+ *    - No Firebase session → unauthenticated state
  *
  * 4. Protected Route Access (3 tests):
  *    - Unauthenticated user redirection to auth screens
@@ -26,8 +25,8 @@
  *    - Authenticated user redirection away from auth screens
  *
  * 5. Network Error Scenarios (2 tests):
- *    - Network failures during authentication
- *    - AsyncStorage errors and graceful degradation
+ *    - Network failures during Firebase auth state check
+ *    - Graceful handling of analytics data fetch errors
  *
  * Key Testing Infrastructure:
  * - Realistic mocking of Firebase Auth, AsyncStorage, and Expo Router
@@ -36,9 +35,7 @@
  * - Comprehensive error boundary and edge case coverage
  *
  * Implementation Notes:
- * - ✅ FIXED: AuthContext now properly handles external auth state changes (token
- *   expiry, user deletion, etc.) by setting authenticated=false when Firebase
- *   auth state becomes null, ensuring users are redirected to auth screens.
+ * - AuthContext relies on Firebase Auth persistence — no AsyncStorage credential storage
  * - Navigation testing properly simulates route segments and user flows
  * - All async operations properly wrapped in act() for deterministic results
  */
@@ -192,21 +189,13 @@ describe("Auth Flow Integration Tests", () => {
       });
     });
 
-    it("should handle login with 'stay logged in' enabled", async () => {
-      // Mock "stay logged in" enabled with saved credentials
-      (AsyncStorage.getItem as jest.Mock)
-        .mockResolvedValueOnce("true") // stayLoggedIn
-        .mockResolvedValueOnce("test@example.com") // email
-        .mockResolvedValueOnce("password123"); // password
-
-      // Mock successful login
-      (loginUser as jest.Mock).mockResolvedValue(undefined);
-
+    it("should restore session via Firebase persistence when user exists", async () => {
+      // Firebase persistence automatically restores sessions — no AsyncStorage credentials needed
       let authStateListener: ((user: any) => void) | undefined;
       (onAuthStateChanged as jest.Mock).mockImplementation((auth, callback) => {
         authStateListener = callback;
-        // Simulate no current user initially (triggers checkStayLoggedIn)
-        callback(null);
+        // Firebase restores the persisted session automatically
+        callback(mockUser);
         return () => {};
       });
 
@@ -216,37 +205,26 @@ describe("Auth Flow Integration Tests", () => {
         </TestAuthComponent>
       );
 
-      // Wait for auto-login attempt
+      // Verify user was authenticated via Firebase persistence (no loginUser call needed)
       await waitFor(() => {
-        expect(loginUser).toHaveBeenCalledWith(
-          "test@example.com",
-          "password123",
-          expect.any(Function) // dispatch
-        );
+        const state = store.getState();
+        expect(state.user.localId).toBe("test-user-id");
+        expect(state.user.userEmail).toBe("test@example.com");
       });
+
+      // loginUser should NOT be called — Firebase handles session restoration
+      expect(loginUser).not.toHaveBeenCalled();
     });
 
-    it("should handle auth errors during login", async () => {
-      // Mock login failure
-      (loginUser as jest.Mock).mockRejectedValue(
-        new Error("Invalid credentials")
-      );
-
-      (AsyncStorage.getItem as jest.Mock)
-        .mockResolvedValueOnce("true") // stayLoggedIn
-        .mockResolvedValueOnce("test@example.com") // email
-        .mockResolvedValueOnce("wrongpassword"); // password
-
-      let authStateListener: ((user: any) => void) | undefined;
+    it("should set unauthenticated state when Firebase has no persisted session", async () => {
+      // Firebase persistence found no session
       (onAuthStateChanged as jest.Mock).mockImplementation((auth, callback) => {
-        authStateListener = callback;
-        callback(null); // No current user
+        callback(null); // No persisted session
         return () => {};
       });
 
-      const consoleSpy = jest
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+      // User is on a protected route
+      setMockSegments(["(app)", "home"]);
 
       render(
         <TestAuthComponent>
@@ -254,15 +232,13 @@ describe("Auth Flow Integration Tests", () => {
         </TestAuthComponent>
       );
 
+      // Should redirect to auth since no session exists
       await waitFor(() => {
-        expect(loginUser).toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(
-          "Error during auto login:",
-          expect.any(Error)
-        );
+        expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/");
       });
 
-      consoleSpy.mockRestore();
+      // loginUser should NOT be called — no credential auto-login
+      expect(loginUser).not.toHaveBeenCalled();
     });
   });
 
@@ -337,21 +313,11 @@ describe("Auth Flow Integration Tests", () => {
   });
 
   describe("Auth State Persistence", () => {
-    it("should restore auth state on app restart with valid token", async () => {
-      // Mock valid stored credentials
-      (AsyncStorage.getItem as jest.Mock)
-        .mockResolvedValueOnce("true") // stayLoggedIn
-        .mockResolvedValueOnce("test@example.com") // email
-        .mockResolvedValueOnce("password123"); // password
-
-      // Mock successful auto-login
-      (loginUser as jest.Mock).mockResolvedValue(undefined);
-
-      let authStateListener: ((user: any) => void) | undefined;
+    it("should restore auth state via Firebase onAuthStateChanged", async () => {
+      // Firebase persistence handles session restoration automatically
       (onAuthStateChanged as jest.Mock).mockImplementation((auth, callback) => {
-        authStateListener = callback;
-        // Simulate app restart - no immediate Firebase user
-        callback(null);
+        // Simulate Firebase restoring a persisted session
+        callback(mockUser);
         return () => {};
       });
 
@@ -361,26 +327,15 @@ describe("Auth Flow Integration Tests", () => {
         </TestAuthComponent>
       );
 
-      // Verify auto-login attempt with stored credentials
+      // Verify user data was dispatched to Redux (proves auth state was restored)
       await waitFor(() => {
-        expect(AsyncStorage.getItem).toHaveBeenCalledWith("stayLoggedIn");
-        expect(AsyncStorage.getItem).toHaveBeenCalledWith("email");
-        expect(AsyncStorage.getItem).toHaveBeenCalledWith("password");
-        expect(loginUser).toHaveBeenCalledWith(
-          "test@example.com",
-          "password123",
-          expect.any(Function)
-        );
+        const state = store.getState();
+        expect(state.user.localId).toBe("test-user-id");
       });
     });
 
-    it("should handle app restart without saved credentials", async () => {
-      // Mock no saved credentials
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
-
-      let authStateListener: ((user: any) => void) | undefined;
+    it("should show unauthenticated when no Firebase session exists", async () => {
       (onAuthStateChanged as jest.Mock).mockImplementation((auth, callback) => {
-        authStateListener = callback;
         callback(null); // No Firebase user
         return () => {};
       });
@@ -391,44 +346,11 @@ describe("Auth Flow Integration Tests", () => {
         </TestAuthComponent>
       );
 
+      // Verify no user data was set (user is unauthenticated)
       await waitFor(() => {
-        expect(AsyncStorage.getItem).toHaveBeenCalledWith("stayLoggedIn");
-        expect(loginUser).not.toHaveBeenCalled();
+        const state = store.getState();
+        expect(state.user.localId).toBe("");
       });
-    });
-
-    it("should handle malformed stored auth data", async () => {
-      // Mock invalid stored data
-      (AsyncStorage.getItem as jest.Mock)
-        .mockResolvedValueOnce("invalid-json") // stayLoggedIn
-        .mockResolvedValueOnce("test@example.com") // email
-        .mockResolvedValueOnce("password123"); // password
-
-      const consoleSpy = jest
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
-      let authStateListener: ((user: any) => void) | undefined;
-      (onAuthStateChanged as jest.Mock).mockImplementation((auth, callback) => {
-        authStateListener = callback;
-        callback(null);
-        return () => {};
-      });
-
-      render(
-        <TestAuthComponent>
-          <TestChild />
-        </TestAuthComponent>
-      );
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          "Error retrieving stayLoggedIn state:",
-          expect.any(Error)
-        );
-      });
-
-      consoleSpy.mockRestore();
     });
   });
 
@@ -506,26 +428,14 @@ describe("Auth Flow Integration Tests", () => {
   });
 
   describe("Network Error Scenarios", () => {
-    it("should handle network failures during authentication", async () => {
-      // Mock network error during login
-      const networkError = new Error("Network request failed");
-      (loginUser as jest.Mock).mockRejectedValue(networkError);
-
-      (AsyncStorage.getItem as jest.Mock)
-        .mockResolvedValueOnce("true") // stayLoggedIn
-        .mockResolvedValueOnce("test@example.com") // email
-        .mockResolvedValueOnce("password123"); // password
-
-      let authStateListener: ((user: any) => void) | undefined;
+    it("should handle network failures during Firebase auth state check", async () => {
+      // Simulate Firebase onAuthStateChanged returning null due to network failure
       (onAuthStateChanged as jest.Mock).mockImplementation((auth, callback) => {
-        authStateListener = callback;
-        callback(null);
+        callback(null); // Network failure results in no user
         return () => {};
       });
 
-      const consoleSpy = jest
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+      setMockSegments(["(app)", "home"]);
 
       render(
         <TestAuthComponent>
@@ -533,27 +443,16 @@ describe("Auth Flow Integration Tests", () => {
         </TestAuthComponent>
       );
 
+      // Should redirect to auth when Firebase can't restore session
       await waitFor(() => {
-        expect(loginUser).toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(
-          "Error during auto login:",
-          networkError
-        );
+        expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/");
       });
-
-      consoleSpy.mockRestore();
     });
 
-    it("should handle AsyncStorage errors", async () => {
-      // Mock AsyncStorage error
-      (AsyncStorage.getItem as jest.Mock).mockRejectedValue(
-        new Error("AsyncStorage unavailable")
-      );
-
-      let authStateListener: ((user: any) => void) | undefined;
+    it("should handle errors during user data fetch for analytics gracefully", async () => {
+      // Firebase restores session but getUserData fails
       (onAuthStateChanged as jest.Mock).mockImplementation((auth, callback) => {
-        authStateListener = callback;
-        callback(null);
+        callback(mockUser);
         return () => {};
       });
 
@@ -567,11 +466,10 @@ describe("Auth Flow Integration Tests", () => {
         </TestAuthComponent>
       );
 
+      // Auth should still succeed even if analytics user data fetch fails
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          "Error retrieving stayLoggedIn state:",
-          expect.any(Error)
-        );
+        const state = store.getState();
+        expect(state.user.localId).toBe("test-user-id");
       });
 
       consoleSpy.mockRestore();

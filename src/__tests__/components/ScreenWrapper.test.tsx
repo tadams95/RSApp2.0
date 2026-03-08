@@ -2,7 +2,7 @@ import { render } from "@testing-library/react-native";
 import React from "react";
 import { Text } from "react-native";
 import { ScreenWrapper } from "../../components/ui/ScreenWrapper";
-import { GlobalStyles } from "../../constants/styles";
+import { darkTheme } from "../../constants/themes";
 
 describe("ScreenWrapper", () => {
   const testContent = "Test content";
@@ -27,7 +27,7 @@ describe("ScreenWrapper", () => {
     const wrapper = getByTestId("screen-wrapper");
     expect(wrapper.props.style).toContainEqual(
       expect.objectContaining({
-        backgroundColor: GlobalStyles.colors.background,
+        backgroundColor: darkTheme.colors.bgRoot,
       })
     );
   });
@@ -58,7 +58,7 @@ describe("ScreenWrapper", () => {
     const wrapper = getByTestId("screen-wrapper");
     expect(wrapper.props.style).toContainEqual(
       expect.objectContaining({
-        padding: GlobalStyles.spacing.screenPadding,
+        padding: darkTheme.spacing.screenPadding,
       })
     );
   });
@@ -71,7 +71,6 @@ describe("ScreenWrapper", () => {
     );
 
     const wrapper = getByTestId("screen-wrapper");
-    // Check that padding is not in the style array
     const flattenedStyle = wrapper.props.style.reduce(
       (acc: any, style: any) => ({ ...acc, ...style }),
       {}
@@ -132,7 +131,7 @@ describe("ScreenWrapper", () => {
     expect(flattenedStyle).toMatchObject({
       flex: 1,
       backgroundColor: customColor,
-      padding: GlobalStyles.spacing.screenPadding,
+      padding: darkTheme.spacing.screenPadding,
       margin: 10,
     });
   });

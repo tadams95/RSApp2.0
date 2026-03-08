@@ -3,12 +3,12 @@ import React, { memo, useCallback, useEffect, useState } from "react";
 import {
   AccessibilityInfo,
   ActivityIndicator,
-  FlatList,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { useUserSearch } from "../../hooks/useUserSearch";
@@ -97,7 +97,7 @@ export const MentionAutocomplete: React.FC<MentionAutocompleteProps> = memo(
       [handleSelect]
     );
 
-    // Key extractor for FlatList
+    // Key extractor for FlashList
     const keyExtractor = useCallback((item: MentionUser) => item.uid, []);
 
     // Don't render if not visible
@@ -171,16 +171,13 @@ export const MentionAutocomplete: React.FC<MentionAutocompleteProps> = memo(
         ) : results.length === 0 ? (
           renderEmpty()
         ) : (
-          <FlatList
+          <FlashList
             data={results}
             renderItem={renderItem}
             keyExtractor={keyExtractor}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            initialNumToRender={5}
-            maxToRenderPerBatch={5}
-            windowSize={5}
-            accessibilityRole="list"
+            estimatedItemSize={50}
           />
         )}
       </View>

@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useSegments } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -10,7 +9,7 @@ import { setLocalId, setUserEmail } from "../store/redux/userSlice";
 
 // Import the Firebase auth instance
 import { auth as firebaseAuth } from "../firebase/firebase";
-import { getUserData, loginUser } from "../utils/auth";
+import { getUserData } from "../utils/auth";
 
 // Define the context type
 type AuthContextType = {
@@ -41,7 +40,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async (): Promise<void> => {
     try {
       await firebaseAuth.signOut();
-      await AsyncStorage.removeItem("stayLoggedIn");
 
       // Track sign out event with user context before resetting
       await track("user_signed_out", {
@@ -62,38 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Check if user has selected "stay logged in" option
-    const checkStayLoggedIn = async () => {
-      try {
-        const [stayLoggedInValue, savedEmail, savedPassword] =
-          await Promise.all([
-            AsyncStorage.getItem("stayLoggedIn"),
-            AsyncStorage.getItem("email"),
-            AsyncStorage.getItem("password"),
-          ]);
-
-        if (stayLoggedInValue && JSON.parse(stayLoggedInValue)) {
-          if (savedEmail && savedPassword) {
-            try {
-              await loginUser(savedEmail, savedPassword, dispatch);
-              setAuthenticated(true);
-            } catch (error) {
-              console.error("Error during auto login:", error);
-              setIsLoading(false);
-            }
-          } else {
-            setIsLoading(false);
-          }
-        } else {
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error("Error retrieving stayLoggedIn state:", error);
-        setIsLoading(false);
-      }
-    };
-
     // Listen to Firebase auth state changes
+    // Firebase Auth persistence handles "stay logged in" automatically
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
       if (user) {
         dispatch(setLocalId(user.uid));
@@ -155,11 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAuthenticated(true);
         setIsLoading(false);
       } else {
-        // Firebase auth state is null - this could be due to:
-        // - Initial app load (handled by checkStayLoggedIn)
-        // - Token expiry, user deletion, or other auth state changes
-        // For security, set authenticated to false first, then check for auto-login
-
+        // Firebase auth state is null — user is not signed in
         // Track user becoming unauthenticated (but only if we were previously authenticated)
         if (authenticated) {
           await track("user_session_ended", {
@@ -171,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         setAuthenticated(false);
-        checkStayLoggedIn();
+        setIsLoading(false);
       }
     });
 
